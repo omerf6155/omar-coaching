@@ -1429,6 +1429,11 @@ function initSettingsForm() {
     document.getElementById("setting-steps").value = t.steps;
     document.getElementById("setting-gain-min").value = t.weeklyGainMin;
     document.getElementById("setting-gain-max").value = t.weeklyGainMax;
+
+    const geminiInput = document.getElementById("setting-gemini-key");
+    if (geminiInput) {
+        geminiInput.value = localStorage.getItem("OMAR_GEMINI_API_KEY") || "";
+    }
 }
 
 function saveCustomTargets() {
@@ -1452,10 +1457,20 @@ function saveCustomTargets() {
         weeklyGainMax: gainMax
     };
 
+    const geminiInput = document.getElementById("setting-gemini-key");
+    if (geminiInput) {
+        const keyVal = geminiInput.value.trim();
+        if (keyVal) {
+            localStorage.setItem("OMAR_GEMINI_API_KEY", keyVal);
+        } else {
+            localStorage.removeItem("OMAR_GEMINI_API_KEY");
+        }
+    }
+
     saveDataToStorage();
     renderDashboard();
     closeModal('modal-settings');
-    showToast("Hedefler başarıyla güncellendi! 🎯");
+    showToast("Hedefler ve ayarlar başarıyla güncellendi! 🎯");
 }
 
 // ==================== DASHBOARD & QUICK ACTIONS ====================
@@ -5026,3 +5041,641 @@ function updateTopBarUserHeader() {
     }
 }
 
+// ==================== 12. HİBRİT YAPAY ZEKA ASİSTANLARI MOTORU (ENES ABİ, VEDAT DÜBÜR, KÜRAY) ====================
+
+let activeAssistantPersona = "enes";
+let assistantChatHistory = {
+    enes: [],
+    vedat: [],
+    kuray: []
+};
+
+const ASSISTANT_PERSONAS = {
+    enes: {
+        id: "enes",
+        name: "Enes Abi",
+        avatar: "🦍",
+        role: "Salon Kıdemlisi & Biyomekanik Uzmanı",
+        themeClass: "enes",
+        accentColor: "#ff4500",
+        tagline: "Makine doluysa ya da omzun batıyorsa söyle; 1'e 1 anatomik alternatifini çakıp programa işleyelim.",
+        welcomeMsg: "Selamünaleyküm aslanım! Salonda makineye mi çöktüler, yoksa dips/bench yaparken omzun mu batıyor? Söyle bakalım derdin ne, 1'e 1 aynı lif açısını yakalayacak alternatifi bulup tek tıkla programına işleyelim. Bahane yok!",
+        quickTopics: [
+            { id: "crowded", label: "⚡ Makine Dolu! Ne Yapayım?" },
+            { id: "pain", label: "🩹 Dips / Bench'te Omuz Batması" },
+            { id: "lat_swap", label: "🦅 Lat Pulldown Dolu, Sırt Değil Lat Ver" },
+            { id: "overload", label: "🔥 Bugün Canavar Gibiyim, Kilo Tavsiyesi Ver" }
+        ]
+    },
+    vedat: {
+        id: "vedat",
+        name: "Vedat Dübür",
+        avatar: "🍳",
+        role: "Makro Gurmesi & Sokak Şefi",
+        themeClass: "vedat",
+        accentColor: "#f59e0b",
+        tagline: "Dolapta ne varsa söyle; 5 dakikada kuru tavuk-lapa illetinden kurtarıp kütle bombası tarif patlatayım.",
+        welcomeMsg: "Ooo kütle sevdalısı kardeşim hoş geldin! Yine o kupkuru haşlama tavukla lapa pirince mi bakıp iç çekiyorsun? Ver bakayım dolapta ne var; sana 5 dakikada 50g proteinli bomba bir sokak şefi tarifi patlatayım!",
+        quickTopics: [
+            { id: "pantry", label: "🍗 Dolaptakilerle Tarif Yap" },
+            { id: "macros", label: "📊 Kalan Makrolarımı Doldur" },
+            { id: "rescue", label: "🤢 Kuru Tavuk-Pirinçten Kurtar Beni" },
+            { id: "pancake", label: "🥞 40g Proteinli Bomba Pankek" }
+        ]
+    },
+    kuray: {
+        id: "kuray",
+        name: "Küray",
+        avatar: "💊",
+        role: "Suplement Çakalı & Biyokimya",
+        themeClass: "kuray",
+        accentColor: "#8b5cf6",
+        tagline: "Fuzuli tozlara para bayılma! Derdin neyse (uyku, gaz, pump, toparlanma) nokta atışı suplementi yazayım.",
+        welcomeMsg: "Eyvallah usta! Piyasada kutusu bin lira olan çöp tozlara para kaptırma. Söyle derdin ne: Gece uyku mu tutmuyor, bulkta miden davul gibi mi şişiyor, yoksa antrenmanda damarların mı açılmıyor? Nokta atışı takviyeyi yazayım.",
+        quickTopics: [
+            { id: "sleep", label: "💤 Gece Uyuyamıyorum / Toparlanamıyorum" },
+            { id: "bloat", label: "🤢 Bulkta Karnım Balon Gibi Şişiyor" },
+            { id: "pump", label: "⚡ Damar Açıcı Pump & Güç Kombini" },
+            { id: "stack", label: "🎯 Gerçekten Bana Hangi Suplementler Şart?" }
+        ]
+    }
+};
+
+function openAssistantModal(personaKey) {
+    if (personaKey) {
+        activeAssistantPersona = personaKey;
+    }
+    updateAssistantModalHeader();
+    renderAssistantQuickTopics();
+    
+    // Initialize welcome message if history is empty
+    if (!assistantChatHistory[activeAssistantPersona] || assistantChatHistory[activeAssistantPersona].length === 0) {
+        const persona = ASSISTANT_PERSONAS[activeAssistantPersona];
+        assistantChatHistory[activeAssistantPersona] = [
+            { sender: "assistant", text: persona.welcomeMsg, time: getCurrentTimeStr() }
+        ];
+    }
+    
+    renderAssistantMessages();
+    openModal('modal-ai-assistant');
+
+    // Focus input
+    setTimeout(() => {
+        const input = document.getElementById("ai-user-input");
+        if (input) input.focus();
+    }, 300);
+}
+
+function updateAssistantModalHeader() {
+    const persona = ASSISTANT_PERSONAS[activeAssistantPersona] || ASSISTANT_PERSONAS.enes;
+    const avatarEl = document.getElementById("ai-active-avatar");
+    const nameEl = document.getElementById("ai-active-name");
+    const roleEl = document.getElementById("ai-active-role");
+    const hintEl = document.getElementById("ai-footer-hint");
+    const statusLabel = document.getElementById("ai-api-status-label");
+
+    if (avatarEl) avatarEl.innerText = persona.avatar;
+    if (nameEl) nameEl.innerText = persona.name;
+    if (roleEl) roleEl.innerText = persona.role;
+    if (hintEl) hintEl.innerText = persona.tagline;
+
+    const hasKey = !!localStorage.getItem("OMAR_GEMINI_API_KEY");
+    if (statusLabel) {
+        statusLabel.innerText = hasKey ? "Gemini AI Aktif" : "Çevrimdışı Motor";
+    }
+
+    // Update active tab in switcher
+    document.querySelectorAll(".persona-tab-btn").forEach(btn => {
+        btn.classList.remove("active");
+    });
+    const activeTab = document.getElementById(`tab-persona-${activeAssistantPersona}`);
+    if (activeTab) activeTab.classList.add("active");
+}
+
+function switchActiveAssistant(personaKey) {
+    activeAssistantPersona = personaKey;
+    const switcher = document.getElementById("ai-persona-switcher");
+    if (switcher) switcher.style.display = "none";
+    updateAssistantModalHeader();
+    renderAssistantQuickTopics();
+
+    if (!assistantChatHistory[activeAssistantPersona] || assistantChatHistory[activeAssistantPersona].length === 0) {
+        const persona = ASSISTANT_PERSONAS[activeAssistantPersona];
+        assistantChatHistory[activeAssistantPersona] = [
+            { sender: "assistant", text: persona.welcomeMsg, time: getCurrentTimeStr() }
+        ];
+    }
+
+    renderAssistantMessages();
+}
+
+function togglePersonaSwitcher() {
+    const switcher = document.getElementById("ai-persona-switcher");
+    if (switcher) {
+        switcher.style.display = switcher.style.display === "none" ? "flex" : "none";
+    }
+}
+
+function renderAssistantQuickTopics() {
+    const container = document.getElementById("ai-quick-topics-bar");
+    const persona = ASSISTANT_PERSONAS[activeAssistantPersona];
+    if (!container || !persona) return;
+
+    container.innerHTML = persona.quickTopics.map(t => `
+        <button type="button" class="quick-trigger-chip" onclick="triggerAssistantPrompt('${persona.id}', '${t.id}')">
+            ${t.label}
+        </button>
+    `).join("");
+}
+
+function triggerAssistantPrompt(personaKey, promptType) {
+    if (personaKey !== activeAssistantPersona) {
+        activeAssistantPersona = personaKey;
+    }
+    openAssistantModal(personaKey);
+
+    let promptText = "";
+    if (personaKey === "enes") {
+        if (promptType === "crowded") promptText = "Reis salonda makine dolu, mevcut antrenmanıma uygun 1'e 1 alternatif ne yapayım?";
+        else if (promptType === "pain") promptText = "Dips veya Bench yaparken omzum batıyor, omzu riske atmadan alt/üst göğüs için ne yapayım?";
+        else if (promptType === "lat_swap") promptText = "Lat Pulldown dolu, sakın bana sırt row verme, dikey kanat açısını koruyacak alternatif ver!";
+        else if (promptType === "overload") promptText = "Bugün kendimi canavar gibi hissediyorum, top setlerde kiloyu artırayım mı?";
+        else promptText = "Enes Abi antrenmanımla ilgili bir konuda danışacaktım.";
+    } else if (personaKey === "vedat") {
+        if (promptType === "pantry") promptText = "Dolapta tavuk, pirinç, yumurta ve yoğurt var. 5 dakikada yüksek proteinli pratik bir tarif patlat!";
+        else if (promptType === "macros") promptText = "Günün bitmesine makro açığım kaldı, kalan protein ve karbonhidratı nasıl tamamlayayım?";
+        else if (promptType === "rescue") promptText = "Kuru haşlama tavuk ve tatsız lapa pirinç yemekten baydım, beni kurtaracak bir lezzet ver!";
+        else if (promptType === "pancake") promptText = "Bana 40g proteinli çılgın bir anabolik pankek tarifi ver!";
+        else promptText = "Vedat usta yemek konusunda fikrine ihtiyacım var.";
+    } else if (personaKey === "kuray") {
+        if (promptType === "sleep") promptText = "Gece uyku tutmuyor ve toparlanamıyorum, hangi suplementleri almalıyım?";
+        else if (promptType === "bloat") promptText = "Bulk döneminde yüksek kalori yiyince karnım balon gibi şişiyor, sindirim için ne önerirsin?";
+        else if (promptType === "pump") promptText = "Antrenmanda damarların hortum gibi açılması ve canavar gibi pump için ne kombinleyeyim?";
+        else if (promptType === "stack") promptText = "Piyasadaki çöp tozları geç, bana gerçekten kütle için şart olan temel suplementleri say!";
+        else promptText = "Küray takviyeler hakkında nokta atışı tavsiye ver.";
+    }
+
+    const input = document.getElementById("ai-user-input");
+    if (input) input.value = promptText;
+    sendAssistantMessage();
+}
+
+function renderAssistantMessages() {
+    const container = document.getElementById("ai-chat-messages");
+    if (!container) return;
+
+    const history = assistantChatHistory[activeAssistantPersona] || [];
+    const persona = ASSISTANT_PERSONAS[activeAssistantPersona];
+
+    container.innerHTML = history.map(msg => {
+        const isUser = msg.sender === "user";
+        return `
+            <div class="ai-msg-row ${isUser ? 'user' : 'assistant'}">
+                <div class="ai-msg-avatar">
+                    ${isUser ? '👤' : persona.avatar}
+                </div>
+                <div class="ai-msg-bubble">
+                    <div style="font-size:0.82rem; line-height:1.45;">${msg.text}</div>
+                    ${msg.actionHtml ? `<div class="ai-action-box">${msg.actionHtml}</div>` : ''}
+                    <div style="font-size:0.6rem; color:${isUser ? '#666666' : 'var(--text-muted)'}; text-align:right; margin-top:4px;">${msg.time || ''}</div>
+                </div>
+            </div>
+        `;
+    }).join("");
+
+    container.scrollTop = container.scrollHeight;
+}
+
+async function sendAssistantMessage() {
+    const input = document.getElementById("ai-user-input");
+    if (!input) return;
+
+    const userText = input.value.trim();
+    if (!userText) return;
+
+    input.value = "";
+    const timeStr = getCurrentTimeStr();
+
+    // 1. Add user message
+    if (!assistantChatHistory[activeAssistantPersona]) {
+        assistantChatHistory[activeAssistantPersona] = [];
+    }
+    assistantChatHistory[activeAssistantPersona].push({
+        sender: "user",
+        text: userText,
+        time: timeStr
+    });
+
+    renderAssistantMessages();
+
+    // 2. Show typing indicator
+    const typingId = `typing_${Date.now()}`;
+    const container = document.getElementById("ai-chat-messages");
+    if (container) {
+        const typingEl = document.createElement("div");
+        typingEl.id = typingId;
+        typingEl.className = "ai-msg-row assistant";
+        typingEl.innerHTML = `
+            <div class="ai-msg-avatar">${ASSISTANT_PERSONAS[activeAssistantPersona].avatar}</div>
+            <div class="ai-msg-bubble" style="font-style:italic; color:var(--text-muted);">
+                <i class="fa-solid fa-spinner fa-spin"></i> ${ASSISTANT_PERSONAS[activeAssistantPersona].name} düşünüyor...
+            </div>
+        `;
+        container.appendChild(typingEl);
+        container.scrollTop = container.scrollHeight;
+    }
+
+    // 3. Process with Gemini API or Offline Rule Engine
+    const apiKey = localStorage.getItem("OMAR_GEMINI_API_KEY");
+    let aiResponse = null;
+
+    if (apiKey && apiKey.trim().length > 10 && navigator.onLine) {
+        try {
+            aiResponse = await callGeminiAssistantApi(activeAssistantPersona, userText, apiKey);
+        } catch (e) {
+            console.warn("Gemini API Error, falling back to offline engine:", e);
+        }
+    }
+
+    if (!aiResponse) {
+        // Offline engine response
+        aiResponse = processOfflineAssistantResponse(activeAssistantPersona, userText);
+    }
+
+    // Remove typing indicator
+    const typingEl = document.getElementById(typingId);
+    if (typingEl) typingEl.remove();
+
+    // Add assistant response to history
+    assistantChatHistory[activeAssistantPersona].push({
+        sender: "assistant",
+        text: aiResponse.text,
+        actionHtml: aiResponse.actionHtml || null,
+        time: getCurrentTimeStr()
+    });
+
+    renderAssistantMessages();
+}
+
+// ==================== OFFLINE BİOMEKANİK & MAKRO KURAL MOTORU ====================
+
+function processOfflineAssistantResponse(personaKey, userText) {
+    const text = userText.toLowerCase();
+    const currentPlan = appData.customWorkoutPlan[currentActiveDay] || DEFAULT_WORKOUT_PLAN[currentActiveDay];
+
+    if (personaKey === "enes") {
+        // 1. ENES ABİ: ANTREMAN & BİYOMEKANİK EŞLEŞTİRME
+
+        // Case A: Dips / Alt Göğüs / Omuz Ağrısı
+        if (text.includes("dips") || (text.includes("omuz") && (text.includes("ağrı") || text.includes("batıyor") || text.includes("sakat")))) {
+            return {
+                text: `Lan oğlum omuz kapsülünü eline mi alacaksın? Dips yaparken köprücük kemiğin veya ön omzun batıyorsa sakın zorlama! Dips gövdeyi öne eğerken alt göğüs liflerini (Costal Head) hedefler ama omuz yuvasına aşırı makaslama kuvveti bindirir.<br><br>
+                       Sana aynı alt göğüs lif açısını sıfır omuz stresiyle verecek <strong>High-to-Low Cable Fly</strong> veya <strong>Decline Dumbbell Press</strong> yazıyorum. Aşağıdaki butona tıkla, bugünkü ${currentPlan.title} programına hemen işleyeyim!`,
+                actionHtml: `
+                    <button class="ai-action-btn btn-swap" onclick="applyAiExerciseSwap('${currentActiveDay}', 'Dips', 'lib_high_cable_fly', 'High-to-Low Cable Fly')">
+                        <i class="fa-solid fa-arrows-rotate"></i> Programda Dips'i High-to-Low Cable Fly ile Değiştir 🔄
+                    </button>
+                    <button class="ai-action-btn btn-swap" style="background:linear-gradient(135deg,#e11d48,#be123c); margin-top:4px;" onclick="applyAiExerciseSwap('${currentActiveDay}', 'Dips', 'lib_dec_press', 'Decline Dumbbell Press')">
+                        <i class="fa-solid fa-dumbbell"></i> Alternatif: Decline Dumbbell Press Ekle
+                    </button>
+                `
+            };
+        }
+
+        // Case B: Lat Pulldown / Sırt Dolu (Dikey Lat Koruma Kuralı!)
+        if (text.includes("lat") || text.includes("pulldown") || text.includes("kanat")) {
+            return {
+                text: `Bak aslanım burayı iyi dinle: Lat Pulldown makinesi dolu diye gidip sakın Barbell Row ya da T-Bar yapma! O hareketler orta sırt kalınlığı içindir; kanatların aşağı doğru genişlemesi (V-Taper) için omuz adduksiyonu ve dikey çekiş şarttır.<br><br>
+                       Hemen kablo istasyonuna geç, tepeye tek kol tutamağı takıp <strong>Single-Arm High Cable Row</strong> yap veya V-Bar takıp <strong>Nötr Dar Lat Pulldown</strong> / <strong>Straight-Arm Pulldown</strong> ile kanatları alevlendir!`,
+                actionHtml: `
+                    <button class="ai-action-btn btn-swap" onclick="applyAiExerciseSwap('${currentActiveDay}', 'Lat Pulldown', 'lib_high_row', 'High Row Tek Kol (Lat Odak)')">
+                        <i class="fa-solid fa-arrows-rotate"></i> Programda Single-Arm High Cable Row ile Değiştir 🦅
+                    </button>
+                    <button class="ai-action-btn btn-swap" style="background:linear-gradient(135deg,#0284c7,#0369a1); margin-top:4px;" onclick="applyAiExerciseSwap('${currentActiveDay}', 'Lat Pulldown', 'lib_straight_arm_pull', 'Straight-Arm Cable Pulldown')">
+                        <i class="fa-solid fa-link"></i> Alternatif: Straight-Arm Pulldown Ekle
+                    </button>
+                `
+            };
+        }
+
+        // Case C: Bench Press / Göğüs Pres Dolu
+        if (text.includes("bench") || text.includes("press") || text.includes("göğüs")) {
+            return {
+                text: `Düz bench doluysa vakit kaybetmek yok! Serbest dumbbell alarak <strong>Flat Dumbbell Press</strong>'e geçiyoruz. Dumbbell sana serbest hareket açısı verir, en dipte göğsü bardan 2 kat daha derin esnetir.<br><br>
+                       Tek tıkla programına işleyelim, setlerini tamamla!`,
+                actionHtml: `
+                    <button class="ai-action-btn btn-swap" onclick="applyAiExerciseSwap('${currentActiveDay}', 'Bench Press', 'lib_flat_db_press', 'Flat Dumbbell Press')">
+                        <i class="fa-solid fa-arrows-rotate"></i> Programda Flat Dumbbell Press ile Değiştir 🫁
+                    </button>
+                `
+            };
+        }
+
+        // Case D: Pec Deck / Fly Dolu
+        if (text.includes("pec") || text.includes("fly") || text.includes("kelebek")) {
+            return {
+                text: `Pec deck makinesine sıra gelmediyse hemen dumbbell'ları kap, düz sehpada <strong>Flat Dumbbell Fly</strong> veya kablo istasyonunda <strong>Cable Crossover</strong> yapıyoruz. Göğüs liflerini tepe noktada 1 saniye sıkmayı unutma!`,
+                actionHtml: `
+                    <button class="ai-action-btn btn-swap" onclick="applyAiExerciseSwap('${currentActiveDay}', 'Pec Deck', 'lib_db_fly', 'Flat / Incline Dumbbell Fly')">
+                        <i class="fa-solid fa-arrows-rotate"></i> Programda Dumbbell Fly ile Değiştir 💪
+                    </button>
+                `
+            };
+        }
+
+        // Case E: Squat / Bacak Dolu
+        if (text.includes("squat") || text.includes("bacak") || text.includes("quad")) {
+            return {
+                text: `Squat rack doluysa ya da belinde baskı hissediyorsan hiç dert etme. <strong>Hack Squat</strong> veya <strong>Plate Loaded Leg Press</strong> ile omurga yükünü sıfırlayıp ön bacak liflerine cerrahi hassasiyetle yükleniyoruz!`,
+                actionHtml: `
+                    <button class="ai-action-btn btn-swap" onclick="applyAiExerciseSwap('${currentActiveDay}', 'Squat', 'lib_hack_squat', 'Hack Squat (Quad Canavarı)')">
+                        <i class="fa-solid fa-arrows-rotate"></i> Programda Hack Squat ile Değiştir 🦵
+                    </button>
+                `
+            };
+        }
+
+        // Case F: Overload / Güç Tavsiyesi
+        if (text.includes("canavar") || text.includes("güç") || text.includes("ağır") || text.includes("artır")) {
+            return {
+                text: `O enerjiye kurban olayım aslanım! Madem bugün fişek gibisin: Isınma setlerini temiz geç, ilk çalışma setinde (TOP SET) hedeflenen tekrarı (örn: 8 tekrar) RIR 0 tükenişle yakalarsan, hemen ikinci sette <strong>+2.5 kg ağırlık artır</strong>. Formu gram bozmadan demiri bük!`
+            };
+        }
+
+        // Default Enes Abi general advice
+        return {
+            text: `Bugünkü antrenman günün: <strong>${currentPlan.title}</strong>.<br>Salonda hangi hareketi yaparken sorun yaşıyorsan (dips, lat pulldown, squat, bench, lateral raise vb.) söyle; hemen 1'e 1 anatomik eşleniğini bulup programına yazayım!`
+        };
+    }
+
+    if (personaKey === "vedat") {
+        // 2. VEDAT DÜBÜR: BESLENME & TARİF MOTORU
+
+        // Case A: Pantry / Dolapta ne var
+        if (text.includes("dolap") || text.includes("tarif") || text.includes("tavuk") || text.includes("pirinç") || text.includes("yumurta")) {
+            return {
+                text: `Dinle beni kütle şampiyonu! Kuru tavuk kemirmekten kurtarıyorum seni: <strong>"Tavuklu Yalancı Risotto / Lapa Kurtarıcı"</strong> yapıyoruz.<br><br>
+                       🍳 <strong>Malzemeler:</strong> 150g Çiğ Tavuk Göğsü, 100g Çiğ Pirinç, 50g Süzme Yoğurt, 1 Diş Sarımsak, Karabiber & Pul Biber.<br>
+                       🔥 <strong>Hazırlanış (5 Dk):</strong> Tavukları küp doğra, tavada sarımsak ve baharatla 5dk sotele. Haşlanmış sıcak pirinci içine dök, yoğurdu ekleyip 1 dakika karıştır. Krema gibi kayıp gidecek boğazından!<br>
+                       📊 <strong>Değerler:</strong> ~620 kcal • 48g Protein • 78g Karb • 9g Yağ`,
+                actionHtml: `
+                    <button class="ai-action-btn btn-recipe" onclick="applyAiMealAdd('ai_risotto', 'Vedat\\'ın Tavuklu Yalancı Risottosu', 48, 78, 9, 620)">
+                        <i class="fa-solid fa-utensils"></i> Bu Tarifi Bugünkü Öğünlerime Ekle (48g P) 🍽️
+                    </button>
+                `
+            };
+        }
+
+        // Case B: Kalan Makrolar
+        if (text.includes("makro") || text.includes("kalan") || text.includes("açık") || text.includes("doldur")) {
+            const consumed = appData.todayNutrition || {};
+            const target = appData.targets || DEFAULT_TARGETS;
+            const remP = Math.max(0, target.protein - (consumed.protein || 0));
+            const remC = Math.max(0, target.carbs - (consumed.carbs || 0));
+
+            return {
+                text: `Hemen güncel kasanı açtım baktım paşam: Günün hedefini tutturmak için yaklaşık <strong>${remP}g Protein</strong> ve <strong>${remC}g Karbonhidrat</strong> açığın var.<br><br>
+                       Sana 3 dakikalık <strong>"Anabolik Kütle Lapası"</strong> patlatıyorum:<br>
+                       🥣 60g Pirinç Unu / Yulaf + 1 Ölçek Whey (30g) + 1 Muz + 1 Tatlı Kaşığı Fıstık Ezmesi.<br>
+                       Sıcak suyla karıştır, puding kıvamında göm. Makrolar cuk oturur!`,
+                actionHtml: `
+                    <button class="ai-action-btn btn-recipe" onclick="applyAiMealAdd('ai_pudding', 'Vedat\\'ın Anabolik Kütle Lapası', 36, 75, 8, 520)">
+                        <i class="fa-solid fa-plus"></i> Kalan Makroları Dolduran Lapayı Ekle 🥣
+                    </button>
+                `
+            };
+        }
+
+        // Case C: Pankek / Kahvaltı
+        if (text.includes("pankek") || text.includes("kahvaltı") || text.includes("yulaf")) {
+            return {
+                text: `Kahvaltıda anabolik bomba isteyenlere özel: <strong>"40g Proteinli Kütle Pankeki"</strong>!<br><br>
+                       🥞 60g Pirinç unu + 3 Bütün Yumurta + 1 Muz + 20g Bal + 20g Fıstık ezmesi. Çırp tavada 3'er dakika arkalı önlü pişir. Gün boyu kaslar dolu gezer!`,
+                actionHtml: `
+                    <button class="ai-action-btn btn-recipe" onclick="applyAiMealAdd('ai_pancake', 'Vedat\\'ın 40g Proteinli Pankeki', 32, 95, 25, 740)">
+                        <i class="fa-solid fa-fire"></i> Pankek Öğününü Günlüğe Ekle 🔥
+                    </button>
+                `
+            };
+        }
+
+        // Default Vedat advice
+        return {
+            text: `Dolaptaki malzemeleri söyle (örn: tavuk, lor, kıyma, ton balığı, patates, yulaf vb.), sana saniyeler içinde makrosu hesaplanmış efsane bir sporcu tarifi çıkarayım!`
+        };
+    }
+
+    if (personaKey === "kuray") {
+        // 3. KÜRAY: SUPLEMENT & BİYOKİMYA MOTORU
+
+        // Case A: Uyku / Toparlanma
+        if (text.includes("uyku") || text.includes("toparlan") || text.includes("yorgun") || text.includes("gece")) {
+            return {
+                text: `Gece derin uyuyamayan adamın büyüme hormonu (GH) salgılanmaz, kası tamir edemezsin aslanım. Fuzuli şeyleri bırak, sana net reçete:<br><br>
+                       💤 <strong>Magnezyum Bisglisinat (200-400 mg):</strong> Glisin bağı sayesinde beyindeki GABA reseptörlerini sakinleştirir, kas seğirmelerini siler.<br>
+                       🌙 <strong>Melatonin (1-3 mg):</strong> Sirkadiyen ritmini sıfırlar, 20 dakikada derin REM evresine sokar.<br>
+                       Aşağıdaki butona bas, protokolüne ekleyeyim.`,
+                actionHtml: `
+                    <button class="ai-action-btn btn-supplement" onclick="applyAiSupplementAdd('cat_mag_bis')">
+                        <i class="fa-solid fa-plus"></i> Magnezyum Bisglisinat'ı Listeme Ekle 💊
+                    </button>
+                    <button class="ai-action-btn btn-supplement" style="background:linear-gradient(135deg,#6366f1,#4f46e5); margin-top:4px;" onclick="applyAiSupplementAdd('cat_melatonin')">
+                        <i class="fa-solid fa-moon"></i> Melatonin'i Listeme Ekle 🌙
+                    </button>
+                `
+            };
+        }
+
+        // Case B: Şişkinlik / Sindirim / Bulk
+        if (text.includes("şişkin") || text.includes("gaz") || text.includes("mide") || text.includes("sindirim")) {
+            return {
+                text: `Bulkta günde 400g pirinç, 500g et yiyip miden davul gibi oluyorsa mide asidin ve pankreas enzimlerin yetersiz kalıyor demektir. Sindiremediğin besin kas yapmaz, bağırsakta çürür gaz yapar!<br><br>
+                       🧪 <strong>Sindirim Enzimleri Kompleksi (Proteaz & Amilaz):</strong> En ağır öğününle 1 kapsül alıyorsun, pirinç ve eti dakikalar içinde parçalıyor.<br>
+                       🍏 <strong>Organik Elma Sirkesi:</strong> Yemekten 10dk önce 1 kaşık suya karıştır, mide PH'ını düşür.`,
+                actionHtml: `
+                    <button class="ai-action-btn btn-supplement" onclick="applyAiSupplementAdd('cat_enzymes')">
+                        <i class="fa-solid fa-plus"></i> Sindirim Enzimlerini Listeme Ekle 🧪
+                    </button>
+                    <button class="ai-action-btn btn-supplement" style="background:linear-gradient(135deg,#10b981,#059669); margin-top:4px;" onclick="applyAiSupplementAdd('cat_applecider')">
+                        <i class="fa-solid fa-apple-whole"></i> Elma Sirkesini Listeme Ekle 🍏
+                    </button>
+                `
+            };
+        }
+
+        // Case C: Pump & Enerji
+        if (text.includes("pump") || text.includes("damar") || text.includes("enerji") || text.includes("güç")) {
+            return {
+                text: `Damarların hortum gibi genişlemesini ve sette tükenmemeyi istiyorsan:<br><br>
+                       ⚡ <strong>L-Sitrulin Malat (6-8 gram):</strong> Kandaki nitrik oksit (NO) seviyesini tavan yaptırır, kaslara kan ve besin pompalar.<br>
+                       🔥 <strong>Kreatin Monohidrat (5 gram):</strong> Hücre içi ATP depolarını fuller, sette +2 tekrar çıkarmanı sağlar.`,
+                actionHtml: `
+                    <button class="ai-action-btn btn-supplement" onclick="applyAiSupplementAdd('cat_citrulline')">
+                        <i class="fa-solid fa-plus"></i> L-Sitrulin Malat'ı Listeme Ekle ⚡
+                    </button>
+                    <button class="ai-action-btn btn-supplement" style="background:linear-gradient(135deg,#f59e0b,#d97706); margin-top:4px;" onclick="applyAiSupplementAdd('cat_creatine')">
+                        <i class="fa-solid fa-bolt"></i> Kreatin Monohidrat'ı Listeme Ekle 🔥
+                    </button>
+                `
+            };
+        }
+
+        // Default Küray advice
+        return {
+            text: `Derdin neyse söyle (uyku, sindirim/gaz, pump, kramp, eklem ağrısı veya temel bulk stack'i), sana boş kutuları değil, gerçekten çalışan takviyeleri yazayım!`
+        };
+    }
+
+    return {
+        text: "Sorunu anladım aslanım! Biraz daha detay verirsen nokta atışı yardımcı olayım."
+    };
+}
+
+// ==================== ONLINE GEMINI API CALL ====================
+
+async function callGeminiAssistantApi(personaKey, userText, apiKey) {
+    const persona = ASSISTANT_PERSONAS[personaKey];
+    const currentPlan = appData.customWorkoutPlan[currentActiveDay] || DEFAULT_WORKOUT_PLAN[currentActiveDay];
+    const consumed = appData.todayNutrition || {};
+    const target = appData.targets || DEFAULT_TARGETS;
+
+    const contextPrompt = `
+Kullanıcı Durumu:
+- Aktif Antrenman Günü: ${currentPlan.title} (${currentPlan.desc})
+- Günün Egzersizleri: ${currentPlan.exercises.map(e => e.name).join(", ")}
+- Günlük Makro Hedefi: ${target.calories} kcal, ${target.protein}g Protein, ${target.carbs}g Karb, ${target.fat}g Yağ
+- Bugün Tüketilen: ${consumed.calories || 0} kcal, ${consumed.protein || 0}g P, ${consumed.carbs || 0}g C, ${consumed.fat || 0}g F
+- Kilo & Hedef: ${appData.userProfile ? appData.userProfile.weight : 74} kg, ${appData.userProfile ? appData.userProfile.goal : 'bulk'}
+
+Persona Rolün: ${persona.systemPrompt}
+Önemli Kural: Yanıtların samimi, sokak ve salon jargonuyla dolu, esprili ve çok pratik olsun. Asla lat pulldown yerine row önerme, biyomekanik eşdeğerini ver. HTML formatında <br> ve <strong> etiketleri kullanabilirsin.
+`;
+
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    const payload = {
+        contents: [
+            {
+                role: "user",
+                parts: [
+                    { text: `${contextPrompt}\n\nKullanıcı Sorusu: ${userText}` }
+                ]
+            }
+        ],
+        generationConfig: {
+            temperature: 0.8,
+            maxOutputTokens: 600
+        }
+    };
+
+    const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+        throw new Error(`Gemini API HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+    const replyText = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0] && data.candidates[0].content.parts[0].text;
+
+    if (!replyText) throw new Error("Empty Gemini response");
+
+    return {
+        text: replyText.replace(/\n/g, "<br>")
+    };
+}
+
+// ==================== ONE-CLICK ACTIONS FROM AI ====================
+
+function applyAiExerciseSwap(dayKey, oldExMatch, newLibExId, newExName) {
+    const plan = appData.customWorkoutPlan[dayKey];
+    if (!plan) return;
+
+    const libEx = EXERCISE_LIBRARY.find(e => e.id === newLibExId);
+    if (!libEx) return;
+
+    // Find exercise to replace (or replace first matching or append)
+    let replaced = false;
+    for (let i = 0; i < plan.exercises.length; i++) {
+        if (plan.exercises[i].name.toLowerCase().includes(oldExMatch.toLowerCase())) {
+            plan.exercises[i] = {
+                id: `${dayKey}_${Date.now()}`,
+                name: libEx.name,
+                muscle: libEx.muscle,
+                target: libEx.defaultTarget,
+                defaultSets: libEx.defaultSets,
+                defaultSeat: libEx.defaultSeat,
+                isTopSet: libEx.isTopSet
+            };
+            replaced = true;
+            break;
+        }
+    }
+
+    if (!replaced) {
+        // Append if old exercise wasn't in plan
+        plan.exercises.push({
+            id: `${dayKey}_${Date.now()}`,
+            name: libEx.name,
+            muscle: libEx.muscle,
+            target: libEx.defaultTarget,
+            defaultSets: libEx.defaultSets,
+            defaultSeat: libEx.defaultSeat,
+            isTopSet: libEx.isTopSet
+        });
+    }
+
+    saveDataToStorage();
+    renderWorkoutView(dayKey);
+    showToast(`✅ ${newExName || libEx.name} bugünkü programa işlendi! 💪`);
+}
+
+function applyAiSupplementAdd(suppId) {
+    if (!appData.supplements) appData.supplements = [];
+    const suppInCatalog = SUPPLEMENT_CATALOG.find(s => s.id === suppId);
+    const suppName = suppInCatalog ? suppInCatalog.name : "Suplement";
+
+    if (!appData.supplements.includes(suppId)) {
+        appData.supplements.push(suppId);
+        saveDataToStorage();
+        renderSupplementsView();
+        showToast(`✅ ${suppName} günlük suplement protokolüne eklendi! 💊`);
+    } else {
+        showToast(`ℹ️ ${suppName} zaten protokolünde ekli.`);
+    }
+}
+
+function applyAiMealAdd(mealId, mealName, p, c, f, cal) {
+    if (!appData.todayNutrition.meals) appData.todayNutrition.meals = [];
+
+    const newLoggedMeal = {
+        id: `ai_${Date.now()}`,
+        presetId: mealId,
+        name: mealName,
+        desc: `${p}g Protein • ${c}g Karb • ${f}g Yağ • ${cal} kcal`,
+        cal: cal,
+        p: p,
+        c: c,
+        f: f,
+        time: getCurrentTimeStr()
+    };
+
+    appData.todayNutrition.meals.push(newLoggedMeal);
+    recalculateDailyTotals();
+    saveDataToStorage();
+    renderNutritionView();
+    renderDashboard();
+    showToast(`✅ ${mealName} başarıyla öğünlerine eklendi! 🍽️`);
+}
+
+function openApiKeySettings() {
+    closeModal('modal-ai-assistant');
+    openModal('modal-settings');
+}
+
+function getCurrentTimeStr() {
+    const d = new Date();
+    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}

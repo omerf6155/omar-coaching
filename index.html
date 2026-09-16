@@ -225,6 +225,34 @@
                     </button>
                 </div>
 
+                <!-- ENES ABİ AI ASSISTANT BANNER CARD -->
+                <div class="card assistant-hero-card assistant-enes" onclick="openAssistantModal('enes')">
+                    <div class="assistant-hero-header">
+                        <div class="assistant-avatar-badge avatar-enes">🦍</div>
+                        <div class="assistant-hero-info">
+                            <div class="assistant-name-row">
+                                <h4>Enes Abi</h4>
+                                <span class="assistant-role-pill role-enes"><i class="fa-solid fa-bolt"></i> Salon Kıdemlisi & Biyomekanik</span>
+                            </div>
+                            <p class="assistant-tagline">"Makine doluysa ya da omzun batıyorsa söyle; 1'e 1 anatomik alternatifini çakıp programa işleyelim."</p>
+                        </div>
+                        <button class="btn-assistant-action" onclick="event.stopPropagation(); openAssistantModal('enes')">
+                            <i class="fa-solid fa-comments"></i> Danış
+                        </button>
+                    </div>
+                    <div class="assistant-quick-triggers">
+                        <button type="button" class="quick-trigger-chip" onclick="event.stopPropagation(); triggerAssistantPrompt('enes', 'crowded')">
+                            ⚡ Makine Dolu!
+                        </button>
+                        <button type="button" class="quick-trigger-chip" onclick="event.stopPropagation(); triggerAssistantPrompt('enes', 'pain')">
+                            🩹 Eklem / Omuz Batması
+                        </button>
+                        <button type="button" class="quick-trigger-chip" onclick="event.stopPropagation(); triggerAssistantPrompt('enes', 'overload')">
+                            🔥 Bugün Bomba Gibiyim
+                        </button>
+                    </div>
+                </div>
+
                 <div class="day-selector-scroll" id="workout-day-tabs">
                     <button class="day-pill active" onclick="selectWorkoutDay('pzt')">Pzt • Push 1</button>
                     <button class="day-pill" onclick="selectWorkoutDay('sal')">Sal • Pull 1</button>
@@ -242,6 +270,34 @@
 
             <!-- VIEW 3: BESLENME & ÖĞÜNLER (SMART GRAM RECIPE ENGINE) -->
             <section id="view-nutrition" class="tab-view">
+                <!-- VEDAT DÜBÜR AI ASSISTANT BANNER CARD -->
+                <div class="card assistant-hero-card assistant-vedat" onclick="openAssistantModal('vedat')">
+                    <div class="assistant-hero-header">
+                        <div class="assistant-avatar-badge avatar-vedat">🍳</div>
+                        <div class="assistant-hero-info">
+                            <div class="assistant-name-row">
+                                <h4>Vedat Dübür</h4>
+                                <span class="assistant-role-pill role-vedat"><i class="fa-solid fa-utensils"></i> Makro Gurmesi & Sokak Şefi</span>
+                            </div>
+                            <p class="assistant-tagline">"Dolapta ne varsa söyle; 5 dakikada kuru tavuk-lapa illetinden kurtarıp kütle bombası tarif patlatayım."</p>
+                        </div>
+                        <button class="btn-assistant-action" onclick="event.stopPropagation(); openAssistantModal('vedat')">
+                            <i class="fa-solid fa-comments"></i> Danış
+                        </button>
+                    </div>
+                    <div class="assistant-quick-triggers">
+                        <button type="button" class="quick-trigger-chip" onclick="event.stopPropagation(); triggerAssistantPrompt('vedat', 'pantry')">
+                            🍗 Dolaptakilerle Tarif Yap
+                        </button>
+                        <button type="button" class="quick-trigger-chip" onclick="event.stopPropagation(); triggerAssistantPrompt('vedat', 'macros')">
+                            📊 Kalan Makroları Doldur
+                        </button>
+                        <button type="button" class="quick-trigger-chip" onclick="event.stopPropagation(); triggerAssistantPrompt('vedat', 'rescue')">
+                            🤢 Tavuk-Pirinçten Kurtar
+                        </button>
+                    </div>
+                </div>
+
                 <!-- Action Bar: Add custom meal -->
                 <div class="nutrition-top-actions">
                     <button class="btn btn-primary btn-block" onclick="openNewRecipeBuilderModal()">
@@ -280,6 +336,37 @@
 
             <!-- VIEW 4: SUPLEMENTLER (SUPPLEMENT TRACKER & 50+ CATALOG) -->
             <section id="view-supplements" class="tab-view">
+                <!-- KÜRAY AI ASSISTANT BANNER CARD -->
+                <div class="card assistant-hero-card assistant-kuray" onclick="openAssistantModal('kuray')">
+                    <div class="assistant-hero-header">
+                        <div class="assistant-avatar-badge avatar-kuray">💊</div>
+                        <div class="assistant-hero-info">
+                            <div class="assistant-name-row">
+                                <h4>Küray</h4>
+                                <span class="assistant-role-pill role-kuray"><i class="fa-solid fa-flask-vial"></i> Suplement Çakalı & Biyokimya</span>
+                            </div>
+                            <p class="assistant-tagline">"Fuzuli tozlara para bayılma! Derdin neyse (uyku, gaz, pump, toparlanma) nokta atışı suplementi yazayım."</p>
+                        </div>
+                        <button class="btn-assistant-action" onclick="event.stopPropagation(); openAssistantModal('kuray')">
+                            <i class="fa-solid fa-comments"></i> Danış
+                        </button>
+                    </div>
+                    <div class="assistant-quick-triggers">
+                        <button type="button" class="quick-trigger-chip" onclick="event.stopPropagation(); triggerAssistantPrompt('kuray', 'sleep')">
+                            💤 Uyku & Toparlanma
+                        </button>
+                        <button type="button" class="quick-trigger-chip" onclick="event.stopPropagation(); triggerAssistantPrompt('kuray', 'bloat')">
+                            🤢 Şişkinlik & Sindirim
+                        </button>
+                        <button type="button" class="quick-trigger-chip" onclick="event.stopPropagation(); triggerAssistantPrompt('kuray', 'pump')">
+                            ⚡ Damar Açıcı Pump & Güç
+                        </button>
+                        <button type="button" class="quick-trigger-chip" onclick="event.stopPropagation(); triggerAssistantPrompt('kuray', 'stack')">
+                            🎯 Bana Ne Lazım?
+                        </button>
+                    </div>
+                </div>
+
                 <div class="card">
                     <div class="card-header">
                         <h2>SUPLEMENT PROTOKOLÜ</h2>
@@ -785,6 +872,19 @@
                         <input type="number" step="0.05" id="setting-gain-max" placeholder="0.35">
                     </div>
                 </div>
+
+                <!-- AI Assistants Engine Setting -->
+                <div class="form-group" style="margin-top:10px; padding:10px; background:rgba(255,255,255,0.03); border:1px solid var(--border-subtle); border-radius:8px;">
+                    <label style="font-size:0.75rem; color:var(--accent-orange); display:flex; align-items:center; justify-content:space-between;">
+                        <span><i class="fa-solid fa-brain"></i> Google Gemini API Anahtarı (İsteğe Bağlı)</span>
+                        <span style="font-size:0.65rem; color:var(--text-muted);">Çevrimdışı Mod Hazır</span>
+                    </label>
+                    <input type="password" id="setting-gemini-key" placeholder="AIzaSy... (Boş bırakırsanız akıllı kural motoru çalışır)" style="font-size:0.75rem;">
+                    <small style="color:var(--text-muted); font-size:0.65rem; display:block; margin-top:3px;">
+                        Google AI Studio'dan aldığınız ücretsiz API anahtarını buraya girerek asistanlarla sınırsız doğal dilde konuşabilirsiniz.
+                    </small>
+                </div>
+
                 <button class="btn btn-primary btn-block" style="margin-top:10px;" onclick="saveCustomTargets()">
                     Hedefleri Kaydet
                 </button>
@@ -1490,6 +1590,70 @@
                         <i class="fa-solid fa-link"></i> Sporcuyu Bul & Listeye Bağla 🚀
                     </button>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== 12. HİBRİT YAPAY ZEKA ASİSTANLARI MODALİ ==================== -->
+    <div id="modal-ai-assistant" class="modal-overlay">
+        <div class="modal-card ai-assistant-modal-card">
+            <!-- Assistant Modal Header -->
+            <div class="ai-assistant-modal-header" id="ai-modal-header-bg">
+                <div class="ai-header-left">
+                    <div class="ai-header-avatar" id="ai-active-avatar">🦍</div>
+                    <div>
+                        <div class="ai-name-wrap">
+                            <h3 id="ai-active-name">Enes Abi</h3>
+                            <span class="ai-status-indicator" id="ai-active-mode-badge"><i class="fa-solid fa-bolt"></i> Hibrit Motor</span>
+                        </div>
+                        <span class="ai-role-text" id="ai-active-role">Salon Kıdemlisi & Biyomekanik Uzmanı</span>
+                    </div>
+                </div>
+                <div class="ai-header-actions">
+                    <button class="ai-switch-persona-btn" onclick="togglePersonaSwitcher()" title="Karakter Değiştir">
+                        <i class="fa-solid fa-arrows-rotate"></i> Karakter
+                    </button>
+                    <button class="modal-close-btn" onclick="closeModal('modal-ai-assistant')">&times;</button>
+                </div>
+            </div>
+
+            <!-- Persona Switcher Bar -->
+            <div class="ai-persona-switcher" id="ai-persona-switcher" style="display:none;">
+                <button type="button" class="persona-tab-btn active" id="tab-persona-enes" onclick="switchActiveAssistant('enes')">
+                    🦍 Enes Abi (Antrenman)
+                </button>
+                <button type="button" class="persona-tab-btn" id="tab-persona-vedat" onclick="switchActiveAssistant('vedat')">
+                    🍳 Vedat Dübür (Beslenme)
+                </button>
+                <button type="button" class="persona-tab-btn" id="tab-persona-kuray" onclick="switchActiveAssistant('kuray')">
+                    💊 Küray (Suplement)
+                </button>
+            </div>
+
+            <!-- Quick Topic Pills Bar inside Chat -->
+            <div class="ai-quick-topics-bar" id="ai-quick-topics-bar">
+                <!-- Populated dynamically based on active persona -->
+            </div>
+
+            <!-- Chat Dialogue Messages Container -->
+            <div class="ai-chat-messages" id="ai-chat-messages">
+                <!-- Messages render here -->
+            </div>
+
+            <!-- Chat Input Bar -->
+            <div class="ai-chat-input-container">
+                <div class="ai-input-row">
+                    <input type="text" id="ai-user-input" class="ai-text-input" placeholder="Bir soru sor veya dert yan..." onkeydown="if(event.key==='Enter') sendAssistantMessage()">
+                    <button type="button" class="ai-send-btn" onclick="sendAssistantMessage()" id="ai-send-btn">
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </div>
+                <div class="ai-input-footer-note">
+                    <span>💡 <span id="ai-footer-hint">1'e 1 anatomik biyomekanik eşleştirme ve anında program revizesi</span></span>
+                    <button type="button" class="ai-api-toggle-btn" onclick="openApiKeySettings()" title="Gemini API Anahtarı Ayarları">
+                        <i class="fa-solid fa-key"></i> <span id="ai-api-status-label">API</span>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
