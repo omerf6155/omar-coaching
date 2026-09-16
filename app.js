@@ -1,4 +1,4 @@
-// Omar Coaching - Hypertrophy & Bulk Tracker Engine v2.0
+// Omar Coaching - Hypertrophy & Bulk Tracker Engine v2.5
 
 // Default Target Constants
 const DEFAULT_TARGETS = {
@@ -40,52 +40,158 @@ const DEFAULT_PRESET_MEALS = {
     }
 };
 
-// Default Supplements Protocol
-const DEFAULT_SUPPLEMENTS = [
-    { id: "supp_creatine", name: "Kreatin Monohidrat", dosage: "5 gram", timing: "Sabah / Kahvaltı" },
-    { id: "supp_whey", name: "Whey Protein", dosage: "1 Ölçek (25g)", timing: "Antrenman Sonrası" },
-    { id: "supp_omega3", name: "Omega 3 Balık Yağı", dosage: "2 Kapsül (EPA/DHA)", timing: "Yemekle Birlikte" },
-    { id: "supp_d3k2", name: "Vitamin D3 + K2", dosage: "5000 IU / Damla", timing: "Sabah / Kahvaltı" },
-    { id: "supp_magnesium", name: "Magnezyum Bisglisinat", dosage: "200-400 mg", timing: "Gece / Yatmadan Önce" },
-    { id: "supp_preworkout", name: "Pre-Workout / Kafein", dosage: "1 Porsiyon", timing: "Antrenmandan 30dk Önce" }
+// ==================== 50+ MASTER SUPPLEMENT DATABASE ====================
+const MASTER_SUPPLEMENT_DATABASE = [
+    // 1. PERFORMANS & GÜÇ
+    { id: "cat_creatine", name: "Kreatin Monohidrat", category: "performans", dosage: "5 gram", timing: "Sabah / Kahvaltı", benefit: "Hücresel ATP üretimi, patlayıcı güç, kas içi su tutumu ve hacim.", details: "Kas içi fosfokreatin depolarını doyurarak yüksek yoğunluklu setlerde ATP yenilenmesini hızlandırır. Güç artışı ve kas protein sentezini doğrudan destekler." },
+    { id: "cat_citrulline", name: "L-Sitrülin Malat", category: "performans", dosage: "6-8 gram (2:1)", timing: "Antrenmandan 30dk Önce", benefit: "Nitrik Oksit (NO) artışı, derin kas pump'ı ve laktik asit geciktirme.", details: "Arjinin seviyelerini arjininin kendisinden daha etkili yükseltir. Kan damarlarını genişleterek kaslara oksijen ve besin taşınmasını maksimize eder." },
+    { id: "cat_betaalanine", name: "Beta-Alanin", category: "performans", dosage: "3.2 - 4 gram", timing: "Antrenmandan 30dk Önce", benefit: "Kas karnozin seviyelerini artırarak yüksek tekrarlarda yanmayı geciktirir.", details: "Kas içi asidozu (H+ iyon birikimi) tamponlar. 8-15 tekrar ve drop setlerde tükeniş süresini uzatır." },
+    { id: "cat_caffeine", name: "Kafein Anhidroz / Pre-Workout", category: "performans", dosage: "150-250 mg", timing: "Antrenmandan 30dk Önce", benefit: "Merkezi sinir sistemi uyarımı, odaklanma ve güç iletim hızı.", details: "Adenozin reseptörlerini bloke ederek yorgunluk hissini öteler. Motor ünite aktivasyonunu artırır." },
+    { id: "cat_betaine", name: "Betain Anhidroz (TMG)", category: "performans", dosage: "2.5 gram", timing: "Antrenman Öncesi/Sabah", benefit: "Hücresel hidrasyon, metilasyon desteği ve güç çıktısı.", details: "Kas liflerinde osmolit görevi görerek hücre hacmini artırır ve antrenman hacmi kapasitesini yükseltir." },
+    { id: "cat_arginine", name: "L-Arjinin AKG", category: "performans", dosage: "3-5 gram", timing: "Antrenmandan 30dk Önce", benefit: "Vaskülarite (damarlanma) ve kan akışı desteği.", details: "Endotel dokuda NO sentaz enzimini uyararak kan akışını hızlandırır." },
+    { id: "cat_sodium", name: "Sodyum / Himalaya Tuzu", category: "performans", dosage: "1-2 gram (Çeyrek Çay Kaşığı)", timing: "Antrenman Öncesi Öğünle", benefit: "Maksimum kas pump'ı, sinir iletimi ve kas krampı önleme.", details: "Antrenman öncesi karbonhidratla alındığında glikozun kas içine taşınmasını (SGLT1) ve damar içi plazma hacmini artırır." },
+    { id: "cat_taurine", name: "L-Taurin", category: "performans", dosage: "1-2 gram", timing: "Antrenman Öncesi/Sonrası", benefit: "Hücresel hidrasyon, elektrolit dengesi ve kas kasılma verimi.", details: "Kalsiyum iyonlarının kas liflerindeki hareketini düzenleyerek kramp riskini azaltır." },
+    { id: "cat_glycerol", name: "Gliserol Monostearat / HydroMax", category: "performans", dosage: "2-5 gram", timing: "Antrenmandan 30dk Önce (Bol Suyla)", benefit: "Hiper-hidrasyon ve devasa kas dolgunluğu (Pump).", details: "Vücudun geçici olarak daha fazla su tutmasını sağlayarak antrenman boyunca kasların şişkin ve hidrate kalmasını sağlar." },
+    { id: "cat_alphagpc", name: "Alpha-GPC (Kolin)", category: "performans", dosage: "300-600 mg", timing: "Antrenmandan 30dk Önce", benefit: "Zihin-kas bağlantısı (Mind-Muscle Connection) ve odak.", details: "Beyinde asetilkolin nörotransmiterini artırarak kas kasılma sinyallerini güçlendirir." },
+
+    // 2. PROTEİN & AMİNO ASİTLER
+    { id: "cat_whey_iso", name: "Whey Protein Isolate", category: "protein", dosage: "25-30 gram (1 Ölçek)", timing: "Antrenman Sonrası", benefit: "Sıfır yağ/şeker, ultra hızlı emilim ve anında Lösin tetiklemesi.", details: "%90+ protein saflığı ile antrenman sonrası mTOR sinyal yolunu açarak kas proteini sentezini (MPS) başlatır." },
+    { id: "cat_whey_conc", name: "Whey Protein Konsantre", category: "protein", dosage: "25-30 gram (1 Ölçek)", timing: "Ara Öğün / Kahvaltı", benefit: "Ekonomik, lezzetli ve yüksek biyoyararlanımlı protein kaynağı.", details: "İmmünoglobulin ve laktoferrin içerikleriyle bağışıklığı ve kas onarımını destekler." },
+    { id: "cat_casein", name: "Misellar Kazein", category: "protein", dosage: "30 gram", timing: "Gece / Yatmadan Önce", benefit: "6-8 saat boyunca yavaş salınımlı anti-katabolik amino asit akışı.", details: "Midede jel kıvamı alarak gece uykusunda kas yıkımını önler." },
+    { id: "cat_eaa", name: "EAA (Esansiyel Amino Asitler)", category: "protein", dosage: "10-15 gram", timing: "Antrenman Esnasında (Intra)", benefit: "Sindirim yükü olmadan kas proteini sentezini koruma.", details: "Vücudun üretemediği 9 temel amino asidin tamamını sağlayarak antrenman esnasında katabolizmayı durdurur." },
+    { id: "cat_bcaa", name: "BCAA (2:1:1)", category: "protein", dosage: "5-10 gram", timing: "Antrenman Esnası/Sonrası", benefit: "Lösin, İzolösin ve Valin ile yorgunluk geciktirme.", details: "Triptofanın beyne girişini yarışarak engelleyip merkezi yorgunluğu azaltır." },
+    { id: "cat_glutamine", name: "L-Glutamin", category: "protein", dosage: "5-10 gram", timing: "Sabah Aç / Gece", benefit: "Bağırsak astarı sağlığı, sindirim ve toparlanma.", details: "Bağırsak epitel hücrelerinin ana yakıtıdır; besin emilimini ve mikrobiyota bütünlüğünü artırır." },
+    { id: "cat_collagen", name: "Kolajen Peptit (Tip 1 & 3)", category: "protein", dosage: "10 gram", timing: "Sabah (C Vitaminiyle)", benefit: "Tendon, bağ doku, eklem ve kıkırdak elastikiyeti.", details: "Ağır yük binen tendon ve bağ dokuların kolajen liflerini yeniler." },
+    { id: "cat_citrulline_free", name: "Serbest L-Sitrülin", category: "protein", dosage: "3-5 gram", timing: "Antrenman Öncesi", benefit: "Saf sitrülin ile saf NO üretimi.", details: "Malat asidi içermeyen saf amino asit formu." },
+    { id: "cat_carnitine", name: "L-Karnitin L-Tartrat (LCLT)", category: "protein", dosage: "2 gram", timing: "Antrenmandan 30dk Önce", benefit: "Androjen reseptör yoğunluğu artışı ve yağ asidi taşınımı.", details: "Kaslardaki testosteron bağlayan androjen reseptörlerini artırarak toparlanmayı hızlandırır." },
+    { id: "cat_hmb", name: "HMB (Kalsiyum HMB)", category: "protein", dosage: "3 gram", timing: "Antrenman Öncesi/Sonrası", benefit: "Ağır bacak günlerinde kas hasarını (DOMS) minimize etme.", details: "Lösin metabolitidir; proteolizi (kas yıkımı) baskılamada son derece etkilidir." },
+
+    // 3. VİTAMİN & TEMEL MİNERALLER
+    { id: "cat_d3k2", name: "Vitamin D3 + K2 (MK-7)", category: "vitamin", dosage: "5000 IU D3 + 100mcg K2", timing: "Sabah / Yağlı Öğünle", benefit: "Testosteron üretimi, kemik yoğunluğu ve kalsiyum yönlendirmesi.", details: "D3 kalsiyum emilimini sağlarken K2 bu kalsiyumu damarlardan kemik ve kas dokusuna yönlendirir." },
+    { id: "cat_magnesium_bis", name: "Magnezyum Bisglisinat", category: "vitamin", dosage: "200-400 mg", timing: "Gece / Yatmadan Önce", benefit: "Kas gevşemesi, derin uyku, kramp önleme ve sinir yatıştırma.", details: "Glisin amino asidine bağlı formu kan-beyin bariyerini rahat geçer; sindirimi bozmadan derin uyku sağlar." },
+    { id: "cat_zinc", name: "Çinko Pikolinat", category: "vitamin", dosage: "15-30 mg", timing: "Akşam Yemekle Birlikte", benefit: "Testosteron optimizasyonu, protein sentezi ve bağışıklık.", details: "200'den fazla enzimatik reaksiyonun kofaktörüdür; aromataz enzimini dengelemeye yardımcı olur." },
+    { id: "cat_zma", name: "ZMA (Çinko + Magnezyum + B6)", category: "vitamin", dosage: "Standart 1 Porsiyon", timing: "Gece Yatmadan Önce", benefit: "Gece anabolik hormon salınımı ve derin toparlanma.", details: "Aç karnına alındığında gece GH ve testosteron biyoyararlanımını destekler." },
+    { id: "cat_bcomplex", name: "Aktif B-Kompleks (Metilfolat & B12)", category: "vitamin", dosage: "1 Kapsül", timing: "Sabah Kahvaltıyla", benefit: "Karbonhidrat/protein enerji metabolizması ve sinir sağlığı.", details: "Metillendirilmiş formlar hücre düzeyinde ATP dönüşümünü maksimum verime ulaştırır." },
+    { id: "cat_vitaminc", name: "C Vitamini (Askorbik Asit / Ester-C)", category: "vitamin", dosage: "500-1000 mg", timing: "Sabah veya Öğünle", benefit: "Kortizol dengeleme, antioksidan koruma ve kolajen sentezi.", details: "Ağır antrenman sonrası oluşan aşırı serbest radikal hasarını nötralize eder." },
+    { id: "cat_potassium", name: "Potasyum Sitrat", category: "vitamin", dosage: "500-1000 mg", timing: "Öğünlerle Bölünerek", benefit: "Hücre içi sıvı dengesi, kan basıncı ve sodyum pompası.", details: "Hücre içi ana elektrolittir; kas kasılmasının elektriksel iletimini sağlar." },
+    { id: "cat_iron", name: "Demir Bisglisinat", category: "vitamin", dosage: "15-20 mg", timing: "Sabah Aç (C Vitaminiyle)", benefit: "Hemoglobin üretimi ve kaslara oksijen taşınması.", details: "Yorgunluk ve demir eksikliği kaynaklı performans düşüşlerini engeller." },
+    { id: "cat_calcium", name: "Kalsiyum Sitrat", category: "vitamin", dosage: "500 mg", timing: "Öğünle Birlikte", benefit: "Kas liflerinin kasılma mekanizması ve iskelet gücü.", details: "Aktin-miyozin köprülerinin kurulmasında birincil sinyal molekülüdür." },
+    { id: "cat_multivit", name: "Gelişmiş Sporcu Multivitamini", category: "vitamin", dosage: "1 Porsiyon", timing: "Kahvaltı Sonrası", benefit: "Genel mikro besin açığını kapatma ve bağışıklık sigortası.", details: "Yoğun antrenman yapan sporcularda ter ve idrarla atılan mikro besinleri tamamlar." },
+
+    // 4. SAĞLIK, LONGEVITY & EKLEM
+    { id: "cat_omega3", name: "Omega 3 Balık Yağı (Trigliserit Form)", category: "saglik", dosage: "2000-3000 mg (Yüksek EPA/DHA)", timing: "Öğünle Birlikte", benefit: "Sistemik inflamasyonu düşürme, insülin duyarlılığı ve kalp sağlığı.", details: "Hücre zarının akışkanlığını artırarak kas hücrelerinin besin alımını (insülin duyarlılığını) kolaylaştırır." },
+    { id: "cat_ashwagandha", name: "Ashwagandha (KSM-66)", category: "saglik", dosage: "300-600 mg", timing: "Akşam / Gece", benefit: "Kortizolü (stres hormonu) düşürme, güç ve testosteron desteği.", details: "GABAerjik aktiviteyi destekler; kronik antrenman stresini ve kortizolü baskılayarak kas gelişimini korur." },
+    { id: "cat_coq10", name: "CoQ10 (Ubiquinol)", category: "saglik", dosage: "100-200 mg", timing: "Sabah Yağlı Öğünle", benefit: "Mitokondriyal enerji üretimi ve hücresel antioksidan koruma.", details: "Hücrenin enerji santrali olan mitokondrilerde elektron taşıma zincirinin anahtarıdır." },
+    { id: "cat_curcumin", name: "Kurkumin + Karabiber (Piperin)", category: "saglik", dosage: "500 mg (Standardize)", timing: "Yemekle Birlikte", benefit: "Eklem ağrılarını dindirme ve güçlü anti-inflamatuar etki.", details: "NF-kB yolağını bloke ederek eklem ve tendonlardaki enflamatuar sitokinleri azaltır." },
+    { id: "cat_nac", name: "NAC (N-Asetil Sistein)", category: "saglik", dosage: "600-1200 mg", timing: "Sabah Aç Karnına", benefit: "Glutatyon (ana antioksidan) üretimi ve karaciğer detoksu.", details: "Vücudun en güçlü iç antioksidanı olan glutatyonun öncül maddesidir; hücresel hasarı onarır." },
+    { id: "cat_berberine", name: "Berberin HCL", category: "saglik", dosage: "500 mg", timing: "Yüksek Karbonhidratlı Öğünden Önce", benefit: "İnsülin duyarlılığı, glikozun kas içine yönlendirilmesi (GDA).", details: "AMPK enzimini aktive ederek karbonhidratların yağ dokusuna değil kas glikojenine gitmesini sağlar." },
+    { id: "cat_ala", name: "Alfa Lipoik Asit (R-ALA)", category: "saglik", dosage: "300-600 mg", timing: "Karbonhidratlı Öğünle", benefit: "Güçlü antioksidan ve besin partisyoneri (kas dolgunluğu).", details: "Hem suda hem yağda çözünen evrensel antioksidandır; glikoz taşınmasını destekler." },
+    { id: "cat_glucosamine", name: "Glukozamin + Kondroitin + MSM", category: "saglik", dosage: "1500mg / 1200mg", timing: "Öğünle Birlikte", benefit: "Ağır squat ve presslerde diz/omuz kıkırdak koruması.", details: "Eklem sıvısını (sinovyal sıvı) ve kıkırdak matriksini besler." },
+    { id: "cat_milkthistle", name: "Milk Thistle (Silymarin)", category: "saglik", dosage: "250-500 mg", timing: "Yemekle Birlikte", benefit: "Karaciğer enzimlerini dengeleme ve toksin temizliği.", details: "Karaciğer hepatosit hücrelerinin zar bütünlüğünü korur." },
+    { id: "cat_resveratrol", name: "Trans-Resveratrol", category: "saglik", dosage: "250-500 mg", timing: "Sabah", benefit: "Damar elastikiyeti, longevity ve sirtuin aktivasyonu.", details: "Damar içi nitrik oksit biyoyararlanımını destekler." },
+
+    // 5. UYKU, SİNİR SİSTEMİ & SİNDİRİM
+    { id: "cat_melatonin", name: "Melatonin", category: "uyku", dosage: "1-3 mg", timing: "Uykudan 30-45dk Önce", benefit: "Sirkadiyen ritim düzeni ve hızlı uykuya dalış.", details: "Epifiz bezinden salgılanan uyku hormonudur; büyüme hormonu (GH) salınan derin REM evresini düzenler." },
+    { id: "cat_theanine", name: "L-Teanin", category: "uyku", dosage: "100-200 mg", timing: "Gece veya Kafeinle", benefit: "Zihinsel sakinlik, alfa beyin dalgaları ve stres yatıştırma.", details: "Kafeinin getirdiği çarpıntı/anksiyeteyi siler; gece zihni susturarak uykuya hazırlar." },
+    { id: "cat_probiotics", name: "Geniş Spektrumlu Probiyotik", category: "uyku", dosage: "10-50 Milyar CFU", timing: "Sabah Aç Karnına", benefit: "Makro besinlerin tam emilimi, gaz/şişkinlik önleme.", details: "Bulk döneminde artan yüksek pirinç ve protein tüketiminin bağırsakta verimli emilmesini sağlar." },
+    { id: "cat_enzymes", name: "Sindirim Enzimleri Kompleksi", category: "uyku", dosage: "1 Kapsül", timing: "En Ağır Öğünlerle (Proteaz/Amilaz)", benefit: "Yüksek kalorili öğünlerde mide rahatlığı ve tam sindirim.", details: "Proteaz, amilaz ve lipaz enzimleri ile büyük öğünlerin dakikalar içinde parçalanmasını sağlar." },
+    { id: "cat_gaba", name: "GABA (Gama-Aminobütirik Asit)", category: "uyku", dosage: "500-1000 mg", timing: "Gece Yatmadan Önce", benefit: "Merkezi sinir sistemi inhibisyonu ve derin toparlanma.", details: "Beyindeki aşırı elektriksel aktiviteyi yatıştırır." },
+    { id: "cat_5htp", name: "5-HTP (5-Hidroksitriptofan)", category: "uyku", dosage: "100 mg", timing: "Gece", benefit: "Serotonin & melatonin sentezi, iştah dengesi.", details: "Triptofanın doğrudan serotonin ve melatonine dönüşen basamağıdır." },
+    { id: "cat_applecider", name: "Elma Sirkesi (Organik / Analı)", category: "uyku", dosage: "1 Yemek Kaşığı (Suya)", timing: "Büyük Öğünlerden 10dk Önce", benefit: "Mide asiditesi (HCL) optimizasyonu ve glisemik kontrol.", details: "Mide PH'ını düşürerek proteinlerin parçalanmasını ve pepsin enziminin çalışmasını hızlandırır." },
+    { id: "cat_inulin", name: "İnülin / Prebiyotik Lif", category: "uyku", dosage: "5 gram", timing: "Öğünle Birlikte", benefit: "Yararlı bağırsak bakterilerini besleme ve sindirim düzeni.", details: "Kısa zincirli yağ asitleri (SCFA) üretimini artırarak metabolik sağlığı korur." },
+    { id: "cat_tartcherry", name: "Tart Cherry (Vişne Ekstresi)", category: "uyku", dosage: "500 mg", timing: "Gece / Antrenman Sonrası", benefit: "Doğal melatonin kaynağı ve kas ağrısı (DOMS) azaltma.", details: "Yüksek antosiyanin içeriğiyle kas iltihabını temizler ve derin uykuyu tetikler." },
+    { id: "cat_apigenin", name: "Apigenin (Papatya Ekstresi)", category: "uyku", dosage: "50 mg", timing: "Uykudan 1 Saat Önce", benefit: "Kortizolü nötralize etme ve derin kas gevşemesi.", details: "GABA-A reseptörlerine bağlanarak uyku kalitesini artırır." }
 ];
 
-// Predefined 5-Day Workout Plan
-const WORKOUT_PLAN = {
+// ==================== COMPREHENSIVE EXERCISE ENCYCLOPEDIA ====================
+const EXERCISE_LIBRARY = [
+    // GÖĞÜS (CHEST)
+    { id: "lib_inc_db", name: "Incline Dumbbell Press", muscle: "Üst Göğüs (Clavicular Head)", defaultTarget: "2 Çalışma Seti (6-9 Rep)", defaultSets: 2, defaultSeat: "Açı: 30°", isTopSet: true, desc: "Üst göğüs liflerini köprücük kemiği hattında maksimum mekanik gerilimle esnetir ve kalınlık kazandırır." },
+    { id: "lib_plate_press", name: "Plate Loaded Chest Press", muscle: "Orta & Tüm Göğüs", defaultTarget: "2 Çalışma Seti (8-10 Rep)", defaultSets: 2, defaultSeat: "Koltuk: 4", isTopSet: true, desc: "Serbest ağırlık yorgunluğu olmadan göğüs kaslarını güvenle tam tükenişe götürmeyi sağlar." },
+    { id: "lib_pec_deck", name: "Pec Deck Fly (Makine Göğüs)", muscle: "İç & Tüm Göğüs İzolasyonu", defaultTarget: "2 Çalışma Seti (10-12 Rep)", defaultSets: 2, defaultSeat: "Koltuk: 3, Kol: 2", isTopSet: false, desc: "Maksimum yatay adduksiyon sağlayarak göğüs liflerinin tepe sıkışmasını hedefler." },
+    { id: "lib_dips", name: "Weighted Chest Dips", muscle: "Alt Göğüs & Ön Omuz", defaultTarget: "2 Set (6-8 Rep)", defaultSets: 2, defaultSeat: "Gövde Öne Eğik", isTopSet: true, desc: "Vücut ağırlığı veya zincirle alt göğüs çizgisine ve tricepse muazzam bir kütle kazandırır." },
+    { id: "lib_cable_cross", name: "Cable Crossover / Fly", muscle: "Alt & İç Göğüs", defaultTarget: "3 Set (12-15 Rep)", defaultSets: 3, defaultSeat: "Kablolar Üstte", isTopSet: false, desc: "Sürekli gerilim hattında göğüs kaslarını kanla doldurur ve pump yaratır." },
+    { id: "lib_flat_bench", name: "Flat Barbell Bench Press", muscle: "Genel Göğüs Gücü", defaultTarget: "3 Set (5-8 Rep)", defaultSets: 3, defaultSeat: "Düz Sehpa", isTopSet: true, desc: "Klasik göğüs kütle ve güç temel taşıdır." },
+
+    // SIRT & LATS (BACK)
+    { id: "lib_high_row", name: "High Row Tek Kol", muscle: "Alt & Orta Lat (Kanat)", defaultTarget: "2 Set (6-8 Rep, Dirsek Gövdeye)", defaultSets: 2, defaultSeat: "Koltuk: 3, Göğüs Pedi: 2", isTopSet: true, desc: "Dirseği kalçaya doğru çekerek alt lat liflerine cerrahi izolasyon sağlar." },
+    { id: "lib_tbar_row", name: "T-Bar Row (Göğüs Destekli)", muscle: "Orta Sırt, Rhomboid & Kalınlık", defaultTarget: "2 Sert Set (8-10 Rep)", defaultSets: 2, defaultSeat: "Göğüs Destekli", isTopSet: true, desc: "Omurgaya gereksiz yük bindirmeden orta sırtı kalınlaştıran 1 numaralı harekettir." },
+    { id: "lib_lat_pull", name: "Geniş Tutuş Lat Pulldown", muscle: "Üst Lat & Teres Major (V-Taper)", defaultTarget: "2-3 Set (10-12 Rep)", defaultSets: 2, defaultSeat: "Bacak Pedi: 4", isTopSet: false, desc: "Sırtın genişliğini ve önden bakıldığında kanatların açılmasını sağlar." },
+    { id: "lib_chest_row", name: "Chest-Supported Wide Grip Row", muscle: "Üst Sırt & Arka Omuz Hattı", defaultTarget: "2 Set (8-10 Rep)", defaultSets: 2, defaultSeat: "Koltuk: 2, Göğüs: 3", isTopSet: true, desc: "Geniş tutuşla skapulaları birbirine yapıştırarak 3D sırt detaylarını ortaya çıkarır." },
+    { id: "lib_seated_cable_row", name: "Seated Cable Row (V-Bar)", muscle: "Orta Sırt & Lat Kalınlığı", defaultTarget: "3 Set (10-12 Rep)", defaultSets: 3, defaultSeat: "Düz Zemin", isTopSet: false, desc: "Kablo gerilimiyle sırtın derinlemesine kasılmasını sağlar." },
+    { id: "lib_db_pullover", name: "Dumbbell Pullover", muscle: "Serratus Anterior & Lat Esneme", defaultTarget: "2 Set (10-12 Rep)", defaultSets: 2, defaultSeat: "Sehpada Enlemesine", isTopSet: false, desc: "Göğüs kafesini açar ve latların en derin esneme pozisyonunda büyümesini tetikler." },
+
+    // OMUZ & ARKA OMUZ (SHOULDERS)
+    { id: "lib_rev_pec_deck", name: "Reverse Pec Deck Fly", muscle: "Arka Omuz (Posterior Deltoid)", defaultTarget: "3 Set (Skapula Sabit, 10-12 Rep)", defaultSets: 3, defaultSeat: "Pede Göğüs Dayalı", isTopSet: true, desc: "Skapulayı hareket ettirmeden arka omuz başını izole ederek 3D omuz görüntüsünün temelini atar." },
+    { id: "lib_mach_lateral", name: "Tek Kol Makine Lateral Raise", muscle: "Yan Omuz (Lateral Deltoid)", defaultTarget: "3 Set (10-12 Rep)", defaultSets: 3, defaultSeat: "Koltuk: 5", isTopSet: false, desc: "Yerçekimi açısını nötralize ederek yan omuzda sürekli gerilim sağlar." },
+    { id: "lib_face_pull", name: "Kablo Face Pull", muscle: "Arka Omuz & Dış Rotatörler", defaultTarget: "3 Set (12-15 Rep)", defaultSets: 3, defaultSeat: "Kablo: Göz Hizası", isTopSet: false, desc: "Omuz eklemini korur, postürü düzeltir ve arka omuz kütlesini artırır." },
+    { id: "lib_db_lateral", name: "Dumbbell Lateral Raise", muscle: "Yan Omuz", defaultTarget: "3 Set (12-15 Rep)", defaultSets: 3, defaultSeat: "Ayakta / Hafif Eğik", isTopSet: false, desc: "Omuz genişliğinin klasik ve vazgeçilmez hareketidir." },
+    { id: "lib_db_shoulder_press", name: "Seated Dumbbell Shoulder Press", muscle: "Ön Omuz & Yan Omuz Gücü", defaultTarget: "2 Sert Set (6-8 Rep)", defaultSets: 2, defaultSeat: "Açı: 75°", isTopSet: true, desc: "Omuz kemerine ham itiş gücü ve kütle kazandırır." },
+
+    // TRICEPS (KOLLAR)
+    { id: "lib_straight_bar_push", name: "Düz Bar Triceps Pushdown", muscle: "Triceps Lateral Baş (Dış Kütle)", defaultTarget: "3 Set (Ağır & Sıkı)", defaultSets: 3, defaultSeat: "Kablo: En Üst", isTopSet: true, desc: "Dıştan bakıldığında kolu geniş gösteren Lateral başı en sert vuran harekettir." },
+    { id: "lib_overhead_cable_ext", name: "Overhead Dual Cable Triceps Extension", muscle: "Triceps Uzun Baş (Long Head)", defaultTarget: "3 Set (Tam Esneme, 8-10 Rep)", defaultSets: 3, defaultSeat: "Kablo Omuz Boyu", isTopSet: true, desc: "Triceps kas kütlesinin %60'ını oluşturan uzun başı derin esnemede hipertrofiye zorlar." },
+    { id: "lib_rope_pushdown", name: "Halat Triceps Pushdown", muscle: "Triceps Dış & Medial Baş", defaultTarget: "2-3 Set (10-12 Rep)", defaultSets: 2, defaultSeat: "Kablo: Üst", isTopSet: false, desc: "Altta halatı iki yana açarak tepe sıkışmayı maksimize eder." },
+    { id: "lib_skullcrusher", name: "Lying EZ-Bar Skullcrusher", muscle: "Triceps Uzun Baş & Genel", defaultTarget: "3 Set (8-10 Rep)", defaultSets: 3, defaultSeat: "Düz Sehpa", isTopSet: true, desc: "Alna doğru indirerek triceps eklemini tam bükülmede yükler." },
+
+    // BICEPS & ÖN KOL (ARMS)
+    { id: "lib_bb_curl", name: "Barbell Biceps Curl", muscle: "Genel Biceps Gücü", defaultTarget: "2 Set (Ağır, 6-8 Rep)", defaultSets: 2, defaultSeat: "Düz Bar", isTopSet: true, desc: "Biceps kütle inşasının en temel ve ağır serbest ağırlık hareketidir." },
+    { id: "lib_db_incline_curl", name: "Incline Dumbbell Curl", muscle: "Biceps Uzun Baş (Peak)", defaultTarget: "2-3 Set (10-12 Rep)", defaultSets: 2, defaultSeat: "Açı: 45°", isTopSet: false, desc: "Omzun gerisinde kalarak biceps uzun başını tam gerilimde esnetir." },
+    { id: "lib_hammer_curl", name: "Dumbbell Hammer Curl", muscle: "Brachialis & Ön Kol (Ön Kalınlık)", defaultTarget: "2 Set (8-10 Rep)", defaultSets: 2, defaultSeat: "Ayakta / Nötr Tutuş", isTopSet: false, desc: "Biceps ile triceps arasındaki Brachialis kasını büyüterek kolu dışarı doğru iter ve kalınlaştırır." },
+    { id: "lib_preacher_curl", name: "Preacher Curl (Scot Bench)", muscle: "Biceps Kısa Baş & İzolasyon", defaultTarget: "2 Set (10-12 Rep)", defaultSets: 2, defaultSeat: "Koltuk: 3", isTopSet: false, desc: "Vücut ivmesini sıfırlayarak biceps alt bağlantı noktasına saf gerilim bindirir." },
+    { id: "lib_reverse_curl", name: "Kablo Ters Tutuş V-Bar Curl", muscle: "Brachioradialis (Ön Kol Üstü)", defaultTarget: "2 Set (12-15 Rep)", defaultSets: 2, defaultSeat: "Kablo Alt", isTopSet: false, desc: "Kavrama gücünü ve ön kolun üst kalınlığını inşa eder." },
+
+    // BACAK & KALÇA (LEGS)
+    { id: "lib_hack_squat", name: "Hack Squat (Quad Kralı)", muscle: "Ön Bacak (Vastus Medialis / Gözyaşı)", defaultTarget: "2 Ağır Set (3sn Negatif, Tam Derinlik)", defaultSets: 2, defaultSeat: "Ayaklar Dar & Altta", isTopSet: true, desc: "Diz fleksiyonunu maksimize ederek ön bacak liflerini cerrahi hassasiyetle parçalar." },
+    { id: "lib_leg_press", name: "Plate Loaded Leg Press", muscle: "Genel Quad & Kalça Gücü", defaultTarget: "2 Sert Çalışma Seti", defaultSets: 2, defaultSeat: "Platform Altı", isTopSet: true, desc: "Omurga yorgunluğu olmadan yüksek tonajla bacaklara aşırı yük bindirir." },
+    { id: "lib_rdl", name: "Dumbbell / Barbell RDL", muscle: "Hamstring (Arka Bacak) & Glute", defaultTarget: "2 Sıkı Set (8-10 Rep)", defaultSets: 2, defaultSeat: "Düz Zemin", isTopSet: false, desc: "Kalçayı geriye iterek arka bacak liflerini en derin esneme pozisyonunda büyütür." },
+    { id: "lib_adductor", name: "Adductor Machine (Bacak İçi)", muscle: "Bacak İçi Adductor Kasları", defaultTarget: "3 Set (12-15 Rep)", defaultSets: 3, defaultSeat: "Geniş Açı: 4", isTopSet: false, desc: "Önden bakıldığında bacağın içini doldurarak devasa bir kalınlık katar." },
+    { id: "lib_leg_ext", name: "Leg Extension", muscle: "Quad İzolasyonu & Rectus Femoris", defaultTarget: "1-2 Bitirici Set (Maks Pump)", defaultSets: 2, defaultSeat: "Koltuk: 3", isTopSet: false, desc: "Ön bacağın üst tepe noktasında tam kilitlenme sağlar." },
+    { id: "lib_leg_curl", name: "Lying / Seated Leg Curl", muscle: "Hamstring İzolasyon", defaultTarget: "2-3 Set (10-12 Rep)", defaultSets: 2, defaultSeat: "Ped Ayarlı", isTopSet: false, desc: "Diz fleksiyonuyla arka bacak kaslarını izole eder." },
+    { id: "lib_calf_raise", name: "Standing / Seated Calf Raise", muscle: "Kalf (Gastrocnemius & Soleus)", defaultTarget: "3 Set (Tepe 2sn Bekleme, 12-15 Rep)", defaultSets: 3, defaultSeat: "Platform", isTopSet: false, desc: "Tam esneme ve tepe sıkışmayla inatçı kalf liflerini büyütür." },
+
+    // TRAPEZ & KARIN (TRAPS & ABS)
+    { id: "lib_db_shrug", name: "Dumbbell Shrug", muscle: "Üst Trapez Kütlesi", defaultTarget: "2 Set (Maks Ağırlık / Tepe Bekleme)", defaultSets: 2, defaultSeat: "Ayakta", isTopSet: false, desc: "Boyun ve omuz arasındaki trapez kaslarına kalınlık katar." },
+    { id: "lib_cable_crunch", name: "Kablo Halat Crunch", muscle: "Rektus Abdominis (Karın Kasları)", defaultTarget: "3 Set (12-15 Rep)", defaultSets: 3, defaultSeat: "Dizler Üzerinde", isTopSet: false, desc: "Karın kaslarına ağırlık bindirerek six-pack tuğlalarını kalınlaştırır." },
+    { id: "lib_hanging_leg_raise", name: "Hanging Leg / Knee Raise", muscle: "Alt Karın & Core", defaultTarget: "3 Set (Maks Rep)", defaultSets: 3, defaultSeat: "Barda Asılı", isTopSet: false, desc: "Pelvisi yukarı bükerek alt karın duvarını sıkılaştırır." }
+];
+
+// Initial 5-Day Workout Template
+const DEFAULT_WORKOUT_PLAN = {
     pzt: {
         title: "Push 1 (İtiş + Triceps)",
         desc: "Göğüs Gücü + Lateral Triceps + Yan Omuz",
         exercises: [
-            { id: "pzt_1", name: "Incline Dumbbell Press", target: "2 Çalışma Seti (6-9 Tekrar)", defaultSets: 2, defaultSeat: "Açı: 30°", isTopSet: true },
-            { id: "pzt_2", name: "Plate Loaded Chest Press", target: "2 Çalışma Seti (8-10 Tekrar)", defaultSets: 2, defaultSeat: "Koltuk: 4", isTopSet: true },
-            { id: "pzt_3", name: "Pec Deck Fly", target: "2 Çalışma Seti (10-12 Tekrar)", defaultSets: 2, defaultSeat: "Koltuk: 3, Kol: 2", isTopSet: false },
-            { id: "pzt_4", name: "Düz Bar Triceps Pushdown", target: "2-3 Set (Lateral Baş, Ağır & Sıkı)", defaultSets: 3, defaultSeat: "Kablo: En Üst", isTopSet: true },
-            { id: "pzt_5", name: "Tek Kol Makine Lateral", target: "3 Set (Yan Omuz İzolasyon)", defaultSets: 3, defaultSeat: "Koltuk: 5", isTopSet: false }
+            { id: "pzt_1", name: "Incline Dumbbell Press", muscle: "Üst Göğüs", target: "2 Çalışma Seti (6-9 Tekrar)", defaultSets: 2, defaultSeat: "Açı: 30°", isTopSet: true },
+            { id: "pzt_2", name: "Plate Loaded Chest Press", muscle: "Orta Göğüs", target: "2 Çalışma Seti (8-10 Tekrar)", defaultSets: 2, defaultSeat: "Koltuk: 4", isTopSet: true },
+            { id: "pzt_3", name: "Pec Deck Fly", muscle: "İç Göğüs", target: "2 Çalışma Seti (10-12 Tekrar)", defaultSets: 2, defaultSeat: "Koltuk: 3, Kol: 2", isTopSet: false },
+            { id: "pzt_4", name: "Düz Bar Triceps Pushdown", muscle: "Lateral Baş Triceps", target: "2-3 Set (Lateral Baş, Ağır & Sıkı)", defaultSets: 3, defaultSeat: "Kablo: En Üst", isTopSet: true },
+            { id: "pzt_5", name: "Tek Kol Makine Lateral", muscle: "Yan Omuz 3D", target: "3 Set (Yan Omuz İzolasyon)", defaultSets: 3, defaultSeat: "Koltuk: 5", isTopSet: false }
         ]
     },
     sal: {
         title: "Pull 1 (Lat Genişlik + Arka Omuz)",
         desc: "Arka Omuz Öncelikli + Dikey Çekiş + Kollar",
         exercises: [
-            { id: "sal_1", name: "Reverse Pec Deck Fly (Arka Omuz)", target: "3 Set (Skapula Sabit, 10-12 Rep)", defaultSets: 3, defaultSeat: "Pede Göğüs Dayalı", isTopSet: true },
-            { id: "sal_2", name: "High Row Tek Kol (Lat Odak)", target: "2 Set (6-8 Tekrar, Dirsek Gövdeye)", defaultSets: 2, defaultSeat: "Koltuk: 3, Göğüs Pedi: 2", isTopSet: true },
-            { id: "sal_3", name: "T-Bar Row", target: "2 Sert Çalışma Seti (8-10 Tekrar)", defaultSets: 2, defaultSeat: "Göğüs Destekli", isTopSet: true },
-            { id: "sal_4", name: "Geniş Tutuş Lat Pulldown", target: "2 Set (Üst Lat / Teres Major)", defaultSets: 2, defaultSeat: "Bacak Pedi: 4", isTopSet: false },
-            { id: "sal_5", name: "Dumbbell Shrug", target: "2 Set (Maks Ağırlık / Maks Rep)", defaultSets: 2, defaultSeat: "Ayakta", isTopSet: false },
-            { id: "sal_6", name: "Barbell Biceps Curl", target: "2 Set (Ağır Biceps & Ön Kol)", defaultSets: 2, defaultSeat: "Düz Bar", isTopSet: true },
-            { id: "sal_7", name: "Dumbbell Curl + Ters Tutuş V-Bar", target: "2'şer Set (Brachialis / Ön Kol)", defaultSets: 2, defaultSeat: "Kablo Alt", isTopSet: false }
+            { id: "sal_1", name: "Reverse Pec Deck Fly (Arka Omuz)", muscle: "Arka Omuz İzolasyon", target: "3 Set (Skapula Sabit, 10-12 Rep)", defaultSets: 3, defaultSeat: "Pede Göğüs Dayalı", isTopSet: true },
+            { id: "sal_2", name: "High Row Tek Kol (Lat Odak)", muscle: "Alt/Orta Lat", target: "2 Set (6-8 Tekrar, Dirsek Gövdeye)", defaultSets: 2, defaultSeat: "Koltuk: 3, Göğüs Pedi: 2", isTopSet: true },
+            { id: "sal_3", name: "T-Bar Row", muscle: "Orta Sırt & Kalınlık", target: "2 Sert Çalışma Seti (8-10 Tekrar)", defaultSets: 2, defaultSeat: "Göğüs Destekli", isTopSet: true },
+            { id: "sal_4", name: "Geniş Tutuş Lat Pulldown", muscle: "Üst Lat (Genişlik)", target: "2 Set (Üst Lat / Teres Major)", defaultSets: 2, defaultSeat: "Bacak Pedi: 4", isTopSet: false },
+            { id: "sal_5", name: "Dumbbell Shrug", muscle: "Trapez", target: "2 Set (Maks Ağırlık / Maks Rep)", defaultSets: 2, defaultSeat: "Ayakta", isTopSet: false },
+            { id: "sal_6", name: "Barbell Biceps Curl", muscle: "Genel Biceps", target: "2 Set (Ağır Biceps & Ön Kol)", defaultSets: 2, defaultSeat: "Düz Bar", isTopSet: true },
+            { id: "sal_7", name: "Dumbbell Curl + Ters Tutuş V-Bar", muscle: "Brachialis & Ön Kol", target: "2'şer Set (Brachialis / Ön Kol)", defaultSets: 2, defaultSeat: "Kablo Alt", isTopSet: false }
         ]
     },
     car: {
         title: "Legs + Triceps Frekansı",
         desc: "Triceps İzolasyon + Cerrahi Quad + Hamstring",
         exercises: [
-            { id: "car_1", name: "Halat Triceps Pushdown", target: "2 Set (Taze Enerjiyle İzolasyon)", defaultSets: 2, defaultSeat: "Kablo: Üst", isTopSet: true },
-            { id: "car_2", name: "Hack Squat (Quad Kralı)", target: "2 Ağır Set (3sn iniş, Tam Derinlik)", defaultSets: 2, defaultSeat: "Ayaklar Dar & Altta", isTopSet: true },
-            { id: "car_3", name: "Leg Press (Quad Odaklı)", target: "2 Sert Çalışma Seti", defaultSets: 2, defaultSeat: "Platform Altı", isTopSet: true },
-            { id: "car_4", name: "Dumbbell RDL (Hamstring/Glute)", target: "2 Sıkı Set (8-10 Tekrar)", defaultSets: 2, defaultSeat: "Düz Zemin", isTopSet: false },
-            { id: "car_5", name: "Adductor Machine (Bacak İçi)", target: "2-3 Set (Ön Kalınlık, 12-15 Rep)", defaultSets: 3, defaultSeat: "Geniş Açı: 4", isTopSet: false },
-            { id: "car_6", name: "Leg Extension", target: "1 Bitirici Pump Seti", defaultSets: 1, defaultSeat: "Maks Yanma", isTopSet: false }
+            { id: "car_1", name: "Halat Triceps Pushdown", muscle: "Triceps Dış Baş", target: "2 Set (Taze Enerjiyle İzolasyon)", defaultSets: 2, defaultSeat: "Kablo: Üst", isTopSet: true },
+            { id: "car_2", name: "Hack Squat (Quad Kralı)", muscle: "Ön Bacak Quad", target: "2 Ağır Set (3sn iniş, Tam Derinlik)", defaultSets: 2, defaultSeat: "Ayaklar Dar & Altta", isTopSet: true },
+            { id: "car_3", name: "Leg Press (Quad Odaklı)", muscle: "Genel Bacak Gücü", target: "2 Sert Çalışma Seti", defaultSets: 2, defaultSeat: "Platform Altı", isTopSet: true },
+            { id: "car_4", name: "Dumbbell RDL (Hamstring/Glute)", muscle: "Arka Bacak & Kalça", target: "2 Sıkı Set (8-10 Tekrar)", defaultSets: 2, defaultSeat: "Düz Zemin", isTopSet: false },
+            { id: "car_5", name: "Adductor Machine (Bacak İçi)", muscle: "Bacak İçi Kalınlık", target: "2-3 Set (Ön Kalınlık, 12-15 Rep)", defaultSets: 3, defaultSeat: "Geniş Açı: 4", isTopSet: false },
+            { id: "car_6", name: "Leg Extension", muscle: "Quad İzolasyon", target: "1 Bitirici Pump Seti", defaultSets: 1, defaultSeat: "Maks Yanma", isTopSet: false }
         ]
     },
     per: {
@@ -97,22 +203,22 @@ const WORKOUT_PLAN = {
         title: "Push 2 (Üst Omuz/Triceps)",
         desc: "Arka Omuz Başlangıç + Makine İtiş + Uzun Baş Triceps",
         exercises: [
-            { id: "cum_1", name: "Arka Omuz Fly (Reverse Pec Deck)", target: "3 Set (Taze Sinir Sistemiyle)", defaultSets: 3, defaultSeat: "Koltuk: 3", isTopSet: true },
-            { id: "cum_2", name: "Makine Chest Press", target: "2 Sert Set (Derin Esneme)", defaultSets: 2, defaultSeat: "Koltuk: 4", isTopSet: true },
-            { id: "cum_3", name: "Pec Fly", target: "2 Set (Göğüs Bitirici)", defaultSets: 2, defaultSeat: "Açı: 2", isTopSet: false },
-            { id: "cum_4", name: "Overhead Dual Cable Triceps Extension", target: "3 Set (Uzun Baş Kütle İnşası)", defaultSets: 3, defaultSeat: "Kablo Omuz Boyu", isTopSet: true },
-            { id: "cum_5", name: "Tek Kol Makine Lateral", target: "3 Set (Yan Omuz 3D)", defaultSets: 3, defaultSeat: "Koltuk: 5", isTopSet: false }
+            { id: "cum_1", name: "Arka Omuz Fly (Reverse Pec Deck)", muscle: "Arka Omuz", target: "3 Set (Taze Sinir Sistemiyle)", defaultSets: 3, defaultSeat: "Koltuk: 3", isTopSet: true },
+            { id: "cum_2", name: "Makine Chest Press", muscle: "Göğüs Gücü", target: "2 Sert Set (Derin Esneme)", defaultSets: 2, defaultSeat: "Koltuk: 4", isTopSet: true },
+            { id: "cum_3", name: "Pec Fly", muscle: "Göğüs İzolasyon", target: "2 Set (Göğüs Bitirici)", defaultSets: 2, defaultSeat: "Açı: 2", isTopSet: false },
+            { id: "cum_4", name: "Overhead Dual Cable Triceps Extension", muscle: "Triceps Uzun Baş", target: "3 Set (Uzun Baş Kütle İnşası)", defaultSets: 3, defaultSeat: "Kablo Omuz Boyu", isTopSet: true },
+            { id: "cum_5", name: "Tek Kol Makine Lateral", muscle: "Yan Omuz 3D", target: "3 Set (Yan Omuz 3D)", defaultSets: 3, defaultSeat: "Koltuk: 5", isTopSet: false }
         ]
     },
     cmt: {
         title: "Pull 2 (Sırt Kalınlık & Trapez)",
         desc: "Orta Sırt + Trapez + Biceps & Ön Kol",
         exercises: [
-            { id: "cmt_1", name: "High Row Tek Kol", target: "2 Set (Lat Odaklı)", defaultSets: 2, defaultSeat: "Koltuk: 3", isTopSet: true },
-            { id: "cmt_2", name: "T-Bar Row", target: "2 Ağır Çalışma Seti", defaultSets: 2, defaultSeat: "Geniş Tutuş", isTopSet: true },
-            { id: "cmt_3", name: "Chest-Supported Wide Grip Row", target: "2 Set (Orta-Üst Sırt / Rhomboid)", defaultSets: 2, defaultSeat: "Koltuk: 2, Göğüs Pedi: 3", isTopSet: true },
-            { id: "cmt_4", name: "Dumbbell Shrug", target: "2 Set (Maks Ağırlık / Maks Rep)", defaultSets: 2, defaultSeat: "Ayakta", isTopSet: false },
-            { id: "cmt_5", name: "Barbell Curl + DB Curl + Ters V-Bar", target: "2'şer Set (Kol / Ön Kol Paketi)", defaultSets: 2, defaultSeat: "Kablo & Serbest", isTopSet: true }
+            { id: "cmt_1", name: "High Row Tek Kol", muscle: "Alt/Orta Lat", target: "2 Set (Lat Odaklı)", defaultSets: 2, defaultSeat: "Koltuk: 3", isTopSet: true },
+            { id: "cmt_2", name: "T-Bar Row", muscle: "Orta Sırt Kalınlık", target: "2 Ağır Çalışma Seti", defaultSets: 2, defaultSeat: "Geniş Tutuş", isTopSet: true },
+            { id: "cmt_3", name: "Chest-Supported Wide Grip Row", muscle: "Üst Sırt / Rhomboid", target: "2 Set (Orta-Üst Sırt / Rhomboid)", defaultSets: 2, defaultSeat: "Koltuk: 2, Göğüs Pedi: 3", isTopSet: true },
+            { id: "cmt_4", name: "Dumbbell Shrug", muscle: "Trapez", target: "2 Set (Maks Ağırlık / Maks Rep)", defaultSets: 2, defaultSeat: "Ayakta", isTopSet: false },
+            { id: "cmt_5", name: "Barbell Curl + DB Curl + Ters V-Bar", muscle: "Biceps & Ön Kol", target: "2'şer Set (Kol / Ön Kol Paketi)", defaultSets: 2, defaultSeat: "Kablo & Serbest", isTopSet: true }
         ]
     },
     paz: {
@@ -122,12 +228,19 @@ const WORKOUT_PLAN = {
     }
 };
 
-// Global App State
+// Global Application State
 let appData = {
     targets: { ...DEFAULT_TARGETS },
     pinnedQuickActions: ["water", "pancake", "steps_1000", "steps_manual"],
     customPresets: { ...DEFAULT_PRESET_MEALS },
-    supplements: [...DEFAULT_SUPPLEMENTS],
+    customWorkoutPlan: JSON.parse(JSON.stringify(DEFAULT_WORKOUT_PLAN)),
+    supplements: [
+        MASTER_SUPPLEMENT_DATABASE[0], // Kreatin
+        MASTER_SUPPLEMENT_DATABASE[10], // Whey Isolate
+        MASTER_SUPPLEMENT_DATABASE[30], // Omega 3
+        MASTER_SUPPLEMENT_DATABASE[20], // D3+K2
+        MASTER_SUPPLEMENT_DATABASE[21]  // Magnezyum Bisglisinat
+    ],
     supplementsLog: {}, // { "YYYY-MM-DD": { suppId: true/false } }
     todayNutrition: {
         date: new Date().toISOString().split('T')[0],
@@ -145,6 +258,9 @@ let appData = {
     weightHistory: [] // [ { date: "YYYY-MM-DD", weight: 74.0 } ]
 };
 
+let currentActiveDay = "pzt";
+let currentSuppCatalogCategory = "all";
+
 // Initialize Application
 document.addEventListener("DOMContentLoaded", () => {
     loadDataFromStorage();
@@ -157,9 +273,10 @@ document.addEventListener("DOMContentLoaded", () => {
     renderScaleView();
     updateCoachReport();
     initSettingsForm();
+    renderSupplementCatalog();
 });
 
-// Storage Management
+// Storage Engine
 function loadDataFromStorage() {
     const saved = localStorage.getItem("LEAN_BULK_APP_DATA");
     if (saved) {
@@ -170,7 +287,8 @@ function loadDataFromStorage() {
                 ...parsed,
                 targets: { ...DEFAULT_TARGETS, ...(parsed.targets || {}) },
                 customPresets: { ...DEFAULT_PRESET_MEALS, ...(parsed.customPresets || {}) },
-                supplements: parsed.supplements && parsed.supplements.length > 0 ? parsed.supplements : [...DEFAULT_SUPPLEMENTS],
+                customWorkoutPlan: parsed.customWorkoutPlan || JSON.parse(JSON.stringify(DEFAULT_WORKOUT_PLAN)),
+                supplements: parsed.supplements && parsed.supplements.length > 0 ? parsed.supplements : appData.supplements,
                 pinnedQuickActions: parsed.pinnedQuickActions || ["water", "pancake", "steps_1000", "steps_manual"],
                 todayNutrition: { ...appData.todayNutrition, ...(parsed.todayNutrition || {}) },
                 supplementsLog: parsed.supplementsLog || {},
@@ -206,7 +324,7 @@ function checkAndResetDailyNutrition() {
     }
 }
 
-// Navigation Tabs
+// Navigation & Modals
 function navigateToTab(tabName) {
     document.querySelectorAll(".tab-view").forEach(el => el.classList.remove("active"));
     document.querySelectorAll(".nav-item").forEach(el => el.classList.remove("active"));
@@ -224,13 +342,13 @@ function navigateToTab(tabName) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// Modal Helpers
 function openModal(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) {
         modal.classList.add("active");
         if (modalId === "modal-settings") initSettingsForm();
         if (modalId === "modal-quick-actions") renderQuickActionsConfig();
+        if (modalId === "modal-supplement-catalog") renderSupplementCatalog();
     }
 }
 
@@ -239,7 +357,6 @@ function closeModal(modalId) {
     if (modal) modal.classList.remove("active");
 }
 
-// Toast Alert
 function showToast(msg) {
     const toast = document.getElementById("toast");
     if (!toast) return;
@@ -248,7 +365,7 @@ function showToast(msg) {
     setTimeout(() => toast.classList.remove("show"), 2500);
 }
 
-// Date & Dynamic Header
+// Date Display & Header
 function updateDateDisplay() {
     const today = new Date();
     const days = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"];
@@ -265,8 +382,7 @@ function updateDateDisplay() {
         headerEl.innerText = `${dateStr} (${days[today.getDay()]}) • ${latestWeight} kg Lean Bulk`;
     }
 
-    // Today's workout preview on dashboard
-    const todayWorkout = WORKOUT_PLAN[currentDayKey];
+    const todayWorkout = appData.customWorkoutPlan[currentDayKey] || DEFAULT_WORKOUT_PLAN[currentDayKey];
     if (todayWorkout) {
         const dName = document.getElementById("today-day-name");
         const wTitle = document.getElementById("today-workout-title");
@@ -276,7 +392,6 @@ function updateDateDisplay() {
         if (wDesc) wDesc.innerText = todayWorkout.desc;
     }
 
-    // Dynamic Coach Tip based on current day & targets
     const coachTips = {
         pzt: "Göğüs & Triceps günü! Incline Dumbbell'da ilk seti tükenişe (RIR 0) kadar sürükle.",
         sal: "Sırt & Arka Omuz günü! Reverse Pec Deck'te skapulayı sabitleyip arka omuza izole yüklen.",
@@ -337,7 +452,6 @@ function renderDashboard() {
     const n = appData.todayNutrition;
     const t = appData.targets;
 
-    // Macro summaries
     document.getElementById("consumed-cal").innerText = Math.round(n.calories).toLocaleString('tr-TR');
     document.getElementById("target-cal-lbl").innerText = ` / ${t.calories.toLocaleString('tr-TR')} kcal`;
     document.getElementById("macro-status-badge").innerText = `${t.calories.toLocaleString('tr-TR')} kcal`;
@@ -346,7 +460,6 @@ function renderDashboard() {
     document.getElementById("water-consumed").innerText = (n.water || 0).toFixed(1);
     document.getElementById("target-water-lbl").innerText = t.water.toFixed(1);
 
-    // Steps
     const stepsCount = n.steps || 0;
     document.getElementById("steps-val").innerText = stepsCount.toLocaleString('tr-TR');
     document.getElementById("target-steps-lbl").innerText = t.steps.toLocaleString('tr-TR');
@@ -354,7 +467,6 @@ function renderDashboard() {
     const barSteps = document.getElementById("bar-steps");
     if (barSteps) barSteps.style.width = `${stepsPct}%`;
 
-    // Macro Progress Bars
     document.getElementById("consumed-p").innerText = Math.round(n.protein);
     document.getElementById("target-p-lbl").innerText = ` / ${t.protein}g`;
     document.getElementById("consumed-c").innerText = Math.round(n.carbs);
@@ -374,7 +486,6 @@ function renderDashboard() {
     renderDashboardSupplementsSummary();
 }
 
-// Render Pinned Quick Action Buttons on Dashboard
 function renderDashboardQuickActions() {
     const container = document.getElementById("dashboard-quick-actions-container");
     if (!container) return;
@@ -402,13 +513,11 @@ function renderDashboardQuickActions() {
     container.innerHTML = buttonsHtml;
 }
 
-// Modal for Quick Actions Configuration
 function renderQuickActionsConfig() {
     const listContainer = document.getElementById("quick-actions-toggle-list");
     if (!listContainer) return;
 
     const pinned = appData.pinnedQuickActions || [];
-
     const builtInActions = [
         { key: "water", label: "+500ml Su Ekle", icon: "fa-glass-water" },
         { key: "steps_1000", label: "+1.000 Adım Ekle", icon: "fa-shoe-prints" },
@@ -426,7 +535,6 @@ function renderQuickActionsConfig() {
         `;
     });
 
-    // Add preset meals to toggle list
     Object.keys(appData.customPresets || {}).forEach(key => {
         const p = appData.customPresets[key];
         const checked = pinned.includes(key) ? "checked" : "";
@@ -477,7 +585,6 @@ function addWater(amount) {
     showToast(`+${amount * 1000}ml Su Eklendi 💧`);
 }
 
-// Mini Supplement Checklist on Dashboard
 function renderDashboardSupplementsSummary() {
     const container = document.getElementById("dashboard-supplements-summary");
     if (!container) return;
@@ -507,14 +614,15 @@ function renderDashboardSupplementsSummary() {
     }).join("");
 }
 
-// ==================== CUSTOM MEAL BUILDER & PRESETS ====================
+// ==================== MEAL BUILDER & PRESET EDITOR ====================
 
-function calculateMealCalories() {
-    const p = parseFloat(document.getElementById("meal-p").value) || 0;
-    const c = parseFloat(document.getElementById("meal-c").value) || 0;
-    const f = parseFloat(document.getElementById("meal-f").value) || 0;
+function calculateMealCalories(pId, cId, fId, resId) {
+    const p = parseFloat(document.getElementById(pId).value) || 0;
+    const c = parseFloat(document.getElementById(cId).value) || 0;
+    const f = parseFloat(document.getElementById(fId).value) || 0;
     const totalCal = Math.round((p * 4) + (c * 4) + (f * 9));
-    document.getElementById("meal-calc-cal").innerText = `${totalCal} kcal`;
+    const resEl = document.getElementById(resId);
+    if (resEl) resEl.innerText = `${totalCal} kcal`;
     return totalCal;
 }
 
@@ -524,7 +632,7 @@ function submitCustomMeal(addToToday = true) {
     const p = parseFloat(document.getElementById("meal-p").value) || 0;
     const c = parseFloat(document.getElementById("meal-c").value) || 0;
     const f = parseFloat(document.getElementById("meal-f").value) || 0;
-    const cal = calculateMealCalories();
+    const cal = calculateMealCalories('meal-p', 'meal-c', 'meal-f', 'meal-calc-cal');
     const savePreset = document.getElementById("save-as-preset-chk").checked;
 
     if (!name) {
@@ -534,7 +642,6 @@ function submitCustomMeal(addToToday = true) {
 
     const mealId = "custom_" + Date.now();
 
-    // If saving as preset library item
     if (savePreset) {
         if (!appData.customPresets) appData.customPresets = {};
         appData.customPresets[mealId] = {
@@ -545,7 +652,6 @@ function submitCustomMeal(addToToday = true) {
         };
     }
 
-    // Add to today's log
     if (addToToday) {
         appData.todayNutrition.calories += cal;
         appData.todayNutrition.protein += p;
@@ -564,7 +670,6 @@ function submitCustomMeal(addToToday = true) {
         });
     }
 
-    // Reset inputs
     document.getElementById("meal-name").value = "";
     document.getElementById("meal-desc").value = "";
     document.getElementById("meal-p").value = "";
@@ -577,6 +682,50 @@ function submitCustomMeal(addToToday = true) {
     renderNutritionView();
     closeModal('modal-meal-builder');
     showToast(`${name} başarıyla eklendi! 🍱`);
+}
+
+function openEditPresetModal(presetKey) {
+    const preset = (appData.customPresets && appData.customPresets[presetKey]) || DEFAULT_PRESET_MEALS[presetKey];
+    if (!preset) return;
+
+    document.getElementById("edit-preset-id").value = presetKey;
+    document.getElementById("edit-preset-name").value = preset.name;
+    document.getElementById("edit-preset-desc").value = preset.desc || "";
+    document.getElementById("edit-preset-p").value = preset.p;
+    document.getElementById("edit-preset-c").value = preset.c;
+    document.getElementById("edit-preset-f").value = preset.f;
+    document.getElementById("edit-preset-calc-cal").innerText = `${preset.cal} kcal`;
+
+    openModal('modal-edit-preset');
+}
+
+function saveEditedPreset() {
+    const key = document.getElementById("edit-preset-id").value;
+    const name = document.getElementById("edit-preset-name").value.trim();
+    const desc = document.getElementById("edit-preset-desc").value.trim();
+    const p = parseFloat(document.getElementById("edit-preset-p").value) || 0;
+    const c = parseFloat(document.getElementById("edit-preset-c").value) || 0;
+    const f = parseFloat(document.getElementById("edit-preset-f").value) || 0;
+    const cal = calculateMealCalories('edit-preset-p', 'edit-preset-c', 'edit-preset-f', 'edit-preset-calc-cal');
+
+    if (!name) {
+        alert("Lütfen öğün adı girin.");
+        return;
+    }
+
+    if (!appData.customPresets) appData.customPresets = {};
+    appData.customPresets[key] = {
+        id: key,
+        name: name,
+        desc: desc,
+        cal: cal, p: p, c: c, f: f
+    };
+
+    saveDataToStorage();
+    renderNutritionView();
+    renderDashboard();
+    closeModal('modal-edit-preset');
+    showToast(`${name} şablonu güncellendi! ✏️`);
 }
 
 function logPresetMeal(key) {
@@ -655,13 +804,11 @@ function clearTodayMeals() {
 }
 
 function renderNutritionView() {
-    // 1. Render Preset Meals Library
     const presetContainer = document.getElementById("preset-meals-container");
     if (presetContainer) {
         const presets = appData.customPresets || DEFAULT_PRESET_MEALS;
         presetContainer.innerHTML = Object.keys(presets).map(key => {
             const m = presets[key];
-            const isCustom = key.startsWith("custom_");
             return `
                 <div class="meal-preset-item">
                     <div class="meal-preset-details">
@@ -670,7 +817,8 @@ function renderNutritionView() {
                         <small>${m.cal} kcal • ${m.p}g P • ${m.c}g C • ${m.f}g F</small>
                     </div>
                     <div style="display:flex; align-items:center; gap:6px;">
-                        ${isCustom ? `<button class="btn-delete-item" onclick="deletePreset('${key}')" title="Şablonu Sil"><i class="fa-solid fa-trash"></i></button>` : ''}
+                        <button class="btn-edit-item" onclick="openEditPresetModal('${key}')" title="Şablonu Düzenle"><i class="fa-solid fa-pen"></i></button>
+                        <button class="btn-delete-item" onclick="deletePreset('${key}')" title="Şablonu Sil"><i class="fa-solid fa-trash"></i></button>
                         <button class="btn-circle-add" onclick="logPresetMeal('${key}')" title="Bugüne Ekle"><i class="fa-solid fa-plus"></i></button>
                     </div>
                 </div>
@@ -678,7 +826,6 @@ function renderNutritionView() {
         }).join("");
     }
 
-    // 2. Render Today's Logged Foods List with Individual Deletion
     const loggedContainer = document.getElementById("today-logged-foods-list");
     if (loggedContainer) {
         const meals = appData.todayNutrition.meals || [];
@@ -704,7 +851,7 @@ function renderNutritionView() {
     }
 }
 
-// ==================== SUPPLEMENTS PROTOCOL ====================
+// ==================== 50+ SUPPLEMENTS MANAGEMENT & CATALOG ====================
 
 function renderSupplementsView() {
     const container = document.getElementById("supplements-full-list");
@@ -715,7 +862,7 @@ function renderSupplementsView() {
     const supps = appData.supplements || [];
 
     if (supps.length === 0) {
-        container.innerHTML = `<p class="text-muted" style="text-align:center; padding:20px; font-size:0.8rem;">Kayıtlı suplement bulunamadı. "+ Takviye Ekle" butonundan ekleyebilirsin.</p>`;
+        container.innerHTML = `<p class="text-muted" style="text-align:center; padding:20px; font-size:0.8rem;">Kayıtlı suplement bulunamadı. "50+ Katalogdan Seç" butonundan ekleyebilirsin.</p>`;
         return;
     }
 
@@ -727,11 +874,12 @@ function renderSupplementsView() {
                     <button class="supp-chk-btn"><i class="fa-solid fa-check"></i></button>
                     <div class="supp-info">
                         <strong>${s.name}</strong>
-                        <span>${s.dosage}</span>
+                        <span>${s.dosage} • <span class="supp-timing-badge">${s.timing}</span></span>
+                        ${s.benefit ? `<span class="supp-benefit-tag"><i class="fa-solid fa-bolt"></i> ${s.benefit}</span>` : ''}
                     </div>
                 </div>
-                <div style="display:flex; align-items:center; gap:8px;">
-                    <span class="supp-timing-badge">${s.timing}</span>
+                <div style="display:flex; align-items:center; gap:6px;">
+                    ${s.details ? `<button class="btn-edit-item" onclick="showSupplementInfo('${s.id}')" title="Bilimsel Bilgi"><i class="fa-solid fa-circle-info"></i></button>` : ''}
                     <button class="btn-delete-item" onclick="deleteSupplement('${s.id}')" title="Sil"><i class="fa-solid fa-trash"></i></button>
                 </div>
             </div>
@@ -750,34 +898,70 @@ function toggleSupplement(suppId) {
     showToast(appData.supplementsLog[todayStr][suppId] ? "Takviye alındı olarak işaretlendi! 💊" : "İşaret kaldırıldı.");
 }
 
-function submitNewSupplement() {
-    const name = document.getElementById("supp-name").value.trim();
-    const dosage = document.getElementById("supp-dosage").value.trim();
-    const timing = document.getElementById("supp-timing").value;
+function renderSupplementCatalog() {
+    const container = document.getElementById("supp-catalog-items-container");
+    if (!container) return;
 
-    if (!name) {
-        alert("Lütfen bir suplement adı girin.");
+    const searchTerm = (document.getElementById("supp-catalog-search").value || "").toLowerCase().trim();
+    const currentSuppIds = (appData.supplements || []).map(s => s.id);
+
+    const filtered = MASTER_SUPPLEMENT_DATABASE.filter(s => {
+        const matchesCat = (currentSuppCatalogCategory === "all" || s.category === currentSuppCatalogCategory);
+        const matchesSearch = s.name.toLowerCase().includes(searchTerm) || (s.benefit && s.benefit.toLowerCase().includes(searchTerm));
+        return matchesCat && matchesSearch;
+    });
+
+    if (filtered.length === 0) {
+        container.innerHTML = `<p class="text-muted" style="text-align:center; padding:15px; font-size:0.8rem;">Aradığınız kritere uygun takviye bulunamadı.</p>`;
         return;
     }
 
-    const newSupp = {
-        id: "supp_" + Date.now(),
-        name: name,
-        dosage: dosage || "1 Porsiyon",
-        timing: timing
-    };
+    container.innerHTML = filtered.map(s => {
+        const alreadyAdded = currentSuppIds.includes(s.id);
+        return `
+            <div class="supp-catalog-item">
+                <div class="supp-catalog-left">
+                    <strong>${s.name}</strong>
+                    <span>${s.dosage} • ${s.timing}</span>
+                    <span class="supp-benefit-tag">${s.benefit}</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <button class="btn btn-xs btn-outline" onclick="showMasterSupplementInfo('${s.id}')"><i class="fa-solid fa-info"></i></button>
+                    ${alreadyAdded 
+                        ? `<button class="btn btn-xs btn-outline" style="color:var(--status-green); border-color:var(--status-green);" disabled><i class="fa-solid fa-check"></i> Eklendi</button>`
+                        : `<button class="btn btn-xs btn-primary" onclick="addSupplementFromCatalog('${s.id}')"><i class="fa-solid fa-plus"></i> Ekle</button>`
+                    }
+                </div>
+            </div>
+        `;
+    }).join("");
+}
+
+function filterSuppByCategory(cat) {
+    currentSuppCatalogCategory = cat;
+    document.querySelectorAll(".category-pill").forEach(p => p.classList.remove("active"));
+    const activePill = Array.from(document.querySelectorAll(".category-pill")).find(p => p.getAttribute("onclick").includes(cat));
+    if (activePill) activePill.classList.add("active");
+    renderSupplementCatalog();
+}
+
+function filterSupplementCatalog() {
+    renderSupplementCatalog();
+}
+
+function addSupplementFromCatalog(suppId) {
+    const master = MASTER_SUPPLEMENT_DATABASE.find(s => s.id === suppId);
+    if (!master) return;
 
     if (!appData.supplements) appData.supplements = [];
-    appData.supplements.push(newSupp);
-
-    document.getElementById("supp-name").value = "";
-    document.getElementById("supp-dosage").value = "";
-
-    saveDataToStorage();
-    renderSupplementsView();
-    renderDashboardSupplementsSummary();
-    closeModal('modal-add-supplement');
-    showToast(`${name} eklendi! 💊`);
+    if (!appData.supplements.some(s => s.id === suppId)) {
+        appData.supplements.push({ ...master });
+        saveDataToStorage();
+        renderSupplementsView();
+        renderDashboardSupplementsSummary();
+        renderSupplementCatalog();
+        showToast(`${master.name} takip listene eklendi! 💊`);
+    }
 }
 
 function deleteSupplement(suppId) {
@@ -790,9 +974,47 @@ function deleteSupplement(suppId) {
     }
 }
 
-// ==================== WORKOUT LOGBOOK & OVERLOAD ENGINE ====================
+function showMasterSupplementInfo(suppId) {
+    const s = MASTER_SUPPLEMENT_DATABASE.find(item => item.id === suppId);
+    if (!s) return;
+    displaySupplementInfoModal(s);
+}
 
-let currentActiveDay = "pzt";
+function showSupplementInfo(suppId) {
+    const s = (appData.supplements || []).find(item => item.id === suppId) || MASTER_SUPPLEMENT_DATABASE.find(item => item.id === suppId);
+    if (!s) return;
+    displaySupplementInfoModal(s);
+}
+
+function displaySupplementInfoModal(s) {
+    document.getElementById("supp-info-title").innerHTML = `<i class="fa-solid fa-capsules"></i> ${s.name}`;
+    document.getElementById("supp-info-body").innerHTML = `
+        <div style="display:flex; flex-direction:column; gap:10px;">
+            <div class="card" style="background:var(--bg-card-subtle);">
+                <div style="font-size:0.75rem; color:var(--text-secondary); text-transform:uppercase; font-weight:700;">Temel Faydası</div>
+                <strong style="color:var(--status-green); font-size:0.88rem; margin-top:2px;">${s.benefit}</strong>
+            </div>
+            <div class="form-row-2">
+                <div class="stat-box">
+                    <span class="lbl">Önerilen Dozaj</span>
+                    <strong class="val" style="font-size:0.85rem;">${s.dosage}</strong>
+                </div>
+                <div class="stat-box">
+                    <span class="lbl">Zamanlama</span>
+                    <strong class="val" style="font-size:0.85rem;">${s.timing}</strong>
+                </div>
+            </div>
+            <div class="card" style="background:var(--bg-card-subtle);">
+                <div style="font-size:0.75rem; color:var(--text-secondary); text-transform:uppercase; font-weight:700; margin-bottom:4px;">Bilimsel Etki Mekanizması</div>
+                <p style="font-size:0.82rem; line-height:1.5; color:var(--text-primary);">${s.details || 'Bu takviye sporcu performansını ve toparlanmasını destekler.'}</p>
+            </div>
+            <button class="btn btn-primary btn-block" onclick="closeModal('modal-supp-info')">Kapat</button>
+        </div>
+    `;
+    openModal('modal-supp-info');
+}
+
+// ==================== WORKOUT PROGRAM & EXERCISE MANAGER ====================
 
 function selectWorkoutDay(dayKey) {
     currentActiveDay = dayKey;
@@ -828,7 +1050,6 @@ function calculateOverloadTarget(prevLogs) {
     const r = parseInt(topSet.reps);
     if (!w || !r) return null;
 
-    // Overload Logic
     const targetSameWeightReps = r + 1;
     const targetHeavierWeight = (w + 2.5).toFixed(1).replace('.0', '');
     const targetHeavierReps = Math.max(5, r - 2);
@@ -838,7 +1059,7 @@ function calculateOverloadTarget(prevLogs) {
 
 function renderWorkoutView(dayKey) {
     const container = document.getElementById("workout-content-area");
-    const plan = WORKOUT_PLAN[dayKey];
+    const plan = (appData.customWorkoutPlan && appData.customWorkoutPlan[dayKey]) || DEFAULT_WORKOUT_PLAN[dayKey];
     if (!container || !plan) return;
 
     if (plan.exercises.length === 0) {
@@ -872,7 +1093,7 @@ function renderWorkoutView(dayKey) {
                 <div class="ex-header">
                     <div class="ex-title-group">
                         <h3>${ex.name}</h3>
-                        <span class="ex-target-badge">${ex.target}</span>
+                        <span class="ex-target-badge"><span class="muscle-tag">${ex.muscle || 'Kas Grubu'}</span> ${ex.target}</span>
                     </div>
                     <input type="text" class="ex-seat-input" placeholder="Koltuk/Pim" 
                            value="${savedSeat}" onchange="saveSeatSetting('${ex.id}', this.value)" title="Koltuk ve Pim Ayarın">
@@ -977,6 +1198,114 @@ function autoSaveSet(exId, setIndex) {
     showToast(`Set ${setIndex} Kaydedildi! 💪`);
 }
 
+// Program & Exercise Manager Modal Logic
+function openExerciseManagerModal() {
+    const plan = appData.customWorkoutPlan[currentActiveDay];
+    if (!plan) return;
+
+    document.getElementById("ex-mgr-day-title").innerHTML = `<i class="fa-solid fa-pen-to-square"></i> ${plan.title} - Hareketleri Düzenle`;
+    renderCurrentExercisesInManager();
+    renderLibraryExercisesByMuscle();
+    openModal('modal-exercise-manager');
+}
+
+function renderCurrentExercisesInManager() {
+    const listContainer = document.getElementById("ex-mgr-current-list");
+    const plan = appData.customWorkoutPlan[currentActiveDay];
+    if (!listContainer || !plan) return;
+
+    if (plan.exercises.length === 0) {
+        listContainer.innerHTML = `<p class="text-muted" style="text-align:center; font-size:0.8rem;">Bu gün için kayıtlı egzersiz yok.</p>`;
+        return;
+    }
+
+    listContainer.innerHTML = plan.exercises.map((ex, idx) => `
+        <div class="ex-mgr-item">
+            <div>
+                <strong>${idx + 1}. ${ex.name}</strong>
+                <div style="font-size:0.7rem; color:var(--text-secondary);"><span class="muscle-tag">${ex.muscle || ''}</span> • ${ex.target}</div>
+            </div>
+            <div style="display:flex; align-items:center; gap:6px;">
+                <button class="btn-delete-item" onclick="removeExerciseFromDay(${idx})" title="Hareketten Çıkar"><i class="fa-solid fa-trash"></i></button>
+            </div>
+        </div>
+    `).join("");
+}
+
+function removeExerciseFromDay(index) {
+    const plan = appData.customWorkoutPlan[currentActiveDay];
+    if (!plan || !plan.exercises[index]) return;
+
+    const removed = plan.exercises.splice(index, 1)[0];
+    saveDataToStorage();
+    renderCurrentExercisesInManager();
+    renderWorkoutView(currentActiveDay);
+    showToast(`${removed.name} programdan çıkarıldı.`);
+}
+
+function renderLibraryExercisesByMuscle() {
+    const select = document.getElementById("library-muscle-select");
+    const container = document.getElementById("library-exercises-list");
+    if (!select || !container) return;
+
+    const selectedMuscle = select.value;
+    const plan = appData.customWorkoutPlan[currentActiveDay];
+    const currentExNames = plan ? plan.exercises.map(e => e.name) : [];
+
+    const filtered = EXERCISE_LIBRARY.filter(ex => {
+        if (selectedMuscle === "all") return true;
+        if (selectedMuscle === "chest") return ex.muscle.includes("Göğüs");
+        if (selectedMuscle === "back") return ex.muscle.includes("Sırt") || ex.muscle.includes("Lat");
+        if (selectedMuscle === "shoulders") return ex.muscle.includes("Omuz");
+        if (selectedMuscle === "triceps") return ex.muscle.includes("Triceps");
+        if (selectedMuscle === "biceps") return ex.muscle.includes("Biceps") || ex.muscle.includes("Brachialis");
+        if (selectedMuscle === "legs") return ex.muscle.includes("Bacak") || ex.muscle.includes("Quad") || ex.muscle.includes("Hamstring") || ex.muscle.includes("Kalf");
+        if (selectedMuscle === "abs_traps") return ex.muscle.includes("Trapez") || ex.muscle.includes("Karın");
+        return true;
+    });
+
+    container.innerHTML = filtered.map(ex => {
+        const inPlan = currentExNames.includes(ex.name);
+        return `
+            <div class="library-ex-item">
+                <div style="flex:1;">
+                    <strong style="font-size:0.8rem; color:#ffffff;">${ex.name}</strong>
+                    <div style="font-size:0.68rem; color:var(--text-secondary);">${ex.muscle} • ${ex.desc}</div>
+                </div>
+                ${inPlan 
+                    ? `<button class="btn btn-xs btn-outline" style="color:var(--status-green); border-color:var(--status-green);" disabled><i class="fa-solid fa-check"></i> Ekli</button>`
+                    : `<button class="btn btn-xs btn-primary" onclick="addExerciseToDay('${ex.id}')"><i class="fa-solid fa-plus"></i> Ekle</button>`
+                }
+            </div>
+        `;
+    }).join("");
+}
+
+function addExerciseToDay(libExId) {
+    const libEx = EXERCISE_LIBRARY.find(e => e.id === libExId);
+    if (!libEx) return;
+
+    const plan = appData.customWorkoutPlan[currentActiveDay];
+    if (!plan) return;
+
+    const newEx = {
+        id: `${currentActiveDay}_${Date.now()}`,
+        name: libEx.name,
+        muscle: libEx.muscle,
+        target: libEx.defaultTarget,
+        defaultSets: libEx.defaultSets,
+        defaultSeat: libEx.defaultSeat,
+        isTopSet: libEx.isTopSet
+    };
+
+    plan.exercises.push(newEx);
+    saveDataToStorage();
+    renderCurrentExercisesInManager();
+    renderLibraryExercisesByMuscle();
+    renderWorkoutView(currentActiveDay);
+    showToast(`${libEx.name} programa eklendi! 💪`);
+}
+
 // ==================== SCALE & AUTHENTIC COACH REPORT ====================
 
 function saveDailyWeight() {
@@ -1016,12 +1345,10 @@ function renderScaleView() {
         </div>
     `).join("");
 
-    // Calculate 7-Day Rolling Average
     const last7 = history.slice(0, 7);
     const avg7 = last7.reduce((acc, curr) => acc + curr.weight, 0) / last7.length;
     document.getElementById("current-week-avg").innerText = `${avg7.toFixed(2)} kg`;
 
-    // Calculate Delta against previous 7 days
     const prev7 = history.slice(7, 14);
     let delta = 0;
     if (prev7.length > 0) {

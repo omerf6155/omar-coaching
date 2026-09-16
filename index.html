@@ -95,7 +95,7 @@
                         </button>
                     </div>
                     <div class="quick-actions-grid" id="dashboard-quick-actions-container">
-                        <!-- Dynamically populated based on user settings -->
+                        <!-- Populated dynamically -->
                     </div>
                 </div>
 
@@ -126,8 +126,18 @@
                 </div>
             </section>
 
-            <!-- VIEW 2: ANTRENMAN (LOGBOOK) -->
+            <!-- VIEW 2: ANTRENMAN (LOGBOOK & EXERCISE MANAGER) -->
             <section id="view-workout" class="tab-view">
+                <!-- Top Workout Controls: Day selector + RIR Info & Manage Program Buttons -->
+                <div class="workout-action-bar">
+                    <button class="btn btn-xs btn-outline" onclick="openModal('modal-rir-guide')">
+                        <i class="fa-solid fa-circle-question"></i> RIR Mantığı Nedir?
+                    </button>
+                    <button class="btn btn-xs btn-primary" onclick="openExerciseManagerModal()">
+                        <i class="fa-solid fa-pen-to-square"></i> Bu Günü Düzenle
+                    </button>
+                </div>
+
                 <div class="day-selector-scroll" id="workout-day-tabs">
                     <button class="day-pill active" onclick="selectWorkoutDay('pzt')">Pzt • Push 1</button>
                     <button class="day-pill" onclick="selectWorkoutDay('sal')">Sal • Pull 1</button>
@@ -152,7 +162,7 @@
                     </button>
                 </div>
 
-                <!-- Custom / Preset Meals Library -->
+                <!-- Custom / Preset Meals Library with Edit Support -->
                 <div class="card">
                     <div class="card-header">
                         <h2>HAZIR ŞABLONLAR & ÖĞÜNLER</h2>
@@ -175,17 +185,17 @@
                 </div>
             </section>
 
-            <!-- VIEW 4: SUPLEMENTLER (SUPPLEMENT TRACKER) -->
+            <!-- VIEW 4: SUPLEMENTLER (SUPPLEMENT TRACKER & 50+ CATALOG) -->
             <section id="view-supplements" class="tab-view">
                 <div class="card">
                     <div class="card-header">
                         <h2>SUPLEMENT PROTOKOLÜ</h2>
-                        <button class="btn btn-sm btn-primary" onclick="openModal('modal-add-supplement')">
-                            <i class="fa-solid fa-plus"></i> Takviye Ekle
+                        <button class="btn btn-sm btn-primary" onclick="openModal('modal-supplement-catalog')">
+                            <i class="fa-solid fa-layer-group"></i> 50+ Katalogdan Seç
                         </button>
                     </div>
                     <p class="text-secondary" style="font-size:0.8rem; line-height:1.4;">
-                        Günlük takviyelerini zamanında alarak kas onarımını ve hidrasyonu maksimumda tut.
+                        Kullandığın takviyeleri işaretle, ne işe yaradığını incele ve günlük rutinine göre düzenle.
                     </p>
                     <div id="supplements-full-list" class="supplements-full-list">
                         <!-- Populated dynamically -->
@@ -370,7 +380,7 @@
                     Ana ekranda (Dashboard) görmek istediğin hızlı işlem butonlarını işaretle:
                 </p>
                 <div id="quick-actions-toggle-list" class="toggle-list">
-                    <!-- Dynamically populated checkbox items -->
+                    <!-- Populated dynamically -->
                 </div>
                 <button class="btn btn-primary btn-block" style="margin-top:14px;" onclick="saveQuickActionsConfig()">
                     Değişiklikleri Kaydet
@@ -379,7 +389,7 @@
         </div>
     </div>
 
-    <!-- 3. CUSTOM MEAL / FOOD BUILDER MODAL -->
+    <!-- 3. CUSTOM MEAL BUILDER MODAL -->
     <div id="modal-meal-builder" class="modal-overlay">
         <div class="modal-card">
             <div class="modal-header">
@@ -398,15 +408,15 @@
                 <div class="form-row-3">
                     <div class="form-group">
                         <label>Protein (g)</label>
-                        <input type="number" id="meal-p" placeholder="0" oninput="calculateMealCalories()">
+                        <input type="number" id="meal-p" placeholder="0" oninput="calculateMealCalories('meal-p', 'meal-c', 'meal-f', 'meal-calc-cal')">
                     </div>
                     <div class="form-group">
                         <label>Karb (g)</label>
-                        <input type="number" id="meal-c" placeholder="0" oninput="calculateMealCalories()">
+                        <input type="number" id="meal-c" placeholder="0" oninput="calculateMealCalories('meal-p', 'meal-c', 'meal-f', 'meal-calc-cal')">
                     </div>
                     <div class="form-group">
                         <label>Yağ (g)</label>
-                        <input type="number" id="meal-f" placeholder="0" oninput="calculateMealCalories()">
+                        <input type="number" id="meal-f" placeholder="0" oninput="calculateMealCalories('meal-p', 'meal-c', 'meal-f', 'meal-calc-cal')">
                     </div>
                 </div>
 
@@ -431,34 +441,167 @@
         </div>
     </div>
 
-    <!-- 4. ADD SUPPLEMENT MODAL -->
-    <div id="modal-add-supplement" class="modal-overlay">
+    <!-- 4. EDIT PRESET MEAL MODAL -->
+    <div id="modal-edit-preset" class="modal-overlay">
         <div class="modal-card">
             <div class="modal-header">
-                <h3><i class="fa-solid fa-capsules"></i> Yeni Suplement Ekle</h3>
-                <button class="modal-close-btn" onclick="closeModal('modal-add-supplement')">&times;</button>
+                <h3><i class="fa-solid fa-pen-to-square"></i> Şablon Öğünü Düzenle</h3>
+                <button class="modal-close-btn" onclick="closeModal('modal-edit-preset')">&times;</button>
             </div>
             <div class="modal-body">
+                <input type="hidden" id="edit-preset-id">
                 <div class="form-group">
-                    <label>Suplement Adı</label>
-                    <input type="text" id="supp-name" placeholder="Örn: Kreatin Monohidrat">
+                    <label>Öğün Adı</label>
+                    <input type="text" id="edit-preset-name" placeholder="Örn: Kahvaltı Pankek">
                 </div>
                 <div class="form-group">
-                    <label>Dozaj / Miktar</label>
-                    <input type="text" id="supp-dosage" placeholder="Örn: 5 gram">
+                    <label>Malzeme & Gramaj Açıklaması</label>
+                    <input type="text" id="edit-preset-desc" placeholder="Örn: 60g Pirinç unu, 1 Muz, 30g Fıstık ezmesi...">
                 </div>
+                <div class="form-row-3">
+                    <div class="form-group">
+                        <label>Protein (g)</label>
+                        <input type="number" id="edit-preset-p" placeholder="0" oninput="calculateMealCalories('edit-preset-p', 'edit-preset-c', 'edit-preset-f', 'edit-preset-calc-cal')">
+                    </div>
+                    <div class="form-group">
+                        <label>Karb (g)</label>
+                        <input type="number" id="edit-preset-c" placeholder="0" oninput="calculateMealCalories('edit-preset-p', 'edit-preset-c', 'edit-preset-f', 'edit-preset-calc-cal')">
+                    </div>
+                    <div class="form-group">
+                        <label>Yağ (g)</label>
+                        <input type="number" id="edit-preset-f" placeholder="0" oninput="calculateMealCalories('edit-preset-p', 'edit-preset-c', 'edit-preset-f', 'edit-preset-calc-cal')">
+                    </div>
+                </div>
+
+                <div class="calc-result-banner">
+                    <span>Hesaplanan Kalori:</span>
+                    <strong id="edit-preset-calc-cal">0 kcal</strong>
+                </div>
+
+                <div style="display:flex; gap:8px; margin-top:12px;">
+                    <button class="btn btn-primary btn-block" onclick="saveEditedPreset()">
+                        Değişiklikleri Kaydet
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. 50+ SUPPLEMENT CATALOG MODAL -->
+    <div id="modal-supplement-catalog" class="modal-overlay">
+        <div class="modal-card" style="max-height:90vh;">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-capsules"></i> Suplement Kataloğu (50+ Takviye)</h3>
+                <button class="modal-close-btn" onclick="closeModal('modal-supplement-catalog')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- Search & Category Filters -->
                 <div class="form-group">
-                    <label>Kullanım Zamanı</label>
-                    <select id="supp-timing">
-                        <option value="Sabah / Kahvaltı">Sabah / Kahvaltı</option>
-                        <option value="Antrenmandan 30dk Önce">Antrenmandan 30dk Önce</option>
-                        <option value="Antrenman Sonrası">Antrenman Sonrası</option>
-                        <option value="Yemekle Birlikte">Yemekle Birlikte</option>
-                        <option value="Gece / Yatmadan Önce">Gece / Yatmadan Önce</option>
-                    </select>
+                    <input type="text" id="supp-catalog-search" placeholder="Suplement ara (Örn: Kreatin, Ashwagandha, D3...)" oninput="filterSupplementCatalog()">
                 </div>
-                <button class="btn btn-primary btn-block" style="margin-top:10px;" onclick="submitNewSupplement()">
-                    Suplementi Kaydet
+                <div class="category-pills-scroll" id="supp-catalog-categories">
+                    <button class="category-pill active" onclick="filterSuppByCategory('all')">Tümü</button>
+                    <button class="category-pill" onclick="filterSuppByCategory('performans')">Performans & Güç</button>
+                    <button class="category-pill" onclick="filterSuppByCategory('protein')">Protein & Amino</button>
+                    <button class="category-pill" onclick="filterSuppByCategory('vitamin')">Vitamin & Mineral</button>
+                    <button class="category-pill" onclick="filterSuppByCategory('saglik')">Sağlık & Toparlanma</button>
+                    <button class="category-pill" onclick="filterSuppByCategory('uyku')">Uyku & Sindirim</button>
+                </div>
+                <div class="supp-catalog-list" id="supp-catalog-items-container">
+                    <!-- Populated dynamically with 50+ items -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. SUPPLEMENT DETAILED INFO MODAL -->
+    <div id="modal-supp-info" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 id="supp-info-title"><i class="fa-solid fa-circle-info"></i> Suplement Bilgisi</h3>
+                <button class="modal-close-btn" onclick="closeModal('modal-supp-info')">&times;</button>
+            </div>
+            <div class="modal-body" id="supp-info-body">
+                <!-- Populated dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 7. RIR EDUCATIONAL GUIDE MODAL -->
+    <div id="modal-rir-guide" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-brain"></i> RIR (Reps In Reserve) Nedir?</h3>
+                <button class="modal-close-btn" onclick="closeModal('modal-rir-guide')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="text-secondary" style="font-size:0.82rem; line-height:1.5; margin-bottom:12px;">
+                    <strong>RIR (Reps In Reserve)</strong>, seti bitirdiğinde <em>"tükenişe kaç tekrar kalmıştı?"</em> sorusunun cevabıdır. Doğal sporcularda hipertrofinin en kritik anahtarıdır.
+                </p>
+                <div class="rir-guide-cards">
+                    <div class="rir-guide-item rir-0">
+                        <strong>🔥 RIR 0 (Tam Tükeniş / Failure)</strong>
+                        <p>Set bittiğinde silah zoruyla bile 1 tekrar daha çıkamayacak nokta. Mekanik gerilim maksimumdur. Genellikle her egzersizin <strong>Top Set</strong>'inde uygulanır.</p>
+                    </div>
+                    <div class="rir-guide-item rir-1">
+                        <strong>💪 RIR 1 (1 Tekrar Kaldı - Altın Standart)</strong>
+                        <p>1 tekrar daha zorlanarak çıkabilirdi. Kas hasarı ve toparlanma dengesi açısından hipertrofi için en ideal çalışma setidir.</p>
+                    </div>
+                    <div class="rir-guide-item rir-2">
+                        <strong>⚡ RIR 2+ (2-3 Tekrar Kaldı)</strong>
+                        <p>Set rahat bitti, 2 veya 3 tekrar payı var. Isınma veya yorgunluk yönetimi için uygundur. Ağırlığı hafifçe artırabilirsin.</p>
+                    </div>
+                    <div class="rir-guide-item rir-warn">
+                        <strong>⚠️ Form Bozuldu</strong>
+                        <p>Tekrar çıktı ama hedef kastan çalındı veya sakatlık riski oluştu. Ağırlığı sabit tutup hareketi daha kontrollü yapmalısın.</p>
+                    </div>
+                </div>
+                <button class="btn btn-primary btn-block" style="margin-top:14px;" onclick="closeModal('modal-rir-guide')">
+                    Anladım, Antrenmana Devam
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 8. EXERCISE & PROGRAM MANAGER MODAL -->
+    <div id="modal-exercise-manager" class="modal-overlay">
+        <div class="modal-card" style="max-height:90vh;">
+            <div class="modal-header">
+                <h3 id="ex-mgr-day-title"><i class="fa-solid fa-pen-to-square"></i> Günün Hareketlerini Düzenle</h3>
+                <button class="modal-close-btn" onclick="closeModal('modal-exercise-manager')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="text-secondary" style="font-size:0.8rem; margin-bottom:10px;">
+                    Bu günün programındaki hareketleri silebilir, değiştirebilir veya egzersiz kütüphanesinden yeni hareket ekleyebilirsin:
+                </p>
+                
+                <div id="ex-mgr-current-list" class="ex-mgr-list">
+                    <!-- Populated dynamically with current exercises -->
+                </div>
+
+                <div class="card" style="margin-top:12px; background:var(--bg-card-subtle);">
+                    <div class="card-header">
+                        <h2>EGZERSİZ KÜTÜPHANESİNDEN EKLE</h2>
+                    </div>
+                    <div class="form-group">
+                        <select id="library-muscle-select" onchange="renderLibraryExercisesByMuscle()">
+                            <option value="all">Tüm Kas Grupları</option>
+                            <option value="chest">Göğüs (Chest)</option>
+                            <option value="back">Sırt & Lats (Back)</option>
+                            <option value="shoulders">Omuz & Arka Omuz (Shoulders)</option>
+                            <option value="triceps">Triceps (Kollar)</option>
+                            <option value="biceps">Biceps & Ön Kol (Arms)</option>
+                            <option value="legs">Bacak & Kalça (Legs)</option>
+                            <option value="abs_traps">Trapez & Karın</option>
+                        </select>
+                    </div>
+                    <div id="library-exercises-list" class="library-ex-grid">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+
+                <button class="btn btn-primary btn-block" style="margin-top:14px;" onclick="closeModal('modal-exercise-manager')">
+                    Tamamla & Antrenmana Dön
                 </button>
             </div>
         </div>
