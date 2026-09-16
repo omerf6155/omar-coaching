@@ -3111,3 +3111,154 @@ body {
 .profile-id-box:hover .copy-icon {
     color: #ffd60a;
 }
+
+/* ==================== MUSCLE GROUP PILLS & SUBREGION CHIPS ==================== */
+.muscle-group-pills-wrap {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+@media (min-width: 600px) {
+    .muscle-group-pills-wrap {
+        grid-template-columns: repeat(6, 1fr);
+    }
+}
+
+.muscle-pill {
+    background: var(--bg-input);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    font-size: 0.74rem;
+    font-weight: 700;
+    padding: 8px 4px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.muscle-pill:hover {
+    border-color: rgba(255, 255, 255, 0.3);
+    color: #ffffff;
+}
+
+.muscle-pill.active {
+    background: #ffffff;
+    color: #000000;
+    border-color: #ffffff;
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.15);
+}
+
+.subregion-chips-scroll {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding: 4px 2px 8px 2px;
+    margin-bottom: 6px;
+    scrollbar-width: none;
+}
+
+.subregion-chips-scroll::-webkit-scrollbar {
+    display: none;
+}
+
+.subregion-chip {
+    white-space: nowrap;
+    background: var(--bg-main);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-full);
+    color: var(--text-secondary);
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 4px 10px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.subregion-chip:hover {
+    border-color: rgba(255, 255, 255, 0.3);
+    color: #ffffff;
+}
+
+.subregion-chip.active {
+    background: rgba(10, 132, 255, 0.18);
+    border-color: var(--status-blue);
+    color: var(--status-blue);
+    font-weight: 800;
+}
+
+/* ==================== COLLAPSIBLE BANNERS & DISMISSIBLES ==================== */
+.banner-close-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.1rem;
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+    transition: color 0.2s;
+}
+
+.banner-close-btn:hover {
+    color: #ffffff;
+}
+
+.btn-collapse-toggle {
+    background: transparent;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.72rem;
+    transition: all 0.2s ease;
+}
+
+.btn-collapse-toggle:hover {
+    border-color: rgba(255, 255, 255, 0.3);
+    color: #ffffff;
+}
+
+.rir-legend-card.collapsed .rir-legend-grid {
+    display: none !important;
+}
+
+.rir-legend-card.collapsed {
+    padding: 10px 14px;
+    margin-bottom: 10px;
+}
+
+/* Enhanced Exercise Card in Library */
+.library-ex-item {
+    background: var(--bg-main);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    transition: border-color 0.2s;
+    margin-bottom: 8px;
+}
+
+.library-ex-item:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.library-sub-badge {
+    display: inline-block;
+    font-size: 0.62rem;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+    background: rgba(10, 132, 255, 0.12);
+    color: var(--status-blue);
+    border: 1px solid rgba(10, 132, 255, 0.3);
+}

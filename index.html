@@ -80,7 +80,10 @@
                 </div>
 
                 <div class="coach-alert-card" id="coach-daily-banner">
-                    <div class="coach-badge"><i class="fa-solid fa-fire"></i> KOÇ BİLGİLENDİRMESİ</div>
+                    <div class="coach-badge">
+                        <span><i class="fa-solid fa-fire"></i> KOÇ BİLGİLENDİRMESİ</span>
+                        <button class="banner-close-btn" onclick="dismissCoachDailyBanner(event)" title="Kapat">&times;</button>
+                    </div>
                     <p class="coach-text" id="daily-coach-tip">Bugün odak bölgelerine (Arka Omuz & Triceps) taze enerjiyle yükleniyoruz. Kalori ve adımlarını aksatma!</p>
                 </div>
 
@@ -175,16 +178,21 @@
 
             <!-- VIEW 2: ANTRENMAN (LOGBOOK & EXERCISE MANAGER) -->
             <section id="view-workout" class="tab-view">
-                <!-- RIR / Set Difficulty Quick Legend Banner -->
-                <div class="card rir-legend-card" onclick="openModal('modal-rir-guide')" style="cursor: pointer;" title="Set Zorluğu Rehberini Aç">
-                    <div class="rir-legend-header">
+                <!-- RIR / Set Difficulty Collapsible Legend Banner -->
+                <div class="card rir-legend-card" id="rir-legend-container">
+                    <div class="rir-legend-header" onclick="toggleRIRLegendCollapse()" style="cursor: pointer;">
                         <div class="rir-legend-title">
                             <i class="fa-solid fa-gauge-high"></i>
                             <span>SET ZORLUĞU & RIR REHBERİ</span>
                         </div>
-                        <span class="rir-legend-btn"><i class="fa-solid fa-circle-question"></i> Nasıl Seçilir?</span>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span class="rir-legend-btn" onclick="event.stopPropagation(); openModal('modal-rir-guide')" title="Detaylı RIR Rehberi"><i class="fa-solid fa-circle-question"></i> Nasıl Seçilir?</span>
+                            <button class="btn-collapse-toggle" id="rir-collapse-toggle-btn" title="Daralt / Genişlet">
+                                <i class="fa-solid fa-chevron-up" id="rir-collapse-icon"></i>
+                            </button>
+                        </div>
                     </div>
-                    <div class="rir-legend-grid">
+                    <div class="rir-legend-grid" id="rir-legend-content">
                         <div class="rir-badge-item rir-bad-0">
                             <span class="dot">🔴</span>
                             <strong>Zor (Tükeniş)</strong>
@@ -961,45 +969,68 @@
         </div>
     </div>
 
-    <!-- 7. EXERCISE & PROGRAM MANAGER MODAL -->
+    <!-- 7. EXERCISE & PROGRAM MANAGER MODAL (6 KAS GRUBU & ALT BÖLGELER) -->
     <div id="modal-exercise-manager" class="modal-overlay">
-        <div class="modal-card" style="max-height:90vh;">
+        <div class="modal-card" style="max-height:92vh;">
             <div class="modal-header">
-                <h3 id="ex-mgr-day-title"><i class="fa-solid fa-pen-to-square"></i> Günün Hareketlerini Düzenle</h3>
+                <h3 id="ex-mgr-day-title"><i class="fa-solid fa-dumbbell"></i> Günün Hareketlerini Düzenle</h3>
                 <button class="modal-close-btn" onclick="closeModal('modal-exercise-manager')">&times;</button>
             </div>
             <div class="modal-body">
-                <p class="text-secondary" style="font-size:0.8rem; margin-bottom:10px;">
-                    Bu günün programındaki hareketleri silebilir, değiştirebilir veya egzersiz kütüphanesinden yeni hareket ekleyebilirsin:
-                </p>
-                
+                <!-- Current exercises for the active day -->
+                <div class="card-header" style="margin-bottom:6px;">
+                    <h2 style="font-size:0.8rem;"><i class="fa-solid fa-list-check"></i> MEVCUT GÜNÜN HAREKETLERİ</h2>
+                </div>
                 <div id="ex-mgr-current-list" class="ex-mgr-list">
                     <!-- Populated dynamically with current exercises -->
                 </div>
 
-                <div class="card" style="margin-top:12px; background:var(--bg-card-subtle);">
-                    <div class="card-header">
-                        <h2>EGZERSİZ KÜTÜPHANESİNDEN EKLE</h2>
+                <!-- Exercise Library with 6 Muscle Groups & Sub-Regions -->
+                <div class="card" style="margin-top:14px; background:var(--bg-card-subtle); padding:12px;">
+                    <div class="card-header" style="margin-bottom:8px;">
+                        <h2><i class="fa-solid fa-book-bookmark"></i> EGZERSİZ KÜTÜPHANESİNDEN SEÇ</h2>
                     </div>
-                    <div class="form-group">
-                        <select id="library-muscle-select" onchange="renderLibraryExercisesByMuscle()">
-                            <option value="all">Tüm Kas Grupları</option>
-                            <option value="chest">Göğüs (Chest)</option>
-                            <option value="back">Sırt & Lats (Back)</option>
-                            <option value="shoulders">Omuz & Arka Omuz (Shoulders)</option>
-                            <option value="triceps">Triceps (Kollar)</option>
-                            <option value="biceps">Biceps & Ön Kol (Arms)</option>
-                            <option value="legs">Bacak & Kalça (Legs)</option>
-                            <option value="abs_traps">Trapez & Karın</option>
-                        </select>
+
+                    <!-- Search Input -->
+                    <div class="form-group" style="margin-bottom:10px;">
+                        <input type="text" id="library-ex-search" placeholder="🔍 Hareket ara (Örn: Incline, RDL, Squat, Dips, Lateral...)" oninput="handleLibrarySearch(this.value)" style="font-size:0.82rem;">
                     </div>
-                    <div id="library-exercises-list" class="library-ex-grid">
+
+                    <!-- 6 Main Muscle Group Filter Pills -->
+                    <div class="muscle-group-pills-wrap">
+                        <button type="button" class="muscle-pill active" id="mpill-chest" onclick="setLibraryMainMuscle('chest', this)">
+                            🫁 Göğüs
+                        </button>
+                        <button type="button" class="muscle-pill" id="mpill-shoulders" onclick="setLibraryMainMuscle('shoulders', this)">
+                            🦾 Omuz
+                        </button>
+                        <button type="button" class="muscle-pill" id="mpill-back" onclick="setLibraryMainMuscle('back', this)">
+                            🦅 Sırt
+                        </button>
+                        <button type="button" class="muscle-pill" id="mpill-arms" onclick="setLibraryMainMuscle('arms', this)">
+                            💪 Kol
+                        </button>
+                        <button type="button" class="muscle-pill" id="mpill-abs" onclick="setLibraryMainMuscle('abs', this)">
+                            🧱 Karın & Core
+                        </button>
+                        <button type="button" class="muscle-pill" id="mpill-legs" onclick="setLibraryMainMuscle('legs', this)">
+                            🦵 Bacak
+                        </button>
+                    </div>
+
+                    <!-- Sub-Target Region Filter Chips -->
+                    <div class="subregion-chips-scroll" id="library-subregion-chips">
+                        <!-- Populated dynamically based on selected main muscle -->
+                    </div>
+
+                    <!-- Library Exercise Cards Grid -->
+                    <div id="library-exercises-list" class="library-ex-grid" style="margin-top:8px;">
                         <!-- Populated dynamically -->
                     </div>
                 </div>
 
                 <button class="btn btn-primary btn-block" style="margin-top:14px;" onclick="closeModal('modal-exercise-manager')">
-                    Tamamla & Antrenmana Dön
+                    Tamamla & Antrenmana Dön 🚀
                 </button>
             </div>
         </div>

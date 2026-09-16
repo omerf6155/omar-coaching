@@ -163,44 +163,917 @@ const MASTER_SUPPLEMENT_DATABASE = [
     { id: "cat_apigenin", name: "Apigenin (Papatya Ekstresi)", category: "uyku", dosage: "50 mg", timing: "Uykudan 1 Saat Önce", benefit: "Kortizolü nötralize etme ve derin kas gevşemesi.", details: "GABA-A reseptörlerine bağlanarak uyku kalitesini artırır." }
 ];
 
-// ==================== EXERCISE ENCYCLOPEDIA ====================
+// ==================== EXERCISE ENCYCLOPEDIA (6 ANA KAS GRUBU & ALT BÖLGELER) ====================
 const EXERCISE_LIBRARY = [
-    { id: "lib_inc_db", name: "Incline Dumbbell Press", muscle: "Üst Göğüs (Clavicular Head)", defaultTarget: "2 Çalışma Seti (6-9 Rep)", defaultSets: 2, defaultSeat: "Açı: 30°", isTopSet: true, desc: "Üst göğüs liflerini köprücük kemiği hattında maksimum mekanik gerilimle esnetir ve kalınlık kazandırır." },
-    { id: "lib_plate_press", name: "Plate Loaded Chest Press", muscle: "Orta & Tüm Göğüs", defaultTarget: "2 Çalışma Seti (8-10 Rep)", defaultSets: 2, defaultSeat: "Koltuk: 4", isTopSet: true, desc: "Serbest ağırlık yorgunluğu olmadan göğüs kaslarını güvenle tam tükenişe götürmeyi sağlar." },
-    { id: "lib_pec_deck", name: "Pec Deck Fly (Makine Göğüs)", muscle: "İç & Tüm Göğüs İzolasyonu", defaultTarget: "2 Çalışma Seti (10-12 Rep)", defaultSets: 2, defaultSeat: "Koltuk: 3, Kol: 2", isTopSet: false, desc: "Maksimum yatay adduksiyon sağlayarak göğüs liflerinin tepe sıkışmasını hedefler." },
-    { id: "lib_dips", name: "Weighted Chest Dips", muscle: "Alt Göğüs & Ön Omuz", defaultTarget: "2 Set (6-8 Rep)", defaultSets: 2, defaultSeat: "Gövde Öne Eğik", isTopSet: true, desc: "Vücut ağırlığı veya zincirle alt göğüs çizgisine ve tricepse muazzam bir kütle kazandırır." },
-    { id: "lib_cable_cross", name: "Cable Crossover / Fly", muscle: "Alt & İç Göğüs", defaultTarget: "3 Set (12-15 Rep)", defaultSets: 3, defaultSeat: "Kablolar Üstte", isTopSet: false, desc: "Sürekli gerilim hattında göğüs kaslarını kanla doldurur ve pump yaratır." },
-    { id: "lib_flat_bench", name: "Flat Barbell Bench Press", muscle: "Genel Göğüs Gücü", defaultTarget: "3 Set (5-8 Rep)", defaultSets: 3, defaultSeat: "Düz Sehpa", isTopSet: true, desc: "Klasik göğüs kütle ve güç temel taşıdır." },
-    { id: "lib_high_row", name: "High Row Tek Kol", muscle: "Alt & Orta Lat (Kanat)", defaultTarget: "2 Set (6-8 Rep, Dirsek Gövdeye)", defaultSets: 2, defaultSeat: "Koltuk: 3, Göğüs Pedi: 2", isTopSet: true, desc: "Dirseği kalçaya doğru çekerek alt lat liflerine cerrahi izolasyon sağlar." },
-    { id: "lib_tbar_row", name: "T-Bar Row (Göğüs Destekli)", muscle: "Orta Sırt, Rhomboid & Kalınlık", defaultTarget: "2 Sert Set (8-10 Rep)", defaultSets: 2, defaultSeat: "Göğüs Destekli", isTopSet: true, desc: "Omurgaya gereksiz yük bindirmeden orta sırtı kalınlaştıran 1 numaralı harekettir." },
-    { id: "lib_lat_pull", name: "Geniş Tutuş Lat Pulldown", muscle: "Üst Lat & Teres Major (V-Taper)", defaultTarget: "2-3 Set (10-12 Rep)", defaultSets: 2, defaultSeat: "Bacak Pedi: 4", isTopSet: false, desc: "Sırtın genişliğini ve önden bakıldığında kanatların açılmasını sağlar." },
-    { id: "lib_chest_row", name: "Chest-Supported Wide Grip Row", muscle: "Üst Sırt & Arka Omuz Hattı", defaultTarget: "2 Set (8-10 Rep)", defaultSets: 2, defaultSeat: "Koltuk: 2, Göğüs: 3", isTopSet: true, desc: "Geniş tutuşla skapulaları birbirine yapıştırarak 3D sırt detaylarını ortaya çıkarır." },
-    { id: "lib_seated_cable_row", name: "Seated Cable Row (V-Bar)", muscle: "Orta Sırt & Lat Kalınlığı", defaultTarget: "3 Set (10-12 Rep)", defaultSets: 3, defaultSeat: "Düz Zemin", isTopSet: false, desc: "Kablo gerilimiyle sırtın derinlemesine kasılmasını sağlar." },
-    { id: "lib_db_pullover", name: "Dumbbell Pullover", muscle: "Serratus Anterior & Lat Esneme", defaultTarget: "2 Set (10-12 Rep)", defaultSets: 2, defaultSeat: "Sehpada Enlemesine", isTopSet: false, desc: "Göğüs kafesini açar ve latların en derin esneme pozisyonunda büyümesini tetikler." },
-    { id: "lib_rev_pec_deck", name: "Reverse Pec Deck Fly", muscle: "Arka Omuz (Posterior Deltoid)", defaultTarget: "3 Set (Skapula Sabit, 10-12 Rep)", defaultSets: 3, defaultSeat: "Pede Göğüs Dayalı", isTopSet: true, desc: "Skapulayı hareket ettirmeden arka omuz başını izole ederek 3D omuz görüntüsünün temelini atar." },
-    { id: "lib_mach_lateral", name: "Tek Kol Makine Lateral Raise", muscle: "Yan Omuz (Lateral Deltoid)", defaultTarget: "3 Set (10-12 Rep)", defaultSets: 3, defaultSeat: "Koltuk: 5", isTopSet: false, desc: "Yerçekimi açısını nötralize ederek yan omuzda sürekli gerilim sağlar." },
-    { id: "lib_face_pull", name: "Kablo Face Pull", muscle: "Arka Omuz & Dış Rotatörler", defaultTarget: "3 Set (12-15 Rep)", defaultSets: 3, defaultSeat: "Kablo: Göz Hizası", isTopSet: false, desc: "Omuz eklemini korur, postürü düzeltir ve arka omuz kütlesini artırır." },
-    { id: "lib_db_lateral", name: "Dumbbell Lateral Raise", muscle: "Yan Omuz", defaultTarget: "3 Set (12-15 Rep)", defaultSets: 3, defaultSeat: "Ayakta / Hafif Eğik", isTopSet: false, desc: "Omuz genişliğinin klasik ve vazgeçilmez hareketidir." },
-    { id: "lib_db_shoulder_press", name: "Seated Dumbbell Shoulder Press", muscle: "Ön Omuz & Yan Omuz Gücü", defaultTarget: "2 Sert Set (6-8 Rep)", defaultSets: 2, defaultSeat: "Açı: 75°", isTopSet: true, desc: "Omuz kemerine ham itiş gücü ve kütle kazandırır." },
-    { id: "lib_straight_bar_push", name: "Düz Bar Triceps Pushdown", muscle: "Triceps Lateral Baş (Dış Kütle)", defaultTarget: "3 Set (Ağır & Sıkı)", defaultSets: 3, defaultSeat: "Kablo: En Üst", isTopSet: true, desc: "Dıştan bakıldığında kolu geniş gösteren Lateral başı en sert vuran harekettir." },
-    { id: "lib_overhead_cable_ext", name: "Overhead Dual Cable Triceps Extension", muscle: "Triceps Uzun Baş (Long Head)", defaultTarget: "3 Set (Tam Esneme, 8-10 Rep)", defaultSets: 3, defaultSeat: "Kablo Omuz Boyu", isTopSet: true, desc: "Triceps kas kütlesinin %60'ını oluşturan uzun başı derin esnemede hipertrofiye zorlar." },
-    { id: "lib_rope_pushdown", name: "Halat Triceps Pushdown", muscle: "Triceps Dış & Medial Baş", defaultTarget: "2-3 Set (10-12 Rep)", defaultSets: 2, defaultSeat: "Kablo: Üst", isTopSet: false, desc: "Altta halatı iki yana açarak tepe sıkışmayı maksimize eder." },
-    { id: "lib_skullcrusher", name: "Lying EZ-Bar Skullcrusher", muscle: "Triceps Uzun Baş & Genel", defaultTarget: "3 Set (8-10 Rep)", defaultSets: 3, defaultSeat: "Düz Sehpa", isTopSet: true, desc: "Alna doğru indirerek triceps eklemini tam bükülmede yükler." },
-    { id: "lib_bb_curl", name: "Barbell Biceps Curl", muscle: "Genel Biceps Gücü", defaultTarget: "2 Set (Ağır, 6-8 Rep)", defaultSets: 2, defaultSeat: "Düz Bar", isTopSet: true, desc: "Biceps kütle inşasının en temel ve ağır serbest ağırlık hareketidir." },
-    { id: "lib_db_incline_curl", name: "Incline Dumbbell Curl", muscle: "Biceps Uzun Baş (Peak)", defaultTarget: "2-3 Set (10-12 Rep)", defaultSets: 2, defaultSeat: "Açı: 45°", isTopSet: false, desc: "Omzun gerisinde kalarak biceps uzun başını tam gerilimde esnetir." },
-    { id: "lib_hammer_curl", name: "Dumbbell Hammer Curl", muscle: "Brachialis & Ön Kol (Ön Kalınlık)", defaultTarget: "2 Set (8-10 Rep)", defaultSets: 2, defaultSeat: "Ayakta / Nötr Tutuş", isTopSet: false, desc: "Biceps ile triceps arasındaki Brachialis kasını büyüterek kolu dışarı doğru iter ve kalınlaştırır." },
-    { id: "lib_preacher_curl", name: "Preacher Curl (Scot Bench)", muscle: "Biceps Kısa Baş & İzolasyon", defaultTarget: "2 Set (10-12 Rep)", defaultSets: 2, defaultSeat: "Koltuk: 3", isTopSet: false, desc: "Vücut ivmesini sıfırlayarak biceps alt bağlantı noktasına saf gerilim bindirir." },
-    { id: "lib_reverse_curl", name: "Kablo Ters Tutuş V-Bar Curl", muscle: "Brachioradialis (Ön Kol Üstü)", defaultTarget: "2 Set (12-15 Rep)", defaultSets: 2, defaultSeat: "Kablo Alt", isTopSet: false, desc: "Kavrama gücünü ve ön kolun üst kalınlığını inşa eder." },
-    { id: "lib_hack_squat", name: "Hack Squat (Quad Kralı)", muscle: "Ön Bacak (Vastus Medialis / Gözyaşı)", defaultTarget: "2 Ağır Set (3sn Negatif, Tam Derinlik)", defaultSets: 2, defaultSeat: "Ayaklar Dar & Altta", isTopSet: true, desc: "Diz fleksiyonunu maksimize ederek ön bacak liflerini cerrahi hassasiyetle parçalar." },
-    { id: "lib_leg_press", name: "Plate Loaded Leg Press", muscle: "Genel Quad & Kalça Gücü", defaultTarget: "2 Sert Çalışma Seti", defaultSets: 2, defaultSeat: "Platform Altı", isTopSet: true, desc: "Omurga yorgunluğu olmadan yüksek tonajla bacaklara aşırı yük bindirir." },
-    { id: "lib_rdl", name: "Dumbbell / Barbell RDL", muscle: "Hamstring (Arka Bacak) & Glute", defaultTarget: "2 Sıkı Set (8-10 Rep)", defaultSets: 2, defaultSeat: "Düz Zemin", isTopSet: false, desc: "Kalçayı geriye iterek arka bacak liflerini en derin esneme pozisyonunda büyütür." },
-    { id: "lib_adductor", name: "Adductor Machine (Bacak İçi)", muscle: "Bacak İçi Adductor Kasları", defaultTarget: "3 Set (12-15 Rep)", defaultSets: 3, defaultSeat: "Geniş Açı: 4", isTopSet: false, desc: "Önden bakıldığında bacağın içini doldurarak devasa bir kalınlık katar." },
-    { id: "lib_leg_ext", name: "Leg Extension", muscle: "Quad İzolasyonu & Rectus Femoris", defaultTarget: "1-2 Bitirici Set (Maks Pump)", defaultSets: 2, defaultSeat: "Koltuk: 3", isTopSet: false, desc: "Ön bacağın üst tepe noktasında tam kilitlenme sağlar." },
-    { id: "lib_leg_curl", name: "Lying / Seated Leg Curl", muscle: "Hamstring İzolasyon", defaultTarget: "2-3 Set (10-12 Rep)", defaultSets: 2, defaultSeat: "Ped Ayarlı", isTopSet: false, desc: "Diz fleksiyonuyla arka bacak kaslarını izole eder." },
-    { id: "lib_calf_raise", name: "Standing / Seated Calf Raise", muscle: "Kalf (Gastrocnemius & Soleus)", defaultTarget: "3 Set (Tepe 2sn Bekleme, 12-15 Rep)", defaultSets: 3, defaultSeat: "Platform", isTopSet: false, desc: "Tam esneme ve tepe sıkışmayla inatçı kalf liflerini büyütür." },
-    { id: "lib_db_shrug", name: "Dumbbell Shrug", muscle: "Üst Trapez Kütlesi", defaultTarget: "2 Set (Maks Ağırlık / Tepe Bekleme)", defaultSets: 2, defaultSeat: "Ayakta", isTopSet: false, desc: "Boyun ve omuz arasındaki trapez kaslarına kalınlık katar." },
-    { id: "lib_cable_crunch", name: "Kablo Halat Crunch", muscle: "Rektus Abdominis (Karın Kasları)", defaultTarget: "3 Set (12-15 Rep)", defaultSets: 3, defaultSeat: "Dizler Üzerinde", isTopSet: false, desc: "Karın kaslarına ağırlık bindirerek six-pack tuğlalarını kalınlaştırır." },
-    { id: "lib_hanging_leg_raise", name: "Hanging Leg / Knee Raise", muscle: "Alt Karın & Core", defaultTarget: "3 Set (Maks Rep)", defaultSets: 3, defaultSeat: "Barda Asılı", isTopSet: false, desc: "Pelvisi yukarı bükerek alt karın duvarını sıkılaştırır." }
+    // ==================== 1. GÖĞÜS (CHEST) ====================
+    // Üst Göğüs (Incline / Clavicular Head)
+    {
+        id: "lib_inc_bb",
+        name: "Incline Barbell Bench Press",
+        category: "chest",
+        subCategory: "upper_chest",
+        muscle: "Üst Göğüs (Clavicular Head)",
+        defaultTarget: "3 Çalışma Seti (6-8 Rep)",
+        defaultSets: 3,
+        defaultSeat: "Sehpa Açısı: 30°",
+        isTopSet: true,
+        desc: "Köprücük kemiği altındaki üst liflere maksimum mekanik gerilim bindiren altın standart üst göğüs kütle inşacısı.",
+        tips: "Sehpa açısını 30 dereceden dik yapmayın (ön omuza kaçar). Barı üst göğüs köprücük kemiğinin 2 parmak altına indirin."
+    },
+    {
+        id: "lib_inc_db",
+        name: "Incline Dumbbell Press",
+        category: "chest",
+        subCategory: "upper_chest",
+        muscle: "Üst Göğüs • Derin Esneme",
+        defaultTarget: "2-3 Çalışma Seti (6-9 Rep)",
+        defaultSets: 2,
+        defaultSeat: "Sehpa Açısı: 30°",
+        isTopSet: true,
+        desc: "Dumbbell serbestliği sayesinde en dipte derin esneme ve tepe noktada üst liflerde maksimum sıkışma sağlar.",
+        tips: "Dirsekleri gövdeye 45-60 derece açıyla tutun, en altta 1 saniye derin esnemeyi hissedip patlayıcı itin."
+    },
+    {
+        id: "lib_inc_machine",
+        name: "Incline Plate-Loaded Chest Press",
+        category: "chest",
+        subCategory: "upper_chest",
+        muscle: "Üst Göğüs İzolasyon Makinesi",
+        defaultTarget: "2 Sert Set (8-10 Rep)",
+        defaultSets: 2,
+        defaultSeat: "Koltuk: 3-4",
+        isTopSet: true,
+        desc: "Denge problemi olmadan üst göğüs liflerini tükenişe (RIR 0) kadar güvenle zorlamayı sağlar.",
+        tips: "Skapulaları geriye ve aşağı kilitleyin, sırtı sehpaya yapıştırın."
+    },
+    {
+        id: "lib_low_cable_fly",
+        name: "Low-to-High Cable Fly (Aşağıdan Yukarı)",
+        category: "chest",
+        subCategory: "upper_chest",
+        muscle: "Üst Göğüs & İç Çizgi",
+        defaultTarget: "3 Set (12-15 Rep)",
+        defaultSets: 3,
+        defaultSeat: "Kablolar En Altta",
+        isTopSet: false,
+        desc: "Üst göğüs liflerinin yönünde (omuz hizasına doğru yukarı) kesintisiz kablo gerilimi yaratır.",
+        tips: "Elleri göğüs/çene hizasında birleştirirken avuç içlerini yukarı baktırın ve tepede 1 saniye sıkın."
+    },
+
+    // Orta & Genel Göğüs (Flat / Sternal Head)
+    {
+        id: "lib_flat_bench",
+        name: "Flat Barbell Bench Press",
+        category: "chest",
+        subCategory: "mid_chest",
+        muscle: "Orta & Tüm Göğüs + Güç",
+        defaultTarget: "3 Set (5-8 Rep)",
+        defaultSets: 3,
+        defaultSeat: "Düz Sehpa",
+        isTopSet: true,
+        desc: "Üst vücut itiş gücünün ve genel göğüs kalınlığının temel taşıdır.",
+        tips: "Ayakları yere sağlam basın (leg drive), skapulaları geriye kilitleyin, barı memeuçlarına kontrollü indirin."
+    },
+    {
+        id: "lib_flat_db_press",
+        name: "Flat Dumbbell Press",
+        category: "chest",
+        subCategory: "mid_chest",
+        muscle: "Orta Göğüs • Derin Esneme",
+        defaultTarget: "2-3 Set (7-10 Rep)",
+        defaultSets: 2,
+        defaultSeat: "Düz Sehpa",
+        isTopSet: true,
+        desc: "Bardan daha fazla hareket mesafesi (ROM) sunarak göğüs kaslarını daha derin esnetir.",
+        tips: "Ağırlıkları tepe noktada birbirine çarptırmayın; gerilimi kas üzerinde tutun."
+    },
+    {
+        id: "lib_plate_press",
+        name: "Plate Loaded Flat Chest Press",
+        category: "chest",
+        subCategory: "mid_chest",
+        muscle: "Orta & Tüm Göğüs Makinesi",
+        defaultTarget: "2 Çalışma Seti (8-10 Rep)",
+        defaultSets: 2,
+        defaultSeat: "Koltuk: 4",
+        isTopSet: true,
+        desc: "Serbest ağırlık omuz yorgunluğunu ekarte ederek göğüste saf mekanik gerilim yaratır.",
+        tips: "Tepede dirsekleri kitlemeden hemen önce durup gerilimi göğüste bırakın."
+    },
+
+    // Alt Göğüs & Dips (Lower Chest / Costal Head)
+    {
+        id: "lib_dips",
+        name: "Weighted Chest Dips",
+        category: "chest",
+        subCategory: "lower_chest",
+        muscle: "Alt Göğüs & Ön Omuz",
+        defaultTarget: "2-3 Set (6-8 Rep)",
+        defaultSets: 2,
+        defaultSeat: "Gövde 30° Öne Eğik",
+        isTopSet: true,
+        desc: "Gövdeyi öne eğerek yapılan dips, alt göğüs çizgisine en yüksek gerilimi bindiren kütle kralıdır.",
+        tips: "Gövdeyi dik tutarsanız tricepse kaçar; gövdeyi öne eğin ve dirsekleri hafif dışarı açın."
+    },
+    {
+        id: "lib_dec_press",
+        name: "Decline Barbell / Dumbbell Press",
+        category: "chest",
+        subCategory: "lower_chest",
+        muscle: "Alt Göğüs Kalınlığı",
+        defaultTarget: "2 Set (8-10 Rep)",
+        defaultSets: 2,
+        defaultSeat: "Decline Sehpa (-15°)",
+        isTopSet: false,
+        desc: "Omuz eklemine en az baskı bindiren açıyla alt ve orta göğsü izole eder.",
+        tips: "Kontrollü iniş yapın ve alt göğüs kemeri hizasına indirin."
+    },
+    {
+        id: "lib_high_cable_fly",
+        name: "High-to-Low Cable Fly (Yukarıdan Aşağı)",
+        category: "chest",
+        subCategory: "lower_chest",
+        muscle: "Alt Göğüs Çizgisi & İzolasyon",
+        defaultTarget: "3 Set (12-15 Rep)",
+        defaultSets: 3,
+        defaultSeat: "Kablolar En Üstte",
+        isTopSet: false,
+        desc: "Kabloları yukarıdan kasık hizasına doğru birleştirerek alt göğüs çizgisini derinlemesine belirginleştirir.",
+        tips: "Kolları kasıkların önünde çaprazlayarak ekstra kasılma sağlayabilirsiniz."
+    },
+
+    // İç & Fly İzolasyon
+    {
+        id: "lib_pec_deck",
+        name: "Pec Deck Fly (Makine Göğüs)",
+        category: "chest",
+        subCategory: "chest_fly",
+        muscle: "İç & Tüm Göğüs İzolasyonu",
+        defaultTarget: "2-3 Çalışma Seti (10-12 Rep)",
+        defaultSets: 2,
+        defaultSeat: "Koltuk: 3, Kol: 2",
+        isTopSet: false,
+        desc: "Yatay adduksiyon açısında tepe sıkışmayı kusursuz yaşatan, triceps gücünü devre dışı bırakan hareket.",
+        tips: "Dirsekleri hafif bükük ve sabit tutun; hareketi dirseklerle kapatın, ellerle değil."
+    },
+    {
+        id: "lib_cable_cross",
+        name: "Standing Cable Crossover",
+        category: "chest",
+        subCategory: "chest_fly",
+        muscle: "İç Göğüs & Pump",
+        defaultTarget: "3 Set (12-15 Rep)",
+        defaultSets: 3,
+        defaultSeat: "Kablo: Omuz Boyu",
+        isTopSet: false,
+        desc: "Tüm hareket açısı boyunca kesintisiz direnç eğrisiyle göğüs liflerini kanla doldurur.",
+        tips: "Gövdeyi sabit tutun, ivme almayın, göğsü öne doğru kabartarak sıkın."
+    },
+    {
+        id: "lib_db_fly",
+        name: "Flat / Incline Dumbbell Fly",
+        category: "chest",
+        subCategory: "chest_fly",
+        muscle: "Göğüs Derin Esneme",
+        defaultTarget: "2 Set (10-12 Rep)",
+        defaultSets: 2,
+        defaultSeat: "Sehpa Açılı",
+        isTopSet: false,
+        desc: "Göğüs liflerini en derin esneme pozisyonunda hipertrofiye teşvik eder.",
+        tips: "Aşırı derine inerek omuz kapsülünü zorlamayın; gerilimi göğüste hissedince durun."
+    },
+
+    // ==================== 2. OMUZ (SHOULDERS) ====================
+    // Ön Omuz (Press)
+    {
+        id: "lib_ohp",
+        name: "Overhead Barbell Press (OHP / Military Press)",
+        category: "shoulders",
+        subCategory: "front_delts",
+        muscle: "Ön Omuz (Anterior Deltoid) & Genel Güç",
+        defaultTarget: "3 Set (5-8 Rep)",
+        defaultSets: 3,
+        defaultSeat: "Ayakta",
+        isTopSet: true,
+        desc: "Tüm omuz kemerine ve core bölgesine ham itiş gücü kazandıran kral bileşik hareket.",
+        tips: "Kalçayı ve karın kaslarını sıkın, bar çene hizasını geçer geçmez başınızı hafif öne alıp kilitleyin."
+    },
+    {
+        id: "lib_db_shoulder_press",
+        name: "Seated Dumbbell Shoulder Press",
+        category: "shoulders",
+        subCategory: "front_delts",
+        muscle: "Ön Omuz & Yan Omuz Kütlesi",
+        defaultTarget: "2 Sert Set (6-8 Rep)",
+        defaultSets: 2,
+        defaultSeat: "Sehpa Açısı: 75°",
+        isTopSet: true,
+        desc: "Serbest dumbbel hareket serbestliği ile omuza devasa bir kütle kazandırır.",
+        tips: "Sehpayı tam 90 derece dik yapmayın (75-80 derece omuz eklemi için idealdir)."
+    },
+    {
+        id: "lib_mach_shoulder_press",
+        name: "Machine Shoulder Press",
+        category: "shoulders",
+        subCategory: "front_delts",
+        muscle: "Ön Omuz Güvenli Tükeniş",
+        defaultTarget: "2-3 Set (8-10 Rep)",
+        defaultSets: 2,
+        defaultSeat: "Koltuk: 3",
+        isTopSet: true,
+        desc: "Denge problemi olmadan omuzları tam tükenişe götürmek için idealdir.",
+        tips: "Ağırlığı kulak hizasına kadar indirip tepeye kontrollü itin."
+    },
+    {
+        id: "lib_front_raise",
+        name: "Dumbbell / Cable Front Raise",
+        category: "shoulders",
+        subCategory: "front_delts",
+        muscle: "Ön Omuz İzolasyonu",
+        defaultTarget: "2 Set (12-15 Rep)",
+        defaultSets: 2,
+        defaultSeat: "Ayakta",
+        isTopSet: false,
+        desc: "Ön omuz başını doğrudan yukarı kaldırış açısında izole eder.",
+        tips: "Gövdeyi sallamadan sadece omuz ekleminden kaldırın."
+    },
+
+    // Yan Omuz (Lateral Delts - 3D Genişlik)
+    {
+        id: "lib_db_lateral",
+        name: "Dumbbell Lateral Raise",
+        category: "shoulders",
+        subCategory: "lateral_delts",
+        muscle: "Yan Omuz (Lateral Deltoid)",
+        defaultTarget: "3-4 Set (12-15 Rep)",
+        defaultSets: 3,
+        defaultSeat: "Ayakta / Hafif 15° Öne Eğik",
+        isTopSet: false,
+        desc: "Vücudu önden ve arkadan geniş gösteren yan omuz başlarının temel hareketidir.",
+        tips: "Dumbbell'ları yukarı değil, iki yana uzatır gibi kaldırın (lead with elbows). Serçe parmak hafif yukarı bakabilir."
+    },
+    {
+        id: "lib_mach_lateral",
+        name: "Tek Kol Makine Lateral Raise",
+        category: "shoulders",
+        subCategory: "lateral_delts",
+        muscle: "Yan Omuz (Sürekli Gerilim)",
+        defaultTarget: "3 Set (10-12 Rep)",
+        defaultSets: 3,
+        defaultSeat: "Koltuk: 5",
+        isTopSet: false,
+        desc: "Dumbbell'ın en dipte gerilim kaybetmesini önler, hareketin başından sonuna kadar yan omuza gerilim verir.",
+        tips: "Göğsü pede yaslayın ve tek kolla tepe noktada 1 saniye duraklayın."
+    },
+    {
+        id: "lib_cable_lateral",
+        name: "Egyptian Cable Lateral Raise",
+        category: "shoulders",
+        subCategory: "lateral_delts",
+        muscle: "Yan Omuz (Derin Esneme Açısı)",
+        defaultTarget: "3 Set (12-15 Rep)",
+        defaultSets: 3,
+        defaultSeat: "Kablo: Diz Hizası",
+        isTopSet: false,
+        desc: "Vücudu direkten tutarak yana yatırıp yapılan kablo lateral, yan omuzun en derin esneme noktasında aşırı büyüme uyarısı verir.",
+        tips: "Direğe tutunup 30 derece yana eğilin, kabloyu arkadan çekin."
+    },
+
+    // Arka Omuz (Rear Delts)
+    {
+        id: "lib_rev_pec_deck",
+        name: "Reverse Pec Deck Fly (Arka Omuz)",
+        category: "shoulders",
+        subCategory: "rear_delts",
+        muscle: "Arka Omuz (Posterior Deltoid)",
+        defaultTarget: "3 Set (10-12 Rep)",
+        defaultSets: 3,
+        defaultSeat: "Göğüs Pede Dayalı",
+        isTopSet: true,
+        desc: "Skapulayı hareket ettirmeden arka omuz başını saf şekilde izole ederek 3D küre görüntüsü kazandırır.",
+        tips: "Kürek kemiklerini birbirine yapıştırmayın (sırt devreye girer); kolları dışarı doğru uzatarak açın."
+    },
+    {
+        id: "lib_face_pull",
+        name: "Kablo Face Pull (Halat)",
+        category: "shoulders",
+        subCategory: "rear_delts",
+        muscle: "Arka Omuz & Dış Rotatörler",
+        defaultTarget: "3 Set (12-15 Rep)",
+        defaultSets: 3,
+        defaultSeat: "Kablo: Göz/Alın Hizası",
+        isTopSet: false,
+        desc: "Omuz sağlığı, postür düzeltme ve arka omuz liflerini güçlendirme için olmazsa olmazdır.",
+        tips: "Halatı alına doğru çekerken elleri iki yana açarak dış rotasyon yapın (biceps pozu verir gibi)."
+    },
+    {
+        id: "lib_bent_db_rear",
+        name: "Bent-Over Dumbbell Rear Delt Raise",
+        category: "shoulders",
+        subCategory: "rear_delts",
+        muscle: "Arka Omuz Serbest Ağırlık",
+        defaultTarget: "3 Set (12-15 Rep)",
+        defaultSets: 3,
+        defaultSeat: "Sehpada Göğüs Destekli",
+        isTopSet: false,
+        desc: "Sehpaya göğsü dayayarak ivme almadan arka omuza doğrudan yük bindirir.",
+        tips: "Hafif-orta kilo kullanın; kollar hafif dirsekten bükük olsun."
+    },
+
+    // ==================== 3. SIRT (BACK) ====================
+    // Lats / Kanat (Genişlik & V-Taper)
+    {
+        id: "lib_high_row",
+        name: "High Row Tek Kol (Plate-Loaded / Cable)",
+        category: "back",
+        subCategory: "lats",
+        muscle: "Alt & Orta Lat (Kanat Genişliği)",
+        defaultTarget: "2-3 Set (6-8 Rep, Dirsek Gövdeye)",
+        defaultSets: 2,
+        defaultSeat: "Koltuk: 3, Göğüs Pedi: 2",
+        isTopSet: true,
+        desc: "Açısal çekişle dirseği kalça cebine doğru çekerek alt lat liflerine cerrahi izolasyon sağlar.",
+        tips: "Dirseği arkaya değil, kalçanıza doğru çekin. Hareketi başlatırken omzunuzu hafif aşağı bastırın."
+    },
+    {
+        id: "lib_lat_pull",
+        name: "Geniş Tutuş Lat Pulldown",
+        category: "back",
+        subCategory: "lats",
+        muscle: "Üst Lat & Teres Major (V-Taper)",
+        defaultTarget: "2-3 Set (8-10 Rep)",
+        defaultSets: 2,
+        defaultSeat: "Bacak Pedi: 4",
+        isTopSet: false,
+        desc: "Sırtın üst genişliğini ve önden bakıldığında kanatların üçgen açılmasını sağlar.",
+        tips: "Barı göğsün üstüne çekin; geriye aşırı yaslanmayın (maksimum 15 derece)."
+    },
+    {
+        id: "lib_close_pulldown",
+        name: "Nötr / Dar Tutuş Lat Pulldown (Mag Grip / V-Bar)",
+        category: "back",
+        subCategory: "lats",
+        muscle: "Tüm Lat Hattı & Derin Kasılma",
+        defaultTarget: "2-3 Set (10-12 Rep)",
+        defaultSets: 2,
+        defaultSeat: "Bacak Pedi: 4",
+        isTopSet: true,
+        desc: "Nötr tutuş dirseklerin gövdeye daha yakın geçmesini sağlayarak latları en dipte daha sert kasındırır.",
+        tips: "Dirsekleri aşağı ve içeri doğru çekin, tepe noktada latların esnediğini hissedin."
+    },
+    {
+        id: "lib_straight_arm_pull",
+        name: "Straight-Arm Cable Pulldown / DB Pullover",
+        category: "back",
+        subCategory: "lats",
+        muscle: "Lat İzolasyonu & Serratus",
+        defaultTarget: "3 Set (12-15 Rep)",
+        defaultSets: 3,
+        defaultSeat: "Kablo En Üstte",
+        isTopSet: false,
+        desc: "Biceps gücünü tamamen sıfırlayarak kanat kaslarını saf omuz ekstansiyonu ile izole eder.",
+        tips: "Kolları düz tutun, dirsekleri bükmeyin; barı kalçanıza doğru bastırın."
+    },
+
+    // Orta Sırt & Rhomboid (Mid Back / Kalınlık)
+    {
+        id: "lib_tbar_row",
+        name: "T-Bar Row (Göğüs Destekli)",
+        category: "back",
+        subCategory: "mid_back",
+        muscle: "Orta Sırt, Rhomboid & Sırt Kalınlığı",
+        defaultTarget: "2-3 Sert Set (8-10 Rep)",
+        defaultSets: 2,
+        defaultSeat: "Göğüs Destekli",
+        isTopSet: true,
+        desc: "Alt bele sıfır yük bindirerek orta sırtı kalınlaştıran 1 numaralı harekettir.",
+        tips: "Dirsekleri 45-60 derece açıyla çekin ve kürek kemiklerini birbirine yapıştırın."
+    },
+    {
+        id: "lib_bb_row",
+        name: "Barbell Bent-Over Row (Pendlay / Classic)",
+        category: "back",
+        subCategory: "mid_back",
+        muscle: "Genel Sırt Kalınlığı & Güç",
+        defaultTarget: "3 Set (6-8 Rep)",
+        defaultSets: 3,
+        defaultSeat: "Ayakta (Gövde 45-90°)",
+        isTopSet: true,
+        desc: "Serbest ağırlıkla tüm sırtı, rhomboidleri ve spinal erektörleri aynı anda çalıştıran temel güç hareketi.",
+        tips: "Belinizi düz tutun (asla kamburlaşmayın), barı karın deliğine doğru çekin."
+    },
+    {
+        id: "lib_chest_row",
+        name: "Chest-Supported Wide Grip Machine Row",
+        category: "back",
+        subCategory: "mid_back",
+        muscle: "Üst Sırt & Orta Sırt Detayları",
+        defaultTarget: "2-3 Set (8-10 Rep)",
+        defaultSets: 2,
+        defaultSeat: "Koltuk: 2, Göğüs Pedi: 3",
+        isTopSet: true,
+        desc: "Geniş tutuşla üst-orta sırt kaslarını 3D derinlikle ortaya çıkarır.",
+        tips: "Çekerken omuzları geriye alın, skapula retraksiyonuna odaklanın."
+    },
+    {
+        id: "lib_seated_cable_row",
+        name: "Seated Cable Row (V-Bar / Geniş Bar)",
+        category: "back",
+        subCategory: "mid_back",
+        muscle: "Orta Sırt & Alt Lat Kalınlığı",
+        defaultTarget: "3 Set (10-12 Rep)",
+        defaultSets: 3,
+        defaultSeat: "Düz Zemin",
+        isTopSet: false,
+        desc: "Kablo gerilimiyle sırtın ortasında derin bir kasılma ve pump sağlar.",
+        tips: "Geriye aşırı yatmayın; omurgayı dik tutarak dirsekleri geriye çekin."
+    },
+
+    // Trapez (Traps & Üst Sırt)
+    {
+        id: "lib_db_shrug",
+        name: "Dumbbell Shrug",
+        category: "back",
+        subCategory: "traps",
+        muscle: "Üst Trapez Kütlesi",
+        defaultTarget: "2-3 Set (10-12 Rep, Tepede 2sn Durakla)",
+        defaultSets: 2,
+        defaultSeat: "Ayakta",
+        isTopSet: false,
+        desc: "Boyun ve omuz arasındaki trapez kaslarına kalınlık katar.",
+        tips: "Omuzları dairesel çevirmeyin (omuz eklemine zararlıdır); dümdüz kulaklarınıza doğru çekip tepede 2 saniye sıkın."
+    },
+    {
+        id: "lib_bb_shrug",
+        name: "Barbell Shrug / Smith Machine Shrug",
+        category: "back",
+        subCategory: "traps",
+        muscle: "Ağır Trapez Yüklemesi",
+        defaultTarget: "3 Set (8-10 Rep)",
+        defaultSets: 3,
+        defaultSeat: "Ayakta",
+        isTopSet: true,
+        desc: "Yüksek ağırlıklarla trapez kaslarına aşırı mekanik gerilim bindirir.",
+        tips: "Kolları bükmeyin; sadece omuzları yukarı kaldırarak yükü trapeze bindirin."
+    },
+
+    // Bel & Omurga (Lower Back / Erector Spinae)
+    {
+        id: "lib_deadlift",
+        name: "Barbell Conventional Deadlift",
+        category: "back",
+        subCategory: "lower_back",
+        muscle: "Tüm Arka Zincir, Bel & Sırt",
+        defaultTarget: "3 Set (3-5 Rep)",
+        defaultSets: 3,
+        defaultSeat: "Zemin",
+        isTopSet: true,
+        desc: "Vücudun üretebileceği en yüksek toplam kuvveti oluşturan güç ve kalınlık kralı.",
+        tips: "Barı bacaklarınıza yakın tutun, omurgayı nötr kilitleyin, yeri bacaklarınızla itin."
+    },
+    {
+        id: "lib_back_ext",
+        name: "Hyperextension / 45° Back Extension",
+        category: "back",
+        subCategory: "lower_back",
+        muscle: "Erector Spinae & Bel Sağlığı",
+        defaultTarget: "3 Set (12-15 Rep)",
+        defaultSets: 3,
+        defaultSeat: "45° Sehpa",
+        isTopSet: false,
+        desc: "Bel kaslarını ve omurga destekleyicilerini sakatlıklara karşı zırh gibi güçlendirir.",
+        tips: "Tepede aşırı geriye bükülmeyin (hiperekstansiyon yapmayın); omurga düz olunca durun."
+    },
+
+    // ==================== 4. KOL (ARMS) ====================
+    // Biceps (İki Başlı Kol)
+    {
+        id: "lib_bb_curl",
+        name: "Barbell Biceps Curl (Düz Bar / EZ-Bar)",
+        category: "arms",
+        subCategory: "biceps",
+        muscle: "Genel Biceps Gücü (İki Baş)",
+        defaultTarget: "2-3 Set (6-8 Rep)",
+        defaultSets: 2,
+        defaultSeat: "Ayakta",
+        isTopSet: true,
+        desc: "Biceps kütle inşasının en ağır ve temel serbest ağırlık hareketidir.",
+        tips: "Dirsekleri gövdenin yanında sabitleyin; gövdeyi arkaya savurmayın."
+    },
+    {
+        id: "lib_db_incline_curl",
+        name: "Incline Dumbbell Curl",
+        category: "arms",
+        subCategory: "biceps",
+        muscle: "Biceps Uzun Baş (Peak / Tepe)",
+        defaultTarget: "2-3 Set (10-12 Rep)",
+        defaultSets: 2,
+        defaultSeat: "Sehpa Açısı: 45°",
+        isTopSet: false,
+        desc: "Kol gövdenin gerisinde kalarak biceps uzun başını tam gerilimde esnetir ve tepe kütlesini (peak) artırır.",
+        tips: "Dirsekleri öne kaçırmayın; omzun gerisinde sabit kalsın."
+    },
+    {
+        id: "lib_preacher_curl",
+        name: "Preacher Curl (Scott Bench)",
+        category: "arms",
+        subCategory: "biceps",
+        muscle: "Biceps Kısa Baş & İç Kalınlık",
+        defaultTarget: "2 Set (10-12 Rep)",
+        defaultSets: 2,
+        defaultSeat: "Koltuk: 3",
+        isTopSet: false,
+        desc: "Vücut ivmesini sıfırlayarak biceps alt bağlantı noktasına saf gerilim bindirir.",
+        tips: "En dipte dirsekleri aşırı kitlemeyin; tendonu korumak için hafif bükükken dönüşe geçin."
+    },
+    {
+        id: "lib_bayesian_curl",
+        name: "Bayesian Cable Curl (Sırttan Çekiş)",
+        category: "arms",
+        subCategory: "biceps",
+        muscle: "Biceps Derin Esneme Gerilimi",
+        defaultTarget: "3 Set (12-15 Rep)",
+        defaultSets: 3,
+        defaultSeat: "Kablo En Altta",
+        isTopSet: false,
+        desc: "Kablo arkada kalacak şekilde öne adım atarak biceps liflerini en uzun pozisyonunda hipertrofiye zorlar.",
+        tips: "Gövdeyi hafif öne eğin, dirseği arkada kilitleyip bükün."
+    },
+
+    // Triceps (Üç Başlı Kol)
+    {
+        id: "lib_straight_bar_push",
+        name: "Düz Bar Triceps Pushdown",
+        category: "arms",
+        subCategory: "triceps",
+        muscle: "Triceps Lateral Baş (Dış Kütle)",
+        defaultTarget: "3 Set (Ağır & Sıkı, 8-10 Rep)",
+        defaultSets: 3,
+        defaultSeat: "Kablo En Üstte",
+        isTopSet: true,
+        desc: "Dıştan bakıldığında kolu geniş ve kalın gösteren Lateral başı en sert vuran harekettir.",
+        tips: "Dirsekleri kaburgalarınıza kilitleyin; sadece ön kol hareket etsin."
+    },
+    {
+        id: "lib_overhead_cable_ext",
+        name: "Overhead Dual Cable Triceps Extension",
+        category: "arms",
+        subCategory: "triceps",
+        muscle: "Triceps Uzun Baş (Long Head - %60 Hacim)",
+        defaultTarget: "3 Set (Tam Esneme, 8-10 Rep)",
+        defaultSets: 3,
+        defaultSeat: "Kablo: Omuz/Göğüs Boyu",
+        isTopSet: true,
+        desc: "Triceps kas kütlesinin %60'ını oluşturan uzun başı derin esnemede hipertrofiye zorlar.",
+        tips: "Dirsekleri başın yanlarında tutun, geriye doğru tam esnetip tepeye itin."
+    },
+    {
+        id: "lib_rope_pushdown",
+        name: "Halat Triceps Pushdown",
+        category: "arms",
+        subCategory: "triceps",
+        muscle: "Triceps Dış & Medial Baş",
+        defaultTarget: "2-3 Set (10-12 Rep)",
+        defaultSets: 2,
+        defaultSeat: "Kablo Üstte",
+        isTopSet: false,
+        desc: "Altta halatı iki yana açarak tepe sıkışmayı maksimize eder.",
+        tips: "Altta kilitlerken bilekleri iki yana açın ve 1 saniye sıkın."
+    },
+    {
+        id: "lib_skullcrusher",
+        name: "Lying EZ-Bar Skullcrusher",
+        category: "arms",
+        subCategory: "triceps",
+        muscle: "Triceps Uzun Baş & Genel Eklem Gücü",
+        defaultTarget: "3 Set (8-10 Rep)",
+        defaultSets: 3,
+        defaultSeat: "Düz Sehpa",
+        isTopSet: true,
+        desc: "Barı alna veya başın arkasına doğru indirerek triceps eklemini tam bükülmede yükler.",
+        tips: "Barı burnunuza değil, başınızın arkasına doğru indirirseniz uzun baş daha fazla çalışır."
+    },
+    {
+        id: "lib_cgbp",
+        name: "Close-Grip Barbell Bench Press",
+        category: "arms",
+        subCategory: "triceps",
+        muscle: "Triceps İtiş Gücü & Ağır Kütle",
+        defaultTarget: "3 Set (6-8 Rep)",
+        defaultSets: 3,
+        defaultSeat: "Düz Sehpa",
+        isTopSet: true,
+        desc: "Ağır kilolarla tricepse aşırı yük bindiren bileşik itiş hareketi.",
+        tips: "Elleri çok dar tutmayın (bilek sakatlanır); omuz genişliğinde tutmak mükemmeldir."
+    },
+
+    // Brachialis & Ön Kol (Forearms)
+    {
+        id: "lib_hammer_curl",
+        name: "Dumbbell Hammer Curl",
+        category: "arms",
+        subCategory: "forearms",
+        muscle: "Brachialis & Kol Yan Kalınlığı",
+        defaultTarget: "2-3 Set (8-10 Rep)",
+        defaultSets: 2,
+        defaultSeat: "Ayakta (Nötr Tutuş)",
+        isTopSet: false,
+        desc: "Biceps ile triceps arasındaki Brachialis kasını büyüterek kolu dışarı doğru iter ve kalınlaştırır.",
+        tips: "Avuç içleri birbirine baksın; tepeye kontrollü kaldırın."
+    },
+    {
+        id: "lib_reverse_curl",
+        name: "Kablo Ters Tutuş V-Bar Curl (Reverse Curl)",
+        category: "arms",
+        subCategory: "forearms",
+        muscle: "Brachioradialis (Ön Kol Üstü)",
+        defaultTarget: "2-3 Set (12-15 Rep)",
+        defaultSets: 2,
+        defaultSeat: "Kablo En Altta",
+        isTopSet: false,
+        desc: "Kavrama gücünü ve ön kolun üst kalınlığını inşa eder.",
+        tips: "Avuç içleri yere baksın (pronated grip); bilekleri bükmeyin."
+    },
+    {
+        id: "lib_wrist_curl",
+        name: "Seated Barbell / DB Wrist Curl",
+        category: "arms",
+        subCategory: "forearms",
+        muscle: "Ön Kol İç Fleksörleri",
+        defaultTarget: "3 Set (15-20 Rep)",
+        defaultSets: 3,
+        defaultSeat: "Diz Üstü Destekli",
+        isTopSet: false,
+        desc: "Bilek fleksörlerini güçlendirerek devasa ön kol ve tutuş kuvveti sağlar.",
+        tips: "Barı parmak uçlarına kadar yuvarlayıp bilekle yukarı bükün."
+    },
+
+    // ==================== 5. KARIN & CORE (ABS & CORE) ====================
+    // Üst & Orta Karın
+    {
+        id: "lib_cable_crunch",
+        name: "Kablo Halat Crunch (Kneeling Cable Crunch)",
+        category: "abs",
+        subCategory: "upper_abs",
+        muscle: "Rektus Abdominis (Six-Pack Tuğlaları)",
+        defaultTarget: "3 Set (12-15 Rep)",
+        defaultSets: 3,
+        defaultSeat: "Dizler Üzerinde",
+        isTopSet: false,
+        desc: "Karın kaslarına ağırlık bindirerek six-pack tuğlalarını derinlemesine kalınlaştıran 1 numaralı hareket.",
+        tips: "Kalçayı geriye oturtmayın; omurganızı C harfi gibi bükerek dirsekleri dizlerinize doğru kıvırın."
+    },
+    {
+        id: "lib_decline_crunch",
+        name: "Decline Bench Weighted Crunch",
+        category: "abs",
+        subCategory: "upper_abs",
+        muscle: "Üst Karın & Ağırlıklı Hipertrofi",
+        defaultTarget: "3 Set (12-15 Rep)",
+        defaultSets: 3,
+        defaultSeat: "Decline Sehpa",
+        isTopSet: false,
+        desc: "Eğim açısı sayesinde yerçekimine karşı karın kaslarını yakar.",
+        tips: "Göğsünüze bir plaka alarak omurgayı bükün."
+    },
+
+    // Alt Karın (Lower Abs)
+    {
+        id: "lib_hanging_leg_raise",
+        name: "Hanging Leg / Knee Raise",
+        category: "abs",
+        subCategory: "lower_abs",
+        muscle: "Alt Karın & Pelvik Kontrol",
+        defaultTarget: "3 Set (10-15 Rep)",
+        defaultSets: 3,
+        defaultSeat: "Barda Asılı",
+        isTopSet: false,
+        desc: "Pelvisi yukarı bükerek alt karın duvarını sıkılaştırır ve belirginleştirir.",
+        tips: "Sadece bacakları kaldırmayın; kalçayı ve leğen kemiğini göğsünüze doğru kıvırın."
+    },
+    {
+        id: "lib_captain_chair",
+        name: "Captain's Chair Knee / Leg Raise",
+        category: "abs",
+        subCategory: "lower_abs",
+        muscle: "Alt Karın İzolasyonu",
+        defaultTarget: "3 Set (12-15 Rep)",
+        defaultSets: 3,
+        defaultSeat: "Dirsek Destekli İstasyon",
+        isTopSet: false,
+        desc: "Dirsek desteğiyle sallanmayı engelleyip alt karın kaslarına saf yük bindirir.",
+        tips: "Dizleri göğse çekerken alt karını sıkın ve kontrollü indirin."
+    },
+
+    // Oblikler (Yan Karın)
+    {
+        id: "lib_woodchopper",
+        name: "Kablo Woodchopper (Yukarıdan Aşağı / Çapraz)",
+        category: "abs",
+        subCategory: "obliques",
+        muscle: "Oblikler (Yan Karın Çizgileri)",
+        defaultTarget: "3 Set (12-15 Rep)",
+        defaultSets: 3,
+        defaultSeat: "Kablo: Omuz Boyu",
+        isTopSet: false,
+        desc: "Gövde rotasyonu ile yan karın kaslarını şekillendirir ve V-cut hattını belirginleştirir.",
+        tips: "Hareketi kollarla değil, gövdenizi döndürerek yapın."
+    },
+    {
+        id: "lib_russian_twist",
+        name: "Weighted Russian Twist",
+        category: "abs",
+        subCategory: "obliques",
+        muscle: "Oblikler & Dinamik Core",
+        defaultTarget: "3 Set (20 Toplam Rep)",
+        defaultSets: 3,
+        defaultSeat: "Zemin",
+        isTopSet: false,
+        desc: "Yan karın kaslarının dinamik rotasyonel dayanıklılığını artırır.",
+        tips: "Ayakları yerden hafif kaldırın ve plakayı iki yana kontrollü dokundurun."
+    },
+
+    // Core & Anti-Ekstansiyon
+    {
+        id: "lib_ab_wheel",
+        name: "Ab Wheel Rollout (Karın Çarkı)",
+        category: "abs",
+        subCategory: "core",
+        muscle: "Tüm Core Duvarı & Anti-Ekstansiyon",
+        defaultTarget: "3 Set (8-12 Rep)",
+        defaultSets: 3,
+        defaultSeat: "Dizler Üzerinde",
+        isTopSet: true,
+        desc: "Dünyanın en zor ve en verimli karın hareketlerinden biridir; tüm core duvarını çelik gibi yapar.",
+        tips: "Belinizi aşağı çökertmeyin; karın kaslarını sıkarak uzanın ve karınla geri çekilin."
+    },
+    {
+        id: "lib_plank",
+        name: "Plank / Weighted Plank",
+        category: "abs",
+        subCategory: "core",
+        muscle: "Transversus Abdominis & Statik Core",
+        defaultTarget: "3 Set (45-60 sn)",
+        defaultSets: 3,
+        defaultSeat: "Zemin",
+        isTopSet: false,
+        desc: "Derin karın kaslarını güçlendirerek beli inceltir ve omurga duruşunu korur.",
+        tips: "Kalçayı yukarı kaldırmayın veya aşağı düşürmeyin; vücut düz bir hat olsun."
+    },
+
+    // ==================== 6. BACAK (LEGS) ====================
+    // Ön Bacak (Quadriceps)
+    {
+        id: "lib_bb_squat",
+        name: "Barbell Back Squat (High Bar / Low Bar)",
+        category: "legs",
+        subCategory: "quads",
+        muscle: "Genel Bacak & Tüm Vücut Gücü",
+        defaultTarget: "3-4 Set (5-8 Rep)",
+        defaultSets: 3,
+        defaultSeat: "Squat Rack",
+        isTopSet: true,
+        desc: "Bacak gelişiminin ve genel anabolik hormon salınımının tartışmasız kralıdır.",
+        tips: "Topukları yerden kaldırmayın, dizleri ayak parmakları yönünde açın, kalçayı paralel altına indirin."
+    },
+    {
+        id: "lib_hack_squat",
+        name: "Hack Squat (Quad Canavarı)",
+        category: "legs",
+        subCategory: "quads",
+        muscle: "Ön Bacak (Vastus Medialis / Gözyaşı)",
+        defaultTarget: "2-3 Ağır Set (3sn Negatif, Tam Derinlik)",
+        defaultSets: 2,
+        defaultSeat: "Ayaklar Dar & Altta",
+        isTopSet: true,
+        desc: "Diz fleksiyonunu maksimize ederek ön bacak liflerini cerrahi hassasiyetle parçalar.",
+        tips: "Ayakları platformun altına koyun ve en altta dizlerin tamamen bükülmesine izin verin."
+    },
+    {
+        id: "lib_leg_press",
+        name: "Plate Loaded Leg Press (45°)",
+        category: "legs",
+        subCategory: "quads",
+        muscle: "Genel Quad & Bacak Gücü",
+        defaultTarget: "2-3 Sert Çalışma Seti (8-10 Rep)",
+        defaultSets: 2,
+        defaultSeat: "Platform Altı",
+        isTopSet: true,
+        desc: "Omurga yorgunluğu olmadan devasa tonajlarla bacaklara aşırı yük bindirir.",
+        tips: "En üstte dizleri asla kitlemeyin; en altta kalçanın koltuktan kalkmasına izin vermeyin."
+    },
+    {
+        id: "lib_bulgarian_split",
+        name: "Bulgarian Split Squat (Dumbbell)",
+        category: "legs",
+        subCategory: "quads",
+        muscle: "Tek Bacak Quad & Glute Hipertrofisi",
+        defaultTarget: "2-3 Set (8-10 Rep)",
+        defaultSets: 2,
+        defaultSeat: "Sehpada Arka Ayak Destekli",
+        isTopSet: false,
+        desc: "Bacaklar arasındaki asimetriyi düzeltir, ön bacak ve kalçada çılgın bir büyüme tetikler.",
+        tips: "Gövdeyi dik tutarsanız quads, hafif öne eğerseniz glutes daha çok çalışır."
+    },
+    {
+        id: "lib_leg_ext",
+        name: "Leg Extension",
+        category: "legs",
+        subCategory: "quads",
+        muscle: "Quad İzolasyonu & Rectus Femoris",
+        defaultTarget: "2 Bitirici Set (12-15 Rep, Maks Pump)",
+        defaultSets: 2,
+        defaultSeat: "Koltuk: 3",
+        isTopSet: false,
+        desc: "Ön bacağın üst liflerini (Rectus Femoris) tam kilitlenmede izole eder.",
+        tips: "Tepede 1 saniye kilitlenip bacağı sıkın, inişi 3 saniyede yavaş yapın."
+    },
+
+    // Arka Bacak (Hamstrings)
+    {
+        id: "lib_rdl",
+        name: "Barbell / Dumbbell Romanian Deadlift (RDL)",
+        category: "legs",
+        subCategory: "hamstrings",
+        muscle: "Hamstring (Arka Bacak) & Glute",
+        defaultTarget: "2-3 Sıkı Set (8-10 Rep)",
+        defaultSets: 2,
+        defaultSeat: "Düz Zemin",
+        isTopSet: true,
+        desc: "Kalçayı geriye iterek arka bacak liflerini en derin esneme pozisyonunda büyütür.",
+        tips: "Dizleri kitlemeyin (hafif mikro bükük olsun); hareketi dizle değil, kalçayı arkadaki duvara değdirir gibi geriye iterek yapın."
+    },
+    {
+        id: "lib_lying_leg_curl",
+        name: "Lying Leg Curl (Yatarak Arka Bacak)",
+        category: "legs",
+        subCategory: "hamstrings",
+        muscle: "Hamstring İzolasyonu • Diz Fleksiyonu",
+        defaultTarget: "2-3 Set (10-12 Rep)",
+        defaultSets: 2,
+        defaultSeat: "Ped Ayarlı",
+        isTopSet: false,
+        desc: "Diz eklemini bükerek arka bacağın tüm liflerini izole eder.",
+        tips: "Kalçayı pedden kaldırmayın; ayak bileklerini kendinize çekerek çekin."
+    },
+    {
+        id: "lib_seated_leg_curl",
+        name: "Seated Leg Curl (Oturarak Arka Bacak)",
+        category: "legs",
+        subCategory: "hamstrings",
+        muscle: "Hamstring Uzun Pozisyonda Hipertrofi",
+        defaultTarget: "2-3 Set (10-12 Rep)",
+        defaultSets: 2,
+        defaultSeat: "Koltuk: 3",
+        isTopSet: true,
+        desc: "Kalça bükük pozisyonda olduğu için hamstring kasını daha uzun lif boyunda çalıştırarak üstün hipertrofi sağlar.",
+        tips: "Gövdeyi öne hafif eğerek hamstring esnemesini daha da artırın."
+    },
+
+    // Kalça (Glutes)
+    {
+        id: "lib_hip_thrust",
+        name: "Barbell Hip Thrust (Kalça İtişi)",
+        category: "legs",
+        subCategory: "glutes",
+        muscle: "Gluteus Maximus (Kalça Kütlesi)",
+        defaultTarget: "3 Set (8-10 Rep, Tepede 2sn Sık)",
+        defaultSets: 3,
+        defaultSeat: "Sehpa Sırt Destekli",
+        isTopSet: true,
+        desc: "Kalça kasına tepe noktada en yüksek yatay mekanik gerilimi bindiren 1 numaralı harekettir.",
+        tips: "Tepede beli aşırı bükmeyin; çeneyi göğse yakın tutun ve tepede kalçayı sıkarak kilitleyin."
+    },
+
+    // Bacak İçi (Adductors)
+    {
+        id: "lib_adductor",
+        name: "Adductor Machine (Bacak İçi)",
+        category: "legs",
+        subCategory: "adductors",
+        muscle: "Bacak İçi Adductor Kasları",
+        defaultTarget: "3 Set (12-15 Rep)",
+        defaultSets: 3,
+        defaultSeat: "Geniş Açı: 4",
+        isTopSet: false,
+        desc: "Önden bakıldığında bacağın içini doldurarak bacaklara devasa bir kalınlık ve derinlik katar.",
+        tips: "Geniş açıda başlayın, en içte dizleri birbirine değdirip 1 saniye sıkın."
+    },
+
+    // Kalf (Calves)
+    {
+        id: "lib_calf_raise",
+        name: "Standing / Seated Calf Raise (Kalf Kaldırışı)",
+        category: "legs",
+        subCategory: "calves",
+        muscle: "Kalf (Gastrocnemius & Soleus)",
+        defaultTarget: "3 Set (Tepe 2sn Bekleme, 12-15 Rep)",
+        defaultSets: 3,
+        defaultSeat: "Platform",
+        isTopSet: false,
+        desc: "Tam esneme ve tepe sıkışmayla inatçı kalf liflerini büyütür.",
+        tips: "Asla zıplayarak ivme almayın. En dipte 2 saniye tam esneyin, tepeye çıkıp parmak ucunda 2 saniye bekleyin."
+    }
 ];
 
 // Initial 5-Day Workout Template
@@ -347,6 +1220,7 @@ document.addEventListener("DOMContentLoaded", () => {
         updateCoachReport();
         initSettingsForm();
         renderSupplementCatalog();
+        initCollapsibleBanners();
 
         if (!hasActiveSession && !getActiveSessionUsername()) {
             openAuthModal("login");
@@ -1418,13 +2292,67 @@ function autoSaveSet(exId, setIndex) {
     showToast(`Set ${setIndex} Kaydedildi! 💪`);
 }
 
+let currentLibraryMainMuscle = "chest";
+let currentLibrarySubCategory = "all";
+let currentLibrarySearchQuery = "";
+
+const MUSCLE_SUBREGIONS_MAP = {
+    chest: [
+        { id: "all", name: "Tümü (Tüm Göğüs)" },
+        { id: "upper_chest", name: "Üst Göğüs (Incline)" },
+        { id: "mid_chest", name: "Orta Göğüs (Flat)" },
+        { id: "lower_chest", name: "Alt Göğüs & Dips" },
+        { id: "chest_fly", name: "İç Göğüs & Fly İzolasyon" }
+    ],
+    shoulders: [
+        { id: "all", name: "Tümü (Tüm Omuz)" },
+        { id: "front_delts", name: "Ön Omuz (Press / Güç)" },
+        { id: "side_delts", name: "Yan Omuz (Lateral 3D)" },
+        { id: "rear_delts", name: "Arka Omuz (Face Pull / Fly)" }
+    ],
+    back: [
+        { id: "all", name: "Tümü (Tüm Sırt)" },
+        { id: "lats", name: "Lats & Kanat (Genişlik / V-Taper)" },
+        { id: "mid_back", name: "Orta Sırt & Rhomboid (Kalınlık)" },
+        { id: "traps", name: "Trapez (Shrug / Üst Sırt)" },
+        { id: "lower_back", name: "Bel & Omurga (Erector / Deadlift)" }
+    ],
+    arms: [
+        { id: "all", name: "Tümü (Tüm Kol)" },
+        { id: "biceps", name: "Biceps (Pazu / Tepe & İzolasyon)" },
+        { id: "triceps", name: "Triceps (Arka Kol & İtiş Gücü)" },
+        { id: "forearms", name: "Brachialis & Ön Kol / Bilek" }
+    ],
+    abs: [
+        { id: "all", name: "Tümü (Tüm Karın & Core)" },
+        { id: "upper_abs", name: "Üst & Orta Karın (Crunch)" },
+        { id: "lower_abs", name: "Alt Karın (Leg Raise / Asılma)" },
+        { id: "obliques", name: "Oblikler (Yan Karın / Rotasyon)" },
+        { id: "core", name: "Core Duvarı (Rollout & Plank)" }
+    ],
+    legs: [
+        { id: "all", name: "Tümü (Tüm Bacak & Kalça)" },
+        { id: "quads", name: "Ön Bacak (Squat & Leg Press)" },
+        { id: "hamstrings", name: "Arka Bacak (RDL & Leg Curl)" },
+        { id: "glutes", name: "Kalça (Hip Thrust & Glute)" },
+        { id: "adductors", name: "Bacak İçi (Adductor)" },
+        { id: "calves", name: "Kalf (Calf Raise)" }
+    ]
+};
+
 function openExerciseManagerModal() {
     const plan = appData.customWorkoutPlan[currentActiveDay];
     if (!plan) return;
 
-    document.getElementById("ex-mgr-day-title").innerHTML = `<i class="fa-solid fa-pen-to-square"></i> ${plan.title} - Hareketleri Düzenle`;
+    document.getElementById("ex-mgr-day-title").innerHTML = `<i class="fa-solid fa-dumbbell"></i> ${plan.title} - Hareketleri Düzenle`;
+    
+    // Reset search input
+    const searchInput = document.getElementById("library-ex-search");
+    if (searchInput) searchInput.value = "";
+    currentLibrarySearchQuery = "";
+
     renderCurrentExercisesInManager();
-    renderLibraryExercisesByMuscle();
+    setLibraryMainMuscle("chest");
     openModal('modal-exercise-manager');
 }
 
@@ -1434,7 +2362,7 @@ function renderCurrentExercisesInManager() {
     if (!listContainer || !plan) return;
 
     if (plan.exercises.length === 0) {
-        listContainer.innerHTML = `<p class="text-muted" style="text-align:center; font-size:0.8rem;">Bu gün için kayıtlı egzersiz yok.</p>`;
+        listContainer.innerHTML = `<p class="text-muted" style="text-align:center; font-size:0.8rem; padding:10px 0;">Bu gün için henüz kayıtlı hareket yok. Aşağıdaki kütüphaneden ekleyebilirsiniz.</p>`;
         return;
     }
 
@@ -1442,7 +2370,10 @@ function renderCurrentExercisesInManager() {
         <div class="ex-mgr-item">
             <div>
                 <strong>${idx + 1}. ${ex.name}</strong>
-                <div style="font-size:0.7rem; color:var(--text-secondary);"><span class="muscle-tag">${ex.muscle || ''}</span> • ${ex.target}</div>
+                <div style="font-size:0.7rem; color:var(--text-secondary); margin-top:2px;">
+                    <span class="muscle-tag">${ex.muscle || ''}</span> • ${ex.target}
+                    ${ex.defaultSeat ? `• <em>${ex.defaultSeat}</em>` : ''}
+                </div>
             </div>
             <div style="display:flex; align-items:center; gap:6px;">
                 <button class="btn-delete-item" onclick="removeExerciseFromDay(${idx})" title="Hareketten Çıkar"><i class="fa-solid fa-trash"></i></button>
@@ -1458,43 +2389,118 @@ function removeExerciseFromDay(index) {
     const removed = plan.exercises.splice(index, 1)[0];
     saveDataToStorage();
     renderCurrentExercisesInManager();
+    renderLibraryExercises();
     renderWorkoutView(currentActiveDay);
     showToast(`${removed.name} programdan çıkarıldı.`);
 }
 
-function renderLibraryExercisesByMuscle() {
-    const select = document.getElementById("library-muscle-select");
-    const container = document.getElementById("library-exercises-list");
-    if (!select || !container) return;
+function setLibraryMainMuscle(muscleKey, btn) {
+    currentLibraryMainMuscle = muscleKey || "chest";
+    currentLibrarySubCategory = "all";
 
-    const selectedMuscle = select.value;
+    // Update active class on muscle pills
+    document.querySelectorAll(".muscle-pill").forEach(p => p.classList.remove("active"));
+    if (btn) {
+        btn.classList.add("active");
+    } else {
+        const targetPill = document.getElementById(`mpill-${currentLibraryMainMuscle}`);
+        if (targetPill) targetPill.classList.add("active");
+    }
+
+    renderLibrarySubregions();
+    renderLibraryExercises();
+}
+
+function setLibrarySubCategory(subKey, btn) {
+    currentLibrarySubCategory = subKey || "all";
+
+    // Update active class on subregion chips
+    document.querySelectorAll(".subregion-chip").forEach(c => c.classList.remove("active"));
+    if (btn) {
+        btn.classList.add("active");
+    }
+
+    renderLibraryExercises();
+}
+
+function handleLibrarySearch(query) {
+    currentLibrarySearchQuery = (query || "").trim().toLowerCase();
+    renderLibraryExercises();
+}
+
+function renderLibrarySubregions() {
+    const container = document.getElementById("library-subregion-chips");
+    if (!container) return;
+
+    const subregions = MUSCLE_SUBREGIONS_MAP[currentLibraryMainMuscle] || [
+        { id: "all", name: "Tümü" }
+    ];
+
+    container.innerHTML = subregions.map(sub => `
+        <button type="button" class="subregion-chip ${currentLibrarySubCategory === sub.id ? 'active' : ''}" onclick="setLibrarySubCategory('${sub.id}', this)">
+            ${sub.name}
+        </button>
+    `).join("");
+}
+
+function renderLibraryExercises() {
+    const container = document.getElementById("library-exercises-list");
+    if (!container) return;
+
     const plan = appData.customWorkoutPlan[currentActiveDay];
     const currentExNames = plan ? plan.exercises.map(e => e.name) : [];
+    const q = currentLibrarySearchQuery;
 
     const filtered = EXERCISE_LIBRARY.filter(ex => {
-        if (selectedMuscle === "all") return true;
-        if (selectedMuscle === "chest") return ex.muscle.includes("Göğüs");
-        if (selectedMuscle === "back") return ex.muscle.includes("Sırt") || ex.muscle.includes("Lat");
-        if (selectedMuscle === "shoulders") return ex.muscle.includes("Omuz");
-        if (selectedMuscle === "triceps") return ex.muscle.includes("Triceps");
-        if (selectedMuscle === "biceps") return ex.muscle.includes("Biceps") || ex.muscle.includes("Brachialis");
-        if (selectedMuscle === "legs") return ex.muscle.includes("Bacak") || ex.muscle.includes("Quad") || ex.muscle.includes("Hamstring") || ex.muscle.includes("Kalf");
-        if (selectedMuscle === "abs_traps") return ex.muscle.includes("Trapez") || ex.muscle.includes("Karın");
+        if (q && q.length > 0) {
+            const nameMatch = ex.name.toLowerCase().includes(q);
+            const muscleMatch = ex.muscle.toLowerCase().includes(q);
+            const descMatch = ex.desc && ex.desc.toLowerCase().includes(q);
+            const tipsMatch = ex.tips && ex.tips.toLowerCase().includes(q);
+            return nameMatch || muscleMatch || descMatch || tipsMatch;
+        }
+
+        // Category & Subcategory matching
+        if (ex.category !== currentLibraryMainMuscle) return false;
+        if (currentLibrarySubCategory !== "all" && ex.subCategory !== currentLibrarySubCategory) return false;
         return true;
     });
+
+    if (filtered.length === 0) {
+        container.innerHTML = `
+            <div style="grid-column:1/-1; text-align:center; padding:24px 10px; color:var(--text-muted); font-size:0.85rem;">
+                <i class="fa-solid fa-magnifying-glass" style="font-size:1.5rem; margin-bottom:8px; opacity:0.5; display:block;"></i>
+                Aramanıza uygun hareket bulunamadı. Lütfen farklı bir arama kelimesi veya kas grubu seçin.
+            </div>
+        `;
+        return;
+    }
 
     container.innerHTML = filtered.map(ex => {
         const inPlan = currentExNames.includes(ex.name);
         return `
             <div class="library-ex-item">
                 <div style="flex:1;">
-                    <strong style="font-size:0.8rem; color:#ffffff;">${ex.name}</strong>
-                    <div style="font-size:0.68rem; color:var(--text-secondary);">${ex.muscle} • ${ex.desc}</div>
+                    <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:4px;">
+                        <strong style="font-size:0.85rem; color:#ffffff;">${ex.name}</strong>
+                        ${ex.isTopSet ? `<span class="top-set-badge" style="font-size:0.6rem; padding:1px 5px;"><i class="fa-solid fa-fire"></i> TOP SET</span>` : ''}
+                        <span class="library-sub-badge">${ex.muscle}</span>
+                    </div>
+                    <div style="font-size:0.72rem; color:var(--text-secondary); margin-bottom:3px;">
+                        <i class="fa-solid fa-bullseye" style="color:var(--accent-orange); font-size:0.65rem;"></i> <strong>Hedef:</strong> ${ex.defaultTarget} 
+                        ${ex.defaultSeat ? `• <i class="fa-solid fa-chair" style="color:var(--accent-cyan); font-size:0.65rem;"></i> ${ex.defaultSeat}` : ''}
+                    </div>
+                    <div style="font-size:0.7rem; color:var(--text-muted); line-height:1.35;">
+                        ${ex.desc}
+                        ${ex.tips ? `<span style="display:block; color:#9ca3af; margin-top:2px;"><em>💡 ${ex.tips}</em></span>` : ''}
+                    </div>
                 </div>
-                ${inPlan 
-                    ? `<button class="btn btn-xs btn-outline" style="color:var(--status-green); border-color:var(--status-green);" disabled><i class="fa-solid fa-check"></i> Ekli</button>`
-                    : `<button class="btn btn-xs btn-primary" onclick="addExerciseToDay('${ex.id}')"><i class="fa-solid fa-plus"></i> Ekle</button>`
-                }
+                <div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px; justify-content:center;">
+                    ${inPlan 
+                        ? `<button class="btn btn-xs btn-outline" style="color:var(--status-green); border-color:var(--status-green); cursor:default;" disabled><i class="fa-solid fa-check"></i> Ekli</button>`
+                        : `<button class="btn btn-xs btn-primary" onclick="addExerciseToDay('${ex.id}')"><i class="fa-solid fa-plus"></i> Ekle</button>`
+                    }
+                </div>
             </div>
         `;
     }).join("");
@@ -1520,9 +2526,77 @@ function addExerciseToDay(libExId) {
     plan.exercises.push(newEx);
     saveDataToStorage();
     renderCurrentExercisesInManager();
-    renderLibraryExercisesByMuscle();
+    renderLibraryExercises();
     renderWorkoutView(currentActiveDay);
     showToast(`${libEx.name} programa eklendi! 💪`);
+}
+
+// Collapsible Banners & Guidance Cards Management
+function dismissCoachDailyBanner(event) {
+    if (event) event.stopPropagation();
+    const banner = document.getElementById("coach-daily-banner");
+    if (banner) banner.style.display = "none";
+    try {
+        localStorage.setItem("OMAR_HIDE_DAILY_COACH_BANNER", "true");
+    } catch(e) {}
+    showToast("Koç bilgilendirme kartı kapatıldı. ℹ️");
+}
+
+function toggleRIRLegendCollapse() {
+    const card = document.getElementById("rir-legend-container");
+    const icon = document.getElementById("rir-collapse-icon");
+    if (!card) return;
+
+    const isCollapsed = card.classList.toggle("collapsed");
+    if (icon) {
+        icon.className = isCollapsed ? "fa-solid fa-chevron-down" : "fa-solid fa-chevron-up";
+    }
+    try {
+        localStorage.setItem("OMAR_RIR_LEGEND_COLLAPSED", isCollapsed ? "true" : "false");
+    } catch(e) {}
+}
+
+function initCollapsibleBanners() {
+    try {
+        if (localStorage.getItem("OMAR_HIDE_DAILY_COACH_BANNER") === "true") {
+            const banner = document.getElementById("coach-daily-banner");
+            if (banner) banner.style.display = "none";
+        }
+        if (localStorage.getItem("OMAR_RIR_LEGEND_COLLAPSED") === "true") {
+            const card = document.getElementById("rir-legend-container");
+            const icon = document.getElementById("rir-collapse-icon");
+            if (card) card.classList.add("collapsed");
+            if (icon) icon.className = "fa-solid fa-chevron-down";
+        }
+    } catch(e) {}
+}
+
+// Strength & Progressive Overload Estimation Functions
+function calculateEstimated1RM(weight, reps) {
+    if (!weight || !reps || reps <= 0) return 0;
+    if (reps === 1) return weight;
+    // Brzycki 1RM Formula
+    return Math.round(weight / (1.0278 - (0.0278 * Math.min(reps, 15))));
+}
+
+function getNextSessionProgressionAdvice(lastWeight, lastReps, lastRir) {
+    if (!lastWeight) return null;
+    if (lastRir === 0 && lastReps >= 8) {
+        return {
+            advice: `Tebrikler! ${lastWeight} kg ile hedefe ulaştın. Gelecek antrenmanda +2.5 kg artırmayı hedefle! 🔥`,
+            suggestedWeight: (parseFloat(lastWeight) + 2.5).toFixed(1)
+        };
+    } else if (lastRir === 1) {
+        return {
+            advice: `Güzel performans! Gelecek antrenmanda aynı kiloyla +1 tekrar eklemeye çalış. 📈`,
+            suggestedWeight: parseFloat(lastWeight).toFixed(1)
+        };
+    } else {
+        return {
+            advice: `Mevcut kiloda formu koruyarak tekrar sayısını tamamlamaya odaklan. 🎯`,
+            suggestedWeight: parseFloat(lastWeight).toFixed(1)
+        };
+    }
 }
 
 // ==================== SCALE & COACH REPORT ====================
