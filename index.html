@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <div id="app-container">
+    <div id="athlete-app-container" class="app-main-layout">
         <!-- Top App Bar -->
         <header class="top-bar">
             <div class="user-badge" onclick="openUserProfileModal()" style="cursor: pointer;" title="Profil ve Hesap">
@@ -25,6 +25,10 @@
                 </div>
             </div>
             <div class="top-actions">
+                <button class="icon-btn" onclick="openAthleteChatModal()" title="Koçumla İletişim / Chat" style="position:relative;">
+                    <i class="fa-solid fa-comments"></i>
+                    <span class="top-badge" id="athlete-unread-badge" style="display:none;">1</span>
+                </button>
                 <button class="icon-btn" onclick="openModal('modal-settings')" title="Hedefleri ve Ayarları Düzenle">
                     <i class="fa-solid fa-sliders"></i>
                 </button>
@@ -55,6 +59,22 @@
                     </div>
                     <div class="user-hero-right">
                         <span class="user-hero-view-btn">Profilim <i class="fa-solid fa-chevron-right"></i></span>
+                    </div>
+                </div>
+
+                <!-- Coach Revision Alert Banner -->
+                <div class="card coach-revision-card" id="athlete-revision-banner" style="display:none;">
+                    <div class="rev-header">
+                        <div class="rev-badge"><i class="fa-solid fa-crown"></i> KOÇTAN YENİ HEDEF & REVİZYON</div>
+                        <span class="rev-date" id="athlete-rev-date">Bugün</span>
+                    </div>
+                    <p class="rev-note" id="athlete-rev-note">Koçunuz yeni hedefler ve direktifler belirledi.</p>
+                    <div class="rev-macro-grid" id="athlete-rev-macro-grid">
+                        <!-- Populated dynamically -->
+                    </div>
+                    <div class="rev-actions">
+                        <button class="btn btn-sm btn-primary" onclick="acceptCoachRevision()"><i class="fa-solid fa-check"></i> Yeni Hedefleri Uygula</button>
+                        <button class="btn btn-sm btn-outline" onclick="openAthleteChatModal()"><i class="fa-solid fa-comments"></i> Koça Yaz</button>
                     </div>
                 </div>
 
@@ -370,6 +390,337 @@
             <button class="nav-item" onclick="navigateToTab('scale')">
                 <i class="fa-solid fa-chart-simple"></i>
                 <span>Tartı/Rapor</span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- ==================== COACH PORTAL / DEDICATED COACH APP ==================== -->
+    <div id="coach-app-container" class="app-main-layout coach-theme" style="display:none;">
+        <!-- Coach Top Bar -->
+        <header class="top-bar coach-top-bar">
+            <div class="user-badge" onclick="openUserProfileModal()" style="cursor: pointer;" title="Antrenör Profili">
+                <div class="user-avatar-circle coach-avatar">
+                    <i class="fa-solid fa-crown"></i>
+                </div>
+                <div>
+                    <h1 class="app-title coach-app-title">OMAR COACHING</h1>
+                    <span class="sub-status" id="coach-header-status">👑 Baş Antrenör • <span id="coach-athlete-count-badge">4</span> Sporcu</span>
+                </div>
+            </div>
+            <div class="top-actions">
+                <button class="btn btn-xs btn-outline coach-switch-btn" onclick="switchAppPortal('athlete')" title="Sporcu Görünümüne Geç">
+                    <i class="fa-solid fa-person-running"></i> Sporcu Modu
+                </button>
+                <button class="icon-btn" onclick="openUserProfileModal()" title="Hesap ve Çıkış">
+                    <i class="fa-solid fa-circle-user"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Coach Main Content Area -->
+        <main class="main-content">
+            <!-- COACH VIEW 1: SPORCULARIM (ROSTER) -->
+            <section id="view-coach-roster" class="tab-view active">
+                <div class="card coach-welcome-banner">
+                    <div class="card-header" style="margin-bottom:4px;">
+                        <h2><i class="fa-solid fa-users-viewfinder"></i> ANTRENÖR KONTROL PANELİ</h2>
+                        <button class="btn btn-xs btn-primary" onclick="openModal('modal-coach-new-athlete')">
+                            <i class="fa-solid fa-user-plus"></i> Sporcu Ekle
+                        </button>
+                    </div>
+                    <p class="text-secondary" style="font-size:0.75rem; line-height:1.4;">
+                        Tüm sporcularının günlük kalori, beslenme ve antrenman performanslarını buradan anlık denetle ve yönet.
+                    </p>
+
+                    <!-- Quick stats grid -->
+                    <div class="coach-stats-grid">
+                        <div class="c-stat-box">
+                            <span class="c-stat-lbl">Kayıtlı Sporcu</span>
+                            <strong class="c-stat-val" id="c-stat-total-athletes">0</strong>
+                        </div>
+                        <div class="c-stat-box">
+                            <span class="c-stat-lbl">Bugün Giriş Yapan</span>
+                            <strong class="c-stat-val text-green" id="c-stat-active-today">0</strong>
+                        </div>
+                        <div class="c-stat-box">
+                            <span class="c-stat-lbl">Okunmamış Mesaj</span>
+                            <strong class="c-stat-val text-amber" id="c-stat-unread-messages">0</strong>
+                        </div>
+                        <div class="c-stat-box">
+                            <span class="c-stat-lbl">Bekleyen Revizyon</span>
+                            <strong class="c-stat-val text-blue" id="c-stat-pending-revisions">0</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Athlete Search & Filter Filter Pills -->
+                <div class="roster-filter-row">
+                    <div class="roster-search-wrap">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" id="coach-athlete-search" placeholder="Sporcu ara (isim veya kullanıcı adı)..." oninput="filterCoachRoster()">
+                    </div>
+                    <div class="roster-pills">
+                        <button class="roster-pill active" onclick="filterCoachRosterByGoal('all', this)">Tümü</button>
+                        <button class="roster-pill" onclick="filterCoachRosterByGoal('bulk', this)">Bulk</button>
+                        <button class="roster-pill" onclick="filterCoachRosterByGoal('cut', this)">Cut</button>
+                        <button class="roster-pill" onclick="filterCoachRosterByGoal('recomp', this)">Recomp</button>
+                    </div>
+                </div>
+
+                <!-- Athletes Cards Grid / Container -->
+                <div class="athlete-roster-list" id="coach-roster-container">
+                    <!-- Populated dynamically by app.js -->
+                </div>
+            </section>
+
+            <!-- COACH VIEW 2: SPORCU DETAY & DENETİM (DEEP DIVE) -->
+            <section id="view-coach-detail" class="tab-view">
+                <!-- Selected Athlete Top Header -->
+                <div class="card athlete-detail-hero">
+                    <div class="athlete-detail-hero-top">
+                        <div class="adh-left">
+                            <div class="adh-avatar" id="adh-avatar">Ö</div>
+                            <div>
+                                <h2 id="adh-name">Ömer Faruk</h2>
+                                <span class="adh-uname" id="adh-uname">@omer</span>
+                            </div>
+                        </div>
+                        <div class="adh-right">
+                            <select id="coach-detail-athlete-select" onchange="selectCoachDetailAthlete(this.value)" class="form-select-sm">
+                                <!-- Populated dynamically -->
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Athlete Quick Metrics Bar -->
+                    <div class="adh-metrics-grid">
+                        <div class="adh-metric"><span class="lbl">Hedef</span><strong id="adh-goal">Lean Bulk</strong></div>
+                        <div class="adh-metric"><span class="lbl">Kilo</span><strong id="adh-weight">74.0 kg</strong></div>
+                        <div class="adh-metric"><span class="lbl">Kalori</span><strong id="adh-calorie-status">0 / 2770</strong></div>
+                        <div class="adh-metric"><span class="lbl">Adım</span><strong id="adh-steps">0 / 7500</strong></div>
+                    </div>
+
+                    <!-- Action shortcuts for selected athlete -->
+                    <div class="adh-actions-row">
+                        <button class="btn btn-xs btn-primary" onclick="goToPrescriptionForCurrentAthlete()">
+                            <i class="fa-solid fa-file-pen"></i> Hedef / Kalori Revize Et
+                        </button>
+                        <button class="btn btn-xs btn-outline" onclick="goToChatForCurrentAthlete()">
+                            <i class="fa-solid fa-comments"></i> Sporcuyla Chat
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Deep Dive Sub-tabs -->
+                <div class="deep-dive-nav">
+                    <button class="deep-tab active" onclick="switchCoachDetailTab('nutrition', this)"><i class="fa-solid fa-utensils"></i> Beslenme</button>
+                    <button class="deep-tab" onclick="switchCoachDetailTab('workout', this)"><i class="fa-solid fa-dumbbell"></i> Antrenman Defteri</button>
+                    <button class="deep-tab" onclick="switchCoachDetailTab('supplements', this)"><i class="fa-solid fa-capsules"></i> Suplement</button>
+                    <button class="deep-tab" onclick="switchCoachDetailTab('scale', this)"><i class="fa-solid fa-chart-line"></i> Tartı/Kilo</button>
+                </div>
+
+                <!-- Sub-tab Content Area -->
+                <div id="coach-deep-dive-content">
+                    <!-- Populated dynamically -->
+                </div>
+            </section>
+
+            <!-- COACH VIEW 3: HEDEF & KALORİ REVİZYONU (PRESCRIPTION) -->
+            <section id="view-coach-prescriptions" class="tab-view">
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fa-solid fa-file-pen"></i> HEDEF & DİYET REVİZYON MASASI</h2>
+                    </div>
+                    <p class="text-secondary" style="font-size:0.75rem; line-height:1.4; margin-bottom:12px;">
+                        Sporcunun haftalık kilo değişimine göre kalori, makro veya adım hedeflerini revize et. Sporcu uygulamayı açtığında yeni hedefleri görecektir.
+                    </p>
+
+                    <div class="form-group">
+                        <label><i class="fa-solid fa-user-check"></i> Revizyon Yapılacak Sporcu</label>
+                        <select id="rx-athlete-select" onchange="loadAthleteForPrescription(this.value)" class="form-select">
+                            <!-- Populated dynamically -->
+                        </select>
+                    </div>
+
+                    <!-- Macro Target Editor Form -->
+                    <div class="card" style="background:var(--bg-input); border:1px solid var(--border-subtle); padding:12px; margin-bottom:12px;">
+                        <h4 style="font-size:0.8rem; color:#ffffff; margin-bottom:10px; display:flex; justify-content:space-between;">
+                            <span>Yeni Günlük Hedefler</span>
+                            <span class="badge-role" style="font-size:0.65rem;" id="rx-calculated-cals">0 kcal</span>
+                        </h4>
+
+                        <div class="form-row-2">
+                            <div class="form-group">
+                                <label>Kalori Hedefi (kcal)</label>
+                                <input type="number" id="rx-calories" placeholder="2770">
+                            </div>
+                            <div class="form-group">
+                                <label>Protein Hedefi (g)</label>
+                                <input type="number" id="rx-protein" placeholder="167">
+                            </div>
+                        </div>
+
+                        <div class="form-row-2">
+                            <div class="form-group">
+                                <label>Karbonhidrat (g)</label>
+                                <input type="number" id="rx-carbs" placeholder="344">
+                            </div>
+                            <div class="form-group">
+                                <label>Yağ (g)</label>
+                                <input type="number" id="rx-fat" placeholder="77">
+                            </div>
+                        </div>
+
+                        <div class="form-row-2">
+                            <div class="form-group">
+                                <label>Su Hedefi (Litre)</label>
+                                <input type="number" step="0.1" id="rx-water" placeholder="3.5">
+                            </div>
+                            <div class="form-group">
+                                <label>Günlük Adım Hedefi</label>
+                                <input type="number" id="rx-steps" placeholder="7500">
+                            </div>
+                        </div>
+
+                        <div class="form-row-2">
+                            <div class="form-group">
+                                <label>Min Haftalık Kilo Artışı (kg)</label>
+                                <input type="number" step="0.05" id="rx-gain-min" placeholder="0.15">
+                            </div>
+                            <div class="form-group">
+                                <label>Maks Haftalık Kilo Artışı (kg)</label>
+                                <input type="number" step="0.05" id="rx-gain-max" placeholder="0.35">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Coach Directive / Note Area -->
+                    <div class="form-group">
+                        <label><i class="fa-solid fa-comment-dots"></i> Resmi Koç Direktifi & Açıklama Notu</label>
+                        <textarea id="rx-coach-note" rows="3" class="form-textarea" placeholder="Örn: Kilo artış hızın çok iyi, bu hafta kaloriyi 150 kcal artırdık. Karbonhidratı antrenman öncesi pirinçten al. Top setlerde RIR 0 tükenişe odaklan!"></textarea>
+                    </div>
+
+                    <button class="btn btn-primary btn-block" onclick="submitCoachPrescription()">
+                        <i class="fa-solid fa-paper-plane"></i> Revizyonu Gönder & Hedefleri Tanımla
+                    </button>
+                </div>
+
+                <!-- Past Revisions History -->
+                <div class="card" style="margin-top:14px;">
+                    <div class="card-header">
+                        <h2>GEÇMİŞ REVİZYONLAR & NOTLAR</h2>
+                    </div>
+                    <div id="rx-history-container">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- COACH VIEW 4: MESAJLAŞMA / CHAT MERKEZİ (UNIFIED MESSENGER) -->
+            <section id="view-coach-chat" class="tab-view">
+                <div class="card chat-card-container">
+                    <div class="chat-header">
+                        <div class="chat-header-user">
+                            <div class="user-avatar-circle" id="coach-chat-active-avatar">Ö</div>
+                            <div>
+                                <h3 id="coach-chat-active-name">Ömer Faruk</h3>
+                                <span class="chat-status-text" id="coach-chat-active-status">Çevrimiçi • Sporcu</span>
+                            </div>
+                        </div>
+                        <div>
+                            <select id="coach-chat-athlete-select" onchange="selectCoachChatAthlete(this.value)" class="form-select-sm">
+                                <!-- Populated dynamically -->
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Chat Quick Template Chips for Coach -->
+                    <div class="quick-chips-scroll">
+                        <button class="quick-chip" onclick="insertCoachQuickReply('Form videonu bekliyorum 📹')">📹 Form Videosu</button>
+                        <button class="quick-chip" onclick="insertCoachQuickReply('Bugünkü kalorini tamamlamayı unutma! 🍽️')">🍽️ Kalorini Tamamla</button>
+                        <button class="quick-chip" onclick="insertCoachQuickReply('Gelecek hafta ağırlığı 2.5kg artırabilirsin 💪')">💪 Ağırlık Artır</button>
+                        <button class="quick-chip" onclick="insertCoachQuickReply('Yarın sabah aç karna tartılmayı unutma ⚖️')">⚖️ Tartı Hatırlat</button>
+                        <button class="quick-chip" onclick="insertCoachQuickReply('Harika disiplin, aynen devam! 🔥')">🔥 Tebrikler</button>
+                    </div>
+
+                    <!-- Chat Messages Flow -->
+                    <div class="chat-messages-area" id="coach-chat-messages-area">
+                        <!-- Messages dynamically populated -->
+                    </div>
+
+                    <!-- Chat Input Bar -->
+                    <form class="chat-input-bar" onsubmit="handleCoachSendMessage(event)">
+                        <input type="text" id="coach-chat-input" placeholder="Sporcuna direktif veya mesaj yaz..." autocomplete="off">
+                        <button type="submit" class="btn-chat-send" title="Gönder">
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- COACH VIEW 5: AYARLAR & GÜVENLİK -->
+            <section id="view-coach-settings" class="tab-view">
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fa-solid fa-shield-halved"></i> ANTRENÖR GÜVENLİK & YÖNETİM</h2>
+                    </div>
+                    
+                    <div class="form-group" style="margin-top:10px;">
+                        <label>Antrenör Güvenlik Anahtarı (Master PIN)</label>
+                        <div style="display:flex; gap:8px;">
+                            <input type="text" id="coach-settings-master-pin" value="COACH2026" style="flex:1;">
+                            <button class="btn btn-sm btn-outline" onclick="updateCoachMasterPin()">Kaydet</button>
+                        </div>
+                        <small class="text-secondary" style="font-size:0.7rem; margin-top:4px; display:block;">
+                            Antrenör girişi yapmak ve yeni antrenör yetkilendirmek için kullanılan özel şifre.
+                        </small>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h2>TÜM SPORCU VERİLERİNİ YEDEKLE</h2>
+                    </div>
+                    <p class="text-secondary" style="font-size:0.75rem; line-height:1.4; margin-bottom:12px;">
+                        Tüm sporcuların antrenman, kalori ve diyet verilerini tek bir JSON dosyasında yedekle veya geri yükle.
+                    </p>
+                    <div class="data-actions-grid">
+                        <button class="btn btn-outline btn-block" onclick="exportCoachAllDataJSON()"><i class="fa-solid fa-download"></i> Tüm Veritabanını İndir</button>
+                        <button class="btn btn-outline btn-block" onclick="document.getElementById('coach-import-file').click()"><i class="fa-solid fa-upload"></i> Veritabanını Yükle</button>
+                        <input type="file" id="coach-import-file" style="display:none" onchange="importCoachAllDataJSON(event)">
+                    </div>
+                </div>
+
+                <div class="card">
+                    <button class="btn btn-danger btn-block" onclick="logoutCurrentUser()">
+                        <i class="fa-solid fa-right-from-bracket"></i> Antrenör Oturumunu Kapat
+                    </button>
+                </div>
+            </section>
+        </main>
+
+        <!-- Coach Bottom Navigation Bar -->
+        <nav class="bottom-nav coach-bottom-nav">
+            <button class="nav-item active" onclick="navigateCoachTab('roster')">
+                <i class="fa-solid fa-users"></i>
+                <span>Sporcular</span>
+            </button>
+            <button class="nav-item" onclick="navigateCoachTab('detail')">
+                <i class="fa-solid fa-chart-pie"></i>
+                <span>Denetim</span>
+            </button>
+            <button class="nav-item" onclick="navigateCoachTab('prescriptions')">
+                <i class="fa-solid fa-file-pen"></i>
+                <span>Revizyon</span>
+            </button>
+            <button class="nav-item" onclick="navigateCoachTab('chat')">
+                <i class="fa-solid fa-comments"></i>
+                <span class="nav-badge" id="coach-unread-total" style="display:none;">0</span>
+                <span>Mesajlar</span>
+            </button>
+            <button class="nav-item" onclick="navigateCoachTab('settings')">
+                <i class="fa-solid fa-gear"></i>
+                <span>Ayarlar</span>
             </button>
         </nav>
     </div>
@@ -1034,13 +1385,119 @@
         </div>
     </div>
 
-    <!-- ==================== AUTHENTICATION OVERLAY (LOGIN / REGISTER) ==================== -->
+    <!-- 10. ATHLETE TO COACH CHAT MODAL -->
+    <div id="modal-athlete-chat" class="modal-overlay">
+        <div class="modal-card chat-modal-dialog">
+            <div class="modal-header" style="padding:14px 16px; border-bottom:1px solid var(--border-subtle);">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <div class="user-avatar-circle" style="background:linear-gradient(135deg,#ffd60a,#ff9f0a); color:#000; font-size:0.9rem; font-weight:800;">
+                        <i class="fa-solid fa-crown"></i>
+                    </div>
+                    <div>
+                        <h3 style="font-size:0.92rem; margin:0;">Koç Ömer ile İletişim</h3>
+                        <span style="font-size:0.7rem; color:var(--status-green); font-weight:600;"><i class="fa-solid fa-circle" style="font-size:0.5rem;"></i> Çevrimiçi • Baş Antrenör</span>
+                    </div>
+                </div>
+                <button class="modal-close-btn" onclick="closeModal('modal-athlete-chat')">&times;</button>
+            </div>
+            
+            <!-- Quick Question Chips for Athlete -->
+            <div class="quick-chips-scroll" style="padding:8px 12px; background:var(--bg-card-subtle); border-bottom:1px solid var(--border-subtle);">
+                <button class="quick-chip" onclick="insertAthleteQuickMessage('Bugünkü öğünü değiştirebilir miyim?')">🍽️ Öğün Değişimi</button>
+                <button class="quick-chip" onclick="insertAthleteQuickMessage('Omuzumda hafif bir ağrı var, ne yapmalıyım?')">🩹 Sakatlık / Ağrı</button>
+                <button class="quick-chip" onclick="insertAthleteQuickMessage('Haftalık tartı sonucumu ve formumu güncelledim 📈')">📈 Tartı Güncellemesi</button>
+                <button class="quick-chip" onclick="insertAthleteQuickMessage('Top sette RIR 0 tam tükenişe gittim 🔥')">🔥 Antrenman Geribildirimi</button>
+            </div>
+
+            <!-- Messages Area -->
+            <div class="chat-messages-area" id="athlete-chat-messages-area">
+                <!-- Dynamically loaded messages -->
+            </div>
+
+            <!-- Input Bar -->
+            <form class="chat-input-bar" onsubmit="handleAthleteSendMessage(event)">
+                <input type="text" id="athlete-chat-input" placeholder="Koçuna soru sor veya durum bildir..." autocomplete="off">
+                <button type="submit" class="btn-chat-send" title="Gönder">
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 11. COACH NEW ATHLETE MODAL -->
+    <div id="modal-coach-new-athlete" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-user-plus"></i> Yeni Sporcu Kaydet</h3>
+                <button class="modal-close-btn" onclick="closeModal('modal-coach-new-athlete')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form onsubmit="handleCoachCreateAthlete(event)">
+                    <div class="form-group">
+                        <label>Sporcu İsim & Soyisim</label>
+                        <input type="text" id="new-ath-name" required placeholder="Örn: Ahmet Yılmaz">
+                    </div>
+                    <div class="form-group">
+                        <label>Kullanıcı Adı</label>
+                        <input type="text" id="new-ath-username" required placeholder="ahmetyilmaz" autocapitalize="none">
+                    </div>
+                    <div class="form-group">
+                        <label>Giriş Şifresi</label>
+                        <input type="password" id="new-ath-pwd" required minlength="4" placeholder="••••••••">
+                    </div>
+                    <div class="form-row-2">
+                        <div class="form-group">
+                            <label>Hedef</label>
+                            <select id="new-ath-goal">
+                                <option value="bulk">Lean Bulk (Kütle)</option>
+                                <option value="cut">Cutting (Diyet)</option>
+                                <option value="recomp">Recomposition</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Güncel Kilo (kg)</label>
+                            <input type="number" step="0.1" id="new-ath-weight" value="75.0" placeholder="75.0">
+                        </div>
+                    </div>
+                    <div class="form-row-2">
+                        <div class="form-group">
+                            <label>Kalori Hedefi (kcal)</label>
+                            <input type="number" id="new-ath-cal" value="2800" placeholder="2800">
+                        </div>
+                        <div class="form-group">
+                            <label>Protein (g)</label>
+                            <input type="number" id="new-ath-p" value="170" placeholder="170">
+                        </div>
+                    </div>
+                    <div id="new-ath-error" class="auth-error-banner" style="display:none;"></div>
+                    <button type="submit" class="btn btn-primary btn-block" style="margin-top:12px;">
+                        Sporcuyu Oluştur & Listeye Ekle 🚀
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== AUTHENTICATION OVERLAY (LOGIN / REGISTER / ROLE SELECTOR) ==================== -->
     <div id="modal-auth-overlay" class="auth-overlay" style="display:none;">
         <div class="auth-card">
             <div class="auth-brand">
-                <div class="auth-logo-badge"><i class="fa-solid fa-dumbbell"></i></div>
-                <h2 class="auth-title">OMAR COACHING</h2>
+                <div class="auth-logo-badge" id="auth-brand-logo"><i class="fa-solid fa-dumbbell"></i></div>
+                <h2 class="auth-title" id="auth-brand-title">OMAR COACHING</h2>
                 <p class="auth-subtitle">Hypertrophy & Progressive Overload Engine</p>
+            </div>
+
+            <!-- Role Selector Pills -->
+            <div class="role-selector-wrap">
+                <label class="role-label"><i class="fa-solid fa-shield"></i> Giriş Yapılacak Rol:</label>
+                <div class="role-pills">
+                    <button type="button" class="role-pill active" id="role-pill-athlete" onclick="selectAuthRole('athlete')">
+                        <i class="fa-solid fa-person-running"></i> Sporcu
+                    </button>
+                    <button type="button" class="role-pill" id="role-pill-coach" onclick="selectAuthRole('coach')">
+                        <i class="fa-solid fa-crown"></i> Antrenör
+                    </button>
+                </div>
             </div>
 
             <!-- Auth Tabs -->
@@ -1064,8 +1521,15 @@
                         </button>
                     </div>
                 </div>
+                
+                <!-- Coach Master PIN for Coach Role -->
+                <div class="form-group" id="login-coach-key-group" style="display:none;">
+                    <label style="color:var(--status-amber);"><i class="fa-solid fa-key"></i> Antrenör Güvenlik Anahtarı (Master PIN)</label>
+                    <input type="password" id="login-coach-key" placeholder="Örn: COACH2026">
+                </div>
+
                 <div id="login-error-msg" class="auth-error-banner" style="display:none;"></div>
-                <button type="submit" class="btn btn-primary btn-block auth-submit-btn">
+                <button type="submit" class="btn btn-primary btn-block auth-submit-btn" id="login-submit-btn">
                     Giriş Yap <i class="fa-solid fa-arrow-right-to-bracket"></i>
                 </button>
                 <div class="auth-switch-prompt">
@@ -1097,8 +1561,15 @@
                     <label><i class="fa-solid fa-shield-halved"></i> Şifre Tekrarı</label>
                     <input type="password" id="reg-password-confirm" required minlength="4" placeholder="Şifrenizi tekrar girin" autocomplete="new-password">
                 </div>
+
+                <!-- Coach Master PIN for Coach Role Registration -->
+                <div class="form-group" id="reg-coach-key-group" style="display:none;">
+                    <label style="color:var(--status-amber);"><i class="fa-solid fa-key"></i> Antrenör Güvenlik Anahtarı (Master PIN)</label>
+                    <input type="password" id="reg-coach-key" placeholder="Örn: COACH2026">
+                </div>
+
                 <div id="register-error-msg" class="auth-error-banner" style="display:none;"></div>
-                <button type="submit" class="btn btn-primary btn-block auth-submit-btn">
+                <button type="submit" class="btn btn-primary btn-block auth-submit-btn" id="register-submit-btn">
                     Hesap Oluştur ve Başla <i class="fa-solid fa-rocket"></i>
                 </button>
                 <div class="auth-switch-prompt">

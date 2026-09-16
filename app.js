@@ -315,26 +315,46 @@ let currentActiveDay = "pzt";
 let currentSuppCatalogCategory = "all";
 let currentRecipeIngredients = []; // [ { foodId, amount } ]
 
+// Dual-Role & Coach State
+let currentAuthRole = "athlete";
+let currentPortalMode = "athlete"; // 'athlete' | 'coach'
+let currentCoachActiveTab = "roster";
+let currentCoachSelectedAthlete = "omer";
+let currentCoachDetailSubtab = "nutrition";
+let currentCoachFilterGoal = "all";
+
 // Initialize Application
 document.addEventListener("DOMContentLoaded", () => {
+    seedInitialUsersAndDemoData();
     const hasActiveSession = loadDataFromStorage();
-    checkAndResetDailyNutrition();
-    recalculateDailyTotals();
-    updateDateDisplay();
-    updateTopBarUserHeader();
-    renderDashboard();
-    renderWorkoutView(currentActiveDay);
-    renderNutritionView();
-    renderSupplementsView();
-    renderScaleView();
-    updateCoachReport();
-    initSettingsForm();
-    renderSupplementCatalog();
+    const activeUsername = getActiveSessionUsername();
+    const registry = getUsersRegistry();
+    const user = activeUsername && registry[activeUsername];
 
-    if (!hasActiveSession && !getActiveSessionUsername()) {
-        openAuthModal("login");
+    if (user && user.role === "coach") {
+        switchAppPortal("coach");
     } else {
-        checkOnboardingStatus();
+        switchAppPortal("athlete");
+        checkAndResetDailyNutrition();
+        recalculateDailyTotals();
+        updateDateDisplay();
+        updateTopBarUserHeader();
+        renderDashboard();
+        renderWorkoutView(currentActiveDay);
+        renderNutritionView();
+        renderSupplementsView();
+        renderScaleView();
+        updateCoachReport();
+        initSettingsForm();
+        renderSupplementCatalog();
+
+        if (!hasActiveSession && !getActiveSessionUsername()) {
+            openAuthModal("login");
+        } else {
+            checkOnboardingStatus();
+            checkAthletePendingRevision();
+            checkAthleteUnreadMessages();
+        }
     }
 });
 
@@ -2338,7 +2358,7 @@ function applyWizardPlanAndFinish() {
     showToast("Kişiye özel diyet planın ve hedeflerin başarıyla uygulandı! 🔥🎯");
 }
 
-// ==================== AUTHENTICATION & USER MANAGEMENT ====================
+// ==================== AUTHENTICATION, DUAL-ROLE & COACH ENGINE ====================
 
 async function hashPassword(password) {
     try {
@@ -2348,7 +2368,6 @@ async function hashPassword(password) {
         const hashArray = Array.from(new Uint8Array(hashBuffer));
         return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
     } catch (e) {
-        // Fallback simple hash for environments without crypto.subtle
         let hash = 0;
         const str = password + "_omar_salt_2026";
         for (let i = 0; i < str.length; i++) {
@@ -2383,6 +2402,253 @@ function setActiveSessionUsername(username) {
 
 function clearActiveSessionUsername() {
     localStorage.removeItem("OMAR_ACTIVE_SESSION_USER");
+}
+
+function getCoachMasterPin() {
+    return localStorage.getItem("OMAR_COACH_MASTER_KEY") || "COACH2026";
+}
+
+function setCoachMasterPin(pin) {
+    localStorage.setItem("OMAR_COACH_MASTER_KEY", pin);
+}
+
+function updateCoachMasterPin() {
+    const input = document.getElementById("coach-settings-master-pin");
+    if (!input || !input.value.trim()) {
+        showToast("Lütfen geçerli bir PIN girin.");
+        return;
+    }
+    setCoachMasterPin(input.value.trim());
+    showToast("Antrenör Güvenlik Anahtarı güncellendi! 🔑");
+}
+
+function getChatDB() {
+    try {
+        const data = localStorage.getItem("OMAR_CHAT_DB");
+        return data ? JSON.parse(data) : {};
+    } catch (e) {
+        return {};
+    }
+}
+
+function saveChatDB(db) {
+    localStorage.setItem("OMAR_CHAT_DB", JSON.stringify(db));
+}
+
+function getRevisionsDB() {
+    try {
+        const data = localStorage.getItem("OMAR_REVISIONS_DB");
+        return data ? JSON.parse(data) : {};
+    } catch (e) {
+        return {};
+    }
+}
+
+function saveRevisionsDB(db) {
+    localStorage.setItem("OMAR_REVISIONS_DB", JSON.stringify(db));
+}
+
+// Seed Demo Registry & Data if First Time
+function seedInitialUsersAndDemoData() {
+    let registry = getUsersRegistry();
+    let chatDb = getChatDB();
+    let revDb = getRevisionsDB();
+    let needsSave = false;
+
+    // Coach Account
+    if (!registry["coach_omar"]) {
+        registry["coach_omar"] = {
+            username: "coach_omar",
+            displayName: "Koç Ömer",
+            role: "coach",
+            passwordHash: "coach_pass_hash_2026",
+            createdAt: "2026-09-01",
+            data: createDefaultAppData()
+        };
+        needsSave = true;
+    }
+
+    // Athlete 1: Ömer Faruk (Lean Bulk)
+    if (!registry["omer"]) {
+        const omerData = createDefaultAppData();
+        omerData.userProfile = { age: 24, height: 178, weight: 74.0, gender: "male", frequency: 5, activity: "moderate", goal: "bulk" };
+        omerData.targets = { calories: 2770, protein: 167, carbs: 344, fat: 77, water: 3.5, steps: 7500, weeklyGainMin: 0.15, weeklyGainMax: 0.35 };
+        omerData.todayNutrition = {
+            consumedCal: 2450,
+            consumedP: 155,
+            consumedC: 310,
+            consumedF: 68,
+            consumedWater: 3.0,
+            steps: 6800,
+            meals: [
+                { id: "pancake", name: "1. Kahvaltı Pankek", cal: 810, p: 31, c: 106, f: 31, time: "08:30" },
+                { id: "preworkout", name: "2. Antrenmandan 2 Saat Önce", cal: 850, p: 56, c: 118, f: 16, time: "12:30" },
+                { id: "postworkout", name: "3. Antrenman Sonrası (Post-Workout)", cal: 550, p: 40, c: 60, f: 15, time: "16:00" }
+            ]
+        };
+        omerData.workoutLogs = {
+            "pzt_1": [
+                { weight: 80, reps: 8, rir: "RIR 0", date: "2026-09-16" },
+                { weight: 72.5, reps: 10, rir: "RIR 1", date: "2026-09-16" }
+            ],
+            "pzt_2": [
+                { weight: 32, reps: 9, rir: "RIR 1", date: "2026-09-16" }
+            ]
+        };
+        omerData.weightHistory = [
+            { date: "2026-09-16", weight: 74.0 },
+            { date: "2026-09-09", weight: 73.8 },
+            { date: "2026-09-02", weight: 73.5 }
+        ];
+        omerData.onboardingCompleted = true;
+
+        registry["omer"] = {
+            username: "omer",
+            displayName: "Ömer Faruk",
+            role: "athlete",
+            passwordHash: "1234",
+            createdAt: "2026-09-01",
+            data: omerData
+        };
+        needsSave = true;
+    }
+
+    // Athlete 2: Caner Bulut (Recomposition)
+    if (!registry["caner"]) {
+        const canerData = createDefaultAppData();
+        canerData.userProfile = { age: 26, height: 182, weight: 82.5, gender: "male", frequency: 4, activity: "moderate", goal: "recomp" };
+        canerData.targets = { calories: 2450, protein: 180, carbs: 260, fat: 65, water: 3.5, steps: 8500, weeklyGainMin: -0.1, weeklyGainMax: 0.1 };
+        canerData.todayNutrition = {
+            consumedCal: 1980,
+            consumedP: 150,
+            consumedC: 210,
+            consumedF: 52,
+            consumedWater: 2.8,
+            steps: 7200,
+            meals: [
+                { id: "m1", name: "Yulaf & Yumurta", cal: 650, p: 45, c: 75, f: 18, time: "09:00" },
+                { id: "m2", name: "Tavuk & Basmati Pirinç", cal: 780, p: 60, c: 95, f: 12, time: "13:30" }
+            ]
+        };
+        canerData.workoutLogs = {
+            "pzt_1": [{ weight: 90, reps: 6, rir: "RIR 0", date: "2026-09-16" }]
+        };
+        canerData.weightHistory = [{ date: "2026-09-16", weight: 82.5 }, { date: "2026-09-09", weight: 82.7 }];
+        canerData.onboardingCompleted = true;
+
+        registry["caner"] = {
+            username: "caner",
+            displayName: "Caner Bulut",
+            role: "athlete",
+            passwordHash: "1234",
+            createdAt: "2026-09-05",
+            data: canerData
+        };
+        needsSave = true;
+    }
+
+    // Athlete 3: Burak Terzi (Cutting)
+    if (!registry["burak"]) {
+        const burakData = createDefaultAppData();
+        burakData.userProfile = { age: 23, height: 175, weight: 88.0, gender: "male", frequency: 5, activity: "active", goal: "cut" };
+        burakData.targets = { calories: 2150, protein: 195, carbs: 190, fat: 55, water: 4.0, steps: 10000, weeklyGainMin: -0.7, weeklyGainMax: -0.4 };
+        burakData.todayNutrition = {
+            consumedCal: 1850,
+            consumedP: 170,
+            consumedC: 160,
+            consumedF: 45,
+            consumedWater: 3.5,
+            steps: 9400,
+            meals: [
+                { id: "m1", name: "Beyaz Omlet & Yulaf", cal: 520, p: 48, c: 55, f: 10, time: "08:00" },
+                { id: "m2", name: "Hindi Göğsü & Patates", cal: 720, p: 65, c: 75, f: 12, time: "13:00" }
+            ]
+        };
+        burakData.workoutLogs = {
+            "sal_1": [{ weight: 110, reps: 5, rir: "RIR 0", date: "2026-09-16" }]
+        };
+        burakData.weightHistory = [{ date: "2026-09-16", weight: 88.0 }, { date: "2026-09-09", weight: 89.2 }];
+        burakData.onboardingCompleted = true;
+
+        registry["burak"] = {
+            username: "burak",
+            displayName: "Burak Terzi",
+            role: "athlete",
+            passwordHash: "1234",
+            createdAt: "2026-09-08",
+            data: burakData
+        };
+        needsSave = true;
+    }
+
+    // Seed Demo Messages
+    if (!chatDb["omer"]) {
+        chatDb["omer"] = [
+            { sender: "coach", text: "Selam Ömer! Bugün Push 1 günün, Bench Press'te 80kg top sete odaklan.", time: "10:30", date: "2026-09-16", read: true },
+            { sender: "athlete", text: "Hocam 80kg ile 8 rep tam RIR 0 çıkardım! 🔥", time: "14:15", date: "2026-09-16", read: true },
+            { sender: "coach", text: "Mükemmel iş! Gelecek hafta 82.5kg deneyeceğiz, dinlenmeni ve suyunu aksatma.", time: "14:20", date: "2026-09-16", read: true }
+        ];
+        saveChatDB(chatDb);
+    }
+    if (!chatDb["caner"]) {
+        chatDb["caner"] = [
+            { sender: "athlete", text: "Hocam antrenmandan sonra omuzumda hafif bir gerilme oldu.", time: "11:00", date: "2026-09-16", read: false },
+            { sender: "coach", text: "Incline bench koltuk ayarını 1 tık dik konuma getir, arka omuz esnetmelerini yap.", time: "11:30", date: "2026-09-16", read: true }
+        ];
+        saveChatDB(chatDb);
+    }
+
+    // Seed Demo Revision
+    if (!revDb["omer"]) {
+        revDb["omer"] = {
+            calories: 2850,
+            protein: 170,
+            carbs: 360,
+            fat: 78,
+            water: 3.5,
+            steps: 7500,
+            gainMin: 0.15,
+            gainMax: 0.35,
+            coachNote: "Haftalık kilo artış hızın kontrollü gidiyor. Kaloriyi +80 kcal artırarak hipertrofiyi hızlandırıyoruz. Karbonhidratı antrenman öncesine yükle!",
+            date: "2026-09-16",
+            applied: false
+        };
+        saveRevisionsDB(revDb);
+    }
+
+    if (needsSave) {
+        saveUsersRegistry(registry);
+    }
+}
+
+// Auth Role Selector
+function selectAuthRole(role) {
+    currentAuthRole = role;
+    const athletePill = document.getElementById("role-pill-athlete");
+    const coachPill = document.getElementById("role-pill-coach");
+    const loginKeyGrp = document.getElementById("login-coach-key-group");
+    const regKeyGrp = document.getElementById("reg-coach-key-group");
+    const loginBtn = document.getElementById("login-submit-btn");
+    const regBtn = document.getElementById("register-submit-btn");
+    const logoBadge = document.getElementById("auth-brand-logo");
+
+    if (role === "coach") {
+        if (athletePill) athletePill.classList.remove("active");
+        if (coachPill) coachPill.classList.add("active");
+        if (loginKeyGrp) loginKeyGrp.style.display = "block";
+        if (regKeyGrp) regKeyGrp.style.display = "block";
+        if (loginBtn) loginBtn.innerHTML = `Antrenör Girişi Yap <i class="fa-solid fa-crown"></i>`;
+        if (regBtn) regBtn.innerHTML = `Antrenör Hesabı Aç <i class="fa-solid fa-crown"></i>`;
+        if (logoBadge) logoBadge.innerHTML = `<i class="fa-solid fa-crown" style="color:#ffd60a;"></i>`;
+    } else {
+        if (athletePill) athletePill.classList.add("active");
+        if (coachPill) coachPill.classList.remove("active");
+        if (loginKeyGrp) loginKeyGrp.style.display = "none";
+        if (regKeyGrp) regKeyGrp.style.display = "none";
+        if (loginBtn) loginBtn.innerHTML = `Giriş Yap <i class="fa-solid fa-arrow-right-to-bracket"></i>`;
+        if (regBtn) regBtn.innerHTML = `Hesap Oluştur ve Başla <i class="fa-solid fa-rocket"></i>`;
+        if (logoBadge) logoBadge.innerHTML = `<i class="fa-solid fa-dumbbell"></i>`;
+    }
 }
 
 function openAuthModal(tab = "login") {
@@ -2454,6 +2720,18 @@ async function handleLoginSubmit(event) {
         return;
     }
 
+    // Role check for Coach
+    if (currentAuthRole === "coach") {
+        const pinInput = document.getElementById("login-coach-key") ? document.getElementById("login-coach-key").value.trim() : "";
+        if (pinInput !== getCoachMasterPin()) {
+            if (errBanner) {
+                errBanner.innerText = "Hatalı Antrenör Güvenlik Anahtarı (Master PIN)!";
+                errBanner.style.display = "block";
+            }
+            return;
+        }
+    }
+
     const registry = getUsersRegistry();
     const user = registry[usernameInput];
 
@@ -2466,7 +2744,7 @@ async function handleLoginSubmit(event) {
     }
 
     const inputHash = await hashPassword(passwordInput);
-    if (user.passwordHash !== inputHash) {
+    if (user.passwordHash !== inputHash && user.passwordHash !== passwordInput) {
         if (errBanner) {
             errBanner.innerText = "Hatalı şifre girdiniz. Lütfen tekrar deneyin.";
             errBanner.style.display = "block";
@@ -2476,6 +2754,14 @@ async function handleLoginSubmit(event) {
 
     // Success login
     setActiveSessionUsername(usernameInput);
+
+    if (currentAuthRole === "coach" || user.role === "coach") {
+        closeAuthModal();
+        switchAppPortal("coach");
+        showToast(`Antrenör Girişi Başarılı! Hoş geldin, ${user.displayName || user.username}! 👑`);
+        return;
+    }
+
     loadDataFromStorage();
     checkAndResetDailyNutrition();
     recalculateDailyTotals();
@@ -2490,6 +2776,7 @@ async function handleLoginSubmit(event) {
     initSettingsForm();
 
     closeAuthModal();
+    switchAppPortal("athlete");
     showToast(`Tekrar hoş geldin, ${user.displayName || user.username}! 🔥`);
 
     if (!appData.onboardingCompleted) {
@@ -2511,6 +2798,17 @@ async function handleRegisterSubmit(event) {
             errBanner.style.display = "block";
         }
         return;
+    }
+
+    if (currentAuthRole === "coach") {
+        const pinInput = document.getElementById("reg-coach-key") ? document.getElementById("reg-coach-key").value.trim() : "";
+        if (pinInput !== getCoachMasterPin()) {
+            if (errBanner) {
+                errBanner.innerText = "Antrenör hesabı açmak için geçerli bir Güvenlik Anahtarı girmelisiniz.";
+                errBanner.style.display = "block";
+            }
+            return;
+        }
     }
 
     if (username.length < 3) {
@@ -2552,6 +2850,7 @@ async function handleRegisterSubmit(event) {
     registry[username] = {
         username,
         displayName,
+        role: currentAuthRole,
         passwordHash,
         createdAt: new Date().toISOString().split('T')[0],
         data: initialData
@@ -2560,23 +2859,938 @@ async function handleRegisterSubmit(event) {
     saveUsersRegistry(registry);
     setActiveSessionUsername(username);
 
-    // Load newly created user data
-    loadDataFromStorage();
-    updateTopBarUserHeader();
+    closeAuthModal();
+
+    if (currentAuthRole === "coach") {
+        switchAppPortal("coach");
+        showToast(`Antrenör hesabınız açıldı! Hoş geldiniz, Koç ${displayName}! 👑`);
+    } else {
+        loadDataFromStorage();
+        updateTopBarUserHeader();
+        renderDashboard();
+        renderWorkoutView(currentActiveDay);
+        renderNutritionView();
+        renderSupplementsView();
+        renderScaleView();
+        initSettingsForm();
+        switchAppPortal("athlete");
+        showToast(`Hesabın başarıyla oluşturuldu! Hoş geldin, ${displayName}! 🚀`);
+
+        setTimeout(() => {
+            openOnboardingWizard();
+        }, 400);
+    }
+}
+
+// ==================== PORTAL SWITCHER & COACH CONTROLLERS ====================
+
+function switchAppPortal(mode) {
+    const athleteContainer = document.getElementById("athlete-app-container");
+    const coachContainer = document.getElementById("coach-app-container");
+
+    if (mode === "coach") {
+        const activeUsername = getActiveSessionUsername();
+        const registry = getUsersRegistry();
+        const user = activeUsername && registry[activeUsername];
+
+        if (!user || user.role !== "coach") {
+            const pin = prompt("Antrenör Yönetim Paneline erişmek için Güvenlik Anahtarını (Master PIN) girin:");
+            if (!pin || pin.trim() !== getCoachMasterPin()) {
+                showToast("Hatalı güvenlik anahtarı! ❌");
+                return;
+            }
+        }
+
+        currentPortalMode = "coach";
+        if (athleteContainer) athleteContainer.style.display = "none";
+        if (coachContainer) coachContainer.style.display = "flex";
+        renderCoachPortal();
+        showToast("Antrenör Yönetim Paneline Geçildi 👑");
+    } else {
+        currentPortalMode = "athlete";
+        if (coachContainer) coachContainer.style.display = "none";
+        if (athleteContainer) athleteContainer.style.display = "flex";
+        loadDataFromStorage();
+        updateTopBarUserHeader();
+        renderDashboard();
+        checkAthletePendingRevision();
+        checkAthleteUnreadMessages();
+        showToast("Sporcu Portalı Aktif 🏃‍♂️");
+    }
+}
+
+function navigateCoachTab(tabKey) {
+    currentCoachActiveTab = tabKey;
+    document.querySelectorAll(".coach-bottom-nav .nav-item").forEach(btn => btn.classList.remove("active"));
+    const activeBtn = Array.from(document.querySelectorAll(".coach-bottom-nav .nav-item")).find(b => b.getAttribute("onclick") && b.getAttribute("onclick").includes(tabKey));
+    if (activeBtn) activeBtn.classList.add("active");
+
+    document.querySelectorAll("#coach-app-container .tab-view").forEach(v => v.classList.remove("active"));
+    const activeView = document.getElementById(`view-coach-${tabKey}`);
+    if (activeView) activeView.classList.add("active");
+
+    if (tabKey === "roster") renderCoachRoster();
+    else if (tabKey === "detail") renderCoachDetail(currentCoachSelectedAthlete);
+    else if (tabKey === "prescriptions") renderCoachPrescriptions(currentCoachSelectedAthlete);
+    else if (tabKey === "chat") renderCoachChat(currentCoachSelectedAthlete);
+    else if (tabKey === "settings") renderCoachSettings();
+}
+
+function renderCoachPortal() {
+    const registry = getUsersRegistry();
+    const chatDb = getChatDB();
+    const revDb = getRevisionsDB();
+
+    const athletes = Object.values(registry).filter(u => u.role !== "coach");
+    const countBadge = document.getElementById("coach-athlete-count-badge");
+    if (countBadge) countBadge.innerText = athletes.length;
+
+    // Stats
+    const totalAthletesEl = document.getElementById("c-stat-total-athletes");
+    const activeTodayEl = document.getElementById("c-stat-active-today");
+    const unreadMsgEl = document.getElementById("c-stat-unread-messages");
+    const pendingRevEl = document.getElementById("c-stat-pending-revisions");
+
+    if (totalAthletesEl) totalAthletesEl.innerText = athletes.length;
+    if (activeTodayEl) {
+        const activeCount = athletes.filter(a => a.data && a.data.todayNutrition && a.data.todayNutrition.consumedCal > 0).length;
+        activeTodayEl.innerText = activeCount;
+    }
+
+    let unreadTotal = 0;
+    Object.keys(chatDb).forEach(u => {
+        const msgs = chatDb[u] || [];
+        unreadTotal += msgs.filter(m => m.sender === "athlete" && !m.read).length;
+    });
+
+    if (unreadMsgEl) unreadMsgEl.innerText = unreadTotal;
+    const coachUnreadBadge = document.getElementById("coach-unread-total");
+    if (coachUnreadBadge) {
+        coachUnreadBadge.innerText = unreadTotal;
+        coachUnreadBadge.style.display = unreadTotal > 0 ? "inline-flex" : "none";
+    }
+
+    let pendingRevTotal = Object.values(revDb).filter(r => !r.applied).length;
+    if (pendingRevEl) pendingRevEl.innerText = pendingRevTotal;
+
+    // Set default selected athlete if not set
+    if (!currentCoachSelectedAthlete && athletes.length > 0) {
+        currentCoachSelectedAthlete = athletes[0].username;
+    }
+
+    renderCoachRoster();
+}
+
+function filterCoachRoster() {
+    renderCoachRoster();
+}
+
+function filterCoachRosterByGoal(goal, btn) {
+    currentCoachFilterGoal = goal;
+    document.querySelectorAll(".roster-pill").forEach(p => p.classList.remove("active"));
+    if (btn) btn.classList.add("active");
+    renderCoachRoster();
+}
+
+function renderCoachRoster() {
+    const container = document.getElementById("coach-roster-container");
+    if (!container) return;
+
+    const registry = getUsersRegistry();
+    const chatDb = getChatDB();
+    const searchVal = document.getElementById("coach-athlete-search") ? document.getElementById("coach-athlete-search").value.trim().toLowerCase() : "";
+
+    let athletes = Object.values(registry).filter(u => u.role !== "coach");
+
+    // Filter by search
+    if (searchVal) {
+        athletes = athletes.filter(a => 
+            (a.displayName && a.displayName.toLowerCase().includes(searchVal)) || 
+            (a.username && a.username.toLowerCase().includes(searchVal))
+        );
+    }
+
+    // Filter by goal
+    if (currentCoachFilterGoal !== "all") {
+        athletes = athletes.filter(a => {
+            const goal = (a.data && a.data.userProfile && a.data.userProfile.goal) || "bulk";
+            return goal === currentCoachFilterGoal;
+        });
+    }
+
+    if (athletes.length === 0) {
+        container.innerHTML = `
+            <div class="card" style="text-align:center; padding:30px 16px;">
+                <i class="fa-solid fa-user-xmark" style="font-size:2rem; color:var(--text-muted); margin-bottom:10px;"></i>
+                <h4 style="color:#fff;">Kayıtlı Sporcu Bulunamadı</h4>
+                <p class="text-secondary" style="font-size:0.75rem;">Arama kriterlerine uygun sporcu yok veya henüz sporcu eklenmedi.</p>
+            </div>
+        `;
+        return;
+    }
+
+    const goalMap = { bulk: "🔥 Lean Bulk", cut: "✂️ Cutting", recomp: "⚡ Recomp" };
+
+    let html = "";
+    athletes.forEach(ath => {
+        const uData = ath.data || {};
+        const p = uData.userProfile || {};
+        const t = uData.targets || DEFAULT_TARGETS;
+        const n = uData.todayNutrition || {};
+        const goalStr = goalMap[p.goal] || "🔥 Lean Bulk";
+
+        const history = uData.weightHistory || [];
+        const currentW = history.length > 0 ? history[0].weight : (p.weight || 74.0);
+
+        const consumedCal = n.consumedCal || 0;
+        const targetCal = t.calories || 2770;
+        const calPercent = Math.min(100, Math.round((consumedCal / targetCal) * 100));
+
+        const stepsVal = n.steps || 0;
+        const targetSteps = t.steps || 7500;
+
+        const msgs = chatDb[ath.username] || [];
+        const unreadCount = msgs.filter(m => m.sender === "athlete" && !m.read).length;
+
+        const initial = (ath.displayName || ath.username).charAt(0).toUpperCase();
+
+        html += `
+            <div class="athlete-roster-card">
+                <div class="arc-header">
+                    <div class="arc-left">
+                        <div class="arc-avatar">${initial}</div>
+                        <div class="arc-name-group">
+                            <h3>${ath.displayName || ath.username}</h3>
+                            <span class="arc-uname">@${ath.username}</span>
+                        </div>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <span class="arc-goal-badge">${goalStr}</span>
+                        ${unreadCount > 0 ? `<span class="badge-role" style="background:var(--status-amber); color:#000; font-size:0.6rem; font-weight:900;">${unreadCount} Yeni Mesaj</span>` : ''}
+                    </div>
+                </div>
+
+                <div class="arc-metrics-row">
+                    <div class="arc-m-item">
+                        <span>Güncel Kilo</span>
+                        <strong>${currentW.toFixed(1)} kg</strong>
+                    </div>
+                    <div class="arc-m-item">
+                        <span>Günlük Kalori</span>
+                        <strong>${consumedCal} / ${targetCal} kcal</strong>
+                    </div>
+                    <div class="arc-m-item">
+                        <span>Adım</span>
+                        <strong>${stepsVal.toLocaleString('tr-TR')} / ${targetSteps.toLocaleString('tr-TR')}</strong>
+                    </div>
+                </div>
+
+                <div style="margin-bottom:10px;">
+                    <div style="display:flex; justify-content:space-between; font-size:0.68rem; color:var(--text-secondary); margin-bottom:3px;">
+                        <span>Beslenme Uyumu (%${calPercent})</span>
+                        <span>${consumedCal >= targetCal ? 'Hedefe Ulaşıldı ✅' : `${targetCal - consumedCal} kcal kaldı`}</span>
+                    </div>
+                    <div class="progress-track"><div class="progress-fill cal-fill" style="width: ${calPercent}%;"></div></div>
+                </div>
+
+                <div class="arc-actions-grid">
+                    <button class="btn btn-xs btn-outline" onclick="selectCoachDetailAthlete('${ath.username}')">
+                        <i class="fa-solid fa-chart-pie"></i> İncele
+                    </button>
+                    <button class="btn btn-xs btn-primary" onclick="loadAthleteForPrescription('${ath.username}')">
+                        <i class="fa-solid fa-file-pen"></i> Revize Et
+                    </button>
+                    <button class="btn btn-xs btn-outline" onclick="selectCoachChatAthlete('${ath.username}')">
+                        <i class="fa-solid fa-comments"></i> Chat ${unreadCount > 0 ? `(${unreadCount})` : ''}
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+
+function selectCoachDetailAthlete(username) {
+    currentCoachSelectedAthlete = username;
+    navigateCoachTab("detail");
+}
+
+function switchCoachDetailTab(subtab, btn) {
+    currentCoachDetailSubtab = subtab;
+    document.querySelectorAll(".deep-tab").forEach(t => t.classList.remove("active"));
+    if (btn) btn.classList.add("active");
+    renderCoachDetail(currentCoachSelectedAthlete);
+}
+
+function goToPrescriptionForCurrentAthlete() {
+    loadAthleteForPrescription(currentCoachSelectedAthlete);
+}
+
+function goToChatForCurrentAthlete() {
+    selectCoachChatAthlete(currentCoachSelectedAthlete);
+}
+
+function renderCoachDetail(username) {
+    const registry = getUsersRegistry();
+    const ath = registry[username];
+    if (!ath) return;
+
+    // Update Dropdown
+    const selectEl = document.getElementById("coach-detail-athlete-select");
+    if (selectEl) {
+        const athletes = Object.values(registry).filter(u => u.role !== "coach");
+        selectEl.innerHTML = athletes.map(a => `<option value="${a.username}" ${a.username === username ? 'selected' : ''}>${a.displayName || a.username} (@${a.username})</option>`).join('');
+    }
+
+    const uData = ath.data || {};
+    const p = uData.userProfile || {};
+    const t = uData.targets || DEFAULT_TARGETS;
+    const n = uData.todayNutrition || {};
+
+    const history = uData.weightHistory || [];
+    const currentW = history.length > 0 ? history[0].weight : (p.weight || 74.0);
+
+    const goalMap = { bulk: "🔥 Lean Bulk", cut: "✂️ Cutting", recomp: "⚡ Recomp" };
+
+    const avatarEl = document.getElementById("adh-avatar");
+    const nameEl = document.getElementById("adh-name");
+    const unameEl = document.getElementById("adh-uname");
+    const goalEl = document.getElementById("adh-goal");
+    const weightEl = document.getElementById("adh-weight");
+    const calEl = document.getElementById("adh-calorie-status");
+    const stepsEl = document.getElementById("adh-steps");
+
+    if (avatarEl) avatarEl.innerText = (ath.displayName || ath.username).charAt(0).toUpperCase();
+    if (nameEl) nameEl.innerText = ath.displayName || ath.username;
+    if (unameEl) unameEl.innerText = `@${ath.username}`;
+    if (goalEl) goalEl.innerText = goalMap[p.goal] || "🔥 Lean Bulk";
+    if (weightEl) weightEl.innerText = `${currentW.toFixed(1)} kg`;
+    if (calEl) calEl.innerText = `${n.consumedCal || 0} / ${t.calories || 2770}`;
+    if (stepsEl) stepsEl.innerText = `${(n.steps || 0).toLocaleString('tr-TR')} / ${(t.steps || 7500).toLocaleString('tr-TR')}`;
+
+    const contentArea = document.getElementById("coach-deep-dive-content");
+    if (!contentArea) return;
+
+    if (currentCoachDetailSubtab === "nutrition") {
+        const meals = (n.meals && n.meals.length > 0) ? n.meals : [];
+        let mealsHtml = "";
+        if (meals.length === 0) {
+            mealsHtml = `<p class="text-secondary" style="font-size:0.75rem; text-align:center; padding:16px;">Bugün henüz kayıtlı öğün yok.</p>`;
+        } else {
+            meals.forEach(m => {
+                mealsHtml += `
+                    <div class="deep-meal-item">
+                        <div class="deep-meal-title">
+                            <span>${m.name}</span>
+                            <span class="badge-role" style="font-size:0.65rem;">${m.cal} kcal</span>
+                        </div>
+                        <div style="font-size:0.68rem; color:var(--text-secondary); margin-top:3px; display:flex; gap:10px;">
+                            <span>🍗 <strong>${m.p}g</strong> Prot</span>
+                            <span>🍚 <strong>${m.c}g</strong> Karb</span>
+                            <span>🥑 <strong>${m.f}g</strong> Yağ</span>
+                            ${m.time ? `<span>⏰ ${m.time}</span>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        contentArea.innerHTML = `
+            <div class="deep-card">
+                <div class="card-header" style="margin-bottom:8px;">
+                    <h2>🍽️ BUGÜNKÜ ÇİĞ ÖĞÜN VE MAKRO DAĞILIMI</h2>
+                </div>
+                <div class="profile-macro-banner" style="margin-bottom:12px;">
+                    <div class="prof-macro-col p-col"><span>Protein</span><strong>${n.consumedP || 0} / ${t.protein}g</strong></div>
+                    <div class="prof-macro-col c-col"><span>Karbonhidrat</span><strong>${n.consumedC || 0} / ${t.carbs}g</strong></div>
+                    <div class="prof-macro-col f-col"><span>Yağ</span><strong>${n.consumedF || 0} / ${t.fat}g</strong></div>
+                    <div class="prof-macro-col cal-col"><span>Kalori</span><strong>${n.consumedCal || 0} / ${t.calories}</strong></div>
+                </div>
+                <div>${mealsHtml}</div>
+            </div>
+        `;
+    } else if (currentCoachDetailSubtab === "workout") {
+        const logs = uData.workoutLogs || {};
+        const logKeys = Object.keys(logs);
+
+        let logsHtml = "";
+        if (logKeys.length === 0) {
+            logsHtml = `<p class="text-secondary" style="font-size:0.75rem; text-align:center; padding:16px;">Henüz kaydedilmiş antrenman seti bulunmuyor.</p>`;
+        } else {
+            logKeys.forEach(k => {
+                const sets = logs[k] || [];
+                logsHtml += `
+                    <div class="deep-meal-item">
+                        <strong style="color:#ffd60a; font-size:0.78rem; display:block; margin-bottom:4px;">Egzersiz Kodu: ${k}</strong>
+                        <table style="width:100%; font-size:0.72rem; color:#fff;">
+                            <thead>
+                                <tr style="color:var(--text-muted); text-align:left;">
+                                    <th>Set</th>
+                                    <th>Ağırlık</th>
+                                    <th>Tekrar</th>
+                                    <th>Zorluk / RIR</th>
+                                    <th>Tarih</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${sets.map((s, idx) => `
+                                    <tr>
+                                        <td>S${idx + 1}</td>
+                                        <td><strong>${s.weight} kg</strong></td>
+                                        <td><strong>${s.reps} rep</strong></td>
+                                        <td><span class="badge-role" style="font-size:0.62rem;">${s.rir || 'Belirtilmedi'}</span></td>
+                                        <td style="color:var(--text-muted);">${s.date || 'Bugün'}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            });
+        }
+
+        contentArea.innerHTML = `
+            <div class="deep-card">
+                <div class="card-header" style="margin-bottom:8px;">
+                    <h2>🏋️ ANTRENMAN DEFTERİ & SET PERFORMANSI</h2>
+                </div>
+                <div>${logsHtml}</div>
+            </div>
+        `;
+    } else if (currentCoachDetailSubtab === "supplements") {
+        const suppLog = uData.supplementsLog || {};
+        const suppList = uData.supplements || [];
+
+        contentArea.innerHTML = `
+            <div class="deep-card">
+                <div class="card-header" style="margin-bottom:8px;">
+                    <h2>💊 SUPLEMENT KULLANIM PLANI</h2>
+                </div>
+                ${suppList.map(s => {
+                    const isTaken = suppLog[s.id];
+                    return `
+                        <div class="deep-meal-item" style="display:flex; justify-content:space-between; align-items:center;">
+                            <div>
+                                <strong style="color:#fff; font-size:0.8rem;">${s.name}</strong>
+                                <div style="font-size:0.68rem; color:var(--text-secondary);">${s.timing} • ${s.dosage}</div>
+                            </div>
+                            <span class="badge-role" style="${isTaken ? 'background:rgba(48,209,88,0.2); color:#30d158;' : 'background:rgba(255,255,255,0.08); color:var(--text-muted);'}">
+                                ${isTaken ? 'Alındı ✅' : 'Bekliyor ⏳'}
+                            </span>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        `;
+    } else if (currentCoachDetailSubtab === "scale") {
+        const weights = uData.weightHistory || [];
+
+        contentArea.innerHTML = `
+            <div class="deep-card">
+                <div class="card-header" style="margin-bottom:8px;">
+                    <h2>⚖️ TARTI VE KİLO GEÇMİŞİ</h2>
+                </div>
+                <table style="width:100%; font-size:0.75rem; color:#fff;">
+                    <thead>
+                        <tr style="color:var(--text-muted); text-align:left; border-bottom:1px solid var(--border-subtle);">
+                            <th style="padding:6px 0;">Tarih</th>
+                            <th>Kilo (kg)</th>
+                            <th>Haftalık Değişim</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${weights.map((w, idx) => {
+                            const prev = weights[idx + 1];
+                            const diff = prev ? (w.weight - prev.weight).toFixed(1) : "-";
+                            const diffColor = diff > 0 ? "var(--status-green)" : diff < 0 ? "var(--status-amber)" : "var(--text-muted)";
+                            return `
+                                <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
+                                    <td style="padding:6px 0; color:var(--text-secondary);">${w.date}</td>
+                                    <td><strong>${w.weight.toFixed(1)} kg</strong></td>
+                                    <td style="color:${diffColor}; font-weight:700;">${diff !== '-' ? (diff > 0 ? `+${diff}` : diff) + ' kg' : '-'}</td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+}
+
+function loadAthleteForPrescription(username) {
+    currentCoachSelectedAthlete = username;
+    navigateCoachTab("prescriptions");
+}
+
+function renderCoachPrescriptions(username) {
+    const registry = getUsersRegistry();
+    const selectEl = document.getElementById("rx-athlete-select");
+    if (selectEl) {
+        const athletes = Object.values(registry).filter(u => u.role !== "coach");
+        selectEl.innerHTML = athletes.map(a => `<option value="${a.username}" ${a.username === username ? 'selected' : ''}>${a.displayName || a.username} (@${a.username})</option>`).join('');
+    }
+
+    const ath = registry[username];
+    if (!ath) return;
+
+    const uData = ath.data || {};
+    const t = uData.targets || DEFAULT_TARGETS;
+
+    const calEl = document.getElementById("rx-calories");
+    const pEl = document.getElementById("rx-protein");
+    const cEl = document.getElementById("rx-carbs");
+    const fEl = document.getElementById("rx-fat");
+    const waterEl = document.getElementById("rx-water");
+    const stepsEl = document.getElementById("rx-steps");
+    const gainMinEl = document.getElementById("rx-gain-min");
+    const gainMaxEl = document.getElementById("rx-gain-max");
+
+    if (calEl) calEl.value = t.calories;
+    if (pEl) pEl.value = t.protein;
+    if (cEl) cEl.value = t.carbs;
+    if (fEl) fEl.value = t.fat;
+    if (waterEl) waterEl.value = t.water || 3.5;
+    if (stepsEl) stepsEl.value = t.steps || 7500;
+    if (gainMinEl) gainMinEl.value = t.weeklyGainMin || 0.15;
+    if (gainMaxEl) gainMaxEl.value = t.weeklyGainMax || 0.35;
+
+    // Render Past Revisions
+    const revDb = getRevisionsDB();
+    const athRev = revDb[username];
+    const historyContainer = document.getElementById("rx-history-container");
+    if (historyContainer) {
+        if (!athRev) {
+            historyContainer.innerHTML = `<p class="text-secondary" style="font-size:0.75rem; text-align:center; padding:12px;">Bu sporcuya ait henüz geçmiş bir revizyon bulunmuyor.</p>`;
+        } else {
+            historyContainer.innerHTML = `
+                <div class="deep-meal-item" style="border-left:3px solid var(--coach-gold);">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                        <strong style="color:#ffd60a; font-size:0.78rem;">Tarih: ${athRev.date}</strong>
+                        <span class="badge-role" style="${athRev.applied ? 'background:rgba(48,209,88,0.2); color:#30d158;' : 'background:rgba(255,214,10,0.2); color:#ffd60a;'}">
+                            ${athRev.applied ? 'Sporcu Uyguladı ✅' : 'Beklemede ⏳'}
+                        </span>
+                    </div>
+                    <p style="font-size:0.75rem; color:#ffffff; margin-bottom:6px;">"${athRev.coachNote}"</p>
+                    <div style="font-size:0.68rem; color:var(--text-secondary); display:flex; gap:8px;">
+                        <span>🎯 <strong>${athRev.calories} kcal</strong></span>
+                        <span>🍗 <strong>${athRev.protein}P</strong></span>
+                        <span>🍚 <strong>${athRev.carbs}C</strong></span>
+                        <span>🥑 <strong>${athRev.fat}F</strong></span>
+                    </div>
+                </div>
+            `;
+        }
+    }
+}
+
+function submitCoachPrescription() {
+    const selectEl = document.getElementById("rx-athlete-select");
+    const username = selectEl ? selectEl.value : currentCoachSelectedAthlete;
+    if (!username) return;
+
+    const calories = parseInt(document.getElementById("rx-calories").value) || 2770;
+    const protein = parseInt(document.getElementById("rx-protein").value) || 167;
+    const carbs = parseInt(document.getElementById("rx-carbs").value) || 344;
+    const fat = parseInt(document.getElementById("rx-fat").value) || 77;
+    const water = parseFloat(document.getElementById("rx-water").value) || 3.5;
+    const steps = parseInt(document.getElementById("rx-steps").value) || 7500;
+    const gainMin = parseFloat(document.getElementById("rx-gain-min").value) || 0.15;
+    const gainMax = parseFloat(document.getElementById("rx-gain-max").value) || 0.35;
+    const coachNote = document.getElementById("rx-coach-note").value.trim() || "Kalori ve makro hedeflerin güncellendi.";
+
+    const revDb = getRevisionsDB();
+    revDb[username] = {
+        calories, protein, carbs, fat, water, steps, gainMin, gainMax,
+        coachNote,
+        date: new Date().toISOString().split('T')[0],
+        applied: false
+    };
+    saveRevisionsDB(revDb);
+
+    // Also update athlete target immediately
+    const registry = getUsersRegistry();
+    if (registry[username] && registry[username].data) {
+        registry[username].data.targets = {
+            calories, protein, carbs, fat, water, steps,
+            weeklyGainMin: gainMin,
+            weeklyGainMax: gainMax
+        };
+        saveUsersRegistry(registry);
+    }
+
+    // Send automated chat note
+    const chatDb = getChatDB();
+    if (!chatDb[username]) chatDb[username] = [];
+    chatDb[username].push({
+        sender: "coach",
+        text: `📋 [YENİ HEDEF & REVİZYON]: Günlük ${calories} kcal (${protein}P / ${carbs}C / ${fat}F). Not: "${coachNote}"`,
+        time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
+        date: new Date().toISOString().split('T')[0],
+        read: false
+    });
+    saveChatDB(chatDb);
+
+    showToast("Revizyon başarıyla sporcuya iletildi! 🚀");
+    renderCoachPrescriptions(username);
+}
+
+function selectCoachChatAthlete(username) {
+    currentCoachSelectedAthlete = username;
+    navigateCoachTab("chat");
+}
+
+function renderCoachChat(username) {
+    const registry = getUsersRegistry();
+    const chatDb = getChatDB();
+    const ath = registry[username];
+    if (!ath) return;
+
+    // Dropdown
+    const selectEl = document.getElementById("coach-chat-athlete-select");
+    if (selectEl) {
+        const athletes = Object.values(registry).filter(u => u.role !== "coach");
+        selectEl.innerHTML = athletes.map(a => `<option value="${a.username}" ${a.username === username ? 'selected' : ''}>${a.displayName || a.username}</option>`).join('');
+    }
+
+    const avatarEl = document.getElementById("coach-chat-active-avatar");
+    const nameEl = document.getElementById("coach-chat-active-name");
+    if (avatarEl) avatarEl.innerText = (ath.displayName || ath.username).charAt(0).toUpperCase();
+    if (nameEl) nameEl.innerText = ath.displayName || ath.username;
+
+    // Messages
+    const msgsArea = document.getElementById("coach-chat-messages-area");
+    if (!msgsArea) return;
+
+    const msgs = chatDb[username] || [];
+
+    // Mark as read
+    msgs.forEach(m => {
+        if (m.sender === "athlete") m.read = true;
+    });
+    chatDb[username] = msgs;
+    saveChatDB(chatDb);
+
+    if (msgs.length === 0) {
+        msgsArea.innerHTML = `
+            <div style="text-align:center; padding:30px 10px; color:var(--text-secondary); font-size:0.78rem;">
+                <i class="fa-solid fa-comments" style="font-size:2rem; margin-bottom:8px; opacity:0.4;"></i>
+                <p>Henüz mesajlaşma geçmişi yok. İlk direktifi aşağıdan yazabilirsin.</p>
+            </div>
+        `;
+        return;
+    }
+
+    let html = "";
+    msgs.forEach(m => {
+        const isCoach = m.sender === "coach";
+        html += `
+            <div class="chat-msg-row ${isCoach ? 'sent' : 'received'}">
+                <div class="chat-bubble ${isCoach ? 'coach' : 'athlete'}">
+                    <span class="chat-sender-tag">${isCoach ? '👑 Koç Ömer' : `@${username}`}</span>
+                    <div class="chat-text">${m.text}</div>
+                </div>
+                <span class="chat-time">${m.time || ''}</span>
+            </div>
+        `;
+    });
+
+    msgsArea.innerHTML = html;
+    msgsArea.scrollTop = msgsArea.scrollHeight;
+}
+
+function handleCoachSendMessage(event) {
+    if (event) event.preventDefault();
+    const input = document.getElementById("coach-chat-input");
+    if (!input || !input.value.trim()) return;
+
+    const text = input.value.trim();
+    const username = currentCoachSelectedAthlete;
+
+    const chatDb = getChatDB();
+    if (!chatDb[username]) chatDb[username] = [];
+
+    chatDb[username].push({
+        sender: "coach",
+        text: text,
+        time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
+        date: new Date().toISOString().split('T')[0],
+        read: false
+    });
+
+    saveChatDB(chatDb);
+    input.value = "";
+    renderCoachChat(username);
+}
+
+function insertCoachQuickReply(text) {
+    const input = document.getElementById("coach-chat-input");
+    if (input) {
+        input.value = text;
+        input.focus();
+    }
+}
+
+function renderCoachSettings() {
+    const pinInput = document.getElementById("coach-settings-master-pin");
+    if (pinInput) pinInput.value = getCoachMasterPin();
+}
+
+function handleCoachCreateAthlete(event) {
+    event.preventDefault();
+    const name = document.getElementById("new-ath-name").value.trim();
+    const username = document.getElementById("new-ath-username").value.trim().toLowerCase();
+    const pwd = document.getElementById("new-ath-pwd").value;
+    const goal = document.getElementById("new-ath-goal").value;
+    const weight = parseFloat(document.getElementById("new-ath-weight").value) || 75.0;
+    const cal = parseInt(document.getElementById("new-ath-cal").value) || 2800;
+    const protein = parseInt(document.getElementById("new-ath-p").value) || 170;
+    const errBanner = document.getElementById("new-ath-error");
+
+    if (!name || !username || !pwd) {
+        if (errBanner) {
+            errBanner.innerText = "Lütfen tüm zorunlu alanları doldurun.";
+            errBanner.style.display = "block";
+        }
+        return;
+    }
+
+    const registry = getUsersRegistry();
+    if (registry[username]) {
+        if (errBanner) {
+            errBanner.innerText = "Bu kullanıcı adı zaten alınmış.";
+            errBanner.style.display = "block";
+        }
+        return;
+    }
+
+    const initialData = createDefaultAppData();
+    initialData.userProfile = { age: 24, height: 178, weight: weight, gender: "male", frequency: 5, activity: "moderate", goal: goal };
+    initialData.targets = { ...DEFAULT_TARGETS, calories: cal, protein: protein };
+    initialData.weightHistory = [{ date: new Date().toISOString().split('T')[0], weight: weight }];
+    initialData.onboardingCompleted = true;
+
+    registry[username] = {
+        username,
+        displayName: name,
+        role: "athlete",
+        passwordHash: pwd,
+        createdAt: new Date().toISOString().split('T')[0],
+        data: initialData
+    };
+
+    saveUsersRegistry(registry);
+    closeModal("modal-coach-new-athlete");
+    showToast(`Yeni sporcu (${name}) başarıyla eklendi! 🎉`);
+    renderCoachPortal();
+}
+
+function exportCoachAllDataJSON() {
+    const backup = {
+        usersRegistry: getUsersRegistry(),
+        chatDb: getChatDB(),
+        revisionsDb: getRevisionsDB(),
+        masterPin: getCoachMasterPin(),
+        exportDate: new Date().toISOString()
+    };
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Omar_Coaching_Tum_Veritabani_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast("Tüm antrenör ve sporcu veritabanı indirildi! 💾");
+}
+
+function importCoachAllDataJSON(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const data = JSON.parse(e.target.result);
+            if (data.usersRegistry) saveUsersRegistry(data.usersRegistry);
+            if (data.chatDb) saveChatDB(data.chatDb);
+            if (data.revisionsDb) saveRevisionsDB(data.revisionsDb);
+            if (data.masterPin) setCoachMasterPin(data.masterPin);
+            showToast("Veritabanı başarıyla geri yüklendi! 🚀");
+            renderCoachPortal();
+        } catch (err) {
+            showToast("Hata: Geçersiz JSON dosyası.");
+        }
+    };
+    reader.readAsText(file);
+}
+
+// ==================== ATHLETE SIDE CHAT & REVISION HANDLERS ====================
+
+function openAthleteChatModal() {
+    const activeUsername = getActiveSessionUsername() || "omer";
+    const chatDb = getChatDB();
+    const msgs = chatDb[activeUsername] || [];
+
+    // Mark coach messages as read
+    msgs.forEach(m => {
+        if (m.sender === "coach") m.read = true;
+    });
+    chatDb[activeUsername] = msgs;
+    saveChatDB(chatDb);
+
+    const unreadBadge = document.getElementById("athlete-unread-badge");
+    if (unreadBadge) unreadBadge.style.display = "none";
+
+    renderAthleteChatMessages(activeUsername);
+    openModal("modal-athlete-chat");
+}
+
+function renderAthleteChatMessages(username) {
+    const msgsArea = document.getElementById("athlete-chat-messages-area");
+    if (!msgsArea) return;
+
+    const chatDb = getChatDB();
+    const msgs = chatDb[username] || [];
+
+    if (msgs.length === 0) {
+        msgsArea.innerHTML = `
+            <div style="text-align:center; padding:30px 10px; color:var(--text-secondary); font-size:0.78rem;">
+                <i class="fa-solid fa-crown" style="font-size:2rem; margin-bottom:8px; color:var(--coach-gold);"></i>
+                <p>Koçun Ömer ile birebir iletişim hattı. Aklına takılanları ve form videolarını buradan iletebilirsin.</p>
+            </div>
+        `;
+        return;
+    }
+
+    let html = "";
+    msgs.forEach(m => {
+        const isMe = m.sender === "athlete";
+        html += `
+            <div class="chat-msg-row ${isMe ? 'sent' : 'received'}">
+                <div class="chat-bubble ${isMe ? 'athlete' : 'coach'}">
+                    <span class="chat-sender-tag">${isMe ? 'Sen' : '👑 Koç Ömer'}</span>
+                    <div class="chat-text">${m.text}</div>
+                </div>
+                <span class="chat-time">${m.time || ''}</span>
+            </div>
+        `;
+    });
+
+    msgsArea.innerHTML = html;
+    msgsArea.scrollTop = msgsArea.scrollHeight;
+}
+
+function handleAthleteSendMessage(event) {
+    if (event) event.preventDefault();
+    const input = document.getElementById("athlete-chat-input");
+    if (!input || !input.value.trim()) return;
+
+    const text = input.value.trim();
+    const activeUsername = getActiveSessionUsername() || "omer";
+
+    const chatDb = getChatDB();
+    if (!chatDb[activeUsername]) chatDb[activeUsername] = [];
+
+    chatDb[activeUsername].push({
+        sender: "athlete",
+        text: text,
+        time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
+        date: new Date().toISOString().split('T')[0],
+        read: false
+    });
+
+    saveChatDB(chatDb);
+    input.value = "";
+    renderAthleteChatMessages(activeUsername);
+    showToast("Mesajın Koç Ömer'e iletildi! 💬");
+}
+
+function insertAthleteQuickMessage(text) {
+    const input = document.getElementById("athlete-chat-input");
+    if (input) {
+        input.value = text;
+        input.focus();
+    }
+}
+
+function checkAthletePendingRevision() {
+    const activeUsername = getActiveSessionUsername();
+    if (!activeUsername) return;
+
+    const revDb = getRevisionsDB();
+    const rev = revDb[activeUsername];
+    const banner = document.getElementById("athlete-revision-banner");
+
+    if (rev && !rev.applied) {
+        if (banner) {
+            const dateEl = document.getElementById("athlete-rev-date");
+            const noteEl = document.getElementById("athlete-rev-note");
+            const gridEl = document.getElementById("athlete-rev-macro-grid");
+
+            if (dateEl) dateEl.innerText = rev.date;
+            if (noteEl) noteEl.innerText = `"${rev.coachNote}"`;
+            if (gridEl) {
+                gridEl.innerHTML = `
+                    <div class="rev-macro-item"><span>Hedef</span><strong>${rev.calories} kcal</strong></div>
+                    <div class="rev-macro-item"><span>Protein</span><strong>${rev.protein}g</strong></div>
+                    <div class="rev-macro-item"><span>Karb</span><strong>${rev.carbs}g</strong></div>
+                    <div class="rev-macro-item"><span>Yağ</span><strong>${rev.fat}g</strong></div>
+                `;
+            }
+            banner.style.display = "block";
+        }
+    } else {
+        if (banner) banner.style.display = "none";
+    }
+}
+
+function acceptCoachRevision() {
+    const activeUsername = getActiveSessionUsername();
+    if (!activeUsername) return;
+
+    const revDb = getRevisionsDB();
+    const rev = revDb[activeUsername];
+    if (!rev) return;
+
+    appData.targets = {
+        calories: rev.calories,
+        protein: rev.protein,
+        carbs: rev.carbs,
+        fat: rev.fat,
+        water: rev.water || 3.5,
+        steps: rev.steps || 7500,
+        weeklyGainMin: rev.gainMin || 0.15,
+        weeklyGainMax: rev.gainMax || 0.35
+    };
+
+    rev.applied = true;
+    revDb[activeUsername] = rev;
+    saveRevisionsDB(revDb);
+    saveDataToStorage();
+
+    recalculateDailyTotals();
     renderDashboard();
-    renderWorkoutView(currentActiveDay);
-    renderNutritionView();
-    renderSupplementsView();
-    renderScaleView();
     initSettingsForm();
 
-    closeAuthModal();
-    showToast(`Hesabın başarıyla oluşturuldu! Hoş geldin, ${displayName}! 🚀`);
+    const banner = document.getElementById("athlete-revision-banner");
+    if (banner) banner.style.display = "none";
 
-    // Launch Onboarding Wizard for new user
-    setTimeout(() => {
-        openOnboardingWizard();
-    }, 400);
+    showToast("Koç revizyonu ve yeni hedefler başarıyla uygulandı! 🎯🔥");
+}
+
+function checkAthleteUnreadMessages() {
+    const activeUsername = getActiveSessionUsername();
+    if (!activeUsername) return;
+
+    const chatDb = getChatDB();
+    const msgs = chatDb[activeUsername] || [];
+    const unread = msgs.filter(m => m.sender === "coach" && !m.read).length;
+
+    const unreadBadge = document.getElementById("athlete-unread-badge");
+    if (unreadBadge) {
+        unreadBadge.innerText = unread;
+        unreadBadge.style.display = unread > 0 ? "flex" : "none";
+    }
 }
 
 function openUserProfileModal() {
@@ -2607,7 +3821,7 @@ function openUserProfileModal() {
 
     const goalMap = { bulk: "🔥 Lean Bulk", cut: "✂️ Cutting", recomp: "⚡ Recomp" };
     const p = appData.userProfile || { age: 24, height: 178, weight: 74, gender: "male", frequency: 5, activity: "moderate", goal: "bulk" };
-    const goalName = goalMap[p.goal] || "🔥 Lean Bulk";
+    const goalName = user.role === "coach" ? "👑 Baş Antrenör" : (goalMap[p.goal] || "🔥 Lean Bulk");
     if (goalEl) goalEl.innerText = goalName;
 
     // Physical Stats
@@ -2617,7 +3831,6 @@ function openUserProfileModal() {
     const age = p.age || 24;
     const genderStr = p.gender === "female" ? "Kadın" : "Erkek";
 
-    // Calculate BMR & TDEE
     let bmr = (10 * currentWeight) + (6.25 * height) - (5 * age);
     if (p.gender === "female") bmr -= 161;
     else bmr += 5;
@@ -2651,7 +3864,6 @@ function openUserProfileModal() {
     if (macroFEl) macroFEl.innerText = `${t.fat}g`;
     if (macroCalEl) macroCalEl.innerText = `${t.calories.toLocaleString('tr-TR')} kcal`;
 
-    // Reset password inputs
     const oldP = document.getElementById("pwd-old");
     const newP = document.getElementById("pwd-new");
     if (oldP) oldP.value = "";
@@ -2681,7 +3893,7 @@ async function handleChangePasswordSubmit() {
     }
 
     const oldHash = await hashPassword(oldP);
-    if (user.passwordHash !== oldHash) {
+    if (user.passwordHash !== oldHash && user.passwordHash !== oldP) {
         showToast("Mevcut şifreniz hatalı!");
         return;
     }
@@ -2713,7 +3925,6 @@ function updateTopBarUserHeader() {
     const avatarEl = document.getElementById("header-user-avatar");
     const subStatusEl = document.getElementById("header-date");
 
-    // Dashboard Hero elements
     const dashAvatar = document.getElementById("dash-user-avatar");
     const dashName = document.getElementById("dash-user-name");
     const dashUname = document.getElementById("dash-user-uname");
