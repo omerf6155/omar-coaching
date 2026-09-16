@@ -541,11 +541,109 @@ body {
     background: var(--bg-input);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-sm);
-    color: var(--text-secondary);
-    padding: 5px 4px;
+    color: #ffffff;
+    padding: 6px 3px;
     font-size: 0.68rem;
+    font-weight: 600;
     width: 100%;
+    cursor: pointer;
+    transition: border-color 0.2s;
 }
+
+.rir-select:focus {
+    outline: none;
+    border-color: #ffffff;
+}
+
+.rir-select option {
+    background: #181920;
+    color: #ffffff;
+    font-size: 0.75rem;
+}
+
+/* RIR Legend Card Banner */
+.rir-legend-card {
+    background: linear-gradient(135deg, rgba(26, 27, 34, 0.95), rgba(19, 20, 24, 0.98));
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: var(--radius-md);
+    padding: 12px 14px;
+    margin-bottom: 12px;
+    transition: all 0.2s ease;
+}
+
+.rir-legend-card:hover {
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: translateY(-1px);
+}
+
+.rir-legend-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    padding-bottom: 6px;
+}
+
+.rir-legend-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.6px;
+    color: #ffffff;
+    text-transform: uppercase;
+}
+
+.rir-legend-title i {
+    color: var(--status-amber);
+    font-size: 0.85rem;
+}
+
+.rir-legend-btn {
+    font-size: 0.7rem;
+    color: var(--status-blue);
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.rir-legend-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+}
+
+.rir-badge-item {
+    background: var(--bg-input);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.rir-badge-item strong {
+    font-size: 0.74rem;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.rir-badge-item small {
+    font-size: 0.65rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.rir-bad-0 { border-left: 3px solid var(--status-red); }
+.rir-bad-1 { border-left: 3px solid var(--status-green); }
+.rir-bad-2 { border-left: 3px solid var(--status-amber); }
+.rir-bad-warn { border-left: 3px solid #ff453a; }
 
 .ex-card-actions {
     display: flex;

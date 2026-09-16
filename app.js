@@ -1309,10 +1309,10 @@ function renderWorkoutView(dayKey) {
                 <table class="set-rows-table">
                     <thead>
                         <tr>
-                            <th style="width: 22%">SET</th>
-                            <th style="width: 28%">ÖNCEKİ</th>
-                            <th style="width: 26%">BUGÜN</th>
-                            <th style="width: 24%">RIR / KALİTE</th>
+                            <th style="width: 20%">SET</th>
+                            <th style="width: 25%">ÖNCEKİ</th>
+                            <th style="width: 25%">BUGÜN</th>
+                            <th style="width: 30%">ZORLUK (RIR)</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -1339,11 +1339,11 @@ function renderWorkoutView(dayKey) {
                     </td>
                     <td>
                         <select class="rir-select" id="rir_${ex.id}_${i}" onchange="autoSaveSet('${ex.id}', ${i})">
-                            <option value="" ${savedRir === '' ? 'selected' : ''}>RIR Seç</option>
-                            <option value="RIR 0" ${savedRir === 'RIR 0' ? 'selected' : ''}>🔥 RIR 0</option>
-                            <option value="RIR 1" ${savedRir === 'RIR 1' ? 'selected' : ''}>💪 RIR 1</option>
-                            <option value="RIR 2+" ${savedRir === 'RIR 2+' ? 'selected' : ''}>⚡ RIR 2+</option>
-                            <option value="Form Boz" ${savedRir === 'Form Boz' ? 'selected' : ''}>⚠️ Form Boz</option>
+                            <option value="" ${savedRir === '' ? 'selected' : ''}>Zorluk Seç</option>
+                            <option value="RIR 0" ${savedRir === 'RIR 0' || savedRir === 'Zor (RIR 0)' || savedRir === '🔴 Zor (Tükeniş / 0)' ? 'selected' : ''}>🔴 Zor (Tükeniş / 0)</option>
+                            <option value="RIR 1" ${savedRir === 'RIR 1' || savedRir === 'İdeal (RIR 1)' || savedRir === '🟢 İdeal (1 Kaldı)' ? 'selected' : ''}>🟢 İdeal (1 Kaldı)</option>
+                            <option value="RIR 2+" ${savedRir === 'RIR 2+' || savedRir === 'Kolay (RIR 2+)' || savedRir === '🟡 Kolay (2+ Kaldı)' ? 'selected' : ''}>🟡 Kolay (2+ Kaldı)</option>
+                            <option value="Form Boz" ${savedRir === 'Form Boz' || savedRir === 'Kötü Form' || savedRir === '⚠️ Kötü Form' ? 'selected' : ''}>⚠️ Kötü Form</option>
                         </select>
                     </td>
                 </tr>

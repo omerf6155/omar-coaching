@@ -154,9 +154,42 @@
 
             <!-- VIEW 2: ANTRENMAN (LOGBOOK & EXERCISE MANAGER) -->
             <section id="view-workout" class="tab-view">
+                <!-- RIR / Set Difficulty Quick Legend Banner -->
+                <div class="card rir-legend-card" onclick="openModal('modal-rir-guide')" style="cursor: pointer;" title="Set Zorluğu Rehberini Aç">
+                    <div class="rir-legend-header">
+                        <div class="rir-legend-title">
+                            <i class="fa-solid fa-gauge-high"></i>
+                            <span>SET ZORLUĞU & RIR REHBERİ</span>
+                        </div>
+                        <span class="rir-legend-btn"><i class="fa-solid fa-circle-question"></i> Nasıl Seçilir?</span>
+                    </div>
+                    <div class="rir-legend-grid">
+                        <div class="rir-badge-item rir-bad-0">
+                            <span class="dot">🔴</span>
+                            <strong>Zor (Tükeniş)</strong>
+                            <small>0 Tekrar Kaldı (RIR 0)</small>
+                        </div>
+                        <div class="rir-badge-item rir-bad-1">
+                            <span class="dot">🟢</span>
+                            <strong>İdeal Zorluk</strong>
+                            <small>1 Tekrar Kaldı (RIR 1)</small>
+                        </div>
+                        <div class="rir-badge-item rir-bad-2">
+                            <span class="dot">🟡</span>
+                            <strong>Kolay / Isınma</strong>
+                            <small>2+ Tekrar (RIR 2+)</small>
+                        </div>
+                        <div class="rir-badge-item rir-bad-warn">
+                            <span class="dot">⚠️</span>
+                            <strong>Kötü Form</strong>
+                            <small>Ağırlığı Düşür</small>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="workout-action-bar">
                     <button class="btn btn-xs btn-outline" onclick="openModal('modal-rir-guide')">
-                        <i class="fa-solid fa-circle-question"></i> RIR Mantığı Nedir?
+                        <i class="fa-solid fa-circle-question"></i> RIR Mantığı ve Rehberi
                     </button>
                     <button class="btn btn-xs btn-primary" onclick="openExerciseManagerModal()">
                         <i class="fa-solid fa-pen-to-square"></i> Bu Günü Düzenle
@@ -534,34 +567,40 @@
         </div>
     </div>
 
-    <!-- 6. RIR EDUCATIONAL GUIDE MODAL -->
+    <!-- 6. RIR & SET DIFFICULTY EDUCATIONAL GUIDE MODAL -->
     <div id="modal-rir-guide" class="modal-overlay">
         <div class="modal-card">
             <div class="modal-header">
-                <h3><i class="fa-solid fa-brain"></i> RIR (Reps In Reserve) Nedir?</h3>
+                <h3><i class="fa-solid fa-gauge-high"></i> Set Zorluğu & RIR Nedir?</h3>
                 <button class="modal-close-btn" onclick="closeModal('modal-rir-guide')">&times;</button>
             </div>
             <div class="modal-body">
-                <p class="text-secondary" style="font-size:0.82rem; line-height:1.5; margin-bottom:12px;">
-                    <strong>RIR (Reps In Reserve)</strong>, seti bitirdiğinde <em>"tükenişe kaç tekrar kalmıştı?"</em> sorusunun cevabıdır. Doğal sporcularda hipertrofinin en kritik anahtarıdır.
+                <p class="text-secondary" style="font-size:0.82rem; line-height:1.5; margin-bottom:14px;">
+                    <strong>RIR (Reps In Reserve)</strong> en basit tabiriyle <strong>"Cepte Kalan Tekrar Sayısı"</strong> demektir. Seti bitirdiğin an kaslarının ne kadar zorlandığını ve tükenişe ne kadar yaklaştığını gösterir:
                 </p>
                 <div class="rir-guide-cards">
                     <div class="rir-guide-item rir-0">
-                        <strong>🔥 RIR 0 (Tam Tükeniş / Failure)</strong>
-                        <p>Set bittiğinde silah zoruyla bile 1 tekrar daha çıkamayacak nokta. Mekanik gerilim maksimumdur. Genellikle her egzersizin <strong>Top Set</strong>'inde uygulanır.</p>
+                        <strong>🔴 Zor / Tam Tükeniş (RIR 0)</strong>
+                        <p>Set bittiğinde silah zoruyla bile 1 tekrar daha çıkamayacak nokta. Mekanik gerilim zirvededir. Her hareketin en ağır <strong>Top Set</strong>'inde uygulanması tavsiye edilir.</p>
                     </div>
                     <div class="rir-guide-item rir-1">
-                        <strong>💪 RIR 1 (1 Tekrar Kaldı - Altın Standart)</strong>
-                        <p>1 tekrar daha zorlanarak çıkabilirdi. Kas hasarı ve toparlanma dengesi açısından hipertrofi için en ideal çalışma setidir.</p>
+                        <strong>🟢 İdeal Zorluk (RIR 1 - 1 Tekrar Kaldı)</strong>
+                        <p>Çok zorlandın ama istersen 1 nizami tekrar daha çıkabilirdi. Kas gelişimi ve toparlanma dengesi açısından <strong>en verimli ve sakatlıksız hipertrofi</strong> setidir.</p>
                     </div>
                     <div class="rir-guide-item rir-2">
-                        <strong>⚡ RIR 2+ (2-3 Tekrar Kaldı)</strong>
-                        <p>Set rahat bitti, 2 veya 3 tekrar payı var. Isınma veya yorgunluk yönetimi için uygundur. Ağırlığı hafifçe artırabilirsin.</p>
+                        <strong>🟡 Kolay / Isınma (RIR 2+ - 2 veya 3 Tekrar Kaldı)</strong>
+                        <p>Set rahat bitti, tükenişe 2-3 tekrar payı var. Isınma için uygundur. Çalışma seti için ağırlığı bir sonraki sette hafifçe artırmalısın.</p>
                     </div>
                     <div class="rir-guide-item rir-warn">
-                        <strong>⚠️ Form Bozuldu</strong>
-                        <p>Tekrar çıktı ama hedef kastan çalındı veya sakatlık riski oluştu. Ağırlığı sabit tutup hareketi daha kontrollü yapmalısın.</p>
+                        <strong>⚠️ Kötü Form (Bozuldu)</strong>
+                        <p>Tekrarı çıkardın ama vücut sallandı veya hedef kas yerine bel/eklemden çaldın. Sakatlanmamak için ağırlığı düşürüp hareketi daha kontrollü yapmalısın.</p>
                     </div>
+                </div>
+                <div class="card" style="margin-top:12px; background:rgba(10, 132, 255, 0.1); border:1px solid rgba(10, 132, 255, 0.25); padding:10px;">
+                    <strong style="font-size:0.78rem; color:#ffffff;"><i class="fa-solid fa-lightbulb"></i> Koç Tavsiyesi:</strong>
+                    <p style="font-size:0.73rem; color:var(--text-secondary); margin-top:3px; line-height:1.4;">
+                        Her harekette ilk setini <strong>🔴 Zor (RIR 0)</strong> veya <strong>🟢 İdeal (RIR 1)</strong> bitir. Bir sonraki hafta ağırlığı veya tekrarı 1 tık artırarak sürekli büyürsün!
+                    </p>
                 </div>
                 <button class="btn btn-primary btn-block" style="margin-top:14px;" onclick="closeModal('modal-rir-guide')">
                     Anladım, Antrenmana Devam
