@@ -1,0 +1,16 @@
+{
+  "name": "Omar Coaching",
+  "short_name": "Omar Coaching",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0a0a0c",
+  "theme_color": "#0a0a0c",
+  "description": "Omar Coaching - Hipertrofi & Bulk Takip Sistemi",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/1077/1077114.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

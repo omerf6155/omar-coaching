@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Omar Coaching - Hypertrophy & Bulk</title>
+    <meta name="theme-color" content="#0a0a0c">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div id="app-container">
+        <!-- Top App Bar -->
+        <header class="top-bar">
+            <div class="user-badge">
+                <div>
+                    <h1 class="app-title">OMAR COACHING</h1>
+                    <span class="sub-status" id="header-date">Bugün: 74.0 kg • %14 Yağ</span>
+                </div>
+            </div>
+            <button class="icon-btn" id="theme-btn" title="Bilgi"><i class="fa-solid fa-sliders"></i></button>
+        </header>
+
+        <!-- Main Content Area with Views -->
+        <main class="main-content">
+            <!-- VIEW 1: DASHBOARD / BUGÜN -->
+            <section id="view-dashboard" class="tab-view active">
+                <div class="coach-alert-card" id="coach-daily-banner">
+                    <div class="coach-badge"><i class="fa-solid fa-circle-info"></i> KOÇ BİLGİLENDİRMESİ</div>
+                    <p class="coach-text" id="daily-coach-tip">Bugün odak bölgelerine (Arka Omuz & Triceps) taze enerjiyle yükleniyoruz. Kalori hedefini şaşma!</p>
+                </div>
+
+                <!-- Daily Macro Summary Card -->
+                <div class="card macro-overview-card">
+                    <div class="card-header">
+                        <h2>GÜNLÜK BESLENME</h2>
+                        <span class="target-badge" id="macro-status-badge">2.770 kcal</span>
+                    </div>
+
+                    <div class="calorie-summary-row">
+                        <div>
+                            <span class="cal-number-big" id="consumed-cal">0</span>
+                            <small class="text-secondary" style="font-size:0.85rem; font-weight:600;"> / 2.770 kcal</small>
+                        </div>
+                        <div class="cal-meta-stats">
+                            <span>Kalan: <strong id="remaining-cal">2770</strong></span>
+                            <span>•</span>
+                            <span>Su: <strong id="water-consumed">0.0</strong> / 3.5L</span>
+                        </div>
+                    </div>
+
+                    <!-- Steps & Water Activity Row -->
+                    <div class="activity-tracker-row">
+                        <div class="activity-metric-box">
+                            <div class="activity-metric-header">
+                                <span><i class="fa-solid fa-shoe-prints"></i> GÜNLÜK ADIM</span>
+                                <span class="activity-val"><strong id="steps-val">0</strong> / 7.500</span>
+                            </div>
+                            <div class="progress-track"><div class="progress-fill step-fill" id="bar-steps" style="width: 0%"></div></div>
+                        </div>
+                    </div>
+
+                    <div class="macro-grid">
+                        <div class="macro-box">
+                            <span class="macro-box-title">Protein</span>
+                            <span class="macro-box-value"><span id="consumed-p">0</span><small> / 167g</small></span>
+                            <div class="progress-track"><div class="progress-fill p-fill" id="bar-p" style="width: 0%"></div></div>
+                        </div>
+                        <div class="macro-box">
+                            <span class="macro-box-title">Karb</span>
+                            <span class="macro-box-value"><span id="consumed-c">0</span><small> / 344g</small></span>
+                            <div class="progress-track"><div class="progress-fill c-fill" id="bar-c" style="width: 0%"></div></div>
+                        </div>
+                        <div class="macro-box">
+                            <span class="macro-box-title">Yağ</span>
+                            <span class="macro-box-value"><span id="consumed-f">0</span><small> / 77g</small></span>
+                            <div class="progress-track"><div class="progress-fill f-fill" id="bar-f" style="width: 0%"></div></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions Grid -->
+                <div class="quick-actions-grid">
+                    <button class="quick-action-btn" onclick="addSteps(1000)"><i class="fa-solid fa-shoe-prints"></i> +1.000 Adım</button>
+                    <button class="quick-action-btn" onclick="promptCustomSteps()"><i class="fa-solid fa-pen"></i> Manuel Adım</button>
+                    <button class="quick-action-btn" onclick="addWater(0.5)"><i class="fa-solid fa-plus"></i> 500ml Su</button>
+                    <button class="quick-action-btn" onclick="logPresetMeal('pancake')"><i class="fa-solid fa-plus"></i> Pankek Kahvaltı</button>
+                    <button class="quick-action-btn" onclick="logPresetMeal('preworkout')"><i class="fa-solid fa-plus"></i> Ön Öğün</button>
+                    <button class="quick-action-btn" onclick="logPresetMeal('postworkout')"><i class="fa-solid fa-plus"></i> Sonrası Öğün</button>
+                </div>
+
+                <!-- Today's Workout Quick Launcher -->
+                <div class="card workout-quick-card">
+                    <div class="card-header">
+                        <h2>GÜNÜN ANTRENMANI</h2>
+                        <span class="target-badge" id="today-day-name">Pazartesi</span>
+                    </div>
+                    <div class="workout-preview-info">
+                        <h3 id="today-workout-title">Push 1 (İtiş + Triceps)</h3>
+                        <p id="today-workout-desc">Incline DB, Chest Press, Pec Fly, Düz Bar Pushdown, Yan Omuz</p>
+                    </div>
+                    <button class="btn btn-primary btn-block" onclick="navigateToTab('workout')">
+                        Antrenman Defterini Aç
+                    </button>
+                </div>
+            </section>
+
+            <!-- VIEW 2: ANTRENMAN (LOGBOOK) -->
+            <section id="view-workout" class="tab-view">
+                <div class="day-selector-scroll" id="workout-day-tabs">
+                    <button class="day-pill active" onclick="selectWorkoutDay('pzt')">Pzt • Push 1</button>
+                    <button class="day-pill" onclick="selectWorkoutDay('sal')">Sal • Pull 1</button>
+                    <button class="day-pill" onclick="selectWorkoutDay('car')">Çar • Bacak</button>
+                    <button class="day-pill" onclick="selectWorkoutDay('per')">Per • OFF</button>
+                    <button class="day-pill" onclick="selectWorkoutDay('cum')">Cum • Push 2</button>
+                    <button class="day-pill" onclick="selectWorkoutDay('cmt')">Cmt • Pull 2</button>
+                    <button class="day-pill" onclick="selectWorkoutDay('paz')">Paz • OFF</button>
+                </div>
+
+                <div id="workout-content-area">
+                    <!-- Exercise cards dynamically rendered here -->
+                </div>
+            </section>
+
+            <!-- VIEW 3: BESLENME & ÖĞÜNLER -->
+            <section id="view-nutrition" class="tab-view">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>HAZIR GÜNLÜK ŞABLON</h2>
+                        <button class="btn btn-sm btn-outline" onclick="logAllDailyPresets()">Tümünü Ekle</button>
+                    </div>
+                    <div class="preset-meals-list">
+                        <div class="meal-preset-item">
+                            <div class="meal-preset-details">
+                                <strong>1. Kahvaltı Pankek</strong>
+                                <span>60g Pirinç unu, 1 Muz, 30g Bal, 30g Fıstık ezmesi, 3 Yumurta</span>
+                                <small>810 kcal • 31g P • 106g C • 31g F</small>
+                            </div>
+                            <button class="btn-circle-add" onclick="logPresetMeal('pancake')"><i class="fa-solid fa-plus"></i></button>
+                        </div>
+
+                        <div class="meal-preset-item">
+                            <div class="meal-preset-details">
+                                <strong>2. Antrenmandan 2 Saat Önce</strong>
+                                <span>150g Çiğ Pirinç (~400g pişmiş) + 200g Tavuk Göğsü + H.Cevizi Yağı</span>
+                                <small>850 kcal • 56g P • 118g C • 16g F</small>
+                            </div>
+                            <button class="btn-circle-add" onclick="logPresetMeal('preworkout')"><i class="fa-solid fa-plus"></i></button>
+                        </div>
+
+                        <div class="meal-preset-item">
+                            <div class="meal-preset-details">
+                                <strong>3. Antrenman Sonrası (Post-Workout)</strong>
+                                <span>75g Çiğ Pirinç + 150g Tavuk Göğsü + H.Cevizi Yağı</span>
+                                <small>550 kcal • 40g P • 60g C • 15g F</small>
+                            </div>
+                            <button class="btn-circle-add" onclick="logPresetMeal('postworkout')"><i class="fa-solid fa-plus"></i></button>
+                        </div>
+
+                        <div class="meal-preset-item">
+                            <div class="meal-preset-details">
+                                <strong>4. Akşam / Gece Öğünü</strong>
+                                <span>75g Çiğ Pirinç + 150g Tavuk Göğsü + H.Cevizi Yağı</span>
+                                <small>550 kcal • 40g P • 60g C • 15g F</small>
+                            </div>
+                            <button class="btn-circle-add" onclick="logPresetMeal('dinner')"><i class="fa-solid fa-plus"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Custom Food Log List -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2>GÜNLÜK KAYITLAR</h2>
+                        <button class="btn btn-sm btn-danger" onclick="clearTodayMeals()">Temizle</button>
+                    </div>
+                    <div id="today-logged-foods-list">
+                        <!-- Logged meals appear here -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW 4: TARTI & KOÇLUK ALGORİTMASI -->
+            <section id="view-scale" class="tab-view">
+                <!-- Smart Coach Verdict Banner -->
+                <div class="card coach-decision-card" id="coach-weigh-verdict-box">
+                    <div class="verdict-header">
+                        <i class="fa-solid fa-chart-line"></i>
+                        <span>KOÇLUK DEĞERLENDİRMESİ</span>
+                    </div>
+                    <div class="verdict-body">
+                        <div class="verdict-status-badge" id="coach-verdict-badge">Veri Bekleniyor</div>
+                        <p id="coach-verdict-text" class="text-secondary" style="font-size:0.82rem; line-height:1.45;">Son 7 günlük tartı ortalamanı hesaplayarak anlık kalori ve bulk yönlendirmesi yapacağız.</p>
+                    </div>
+                </div>
+
+                <!-- Daily Weigh-In Entry -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2>SABAH AÇ TARTI GİRİŞİ</h2>
+                    </div>
+                    <div class="weigh-input-row">
+                        <div class="input-group">
+                            <input type="number" id="daily-weight-input" step="0.1" placeholder="74.0">
+                            <span class="unit">kg</span>
+                        </div>
+                        <button class="btn btn-primary" onclick="saveDailyWeight()">Kaydet</button>
+                    </div>
+                </div>
+
+                <!-- 7-Day Average & Trends -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2>7 GÜNLÜK ORTALAMA</h2>
+                    </div>
+                    <div class="stats-2col">
+                        <div class="stat-box">
+                            <span class="lbl">Haftalık Ortalama</span>
+                            <strong class="val" id="current-week-avg">74.0 kg</strong>
+                        </div>
+                        <div class="stat-box">
+                            <span class="lbl">Haftalık Değişim</span>
+                            <strong class="val" id="weekly-delta">+0.0 kg</strong>
+                        </div>
+                    </div>
+                    <div class="history-list" id="weight-history-list">
+                        <!-- Weight history rows -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW 5: RAPOR & KOÇA GÖNDER -->
+            <section id="view-report" class="tab-view">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>HAFTALIK RAPOR</h2>
+                    </div>
+                    <p class="text-secondary" style="font-size:0.8rem; line-height:1.4;">Haftalık ağırlıklarını, ortalama kilonu ve makro durumunu içeren koçluk özetini panoya kopyalar.</p>
+                    
+                    <div class="report-preview-box" id="report-text-preview">
+                        <!-- Generated summary text -->
+                    </div>
+
+                    <button class="btn btn-primary btn-block" onclick="copyCoachReport()">
+                        Raporu Kopyala
+                    </button>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h2>VERİ YÖNETİMİ</h2>
+                    </div>
+                    <div class="data-actions-grid">
+                        <button class="btn btn-outline btn-block" onclick="exportDataJSON()">Yedek İndir (JSON)</button>
+                        <button class="btn btn-outline btn-block" onclick="document.getElementById('import-file').click()">Yedekten Yükle</button>
+                        <input type="file" id="import-file" style="display:none" onchange="importDataJSON(event)">
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Bottom Navigation Bar (Minimalist Apple Style) -->
+        <nav class="bottom-nav">
+            <button class="nav-item active" onclick="navigateToTab('dashboard')">
+                <i class="fa-solid fa-house"></i>
+                <span>Bugün</span>
+            </button>
+            <button class="nav-item" onclick="navigateToTab('workout')">
+                <i class="fa-solid fa-dumbbell"></i>
+                <span>Antrenman</span>
+            </button>
+            <button class="nav-item" onclick="navigateToTab('nutrition')">
+                <i class="fa-solid fa-utensils"></i>
+                <span>Beslenme</span>
+            </button>
+            <button class="nav-item" onclick="navigateToTab('scale')">
+                <i class="fa-solid fa-weight-scale"></i>
+                <span>Tartı</span>
+            </button>
+            <button class="nav-item" onclick="navigateToTab('report')">
+                <i class="fa-solid fa-file-lines"></i>
+                <span>Rapor</span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast">Kaydedildi</div>
+
+    <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,834 @@
+:root {
+    /* Apple / Minimalist Elite Coaching Palette */
+    --bg-main: #0a0a0c;
+    --bg-card: #131418;
+    --bg-card-subtle: #1a1b22;
+    --bg-input: #101115;
+    --border-subtle: rgba(255, 255, 255, 0.08);
+    --border-active: rgba(255, 255, 255, 0.22);
+    
+    /* Refined Accents (No harsh neon, pure athletic minimalism) */
+    --accent-primary: #ffffff;
+    --accent-secondary: #9499a8;
+    --accent-muted: #525766;
+    
+    --status-green: #30d158;
+    --status-amber: #ff9f0a;
+    --status-red: #ff453a;
+    --status-blue: #0a84ff;
+    
+    --text-primary: #f5f6f8;
+    --text-secondary: #8e94a5;
+    --text-muted: #565b6c;
+    
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-full: 9999px;
+    
+    --font-stack: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: var(--font-stack);
+    -webkit-tap-highlight-color: transparent;
+    -webkit-font-smoothing: antialiased;
+}
+
+body {
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    overflow-x: hidden;
+}
+
+#app-container {
+    width: 100%;
+    max-width: 460px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    background-color: var(--bg-main);
+    padding-bottom: 80px;
+}
+
+/* Header / Brand */
+.top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    background-color: rgba(10, 10, 12, 0.92);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border-subtle);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.user-badge {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.brand-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: var(--radius-sm);
+    background: #1e2029;
+    border: 1px solid var(--border-active);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    font-weight: 900;
+    letter-spacing: 0.5px;
+    color: #ffffff;
+}
+
+.app-title {
+    font-size: 1rem;
+    font-weight: 800;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #ffffff;
+}
+
+.sub-status {
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    display: block;
+}
+
+.icon-btn {
+    background: transparent;
+    border: 1px solid var(--border-subtle);
+    color: var(--text-secondary);
+    width: 34px;
+    height: 34px;
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.15s ease;
+}
+
+.icon-btn:active {
+    background: var(--bg-card);
+    color: var(--text-primary);
+}
+
+/* Main Content Views */
+.main-content {
+    flex: 1;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.tab-view {
+    display: none;
+    flex-direction: column;
+    gap: 14px;
+    animation: fadeIn 0.2s ease-out;
+}
+
+.tab-view.active {
+    display: flex;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Cards (Minimal Slate) */
+.card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.card-header h2 {
+    font-size: 0.88rem;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-primary);
+    text-transform: uppercase;
+}
+
+.card-header h2 i {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
+/* Coach Minimal Callout */
+.coach-alert-card {
+    background: var(--bg-card-subtle);
+    border: 1px solid var(--border-active);
+    border-left: 3px solid #ffffff;
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+}
+
+.coach-badge {
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 1.2px;
+    color: #ffffff;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}
+
+.coach-text {
+    font-size: 0.84rem;
+    line-height: 1.45;
+    color: var(--text-secondary);
+}
+
+/* Nutrition Minimalist Dashboard */
+.target-badge {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    background: var(--bg-card-subtle);
+    padding: 3px 8px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-subtle);
+}
+
+.calorie-summary-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: 4px 0 8px 0;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.cal-number-big {
+    font-size: 2.2rem;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    color: #ffffff;
+}
+
+.cal-number-big small {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.cal-meta-stats {
+    display: flex;
+    gap: 12px;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+}
+
+.cal-meta-stats strong {
+    color: var(--text-primary);
+}
+
+/* Activity & Step Tracker */
+.activity-tracker-row {
+    padding: 6px 0;
+}
+
+.activity-metric-box {
+    background: var(--bg-card-subtle);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.activity-metric-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    letter-spacing: 0.4px;
+}
+
+.activity-metric-header i {
+    color: var(--status-green);
+    margin-right: 4px;
+}
+
+.activity-val strong {
+    color: #ffffff;
+    font-size: 0.85rem;
+}
+
+.step-fill {
+    background: var(--status-green);
+}
+
+.macro-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    padding-top: 4px;
+}
+
+.macro-box {
+    background: var(--bg-card-subtle);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.macro-box-title {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+}
+
+.macro-box-value {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.macro-box-value small {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+}
+
+.progress-track {
+    width: 100%;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: #ffffff;
+    transition: width 0.3s ease;
+}
+
+.p-fill { background: #f5f5f7; }
+.c-fill { background: #b0b4c3; }
+.f-fill { background: #717686; }
+
+/* Quick Action Buttons (Minimalist Pill Grid) */
+.quick-actions-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.quick-action-btn {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-primary);
+    padding: 11px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 0.78rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.quick-action-btn:active {
+    background: var(--bg-card-subtle);
+    border-color: var(--border-active);
+}
+
+.quick-action-btn i {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
+/* Workout Launch Card */
+.workout-preview-info h3 {
+    font-size: 0.98rem;
+    font-weight: 700;
+    color: #ffffff;
+    margin-bottom: 2px;
+}
+
+.workout-preview-info p {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+}
+
+/* Minimalist Button Styles */
+.btn {
+    padding: 12px 16px;
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.15s ease;
+}
+
+.btn:active {
+    transform: scale(0.98);
+}
+
+.btn-primary {
+    background: #ffffff;
+    color: #000000;
+}
+
+.btn-primary:active {
+    background: #e2e4ea;
+}
+
+.btn-outline {
+    background: transparent;
+    border: 1px solid var(--border-subtle);
+    color: var(--text-primary);
+}
+
+.btn-outline:active {
+    background: var(--bg-card-subtle);
+}
+
+.btn-danger {
+    background: transparent;
+    color: var(--status-red);
+    border: 1px solid rgba(255, 69, 58, 0.3);
+}
+
+.btn-sm {
+    padding: 6px 10px;
+    font-size: 0.72rem;
+}
+
+.btn-block {
+    width: 100%;
+}
+
+/* Day Selector Scroll */
+.day-selector-scroll {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+}
+
+.day-selector-scroll::-webkit-scrollbar {
+    display: none;
+}
+
+.day-pill {
+    white-space: nowrap;
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-secondary);
+    padding: 7px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 0.76rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.day-pill.active {
+    background: #ffffff;
+    color: #000000;
+    border-color: #ffffff;
+}
+
+/* Exercise Logbook Card */
+.exercise-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.ex-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.ex-title-group h3 {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.ex-target-badge {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.ex-seat-input {
+    background: var(--bg-input);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-primary);
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 0.72rem;
+    width: 110px;
+    text-align: right;
+}
+
+.set-rows-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.set-rows-table th {
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding: 4px 2px;
+    text-align: center;
+}
+
+.set-row td {
+    padding: 3px 2px;
+    text-align: center;
+}
+
+.set-tag {
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 4px 6px;
+    border-radius: 4px;
+    background: var(--bg-card-subtle);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-subtle);
+}
+
+.set-tag.top-set {
+    background: #252834;
+    color: #ffffff;
+    border-color: var(--border-active);
+}
+
+.set-input {
+    width: 100%;
+    background: var(--bg-input);
+    border: 1px solid var(--border-subtle);
+    color: #ffffff;
+    border-radius: 6px;
+    padding: 7px 2px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+.set-input:focus {
+    outline: none;
+    border-color: #ffffff;
+}
+
+/* Preset Meals List */
+.preset-meals-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.meal-preset-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-card-subtle);
+    border: 1px solid var(--border-subtle);
+    padding: 12px;
+    border-radius: var(--radius-sm);
+}
+
+.meal-preset-details {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-width: 80%;
+}
+
+.meal-preset-details strong {
+    font-size: 0.84rem;
+    color: #ffffff;
+}
+
+.meal-preset-details span {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+}
+
+.meal-preset-details small {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+.btn-circle-add {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-sm);
+    background: var(--bg-card);
+    border: 1px solid var(--border-active);
+    color: #ffffff;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.btn-circle-add:active {
+    background: #ffffff;
+    color: #000000;
+}
+
+/* Scale & Decision View */
+.coach-decision-card {
+    background: var(--bg-card-subtle);
+    border: 1px solid var(--border-active);
+}
+
+.verdict-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #ffffff;
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+}
+
+.verdict-status-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: var(--radius-sm);
+    font-size: 0.74rem;
+    font-weight: 700;
+    margin: 6px 0 4px 0;
+    background: rgba(48, 209, 88, 0.15);
+    color: var(--status-green);
+    border: 1px solid rgba(48, 209, 88, 0.3);
+}
+
+.weigh-input-row {
+    display: flex;
+    gap: 8px;
+}
+
+.input-group {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-group input {
+    width: 100%;
+    background: var(--bg-input);
+    border: 1px solid var(--border-subtle);
+    color: #ffffff;
+    font-size: 1.1rem;
+    font-weight: 700;
+    padding: 9px 36px 9px 12px;
+    border-radius: var(--radius-sm);
+}
+
+.input-group .unit {
+    position: absolute;
+    right: 12px;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.stats-2col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.stat-box {
+    background: var(--bg-card-subtle);
+    border: 1px solid var(--border-subtle);
+    padding: 10px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    text-align: center;
+}
+
+.stat-box .lbl {
+    font-size: 0.68rem;
+    color: var(--text-secondary);
+}
+
+.stat-box .val {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #ffffff;
+}
+
+.history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 160px;
+    overflow-y: auto;
+}
+
+.history-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 7px 10px;
+    background: var(--bg-card-subtle);
+    border-radius: 4px;
+    font-size: 0.76rem;
+    color: var(--text-secondary);
+}
+
+.history-item strong {
+    color: #ffffff;
+}
+
+/* Report View */
+.report-preview-box {
+    background: var(--bg-input);
+    border: 1px solid var(--border-subtle);
+    padding: 12px;
+    border-radius: var(--radius-sm);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.75rem;
+    line-height: 1.5;
+    color: var(--text-primary);
+    white-space: pre-wrap;
+    max-height: 220px;
+    overflow-y: auto;
+}
+
+.data-actions-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+/* Bottom Navigation (iOS Minimalist Bar) */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 460px;
+    background: rgba(10, 10, 12, 0.95);
+    backdrop-filter: blur(20px);
+    border-top: 1px solid var(--border-subtle);
+    display: flex;
+    justify-content: space-around;
+    padding: 10px 0 16px 0;
+    z-index: 100;
+}
+
+.nav-item {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    font-size: 0.68rem;
+    font-weight: 500;
+    cursor: pointer;
+    flex: 1;
+    transition: color 0.15s ease;
+}
+
+.nav-item i {
+    font-size: 1.05rem;
+}
+
+.nav-item.active {
+    color: #ffffff;
+}
+
+.nav-item.active i {
+    color: #ffffff;
+}
+
+/* Toast */
+.toast {
+    position: fixed;
+    bottom: 85px;
+    left: 50%;
+    transform: translateX(-50%) translateY(40px);
+    background: #ffffff;
+    color: #000000;
+    padding: 8px 16px;
+    border-radius: var(--radius-full);
+    font-size: 0.78rem;
+    font-weight: 600;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.25s ease;
+    z-index: 200;
+}
+
+.toast.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+}
