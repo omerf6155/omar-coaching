@@ -1166,6 +1166,12 @@ body {
     gap: 8px;
 }
 
+/* Body Lock when Modal is Active */
+body.modal-open {
+    overflow: hidden !important;
+    touch-action: none;
+}
+
 /* Modals */
 .modal-overlay {
     position: fixed;
@@ -1175,11 +1181,14 @@ body {
     bottom: 0;
     background: rgba(0, 0, 0, 0.75);
     backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     z-index: 1000;
     display: none;
     align-items: flex-end;
     justify-content: center;
     padding: 0;
+    touch-action: pan-y;
+    overscroll-behavior: contain;
 }
 
 .modal-overlay.active {
@@ -3450,14 +3459,34 @@ body {
 }
 
 /* AI Assistant Modal Specifics */
+#modal-ai-assistant {
+    z-index: 2500;
+}
+
 .ai-assistant-modal-card {
-    max-height: 94vh;
-    height: 650px;
+    max-height: 90vh;
+    height: 700px;
+    width: 100%;
+    max-width: 480px;
     display: flex;
     flex-direction: column;
     padding: 0;
     overflow: hidden;
     background: #121418;
+    box-shadow: 0 -8px 36px rgba(0, 0, 0, 0.85);
+    border: 1px solid var(--border-active);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+@media (max-width: 600px) {
+    .ai-assistant-modal-card {
+        height: 100% !important;
+        height: 100dvh !important;
+        max-height: 100dvh !important;
+        max-width: 100% !important;
+        border-radius: 0 !important;
+        border: none !important;
+    }
 }
 
 .ai-assistant-modal-header {
@@ -3765,17 +3794,24 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 6px 14px;
+    padding: 8px 14px;
     background: #14171d;
     border-bottom: 1px solid var(--border-subtle);
     font-size: 0.72rem;
+    user-select: none;
+    transition: background 0.15s ease;
+}
+
+.ai-mode-status-bar:hover {
+    background: #191d24;
 }
 
 .ai-mode-status-info {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 7px;
     color: var(--text-secondary);
+    font-weight: 500;
 }
 
 .ai-mode-dot {
@@ -3784,6 +3820,7 @@ body {
     border-radius: 50%;
     background: #f59e0b;
     box-shadow: 0 0 6px rgba(245, 158, 11, 0.6);
+    flex-shrink: 0;
 }
 
 .ai-mode-dot.online {
@@ -3795,27 +3832,29 @@ body {
     background: rgba(10, 132, 255, 0.15);
     border: 1px solid rgba(10, 132, 255, 0.35);
     color: var(--status-blue);
-    padding: 3px 8px;
-    border-radius: 12px;
-    font-size: 0.68rem;
+    padding: 4px 10px;
+    border-radius: 14px;
+    font-size: 0.7rem;
     font-weight: 600;
     cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 4px;
-    transition: all 0.2s;
+    gap: 5px;
+    transition: all 0.2s ease;
 }
 
 .btn-toggle-inline-api:hover {
     background: var(--status-blue);
     color: #ffffff;
+    border-color: var(--status-blue);
 }
 
 .ai-api-drawer {
     background: #0f1217;
-    border-bottom: 1px solid var(--border-subtle);
-    padding: 12px 14px;
+    border-bottom: 1px solid var(--border-active);
+    padding: 14px 16px;
     animation: slideDown 0.2s ease-out;
+    box-shadow: inset 0 -4px 12px rgba(0, 0, 0, 0.4);
 }
 
 @keyframes slideDown {
@@ -3832,9 +3871,10 @@ body {
     background: none;
     border: none;
     color: var(--text-muted);
-    font-size: 1.1rem;
+    font-size: 1.2rem;
     cursor: pointer;
     line-height: 1;
+    padding: 0 4px;
 }
 
 .btn-xs-close:hover {
@@ -3843,6 +3883,8 @@ body {
 
 .ai-api-input-wrap {
     display: flex;
-    gap: 8px;
+    gap: 6px;
+    align-items: center;
 }
+
 

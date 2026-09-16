@@ -1358,6 +1358,7 @@ function openModal(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) {
         modal.classList.add("active");
+        document.body.classList.add("modal-open");
         if (modalId === "modal-settings") initSettingsForm();
         if (modalId === "modal-quick-actions") renderQuickActionsConfig();
         if (modalId === "modal-supplement-catalog") renderSupplementCatalog();
@@ -1366,7 +1367,14 @@ function openModal(modalId) {
 
 function closeModal(modalId) {
     const modal = document.getElementById(modalId);
-    if (modal) modal.classList.remove("active");
+    if (modal) {
+        modal.classList.remove("active");
+        // Check if any other modal is still active
+        const anyActive = document.querySelector(".modal-overlay.active");
+        if (!anyActive) {
+            document.body.classList.remove("modal-open");
+        }
+    }
 }
 
 function showToast(msg) {
@@ -5136,6 +5144,7 @@ function updateAssistantModalHeader() {
     const modeText = document.getElementById("ai-mode-text");
     const modeDot = document.getElementById("ai-mode-dot");
     const apiBtnLabel = document.getElementById("ai-api-status-label");
+    const toggleBtn = document.getElementById("ai-api-drawer-toggle-btn");
     const keyInput = document.getElementById("modal-gemini-key-input");
 
     if (avatarEl) avatarEl.innerText = persona.avatar;
@@ -5154,8 +5163,14 @@ function updateAssistantModalHeader() {
 
     if (modeText) {
         modeText.innerHTML = isOnline 
-            ? `<strong>🟢 Canlı Gemini 2.5 Flash AI Aktif</strong> (Tamamen Serbest & Özgür Sohbet)` 
-            : `<strong>⚡ Çevrimdışı Biyomekanik Motoru Aktif</strong>`;
+            ? `<strong style="color:var(--status-green);">🟢 Canlı Gemini 2.5 Flash Aktif</strong>` 
+            : `<strong style="color:var(--status-amber);">⚡ Çevrimdışı Mod</strong> <span style="font-size:0.65rem; color:var(--text-muted);">(Canlı AI için tıkla)</span>`;
+    }
+
+    if (toggleBtn) {
+        toggleBtn.innerHTML = isOnline
+            ? `<i class="fa-solid fa-gear"></i> API Ayarı <i class="fa-solid fa-chevron-down" style="font-size:0.6rem;"></i>`
+            : `<i class="fa-solid fa-wifi"></i> Canlı Online AI Aç 🔽`;
     }
 
     if (modeDot) {
@@ -5169,6 +5184,12 @@ function updateAssistantModalHeader() {
 
     if (keyInput && savedKey) {
         keyInput.value = savedKey;
+    }
+
+    // Also sync setting modal input if present
+    const settingsKeyInput = document.getElementById("setting-gemini-key");
+    if (settingsKeyInput && savedKey) {
+        settingsKeyInput.value = savedKey;
     }
 
     // Update active tab in switcher
@@ -5193,6 +5214,28 @@ function toggleApiSetupDrawer() {
     }
 }
 
+async function pasteModalGeminiKey() {
+    try {
+        if (navigator.clipboard && navigator.clipboard.readText) {
+            const text = await navigator.clipboard.readText();
+            if (text && text.trim().length > 5) {
+                const input = document.getElementById("modal-gemini-key-input");
+                if (input) input.value = text.trim();
+                showToast("📋 API Anahtarı panodan yapıştırıldı!");
+                return;
+            }
+        }
+    } catch (e) {
+        console.log("Clipboard read error:", e);
+    }
+    const manualKey = prompt("Lütfen Google AI Studio'dan aldığınız API Anahtarını (AIzaSy...) buraya yapıştırın:");
+    if (manualKey && manualKey.trim()) {
+        const input = document.getElementById("modal-gemini-key-input");
+        if (input) input.value = manualKey.trim();
+        showToast("📋 Anahtar yapıştırıldı!");
+    }
+}
+
 async function saveModalGeminiKey() {
     const input = document.getElementById("modal-gemini-key-input");
     if (!input) return;
@@ -5204,6 +5247,9 @@ async function saveModalGeminiKey() {
     }
 
     localStorage.setItem("OMAR_GEMINI_API_KEY", key);
+    const settingInput = document.getElementById("setting-gemini-key");
+    if (settingInput) settingInput.value = key;
+
     updateAssistantModalHeader();
     toggleApiSetupDrawer();
     showToast("🎉 Canlı Gemini AI Modu Başarıyla Etkinleştirildi! Artık tamamen serbest sohbet edebilirsiniz.");
@@ -5222,6 +5268,9 @@ function removeModalGeminiKey() {
     localStorage.removeItem("OMAR_GEMINI_API_KEY");
     const input = document.getElementById("modal-gemini-key-input");
     if (input) input.value = "";
+    const settingInput = document.getElementById("setting-gemini-key");
+    if (settingInput) settingInput.value = "";
+
     updateAssistantModalHeader();
     toggleApiSetupDrawer();
     showToast("ℹ️ API Anahtarı kaldırıldı. Çevrimdışı Biyomekanik Motoruna dönüldü.");
@@ -6001,4 +6050,28 @@ function openApiKeySettings() {
 function getCurrentTimeStr() {
     const d = new Date();
     return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+// Global Modal Backdrop Protection & Touch Handlers
+function initModalBackdropHandlers() {
+    document.querySelectorAll(".modal-overlay").forEach(overlay => {
+        overlay.addEventListener("click", function(e) {
+            if (e.target === this) {
+                e.stopPropagation();
+                e.preventDefault();
+                closeModal(this.id);
+            }
+        });
+        overlay.addEventListener("touchmove", function(e) {
+            if (e.target === this) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+    });
+}
+
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initModalBackdropHandlers);
+} else {
+    initModalBackdropHandlers();
 }

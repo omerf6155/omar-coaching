@@ -1618,13 +1618,13 @@
             </div>
 
             <!-- Online / Offline Mode Status Bar -->
-            <div class="ai-mode-status-bar" id="ai-mode-status-bar">
+            <div class="ai-mode-status-bar" id="ai-mode-status-bar" onclick="toggleApiSetupDrawer()" style="cursor:pointer;" title="Canlı Online Mod Ayarlarını Aç/Kapat">
                 <div class="ai-mode-status-info" id="ai-mode-status-info">
                     <span class="ai-mode-dot" id="ai-mode-dot"></span>
-                    <span id="ai-mode-text">⚡ Çevrimdışı Biyomekanik Motoru Aktif</span>
+                    <span id="ai-mode-text">⚡ Çevrimdışı Biyomekanik Motoru</span>
                 </div>
-                <button type="button" class="btn-toggle-inline-api" onclick="toggleApiSetupDrawer()" id="ai-api-drawer-toggle-btn">
-                    <i class="fa-solid fa-wifi"></i> Canlı Online AI (Gemini)
+                <button type="button" class="btn-toggle-inline-api" id="ai-api-drawer-toggle-btn" onclick="event.stopPropagation(); toggleApiSetupDrawer();">
+                    <i class="fa-solid fa-wifi"></i> Canlı Online AI (Gemini) <i class="fa-solid fa-chevron-down" id="ai-drawer-chevron"></i>
                 </button>
             </div>
 
@@ -1632,24 +1632,27 @@
             <div class="ai-api-drawer" id="ai-api-drawer" style="display:none;">
                 <div class="ai-api-drawer-content">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                        <strong style="font-size:0.8rem; color:#ffffff;"><i class="fa-solid fa-globe"></i> Canlı Gemini AI Modu (Sınırsız & Özgür Sohbet)</strong>
+                        <strong style="font-size:0.82rem; color:#ffffff;"><i class="fa-solid fa-globe" style="color:var(--status-blue);"></i> Canlı Gemini AI Modu (Tamamen Özgür & Canlı Zeka)</strong>
                         <button type="button" class="btn-xs-close" onclick="toggleApiSetupDrawer()">&times;</button>
                     </div>
-                    <p style="font-size:0.7rem; color:var(--text-secondary); margin-bottom:8px; line-height:1.35;">
-                        Google AI Studio'dan aldığınız ücretsiz API anahtarını girin. Asistanlar tamamen serbest, dilediğiniz her konuda sohbet eder.
+                    <p style="font-size:0.72rem; color:var(--text-secondary); margin-bottom:10px; line-height:1.4;">
+                        Google AI Studio'dan aldığınız <strong>ücretsiz</strong> API anahtarını buraya girin. Asistanlar tüm verilerinizi görerek dilediğiniz her konuda canlı ve sınırsız sohbet eder.
                     </p>
-                    <div class="ai-api-input-wrap">
-                        <input type="password" id="modal-gemini-key-input" class="form-input-sm" placeholder="AIzaSy... API anahtarını buraya yapıştırın" style="flex:1;">
-                        <button type="button" class="btn btn-sm btn-primary" onclick="saveModalGeminiKey()">
-                            <i class="fa-solid fa-check"></i> Kaydet & Aktif Et
+                    <div class="ai-api-input-wrap" style="display:flex; gap:6px; margin-bottom:8px;">
+                        <input type="password" id="modal-gemini-key-input" class="form-input-sm" placeholder="AIzaSy... API anahtarını yapıştırın" style="flex:1;">
+                        <button type="button" class="btn btn-sm btn-outline" onclick="pasteModalGeminiKey()" title="Panodaki Anahtarı Yapıştır" style="font-size:0.75rem; white-space:nowrap; padding:4px 8px;">
+                            <i class="fa-solid fa-paste"></i> Yapıştır
+                        </button>
+                        <button type="button" class="btn btn-sm btn-primary" onclick="saveModalGeminiKey()" style="font-size:0.75rem; white-space:nowrap; padding:4px 10px;">
+                            <i class="fa-solid fa-check"></i> Aktif Et
                         </button>
                     </div>
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px; font-size:0.68rem;">
-                        <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--status-blue); text-decoration:underline;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.7rem; flex-wrap:wrap; gap:8px;">
+                        <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--status-blue); text-decoration:underline; font-weight:600;">
                             <i class="fa-solid fa-arrow-up-right-from-square"></i> Ücretsiz API Key Al (Google AI Studio)
                         </a>
-                        <button type="button" class="btn-text-link" onclick="removeModalGeminiKey()" style="color:var(--status-red); background:none; border:none; cursor:pointer;">
-                            Anahtarı Sıfırla
+                        <button type="button" class="btn-text-link" onclick="removeModalGeminiKey()" style="color:var(--status-red); background:none; border:none; cursor:pointer; font-size:0.7rem;">
+                            <i class="fa-solid fa-trash-can"></i> Anahtarı Sil / Çevrimdışı Ol
                         </button>
                     </div>
                 </div>
