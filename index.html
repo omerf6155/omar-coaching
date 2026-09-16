@@ -128,7 +128,6 @@
 
             <!-- VIEW 2: ANTRENMAN (LOGBOOK & EXERCISE MANAGER) -->
             <section id="view-workout" class="tab-view">
-                <!-- Top Workout Controls: Day selector + RIR Info & Manage Program Buttons -->
                 <div class="workout-action-bar">
                     <button class="btn btn-xs btn-outline" onclick="openModal('modal-rir-guide')">
                         <i class="fa-solid fa-circle-question"></i> RIR Mantığı Nedir?
@@ -153,21 +152,24 @@
                 </div>
             </section>
 
-            <!-- VIEW 3: BESLENME & ÖĞÜNLER -->
+            <!-- VIEW 3: BESLENME & ÖĞÜNLER (SMART GRAM RECIPE ENGINE) -->
             <section id="view-nutrition" class="tab-view">
                 <!-- Action Bar: Add custom meal -->
                 <div class="nutrition-top-actions">
-                    <button class="btn btn-primary btn-block" onclick="openModal('modal-meal-builder')">
-                        <i class="fa-solid fa-plus"></i> Özel Öğün / Besin Oluştur
+                    <button class="btn btn-primary btn-block" onclick="openNewRecipeBuilderModal()">
+                        <i class="fa-solid fa-plus"></i> Çiğ Gramajlı Öğün / Şablon Oluştur
                     </button>
                 </div>
 
-                <!-- Custom / Preset Meals Library with Edit Support -->
+                <!-- Custom / Preset Meals Library with Gram Ingredients -->
                 <div class="card">
                     <div class="card-header">
                         <h2>HAZIR ŞABLONLAR & ÖĞÜNLER</h2>
                         <button class="btn btn-sm btn-outline" onclick="logAllDailyPresets()">Tümünü Ekle</button>
                     </div>
+                    <p class="text-secondary" style="font-size:0.75rem; line-height:1.4;">
+                        Kalem simgesine (✏️) basarak öğünün çiğ pirinç, tavuk, un vb. gramajlarını dilediğin gibi değiştirebilirsin.
+                    </p>
                     <div class="preset-meals-list" id="preset-meals-container">
                         <!-- Populated dynamically -->
                     </div>
@@ -205,7 +207,7 @@
 
             <!-- VIEW 5: TARTI & RAPOR (SCALE & SMART COACH) -->
             <section id="view-scale" class="tab-view">
-                <!-- Smart Coach Verdict Banner (Authentic / Tough-love Motivation) -->
+                <!-- Smart Coach Verdict Banner -->
                 <div class="card coach-decision-card" id="coach-weigh-verdict-box">
                     <div class="verdict-header">
                         <i class="fa-solid fa-chart-line"></i>
@@ -389,105 +391,77 @@
         </div>
     </div>
 
-    <!-- 3. CUSTOM MEAL BUILDER MODAL -->
-    <div id="modal-meal-builder" class="modal-overlay">
-        <div class="modal-card">
+    <!-- 3. SMART RECIPE & RAW INGREDIENT BUILDER MODAL -->
+    <div id="modal-recipe-builder" class="modal-overlay">
+        <div class="modal-card" style="max-height:92vh;">
             <div class="modal-header">
-                <h3><i class="fa-solid fa-utensils"></i> Özel Öğün / Besin Oluşturucu</h3>
-                <button class="modal-close-btn" onclick="closeModal('modal-meal-builder')">&times;</button>
+                <h3 id="recipe-builder-title"><i class="fa-solid fa-utensils"></i> Çiğ Gramajlı Öğün Oluşturucu</h3>
+                <button class="modal-close-btn" onclick="closeModal('modal-recipe-builder')">&times;</button>
             </div>
             <div class="modal-body">
+                <input type="hidden" id="recipe-edit-preset-id">
+                
                 <div class="form-group">
-                    <label>Öğün / Besin Adı</label>
-                    <input type="text" id="meal-name" placeholder="Örn: Tavuklu Pilav & Yağ">
+                    <label>Öğün / Şablon Adı</label>
+                    <input type="text" id="recipe-meal-name" placeholder="Örn: Antrenmandan 2 Saat Önce">
                 </div>
-                <div class="form-group">
-                    <label>İçerik & Gramaj Açıklaması</label>
-                    <input type="text" id="meal-desc" placeholder="Örn: 200g Tavuk Göğsü, 150g Çiğ Pirinç, 10g Zeytinyağı">
-                </div>
-                <div class="form-row-3">
-                    <div class="form-group">
-                        <label>Protein (g)</label>
-                        <input type="number" id="meal-p" placeholder="0" oninput="calculateMealCalories('meal-p', 'meal-c', 'meal-f', 'meal-calc-cal')">
+
+                <!-- Ingredients Table -->
+                <div class="card" style="background:var(--bg-card-subtle); padding:10px;">
+                    <div class="card-header" style="margin-bottom:6px;">
+                        <h2>MALZEMELER & ÇİĞ GRAMAJLAR</h2>
+                        <button class="btn btn-xs btn-primary" onclick="addIngredientRow()"><i class="fa-solid fa-plus"></i> Malzeme Ekle</button>
                     </div>
-                    <div class="form-group">
-                        <label>Karb (g)</label>
-                        <input type="number" id="meal-c" placeholder="0" oninput="calculateMealCalories('meal-p', 'meal-c', 'meal-f', 'meal-calc-cal')">
-                    </div>
-                    <div class="form-group">
-                        <label>Yağ (g)</label>
-                        <input type="number" id="meal-f" placeholder="0" oninput="calculateMealCalories('meal-p', 'meal-c', 'meal-f', 'meal-calc-cal')">
+                    
+                    <div id="recipe-ingredients-container" class="recipe-ingredients-list">
+                        <!-- Populated with dynamic ingredient rows -->
                     </div>
                 </div>
 
-                <div class="calc-result-banner">
-                    <span>Hesaplanan Kalori:</span>
-                    <strong id="meal-calc-cal">0 kcal</strong>
+                <!-- Live Computed Macro & Calorie Banner -->
+                <div class="recipe-totals-card">
+                    <div class="totals-main-cal">
+                        <span class="lbl">Hesaplanan Toplam Kalori</span>
+                        <strong class="val" id="recipe-calc-calories">0 kcal</strong>
+                    </div>
+                    <div class="totals-macros-grid">
+                        <div class="tot-box">
+                            <span>Protein</span>
+                            <strong id="recipe-calc-p">0g</strong>
+                        </div>
+                        <div class="tot-box">
+                            <span>Karb</span>
+                            <strong id="recipe-calc-c">0g</strong>
+                        </div>
+                        <div class="tot-box">
+                            <span>Yağ</span>
+                            <strong id="recipe-calc-f">0g</strong>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="form-checkbox-row">
+                <!-- Save Options -->
+                <div class="form-checkbox-row" style="margin-top:6px;">
                     <label>
-                        <input type="checkbox" id="save-as-preset-chk" checked>
-                        <span>Hazır Şablonlarıma (Kütüphaneye) da kaydet</span>
+                        <input type="checkbox" id="recipe-save-preset-chk" checked>
+                        <span>Hazır Şablonlarıma (Kütüphaneye) kaydet/güncelle</span>
+                    </label>
+                </div>
+                <div class="form-checkbox-row" id="recipe-add-today-row">
+                    <label>
+                        <input type="checkbox" id="recipe-add-today-chk" checked>
+                        <span>Bugünkü beslenme günlüğüme de hemen ekle</span>
                     </label>
                 </div>
 
-                <div style="display:flex; gap:8px; margin-top:12px;">
-                    <button class="btn btn-primary btn-block" onclick="submitCustomMeal(true)">
-                        Bugüne Ekle
-                    </button>
-                </div>
+                <button class="btn btn-primary btn-block" style="margin-top:12px;" onclick="saveRecipeBuilderMeal()">
+                    Öğünü Kaydet ve Uygula
+                </button>
             </div>
         </div>
     </div>
 
-    <!-- 4. EDIT PRESET MEAL MODAL -->
-    <div id="modal-edit-preset" class="modal-overlay">
-        <div class="modal-card">
-            <div class="modal-header">
-                <h3><i class="fa-solid fa-pen-to-square"></i> Şablon Öğünü Düzenle</h3>
-                <button class="modal-close-btn" onclick="closeModal('modal-edit-preset')">&times;</button>
-            </div>
-            <div class="modal-body">
-                <input type="hidden" id="edit-preset-id">
-                <div class="form-group">
-                    <label>Öğün Adı</label>
-                    <input type="text" id="edit-preset-name" placeholder="Örn: Kahvaltı Pankek">
-                </div>
-                <div class="form-group">
-                    <label>Malzeme & Gramaj Açıklaması</label>
-                    <input type="text" id="edit-preset-desc" placeholder="Örn: 60g Pirinç unu, 1 Muz, 30g Fıstık ezmesi...">
-                </div>
-                <div class="form-row-3">
-                    <div class="form-group">
-                        <label>Protein (g)</label>
-                        <input type="number" id="edit-preset-p" placeholder="0" oninput="calculateMealCalories('edit-preset-p', 'edit-preset-c', 'edit-preset-f', 'edit-preset-calc-cal')">
-                    </div>
-                    <div class="form-group">
-                        <label>Karb (g)</label>
-                        <input type="number" id="edit-preset-c" placeholder="0" oninput="calculateMealCalories('edit-preset-p', 'edit-preset-c', 'edit-preset-f', 'edit-preset-calc-cal')">
-                    </div>
-                    <div class="form-group">
-                        <label>Yağ (g)</label>
-                        <input type="number" id="edit-preset-f" placeholder="0" oninput="calculateMealCalories('edit-preset-p', 'edit-preset-c', 'edit-preset-f', 'edit-preset-calc-cal')">
-                    </div>
-                </div>
-
-                <div class="calc-result-banner">
-                    <span>Hesaplanan Kalori:</span>
-                    <strong id="edit-preset-calc-cal">0 kcal</strong>
-                </div>
-
-                <div style="display:flex; gap:8px; margin-top:12px;">
-                    <button class="btn btn-primary btn-block" onclick="saveEditedPreset()">
-                        Değişiklikleri Kaydet
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 5. 50+ SUPPLEMENT CATALOG MODAL -->
+    <!-- 4. 50+ SUPPLEMENT CATALOG MODAL -->
     <div id="modal-supplement-catalog" class="modal-overlay">
         <div class="modal-card" style="max-height:90vh;">
             <div class="modal-header">
@@ -495,7 +469,6 @@
                 <button class="modal-close-btn" onclick="closeModal('modal-supplement-catalog')">&times;</button>
             </div>
             <div class="modal-body">
-                <!-- Search & Category Filters -->
                 <div class="form-group">
                     <input type="text" id="supp-catalog-search" placeholder="Suplement ara (Örn: Kreatin, Ashwagandha, D3...)" oninput="filterSupplementCatalog()">
                 </div>
@@ -514,7 +487,7 @@
         </div>
     </div>
 
-    <!-- 6. SUPPLEMENT DETAILED INFO MODAL -->
+    <!-- 5. SUPPLEMENT DETAILED INFO MODAL -->
     <div id="modal-supp-info" class="modal-overlay">
         <div class="modal-card">
             <div class="modal-header">
@@ -527,7 +500,7 @@
         </div>
     </div>
 
-    <!-- 7. RIR EDUCATIONAL GUIDE MODAL -->
+    <!-- 6. RIR EDUCATIONAL GUIDE MODAL -->
     <div id="modal-rir-guide" class="modal-overlay">
         <div class="modal-card">
             <div class="modal-header">
@@ -563,7 +536,7 @@
         </div>
     </div>
 
-    <!-- 8. EXERCISE & PROGRAM MANAGER MODAL -->
+    <!-- 7. EXERCISE & PROGRAM MANAGER MODAL -->
     <div id="modal-exercise-manager" class="modal-overlay">
         <div class="modal-card" style="max-height:90vh;">
             <div class="modal-header">

@@ -1,4 +1,4 @@
-// Omar Coaching - Hypertrophy & Bulk Tracker Engine v2.5
+// Omar Coaching - Hypertrophy & Bulk Tracker Engine v2.6
 
 // Default Target Constants
 const DEFAULT_TARGETS = {
@@ -12,30 +12,90 @@ const DEFAULT_TARGETS = {
     weeklyGainMax: 0.35  // kg
 };
 
-// Default Preset Meals
+// ==================== RAW & WHOLE FOODS DATABASE (100g BAŞINA DEĞERLER) ====================
+const RAW_FOODS_DATABASE = [
+    // KARBONHİDRAT KAYNAKLARI (ÇİĞ AĞIRLIK)
+    { id: "cig_pirinc", name: "Çiğ Beyaz Pirinç (Basmati / Yasemin)", unit: "g", p: 7.5, c: 78.0, f: 0.5, cal: 350 },
+    { id: "pirinc_unu", name: "Çiğ Pirinç Unu", unit: "g", p: 6.0, c: 80.0, f: 1.0, cal: 360 },
+    { id: "cig_yulaf", name: "Çiğ Yulaf Ezmesi", unit: "g", p: 13.0, c: 60.0, f: 7.0, cal: 370 },
+    { id: "cig_makarna", name: "Çiğ Makarna / Spagetti", unit: "g", p: 12.0, c: 72.0, f: 1.5, cal: 355 },
+    { id: "cig_patates", name: "Çiğ Patates", unit: "g", p: 2.0, c: 17.0, f: 0.1, cal: 77 },
+    { id: "cig_tatli_patates", name: "Çiğ Tatlı Patates", unit: "g", p: 1.6, c: 20.0, f: 0.1, cal: 86 },
+    { id: "cig_karabugday", name: "Çiğ Karabuğday (Greçka)", unit: "g", p: 13.0, c: 71.0, f: 3.0, cal: 343 },
+    { id: "muz", name: "Muz (Taze)", unit: "g", p: 1.1, c: 23.0, f: 0.3, cal: 89 },
+    { id: "bal", name: "Bal / Pekmez", unit: "g", p: 0.3, c: 82.0, f: 0.0, cal: 304 },
+    { id: "hurma", name: "Hurma (Medjool / Cennet)", unit: "g", p: 2.0, c: 75.0, f: 0.4, cal: 280 },
+    { id: "pirinc_patlagi", name: "Pirinç Patlağı (Rice Cake)", unit: "g", p: 8.0, c: 82.0, f: 2.0, cal: 380 },
+
+    // PROTEİN KAYNAKLARI (ÇİĞ AĞIRLIK)
+    { id: "tavuk_gogsu", name: "Çiğ Tavuk Göğsü (Derisiz)", unit: "g", p: 23.0, c: 0.0, f: 1.5, cal: 110 },
+    { id: "hindi_gogsu", name: "Çiğ Hindi Göğsü", unit: "g", p: 24.0, c: 0.0, f: 1.0, cal: 105 },
+    { id: "dana_kiyma", name: "Çiğ Dana Kıyma (%10-12 Yağ)", unit: "g", p: 21.0, c: 0.0, f: 10.0, cal: 175 },
+    { id: "dana_biftek", name: "Çiğ Dana Biftek (Yağsız)", unit: "g", p: 22.0, c: 0.0, f: 6.0, cal: 145 },
+    { id: "yumurta_butun", name: "Bütün Yumurta (1 Adet = 50g)", unit: "g", p: 13.0, c: 1.0, f: 10.0, cal: 145 },
+    { id: "yumurta_beyazi", name: "Yumurta Beyazı (Sıvı)", unit: "g", p: 11.0, c: 0.7, f: 0.2, cal: 52 },
+    { id: "somon", name: "Çiğ Somon Balığı", unit: "g", p: 20.0, c: 0.0, f: 13.0, cal: 208 },
+    { id: "ton_baligi", name: "Ton Balığı (Konserve Süzme)", unit: "g", p: 26.0, c: 0.0, f: 1.0, cal: 115 },
+    { id: "lor_peyniri", name: "Lor Peyniri (Yağsız Diyet)", unit: "g", p: 17.0, c: 3.0, f: 1.0, cal: 90 },
+    { id: "quark_yogurt", name: "Süzme Yoğurt / Quark / Protein Yoğurt", unit: "g", p: 10.0, c: 4.0, f: 0.5, cal: 60 },
+    { id: "whey_toz", name: "Whey Protein Tozu (1 Ölçek = 30g)", unit: "g", p: 80.0, c: 5.0, f: 3.0, cal: 370 },
+
+    // SAĞLIKLI YAĞ KAYNAKLARI
+    { id: "zeytinyagi", name: "Zeytinyağı (Sızma)", unit: "g", p: 0.0, c: 0.0, f: 100.0, cal: 884 },
+    { id: "hindistan_cevizi_yagi", name: "Hindistan Cevizi Yağı", unit: "g", p: 0.0, c: 0.0, f: 100.0, cal: 890 },
+    { id: "fistik_ezmesi", name: "Fıstık Ezmesi (%100 Şekersiz)", unit: "g", p: 25.0, c: 20.0, f: 50.0, cal: 588 },
+    { id: "cig_badem", name: "Çiğ Badem", unit: "g", p: 21.0, c: 15.0, f: 50.0, cal: 600 },
+    { id: "cig_ceviz", name: "Çiğ Ceviz", unit: "g", p: 15.0, c: 14.0, f: 65.0, cal: 654 },
+    { id: "avokado", name: "Avokado", unit: "g", p: 2.0, c: 9.0, f: 15.0, cal: 160 },
+    { id: "tereyagi", name: "Tereyağı / Sade Yağ (Ghee)", unit: "g", p: 0.5, c: 0.5, f: 82.0, cal: 740 }
+];
+
+// Default Preset Meals with Ingredients
 const DEFAULT_PRESET_MEALS = {
     pancake: {
         id: "pancake",
-        name: "Kahvaltı Pankek",
-        desc: "60g Pirinç unu, 1 Muz, 30g Bal, 30g Fıstık ezmesi, 3 Yumurta",
+        name: "1. Kahvaltı Pankek",
+        ingredients: [
+            { foodId: "pirinc_unu", amount: 60 },
+            { foodId: "muz", amount: 100 },
+            { foodId: "bal", amount: 30 },
+            { foodId: "fistik_ezmesi", amount: 30 },
+            { foodId: "yumurta_butun", amount: 150 } // 3 yumurta ~150g
+        ],
+        desc: "60g Pirinç unu, 1 Muz (100g), 30g Bal, 30g Fıstık ezmesi, 3 Yumurta",
         cal: 810, p: 31, c: 106, f: 31
     },
     preworkout: {
         id: "preworkout",
-        name: "Antrenmandan 2 Saat Önce",
-        desc: "150g Çiğ Pirinç (~400g pişmiş) + 200g Tavuk Göğsü + H.Cevizi Yağı",
+        name: "2. Antrenmandan 2 Saat Önce",
+        ingredients: [
+            { foodId: "cig_pirinc", amount: 150 },
+            { foodId: "tavuk_gogsu", amount: 200 },
+            { foodId: "hindistan_cevizi_yagi", amount: 10 }
+        ],
+        desc: "150g Çiğ Pirinç (~400g pişmiş) + 200g Çiğ Tavuk Göğsü + 10g H.Cevizi Yağı",
         cal: 850, p: 56, c: 118, f: 16
     },
     postworkout: {
         id: "postworkout",
-        name: "Antrenman Sonrası (Post-Workout)",
-        desc: "75g Çiğ Pirinç + 150g Tavuk Göğsü + H.Cevizi Yağı",
+        name: "3. Antrenman Sonrası (Post-Workout)",
+        ingredients: [
+            { foodId: "cig_pirinc", amount: 75 },
+            { foodId: "tavuk_gogsu", amount: 150 },
+            { foodId: "hindistan_cevizi_yagi", amount: 10 }
+        ],
+        desc: "75g Çiğ Pirinç + 150g Çiğ Tavuk Göğsü + 10g H.Cevizi Yağı",
         cal: 550, p: 40, c: 60, f: 15
     },
     dinner: {
         id: "dinner",
-        name: "Akşam / Gece Öğünü",
-        desc: "75g Çiğ Pirinç + 150g Tavuk Göğsü + H.Cevizi Yağı",
+        name: "4. Akşam / Gece Öğünü",
+        ingredients: [
+            { foodId: "cig_pirinc", amount: 75 },
+            { foodId: "tavuk_gogsu", amount: 150 },
+            { foodId: "hindistan_cevizi_yagi", amount: 10 }
+        ],
+        desc: "75g Çiğ Pirinç + 150g Çiğ Tavuk Göğsü + 10g H.Cevizi Yağı",
         cal: 550, p: 40, c: 60, f: 15
     }
 };
@@ -103,45 +163,34 @@ const MASTER_SUPPLEMENT_DATABASE = [
     { id: "cat_apigenin", name: "Apigenin (Papatya Ekstresi)", category: "uyku", dosage: "50 mg", timing: "Uykudan 1 Saat Önce", benefit: "Kortizolü nötralize etme ve derin kas gevşemesi.", details: "GABA-A reseptörlerine bağlanarak uyku kalitesini artırır." }
 ];
 
-// ==================== COMPREHENSIVE EXERCISE ENCYCLOPEDIA ====================
+// ==================== EXERCISE ENCYCLOPEDIA ====================
 const EXERCISE_LIBRARY = [
-    // GÖĞÜS (CHEST)
     { id: "lib_inc_db", name: "Incline Dumbbell Press", muscle: "Üst Göğüs (Clavicular Head)", defaultTarget: "2 Çalışma Seti (6-9 Rep)", defaultSets: 2, defaultSeat: "Açı: 30°", isTopSet: true, desc: "Üst göğüs liflerini köprücük kemiği hattında maksimum mekanik gerilimle esnetir ve kalınlık kazandırır." },
     { id: "lib_plate_press", name: "Plate Loaded Chest Press", muscle: "Orta & Tüm Göğüs", defaultTarget: "2 Çalışma Seti (8-10 Rep)", defaultSets: 2, defaultSeat: "Koltuk: 4", isTopSet: true, desc: "Serbest ağırlık yorgunluğu olmadan göğüs kaslarını güvenle tam tükenişe götürmeyi sağlar." },
     { id: "lib_pec_deck", name: "Pec Deck Fly (Makine Göğüs)", muscle: "İç & Tüm Göğüs İzolasyonu", defaultTarget: "2 Çalışma Seti (10-12 Rep)", defaultSets: 2, defaultSeat: "Koltuk: 3, Kol: 2", isTopSet: false, desc: "Maksimum yatay adduksiyon sağlayarak göğüs liflerinin tepe sıkışmasını hedefler." },
     { id: "lib_dips", name: "Weighted Chest Dips", muscle: "Alt Göğüs & Ön Omuz", defaultTarget: "2 Set (6-8 Rep)", defaultSets: 2, defaultSeat: "Gövde Öne Eğik", isTopSet: true, desc: "Vücut ağırlığı veya zincirle alt göğüs çizgisine ve tricepse muazzam bir kütle kazandırır." },
     { id: "lib_cable_cross", name: "Cable Crossover / Fly", muscle: "Alt & İç Göğüs", defaultTarget: "3 Set (12-15 Rep)", defaultSets: 3, defaultSeat: "Kablolar Üstte", isTopSet: false, desc: "Sürekli gerilim hattında göğüs kaslarını kanla doldurur ve pump yaratır." },
     { id: "lib_flat_bench", name: "Flat Barbell Bench Press", muscle: "Genel Göğüs Gücü", defaultTarget: "3 Set (5-8 Rep)", defaultSets: 3, defaultSeat: "Düz Sehpa", isTopSet: true, desc: "Klasik göğüs kütle ve güç temel taşıdır." },
-
-    // SIRT & LATS (BACK)
     { id: "lib_high_row", name: "High Row Tek Kol", muscle: "Alt & Orta Lat (Kanat)", defaultTarget: "2 Set (6-8 Rep, Dirsek Gövdeye)", defaultSets: 2, defaultSeat: "Koltuk: 3, Göğüs Pedi: 2", isTopSet: true, desc: "Dirseği kalçaya doğru çekerek alt lat liflerine cerrahi izolasyon sağlar." },
     { id: "lib_tbar_row", name: "T-Bar Row (Göğüs Destekli)", muscle: "Orta Sırt, Rhomboid & Kalınlık", defaultTarget: "2 Sert Set (8-10 Rep)", defaultSets: 2, defaultSeat: "Göğüs Destekli", isTopSet: true, desc: "Omurgaya gereksiz yük bindirmeden orta sırtı kalınlaştıran 1 numaralı harekettir." },
     { id: "lib_lat_pull", name: "Geniş Tutuş Lat Pulldown", muscle: "Üst Lat & Teres Major (V-Taper)", defaultTarget: "2-3 Set (10-12 Rep)", defaultSets: 2, defaultSeat: "Bacak Pedi: 4", isTopSet: false, desc: "Sırtın genişliğini ve önden bakıldığında kanatların açılmasını sağlar." },
     { id: "lib_chest_row", name: "Chest-Supported Wide Grip Row", muscle: "Üst Sırt & Arka Omuz Hattı", defaultTarget: "2 Set (8-10 Rep)", defaultSets: 2, defaultSeat: "Koltuk: 2, Göğüs: 3", isTopSet: true, desc: "Geniş tutuşla skapulaları birbirine yapıştırarak 3D sırt detaylarını ortaya çıkarır." },
     { id: "lib_seated_cable_row", name: "Seated Cable Row (V-Bar)", muscle: "Orta Sırt & Lat Kalınlığı", defaultTarget: "3 Set (10-12 Rep)", defaultSets: 3, defaultSeat: "Düz Zemin", isTopSet: false, desc: "Kablo gerilimiyle sırtın derinlemesine kasılmasını sağlar." },
     { id: "lib_db_pullover", name: "Dumbbell Pullover", muscle: "Serratus Anterior & Lat Esneme", defaultTarget: "2 Set (10-12 Rep)", defaultSets: 2, defaultSeat: "Sehpada Enlemesine", isTopSet: false, desc: "Göğüs kafesini açar ve latların en derin esneme pozisyonunda büyümesini tetikler." },
-
-    // OMUZ & ARKA OMUZ (SHOULDERS)
     { id: "lib_rev_pec_deck", name: "Reverse Pec Deck Fly", muscle: "Arka Omuz (Posterior Deltoid)", defaultTarget: "3 Set (Skapula Sabit, 10-12 Rep)", defaultSets: 3, defaultSeat: "Pede Göğüs Dayalı", isTopSet: true, desc: "Skapulayı hareket ettirmeden arka omuz başını izole ederek 3D omuz görüntüsünün temelini atar." },
     { id: "lib_mach_lateral", name: "Tek Kol Makine Lateral Raise", muscle: "Yan Omuz (Lateral Deltoid)", defaultTarget: "3 Set (10-12 Rep)", defaultSets: 3, defaultSeat: "Koltuk: 5", isTopSet: false, desc: "Yerçekimi açısını nötralize ederek yan omuzda sürekli gerilim sağlar." },
     { id: "lib_face_pull", name: "Kablo Face Pull", muscle: "Arka Omuz & Dış Rotatörler", defaultTarget: "3 Set (12-15 Rep)", defaultSets: 3, defaultSeat: "Kablo: Göz Hizası", isTopSet: false, desc: "Omuz eklemini korur, postürü düzeltir ve arka omuz kütlesini artırır." },
     { id: "lib_db_lateral", name: "Dumbbell Lateral Raise", muscle: "Yan Omuz", defaultTarget: "3 Set (12-15 Rep)", defaultSets: 3, defaultSeat: "Ayakta / Hafif Eğik", isTopSet: false, desc: "Omuz genişliğinin klasik ve vazgeçilmez hareketidir." },
     { id: "lib_db_shoulder_press", name: "Seated Dumbbell Shoulder Press", muscle: "Ön Omuz & Yan Omuz Gücü", defaultTarget: "2 Sert Set (6-8 Rep)", defaultSets: 2, defaultSeat: "Açı: 75°", isTopSet: true, desc: "Omuz kemerine ham itiş gücü ve kütle kazandırır." },
-
-    // TRICEPS (KOLLAR)
     { id: "lib_straight_bar_push", name: "Düz Bar Triceps Pushdown", muscle: "Triceps Lateral Baş (Dış Kütle)", defaultTarget: "3 Set (Ağır & Sıkı)", defaultSets: 3, defaultSeat: "Kablo: En Üst", isTopSet: true, desc: "Dıştan bakıldığında kolu geniş gösteren Lateral başı en sert vuran harekettir." },
     { id: "lib_overhead_cable_ext", name: "Overhead Dual Cable Triceps Extension", muscle: "Triceps Uzun Baş (Long Head)", defaultTarget: "3 Set (Tam Esneme, 8-10 Rep)", defaultSets: 3, defaultSeat: "Kablo Omuz Boyu", isTopSet: true, desc: "Triceps kas kütlesinin %60'ını oluşturan uzun başı derin esnemede hipertrofiye zorlar." },
     { id: "lib_rope_pushdown", name: "Halat Triceps Pushdown", muscle: "Triceps Dış & Medial Baş", defaultTarget: "2-3 Set (10-12 Rep)", defaultSets: 2, defaultSeat: "Kablo: Üst", isTopSet: false, desc: "Altta halatı iki yana açarak tepe sıkışmayı maksimize eder." },
     { id: "lib_skullcrusher", name: "Lying EZ-Bar Skullcrusher", muscle: "Triceps Uzun Baş & Genel", defaultTarget: "3 Set (8-10 Rep)", defaultSets: 3, defaultSeat: "Düz Sehpa", isTopSet: true, desc: "Alna doğru indirerek triceps eklemini tam bükülmede yükler." },
-
-    // BICEPS & ÖN KOL (ARMS)
     { id: "lib_bb_curl", name: "Barbell Biceps Curl", muscle: "Genel Biceps Gücü", defaultTarget: "2 Set (Ağır, 6-8 Rep)", defaultSets: 2, defaultSeat: "Düz Bar", isTopSet: true, desc: "Biceps kütle inşasının en temel ve ağır serbest ağırlık hareketidir." },
     { id: "lib_db_incline_curl", name: "Incline Dumbbell Curl", muscle: "Biceps Uzun Baş (Peak)", defaultTarget: "2-3 Set (10-12 Rep)", defaultSets: 2, defaultSeat: "Açı: 45°", isTopSet: false, desc: "Omzun gerisinde kalarak biceps uzun başını tam gerilimde esnetir." },
     { id: "lib_hammer_curl", name: "Dumbbell Hammer Curl", muscle: "Brachialis & Ön Kol (Ön Kalınlık)", defaultTarget: "2 Set (8-10 Rep)", defaultSets: 2, defaultSeat: "Ayakta / Nötr Tutuş", isTopSet: false, desc: "Biceps ile triceps arasındaki Brachialis kasını büyüterek kolu dışarı doğru iter ve kalınlaştırır." },
     { id: "lib_preacher_curl", name: "Preacher Curl (Scot Bench)", muscle: "Biceps Kısa Baş & İzolasyon", defaultTarget: "2 Set (10-12 Rep)", defaultSets: 2, defaultSeat: "Koltuk: 3", isTopSet: false, desc: "Vücut ivmesini sıfırlayarak biceps alt bağlantı noktasına saf gerilim bindirir." },
     { id: "lib_reverse_curl", name: "Kablo Ters Tutuş V-Bar Curl", muscle: "Brachioradialis (Ön Kol Üstü)", defaultTarget: "2 Set (12-15 Rep)", defaultSets: 2, defaultSeat: "Kablo Alt", isTopSet: false, desc: "Kavrama gücünü ve ön kolun üst kalınlığını inşa eder." },
-
-    // BACAK & KALÇA (LEGS)
     { id: "lib_hack_squat", name: "Hack Squat (Quad Kralı)", muscle: "Ön Bacak (Vastus Medialis / Gözyaşı)", defaultTarget: "2 Ağır Set (3sn Negatif, Tam Derinlik)", defaultSets: 2, defaultSeat: "Ayaklar Dar & Altta", isTopSet: true, desc: "Diz fleksiyonunu maksimize ederek ön bacak liflerini cerrahi hassasiyetle parçalar." },
     { id: "lib_leg_press", name: "Plate Loaded Leg Press", muscle: "Genel Quad & Kalça Gücü", defaultTarget: "2 Sert Çalışma Seti", defaultSets: 2, defaultSeat: "Platform Altı", isTopSet: true, desc: "Omurga yorgunluğu olmadan yüksek tonajla bacaklara aşırı yük bindirir." },
     { id: "lib_rdl", name: "Dumbbell / Barbell RDL", muscle: "Hamstring (Arka Bacak) & Glute", defaultTarget: "2 Sıkı Set (8-10 Rep)", defaultSets: 2, defaultSeat: "Düz Zemin", isTopSet: false, desc: "Kalçayı geriye iterek arka bacak liflerini en derin esneme pozisyonunda büyütür." },
@@ -149,8 +198,6 @@ const EXERCISE_LIBRARY = [
     { id: "lib_leg_ext", name: "Leg Extension", muscle: "Quad İzolasyonu & Rectus Femoris", defaultTarget: "1-2 Bitirici Set (Maks Pump)", defaultSets: 2, defaultSeat: "Koltuk: 3", isTopSet: false, desc: "Ön bacağın üst tepe noktasında tam kilitlenme sağlar." },
     { id: "lib_leg_curl", name: "Lying / Seated Leg Curl", muscle: "Hamstring İzolasyon", defaultTarget: "2-3 Set (10-12 Rep)", defaultSets: 2, defaultSeat: "Ped Ayarlı", isTopSet: false, desc: "Diz fleksiyonuyla arka bacak kaslarını izole eder." },
     { id: "lib_calf_raise", name: "Standing / Seated Calf Raise", muscle: "Kalf (Gastrocnemius & Soleus)", defaultTarget: "3 Set (Tepe 2sn Bekleme, 12-15 Rep)", defaultSets: 3, defaultSeat: "Platform", isTopSet: false, desc: "Tam esneme ve tepe sıkışmayla inatçı kalf liflerini büyütür." },
-
-    // TRAPEZ & KARIN (TRAPS & ABS)
     { id: "lib_db_shrug", name: "Dumbbell Shrug", muscle: "Üst Trapez Kütlesi", defaultTarget: "2 Set (Maks Ağırlık / Tepe Bekleme)", defaultSets: 2, defaultSeat: "Ayakta", isTopSet: false, desc: "Boyun ve omuz arasındaki trapez kaslarına kalınlık katar." },
     { id: "lib_cable_crunch", name: "Kablo Halat Crunch", muscle: "Rektus Abdominis (Karın Kasları)", defaultTarget: "3 Set (12-15 Rep)", defaultSets: 3, defaultSeat: "Dizler Üzerinde", isTopSet: false, desc: "Karın kaslarına ağırlık bindirerek six-pack tuğlalarını kalınlaştırır." },
     { id: "lib_hanging_leg_raise", name: "Hanging Leg / Knee Raise", muscle: "Alt Karın & Core", defaultTarget: "3 Set (Maks Rep)", defaultSets: 3, defaultSeat: "Barda Asılı", isTopSet: false, desc: "Pelvisi yukarı bükerek alt karın duvarını sıkılaştırır." }
@@ -228,7 +275,7 @@ const DEFAULT_WORKOUT_PLAN = {
     }
 };
 
-// Global Application State
+// Global App State
 let appData = {
     targets: { ...DEFAULT_TARGETS },
     pinnedQuickActions: ["water", "pancake", "steps_1000", "steps_manual"],
@@ -241,7 +288,7 @@ let appData = {
         MASTER_SUPPLEMENT_DATABASE[20], // D3+K2
         MASTER_SUPPLEMENT_DATABASE[21]  // Magnezyum Bisglisinat
     ],
-    supplementsLog: {}, // { "YYYY-MM-DD": { suppId: true/false } }
+    supplementsLog: {},
     todayNutrition: {
         date: new Date().toISOString().split('T')[0],
         calories: 0,
@@ -252,19 +299,21 @@ let appData = {
         steps: 0,
         meals: []
     },
-    workoutLogs: {}, // { exId: [ { weight, reps, rir, date } ] }
-    exerciseSetsCount: {}, // { exId: number }
-    seatSettings: {}, // { exId: "Açı: 30°" }
-    weightHistory: [] // [ { date: "YYYY-MM-DD", weight: 74.0 } ]
+    workoutLogs: {},
+    exerciseSetsCount: {},
+    seatSettings: {},
+    weightHistory: []
 };
 
 let currentActiveDay = "pzt";
 let currentSuppCatalogCategory = "all";
+let currentRecipeIngredients = []; // [ { foodId, amount } ]
 
 // Initialize Application
 document.addEventListener("DOMContentLoaded", () => {
     loadDataFromStorage();
     checkAndResetDailyNutrition();
+    recalculateDailyTotals();
     updateDateDisplay();
     renderDashboard();
     renderWorkoutView(currentActiveDay);
@@ -276,7 +325,7 @@ document.addEventListener("DOMContentLoaded", () => {
     renderSupplementCatalog();
 });
 
-// Storage Engine
+// Storage Management
 function loadDataFromStorage() {
     const saved = localStorage.getItem("LEAN_BULK_APP_DATA");
     if (saved) {
@@ -322,6 +371,23 @@ function checkAndResetDailyNutrition() {
         };
         saveDataToStorage();
     }
+}
+
+// Recalculate today totals from actual logged meals (prevents desync!)
+function recalculateDailyTotals() {
+    const meals = appData.todayNutrition.meals || [];
+    let totCal = 0, totP = 0, totC = 0, totF = 0;
+    meals.forEach(m => {
+        totCal += m.cal || 0;
+        totP += m.p || 0;
+        totC += m.c || 0;
+        totF += m.f || 0;
+    });
+
+    appData.todayNutrition.calories = totCal;
+    appData.todayNutrition.protein = totP;
+    appData.todayNutrition.carbs = totC;
+    appData.todayNutrition.fat = totF;
 }
 
 // Navigation & Modals
@@ -449,6 +515,7 @@ function saveCustomTargets() {
 // ==================== DASHBOARD & QUICK ACTIONS ====================
 
 function renderDashboard() {
+    recalculateDailyTotals();
     const n = appData.todayNutrition;
     const t = appData.targets;
 
@@ -614,128 +681,211 @@ function renderDashboardSupplementsSummary() {
     }).join("");
 }
 
-// ==================== MEAL BUILDER & PRESET EDITOR ====================
+// ==================== SMART RECIPE & RAW INGREDIENT BUILDER ====================
 
-function calculateMealCalories(pId, cId, fId, resId) {
-    const p = parseFloat(document.getElementById(pId).value) || 0;
-    const c = parseFloat(document.getElementById(cId).value) || 0;
-    const f = parseFloat(document.getElementById(fId).value) || 0;
-    const totalCal = Math.round((p * 4) + (c * 4) + (f * 9));
-    const resEl = document.getElementById(resId);
-    if (resEl) resEl.innerText = `${totalCal} kcal`;
-    return totalCal;
+function openNewRecipeBuilderModal() {
+    document.getElementById("recipe-edit-preset-id").value = "";
+    document.getElementById("recipe-meal-name").value = "";
+    document.getElementById("recipe-builder-title").innerHTML = `<i class="fa-solid fa-utensils"></i> Çiğ Gramajlı Öğün Oluşturucu`;
+    document.getElementById("recipe-add-today-row").style.display = "block";
+    document.getElementById("recipe-add-today-chk").checked = true;
+    document.getElementById("recipe-save-preset-chk").checked = true;
+
+    currentRecipeIngredients = [
+        { foodId: "tavuk_gogsu", amount: 200 },
+        { foodId: "cig_pirinc", amount: 150 },
+        { foodId: "zeytinyagi", amount: 10 }
+    ];
+
+    renderRecipeIngredientsRows();
+    openModal('modal-recipe-builder');
 }
 
-function submitCustomMeal(addToToday = true) {
-    const name = document.getElementById("meal-name").value.trim();
-    const desc = document.getElementById("meal-desc").value.trim();
-    const p = parseFloat(document.getElementById("meal-p").value) || 0;
-    const c = parseFloat(document.getElementById("meal-c").value) || 0;
-    const f = parseFloat(document.getElementById("meal-f").value) || 0;
-    const cal = calculateMealCalories('meal-p', 'meal-c', 'meal-f', 'meal-calc-cal');
-    const savePreset = document.getElementById("save-as-preset-chk").checked;
+function openEditRecipeModal(presetKey) {
+    const preset = (appData.customPresets && appData.customPresets[presetKey]) || DEFAULT_PRESET_MEALS[presetKey];
+    if (!preset) return;
 
-    if (!name) {
-        alert("Lütfen bir öğün/besin adı girin.");
+    document.getElementById("recipe-edit-preset-id").value = presetKey;
+    document.getElementById("recipe-meal-name").value = preset.name;
+    document.getElementById("recipe-builder-title").innerHTML = `<i class="fa-solid fa-pen-to-square"></i> Şablonu Düzenle: ${preset.name}`;
+    document.getElementById("recipe-save-preset-chk").checked = true;
+    document.getElementById("recipe-add-today-chk").checked = false;
+
+    if (preset.ingredients && preset.ingredients.length > 0) {
+        currentRecipeIngredients = JSON.parse(JSON.stringify(preset.ingredients));
+    } else {
+        // Fallback if older preset had no ingredients list
+        currentRecipeIngredients = [
+            { foodId: "tavuk_gogsu", amount: 150 },
+            { foodId: "cig_pirinc", amount: 100 }
+        ];
+    }
+
+    renderRecipeIngredientsRows();
+    openModal('modal-recipe-builder');
+}
+
+function addIngredientRow(foodId = "cig_pirinc", amount = 100) {
+    currentRecipeIngredients.push({ foodId: foodId, amount: amount });
+    renderRecipeIngredientsRows();
+}
+
+function removeIngredientRow(index) {
+    currentRecipeIngredients.splice(index, 1);
+    renderRecipeIngredientsRows();
+}
+
+function updateIngredientRowFood(index, newFoodId) {
+    if (currentRecipeIngredients[index]) {
+        currentRecipeIngredients[index].foodId = newFoodId;
+        renderRecipeIngredientsRows();
+    }
+}
+
+function updateIngredientRowAmount(index, newAmount) {
+    if (currentRecipeIngredients[index]) {
+        currentRecipeIngredients[index].amount = parseFloat(newAmount) || 0;
+        calculateRecipeLiveTotals();
+    }
+}
+
+function renderRecipeIngredientsRows() {
+    const container = document.getElementById("recipe-ingredients-container");
+    if (!container) return;
+
+    if (currentRecipeIngredients.length === 0) {
+        container.innerHTML = `<p class="text-muted" style="text-align:center; font-size:0.75rem; padding:10px;">Henüz malzeme eklenmedi. "+ Malzeme Ekle" butonuna bas.</p>`;
+        calculateRecipeLiveTotals();
         return;
     }
 
-    const mealId = "custom_" + Date.now();
+    let html = "";
+    currentRecipeIngredients.forEach((item, idx) => {
+        const food = RAW_FOODS_DATABASE.find(f => f.id === item.foodId) || RAW_FOODS_DATABASE[0];
+        const factor = (item.amount || 0) / 100;
+        const rowP = (food.p * factor).toFixed(1);
+        const rowC = (food.c * factor).toFixed(1);
+        const rowF = (food.f * factor).toFixed(1);
+        const rowCal = Math.round(food.cal * factor);
 
-    if (savePreset) {
+        html += `
+            <div class="ingredient-row">
+                <div class="ing-inputs-top">
+                    <select class="ing-food-select" onchange="updateIngredientRowFood(${idx}, this.value)">
+                        ${RAW_FOODS_DATABASE.map(f => `
+                            <option value="${f.id}" ${f.id === item.foodId ? 'selected' : ''}>${f.name}</option>
+                        `).join("")}
+                    </select>
+                    <input type="number" class="ing-amount-input" value="${item.amount}" step="5" min="1" 
+                           oninput="updateIngredientRowAmount(${idx}, this.value)" title="Gramaj / Miktar">
+                    <span style="font-size:0.72rem; color:var(--text-secondary); font-weight:600;">gr</span>
+                    <button class="btn-delete-item" onclick="removeIngredientRow(${idx})" title="Malzemeyi Sil"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div class="ing-macro-preview">
+                    <span>${item.amount}g ➔ ${rowCal} kcal</span>
+                    <span>${rowP}g P • ${rowC}g C • ${rowF}g F</span>
+                </div>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+    calculateRecipeLiveTotals();
+}
+
+function calculateRecipeLiveTotals() {
+    let totP = 0, totC = 0, totF = 0, totCal = 0;
+    let descParts = [];
+
+    currentRecipeIngredients.forEach(item => {
+        const food = RAW_FOODS_DATABASE.find(f => f.id === item.foodId);
+        if (food) {
+            const factor = (item.amount || 0) / 100;
+            totP += food.p * factor;
+            totC += food.c * factor;
+            totF += food.f * factor;
+            totCal += food.cal * factor;
+            descParts.push(`${item.amount}g ${food.name.split(' (')[0]}`);
+        }
+    });
+
+    totP = Math.round(totP * 10) / 10;
+    totC = Math.round(totC * 10) / 10;
+    totF = Math.round(totF * 10) / 10;
+    totCal = Math.round(totCal);
+
+    const calEl = document.getElementById("recipe-calc-calories");
+    const pEl = document.getElementById("recipe-calc-p");
+    const cEl = document.getElementById("recipe-calc-c");
+    const fEl = document.getElementById("recipe-calc-f");
+
+    if (calEl) calEl.innerText = `${totCal} kcal`;
+    if (pEl) pEl.innerText = `${totP}g`;
+    if (cEl) cEl.innerText = `${totC}g`;
+    if (fEl) fEl.innerText = `${totF}g`;
+
+    return { cal: totCal, p: totP, c: totC, f: totF, desc: descParts.join(" + ") };
+}
+
+function saveRecipeBuilderMeal() {
+    const presetIdInput = document.getElementById("recipe-edit-preset-id").value;
+    const nameInput = document.getElementById("recipe-meal-name").value.trim();
+    const saveAsPreset = document.getElementById("recipe-save-preset-chk").checked;
+    const addToToday = document.getElementById("recipe-add-today-chk").checked;
+
+    if (!nameInput) {
+        alert("Lütfen öğün adı girin (Örn: Antrenman Önü).");
+        return;
+    }
+
+    if (currentRecipeIngredients.length === 0) {
+        alert("Lütfen en az bir malzeme ekleyin.");
+        return;
+    }
+
+    const totals = calculateRecipeLiveTotals();
+    const presetKey = presetIdInput || ("custom_" + Date.now());
+
+    // Save as preset template if selected
+    if (saveAsPreset) {
         if (!appData.customPresets) appData.customPresets = {};
-        appData.customPresets[mealId] = {
-            id: mealId,
-            name: name,
-            desc: desc || `${p}g P, ${c}g C, ${f}g F`,
-            cal: cal, p: p, c: c, f: f
+        appData.customPresets[presetKey] = {
+            id: presetKey,
+            name: nameInput,
+            ingredients: JSON.parse(JSON.stringify(currentRecipeIngredients)),
+            desc: totals.desc,
+            cal: totals.cal,
+            p: totals.p,
+            c: totals.c,
+            f: totals.f
         };
     }
 
+    // Add to today's logged meals if selected
     if (addToToday) {
-        appData.todayNutrition.calories += cal;
-        appData.todayNutrition.protein += p;
-        appData.todayNutrition.carbs += c;
-        appData.todayNutrition.fat += f;
-
         appData.todayNutrition.meals.push({
-            id: mealId,
-            name: name,
-            desc: desc,
-            cal: cal,
-            p: p,
-            c: c,
-            f: f,
+            id: "meal_" + Date.now(),
+            name: nameInput,
+            desc: totals.desc,
+            cal: totals.cal,
+            p: totals.p,
+            c: totals.c,
+            f: totals.f,
             time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
         });
     }
 
-    document.getElementById("meal-name").value = "";
-    document.getElementById("meal-desc").value = "";
-    document.getElementById("meal-p").value = "";
-    document.getElementById("meal-c").value = "";
-    document.getElementById("meal-f").value = "";
-    document.getElementById("meal-calc-cal").innerText = "0 kcal";
-
+    recalculateDailyTotals();
     saveDataToStorage();
     renderDashboard();
     renderNutritionView();
-    closeModal('modal-meal-builder');
-    showToast(`${name} başarıyla eklendi! 🍱`);
-}
-
-function openEditPresetModal(presetKey) {
-    const preset = (appData.customPresets && appData.customPresets[presetKey]) || DEFAULT_PRESET_MEALS[presetKey];
-    if (!preset) return;
-
-    document.getElementById("edit-preset-id").value = presetKey;
-    document.getElementById("edit-preset-name").value = preset.name;
-    document.getElementById("edit-preset-desc").value = preset.desc || "";
-    document.getElementById("edit-preset-p").value = preset.p;
-    document.getElementById("edit-preset-c").value = preset.c;
-    document.getElementById("edit-preset-f").value = preset.f;
-    document.getElementById("edit-preset-calc-cal").innerText = `${preset.cal} kcal`;
-
-    openModal('modal-edit-preset');
-}
-
-function saveEditedPreset() {
-    const key = document.getElementById("edit-preset-id").value;
-    const name = document.getElementById("edit-preset-name").value.trim();
-    const desc = document.getElementById("edit-preset-desc").value.trim();
-    const p = parseFloat(document.getElementById("edit-preset-p").value) || 0;
-    const c = parseFloat(document.getElementById("edit-preset-c").value) || 0;
-    const f = parseFloat(document.getElementById("edit-preset-f").value) || 0;
-    const cal = calculateMealCalories('edit-preset-p', 'edit-preset-c', 'edit-preset-f', 'edit-preset-calc-cal');
-
-    if (!name) {
-        alert("Lütfen öğün adı girin.");
-        return;
-    }
-
-    if (!appData.customPresets) appData.customPresets = {};
-    appData.customPresets[key] = {
-        id: key,
-        name: name,
-        desc: desc,
-        cal: cal, p: p, c: c, f: f
-    };
-
-    saveDataToStorage();
-    renderNutritionView();
-    renderDashboard();
-    closeModal('modal-edit-preset');
-    showToast(`${name} şablonu güncellendi! ✏️`);
+    closeModal('modal-recipe-builder');
+    showToast(`${nameInput} başarıyla kaydedildi! 🍱 (${totals.cal} kcal)`);
 }
 
 function logPresetMeal(key) {
     const meal = (appData.customPresets && appData.customPresets[key]) || DEFAULT_PRESET_MEALS[key];
     if (!meal) return;
-
-    appData.todayNutrition.calories += meal.cal;
-    appData.todayNutrition.protein += meal.p;
-    appData.todayNutrition.carbs += meal.c;
-    appData.todayNutrition.fat += meal.f;
 
     appData.todayNutrition.meals.push({
         id: "log_" + Date.now(),
@@ -748,10 +898,11 @@ function logPresetMeal(key) {
         time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
     });
 
+    recalculateDailyTotals();
     saveDataToStorage();
     renderDashboard();
     renderNutritionView();
-    showToast(`${meal.name} Eklendi! 🔥`);
+    showToast(`${meal.name} Eklendi! 🔥 (+${meal.cal} kcal)`);
 }
 
 function logAllDailyPresets() {
@@ -766,16 +917,13 @@ function deleteLoggedMeal(mealId) {
     if (idx === -1) return;
 
     const removed = appData.todayNutrition.meals[idx];
-    appData.todayNutrition.calories = Math.max(0, appData.todayNutrition.calories - removed.cal);
-    appData.todayNutrition.protein = Math.max(0, appData.todayNutrition.protein - removed.p);
-    appData.todayNutrition.carbs = Math.max(0, appData.todayNutrition.carbs - removed.c);
-    appData.todayNutrition.fat = Math.max(0, appData.todayNutrition.fat - removed.f);
-
     appData.todayNutrition.meals.splice(idx, 1);
+
+    recalculateDailyTotals();
     saveDataToStorage();
     renderDashboard();
     renderNutritionView();
-    showToast(`${removed.name} silindi, makrolar güncellendi 🗑️`);
+    showToast(`${removed.name} silindi, kalori düşürüldü 🗑️`);
 }
 
 function deletePreset(key) {
@@ -817,7 +965,7 @@ function renderNutritionView() {
                         <small>${m.cal} kcal • ${m.p}g P • ${m.c}g C • ${m.f}g F</small>
                     </div>
                     <div style="display:flex; align-items:center; gap:6px;">
-                        <button class="btn-edit-item" onclick="openEditPresetModal('${key}')" title="Şablonu Düzenle"><i class="fa-solid fa-pen"></i></button>
+                        <button class="btn-edit-item" onclick="openEditRecipeModal('${key}')" title="Çiğ Gramajları Düzenle"><i class="fa-solid fa-pen"></i></button>
                         <button class="btn-delete-item" onclick="deletePreset('${key}')" title="Şablonu Sil"><i class="fa-solid fa-trash"></i></button>
                         <button class="btn-circle-add" onclick="logPresetMeal('${key}')" title="Bugüne Ekle"><i class="fa-solid fa-plus"></i></button>
                     </div>
@@ -928,7 +1076,7 @@ function renderSupplementCatalog() {
                 <div style="display:flex; align-items:center; gap:6px;">
                     <button class="btn btn-xs btn-outline" onclick="showMasterSupplementInfo('${s.id}')"><i class="fa-solid fa-info"></i></button>
                     ${alreadyAdded 
-                        ? `<button class="btn btn-xs btn-outline" style="color:var(--status-green); border-color:var(--status-green);" disabled><i class="fa-solid fa-check"></i> Eklendi</button>`
+                        ? `<button class="btn btn-xs btn-outline" style="color:var(--status-green); border-color:var(--status-green);" disabled><i class="fa-solid fa-check"></i> Ekli</button>`
                         : `<button class="btn btn-xs btn-primary" onclick="addSupplementFromCatalog('${s.id}')"><i class="fa-solid fa-plus"></i> Ekle</button>`
                     }
                 </div>
@@ -1198,7 +1346,6 @@ function autoSaveSet(exId, setIndex) {
     showToast(`Set ${setIndex} Kaydedildi! 💪`);
 }
 
-// Program & Exercise Manager Modal Logic
 function openExerciseManagerModal() {
     const plan = appData.customWorkoutPlan[currentActiveDay];
     if (!plan) return;
@@ -1306,7 +1453,7 @@ function addExerciseToDay(libExId) {
     showToast(`${libEx.name} programa eklendi! 💪`);
 }
 
-// ==================== SCALE & AUTHENTIC COACH REPORT ====================
+// ==================== SCALE & COACH REPORT ====================
 
 function saveDailyWeight() {
     const input = document.getElementById("daily-weight-input");
@@ -1406,7 +1553,7 @@ function updateCoachReport() {
     const reportText = `📋 **HAFTALIK OMAR COACHING RAPORU**
 📅 Tarih: ${new Date().toLocaleDateString('tr-TR')}
 ⚖️ 7 Günlük Tartı Ortalaması: ${avg} kg
-🍽️ Beslenme Durumu: ~${t.calories} kcal (${t.protein}g P / ${t.carbs}g C / ${t.fat}g F)
+🍽️ Beslenme Durumu: ~${Math.round(n.calories)} / ${t.calories} kcal (${Math.round(n.protein)}g P / ${Math.round(n.carbs)}g C / ${Math.round(n.fat)}g F)
 👟 Günlük Adım: ${(n.steps || t.steps).toLocaleString('tr-TR')} / ${t.steps.toLocaleString('tr-TR')} Adım
 💧 Günlük Su: ${(n.water || t.water).toFixed(1)} / ${t.water.toFixed(1)} Litre
 
@@ -1452,6 +1599,7 @@ function importDataJSON(event) {
         try {
             appData = JSON.parse(e.target.result);
             saveDataToStorage();
+            recalculateDailyTotals();
             renderDashboard();
             renderWorkoutView(currentActiveDay);
             renderNutritionView();
