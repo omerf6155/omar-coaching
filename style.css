@@ -2047,4 +2047,184 @@ body {
     margin-top: 12px;
 }
 
+/* ==================== USER HERO CARD ON DASHBOARD ==================== */
+.user-hero-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, rgba(26, 27, 34, 0.95), rgba(19, 20, 24, 0.95));
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: var(--radius-md);
+    padding: 12px 14px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.user-hero-card:active {
+    transform: scale(0.985);
+    border-color: var(--status-blue);
+}
+
+.user-hero-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.user-hero-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #0a84ff, #5ac8fa);
+    color: #ffffff;
+    font-size: 1.1rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(10, 132, 255, 0.3);
+    flex-shrink: 0;
+}
+
+.user-hero-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.user-hero-name-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.user-hero-name-row h3 {
+    font-size: 0.92rem;
+    font-weight: 800;
+    color: #ffffff;
+    line-height: 1.1;
+}
+
+.user-hero-username {
+    font-size: 0.72rem;
+    color: var(--status-blue);
+    font-weight: 700;
+}
+
+.user-hero-tags {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 2px;
+}
+
+.badge-role {
+    font-size: 0.62rem;
+    font-weight: 700;
+    background: rgba(255, 214, 10, 0.15);
+    color: #ffd60a;
+    padding: 2px 6px;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.badge-goal {
+    font-size: 0.62rem;
+    font-weight: 700;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-primary);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.user-hero-right {
+    display: flex;
+    align-items: center;
+}
+
+.user-hero-view-btn {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* ==================== PROFILE STATS & MACRO GRID ==================== */
+.profile-stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.profile-stat-item {
+    background: var(--bg-input);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.profile-stat-item .lbl {
+    font-size: 0.68rem;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.profile-stat-item .val {
+    font-size: 0.88rem;
+    font-weight: 800;
+    color: #ffffff;
+}
+
+.profile-macro-banner {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+}
+
+.prof-macro-col {
+    background: var(--bg-input);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 8px 4px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.prof-macro-col span {
+    font-size: 0.58rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.prof-macro-col strong {
+    font-size: 0.88rem;
+    font-weight: 800;
+}
+
+.prof-macro-col.p-col span { color: var(--status-red); }
+.prof-macro-col.p-col strong { color: #ffffff; }
+
+.prof-macro-col.c-col span { color: var(--status-amber); }
+.prof-macro-col.c-col strong { color: #ffffff; }
+
+.prof-macro-col.f-col span { color: var(--status-green); }
+.prof-macro-col.f-col strong { color: #ffffff; }
+
+.prof-macro-col.cal-col span { color: var(--status-blue); }
+.prof-macro-col.cal-col strong { color: #ffffff; }
+
+
 

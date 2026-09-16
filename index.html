@@ -38,6 +38,26 @@
         <main class="main-content">
             <!-- VIEW 1: DASHBOARD / BUGÜN -->
             <section id="view-dashboard" class="tab-view active">
+                <!-- Active User Profile Banner Card -->
+                <div class="user-hero-card" onclick="openUserProfileModal()" title="Profil Detaylarını Gör">
+                    <div class="user-hero-left">
+                        <div class="user-hero-avatar" id="dash-user-avatar">Ö</div>
+                        <div class="user-hero-info">
+                            <div class="user-hero-name-row">
+                                <h3 id="dash-user-name">Ömer Faruk</h3>
+                                <span class="user-hero-username" id="dash-user-uname">@omer</span>
+                            </div>
+                            <div class="user-hero-tags">
+                                <span class="badge-role"><i class="fa-solid fa-crown"></i> Sporcu</span>
+                                <span class="badge-goal" id="dash-user-goal">🔥 Lean Bulk</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="user-hero-right">
+                        <span class="user-hero-view-btn">Profilim <i class="fa-solid fa-chevron-right"></i></span>
+                    </div>
+                </div>
+
                 <div class="coach-alert-card" id="coach-daily-banner">
                     <div class="coach-badge"><i class="fa-solid fa-fire"></i> KOÇ BİLGİLENDİRMESİ</div>
                     <p class="coach-text" id="daily-coach-tip">Bugün odak bölgelerine (Arka Omuz & Triceps) taze enerjiyle yükleniyoruz. Kalori ve adımlarını aksatma!</p>
@@ -870,29 +890,81 @@
 
     <!-- 9. USER PROFILE & ACCOUNT MODAL -->
     <div id="modal-user-profile" class="modal-overlay">
-        <div class="modal-card">
+        <div class="modal-card" style="max-height: 92vh;">
             <div class="modal-header">
-                <h3><i class="fa-solid fa-circle-user"></i> Kullanıcı Hesabı & Profil</h3>
+                <h3><i class="fa-solid fa-circle-user"></i> Sporcu Profili & Hesap</h3>
                 <button class="modal-close-btn" onclick="closeModal('modal-user-profile')">&times;</button>
             </div>
             <div class="modal-body">
-                <!-- User Summary Card -->
+                <!-- User Summary Hero Card -->
                 <div class="profile-summary-card">
                     <div class="profile-avatar-large" id="profile-avatar-large">
-                        <i class="fa-solid fa-user"></i>
+                        <span>Ö</span>
                     </div>
                     <div class="profile-details">
                         <h4 class="profile-name" id="profile-display-name">Ömer Faruk</h4>
                         <span class="profile-username" id="profile-username-tag">@omer</span>
                         <div class="profile-meta-row">
-                            <span class="profile-badge" id="profile-goal-tag">Lean Bulk</span>
+                            <span class="profile-badge" id="profile-goal-tag">🔥 Lean Bulk</span>
                             <span class="profile-since" id="profile-created-date">Kayıt: 2026-09-16</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Account Actions -->
-                <div class="profile-section-title">HESAP GÜVENLİĞİ</div>
+                <!-- Athlete Physical Metrics Grid -->
+                <div class="profile-section-title"><i class="fa-solid fa-chart-pie"></i> FİZİKSEL BİLGİLER & METABOLİZMA</div>
+                <div class="profile-stats-grid">
+                    <div class="profile-stat-item">
+                        <span class="lbl"><i class="fa-solid fa-weight-scale"></i> Güncel Kilo</span>
+                        <strong class="val" id="prof-stat-weight">74.0 kg</strong>
+                    </div>
+                    <div class="profile-stat-item">
+                        <span class="lbl"><i class="fa-solid fa-ruler-vertical"></i> Boy</span>
+                        <strong class="val" id="prof-stat-height">178 cm</strong>
+                    </div>
+                    <div class="profile-stat-item">
+                        <span class="lbl"><i class="fa-solid fa-cake-candles"></i> Yaş / Cinsiyet</span>
+                        <strong class="val" id="prof-stat-age">24 • Erkek</strong>
+                    </div>
+                    <div class="profile-stat-item">
+                        <span class="lbl"><i class="fa-solid fa-fire"></i> BMR / TDEE</span>
+                        <strong class="val" id="prof-stat-bmr-tdee">1.720 / 2.470 kcal</strong>
+                    </div>
+                </div>
+
+                <!-- Macro Targets Card -->
+                <div class="profile-section-title" style="margin-top:14px;"><i class="fa-solid fa-utensils"></i> GÜNLÜK HEDEF MAKROLAR</div>
+                <div class="profile-macro-banner">
+                    <div class="prof-macro-col p-col">
+                        <span>PROTEİN</span>
+                        <strong id="prof-macro-p">167g</strong>
+                    </div>
+                    <div class="prof-macro-col c-col">
+                        <span>KARBONHİDRAT</span>
+                        <strong id="prof-macro-c">344g</strong>
+                    </div>
+                    <div class="prof-macro-col f-col">
+                        <span>YAĞ</span>
+                        <strong id="prof-macro-f">77g</strong>
+                    </div>
+                    <div class="prof-macro-col cal-col">
+                        <span>KALORİ</span>
+                        <strong id="prof-macro-cal">2.770</strong>
+                    </div>
+                </div>
+
+                <!-- Quick Action Buttons -->
+                <div style="margin-top:14px; display:flex; flex-direction:column; gap:8px;">
+                    <button class="btn btn-primary btn-block" onclick="closeModal('modal-user-profile'); openOnboardingWizard();">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> Diyet & Hedef Sihirbazını Yeniden Başlat
+                    </button>
+                    <button class="btn btn-outline btn-block" onclick="closeModal('modal-user-profile'); openModal('modal-settings');">
+                        <i class="fa-solid fa-sliders"></i> Hedefleri Manuel Düzenle
+                    </button>
+                </div>
+
+                <!-- Account Security Section -->
+                <div class="profile-section-title" style="margin-top:16px;"><i class="fa-solid fa-shield-halved"></i> HESAP GÜVENLİĞİ</div>
                 
                 <!-- Change Password Form -->
                 <div class="card" style="background:var(--bg-card-subtle); padding:12px; margin-bottom:12px;">

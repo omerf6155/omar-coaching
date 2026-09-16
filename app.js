@@ -2595,18 +2595,61 @@ function openUserProfileModal() {
     const dateEl = document.getElementById("profile-created-date");
     const avatarEl = document.getElementById("profile-avatar-large");
 
-    if (nameEl) nameEl.innerText = user.displayName || user.username;
+    const displayName = user.displayName || user.username;
+    if (nameEl) nameEl.innerText = displayName;
     if (unameEl) unameEl.innerText = `@${user.username}`;
     if (dateEl) dateEl.innerText = `Kayıt: ${user.createdAt || '2026-09-16'}`;
 
     if (avatarEl) {
-        const initial = (user.displayName || user.username || "O").charAt(0).toUpperCase();
+        const initial = displayName.charAt(0).toUpperCase();
         avatarEl.innerHTML = `<span>${initial}</span>`;
     }
 
     const goalMap = { bulk: "🔥 Lean Bulk", cut: "✂️ Cutting", recomp: "⚡ Recomp" };
-    const goalName = (appData.userProfile && goalMap[appData.userProfile.goal]) || "🔥 Lean Bulk";
+    const p = appData.userProfile || { age: 24, height: 178, weight: 74, gender: "male", frequency: 5, activity: "moderate", goal: "bulk" };
+    const goalName = goalMap[p.goal] || "🔥 Lean Bulk";
     if (goalEl) goalEl.innerText = goalName;
+
+    // Physical Stats
+    const history = appData.weightHistory || [];
+    const currentWeight = history.length > 0 ? history[0].weight : (p.weight || 74.0);
+    const height = p.height || 178;
+    const age = p.age || 24;
+    const genderStr = p.gender === "female" ? "Kadın" : "Erkek";
+
+    // Calculate BMR & TDEE
+    let bmr = (10 * currentWeight) + (6.25 * height) - (5 * age);
+    if (p.gender === "female") bmr -= 161;
+    else bmr += 5;
+    bmr = Math.round(bmr);
+
+    let mult = 1.45;
+    if (p.activity === "sedentary") mult = 1.30;
+    else if (p.activity === "moderate") mult = 1.45;
+    else if (p.activity === "active") mult = 1.60;
+    const tdee = Math.round(bmr * mult);
+
+    const statWeightEl = document.getElementById("prof-stat-weight");
+    const statHeightEl = document.getElementById("prof-stat-height");
+    const statAgeEl = document.getElementById("prof-stat-age");
+    const statBmrTdeeEl = document.getElementById("prof-stat-bmr-tdee");
+
+    if (statWeightEl) statWeightEl.innerText = `${currentWeight.toFixed(1)} kg`;
+    if (statHeightEl) statHeightEl.innerText = `${height} cm`;
+    if (statAgeEl) statAgeEl.innerText = `${age} Yaş • ${genderStr}`;
+    if (statBmrTdeeEl) statBmrTdeeEl.innerText = `${bmr.toLocaleString('tr-TR')} / ${tdee.toLocaleString('tr-TR')} kcal`;
+
+    // Target Macros
+    const t = appData.targets;
+    const macroPEl = document.getElementById("prof-macro-p");
+    const macroCEl = document.getElementById("prof-macro-c");
+    const macroFEl = document.getElementById("prof-macro-f");
+    const macroCalEl = document.getElementById("prof-macro-cal");
+
+    if (macroPEl) macroPEl.innerText = `${t.protein}g`;
+    if (macroCEl) macroCEl.innerText = `${t.carbs}g`;
+    if (macroFEl) macroFEl.innerText = `${t.fat}g`;
+    if (macroCalEl) macroCalEl.innerText = `${t.calories.toLocaleString('tr-TR')} kcal`;
 
     // Reset password inputs
     const oldP = document.getElementById("pwd-old");
@@ -2670,22 +2713,38 @@ function updateTopBarUserHeader() {
     const avatarEl = document.getElementById("header-user-avatar");
     const subStatusEl = document.getElementById("header-date");
 
+    // Dashboard Hero elements
+    const dashAvatar = document.getElementById("dash-user-avatar");
+    const dashName = document.getElementById("dash-user-name");
+    const dashUname = document.getElementById("dash-user-uname");
+    const dashGoal = document.getElementById("dash-user-goal");
+
+    const history = appData.weightHistory || [];
+    const currentW = history.length > 0 ? history[0].weight : (appData.userProfile ? appData.userProfile.weight : 74.0);
+    const goalMap = { bulk: "🔥 Lean Bulk", cut: "✂️ Cutting", recomp: "⚡ Recomp" };
+    const goalName = (appData.userProfile && goalMap[appData.userProfile.goal]) || "🔥 Lean Bulk";
+
     if (user) {
-        if (nameEl) nameEl.innerText = user.displayName ? user.displayName.toUpperCase() : user.username.toUpperCase();
-        if (avatarEl) {
-            const initial = (user.displayName || user.username || "O").charAt(0).toUpperCase();
-            avatarEl.innerHTML = `<span>${initial}</span>`;
-        }
+        const displayName = user.displayName || user.username;
+        const initial = displayName.charAt(0).toUpperCase();
+
+        if (nameEl) nameEl.innerHTML = `${displayName} <span style="font-size:0.75rem; color:var(--status-blue); font-weight:700;">(@${user.username})</span>`;
+        if (avatarEl) avatarEl.innerHTML = `<span>${initial}</span>`;
+
+        if (dashAvatar) dashAvatar.innerText = initial;
+        if (dashName) dashName.innerText = displayName;
+        if (dashUname) dashUname.innerText = `@${user.username}`;
+        if (dashGoal) dashGoal.innerText = goalName;
     } else {
         if (nameEl) nameEl.innerText = "OMAR COACHING";
         if (avatarEl) avatarEl.innerHTML = `<i class="fa-solid fa-user"></i>`;
+        if (dashAvatar) dashAvatar.innerText = "O";
+        if (dashName) dashName.innerText = "OMAR COACHING";
+        if (dashUname) dashUname.innerText = "@misafir";
+        if (dashGoal) dashGoal.innerText = goalName;
     }
 
     if (subStatusEl) {
-        const history = appData.weightHistory || [];
-        const currentW = history.length > 0 ? history[0].weight : (appData.userProfile ? appData.userProfile.weight : 74.0);
-        const goalMap = { bulk: "Lean Bulk", cut: "Cutting", recomp: "Recomp" };
-        const goalName = (appData.userProfile && goalMap[appData.userProfile.goal]) || "Lean Bulk";
         subStatusEl.innerText = `Bugün: ${currentW.toFixed(1)} kg • ${goalName}`;
     }
 }
