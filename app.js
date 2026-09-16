@@ -5380,7 +5380,7 @@ async function sendAssistantMessage() {
     input.value = "";
     const timeStr = getCurrentTimeStr();
 
-    // 1. Add user message
+    // 1. Add user message to history
     if (!assistantChatHistory[activeAssistantPersona]) {
         assistantChatHistory[activeAssistantPersona] = [];
     }
@@ -5392,7 +5392,8 @@ async function sendAssistantMessage() {
 
     renderAssistantMessages();
 
-    // 2. Show typing indicator
+    // 2. Show animated 3-dot typing indicator
+    const persona = ASSISTANT_PERSONAS[activeAssistantPersona];
     const typingId = `typing_${Date.now()}`;
     const container = document.getElementById("ai-chat-messages");
     if (container) {
@@ -5400,14 +5401,21 @@ async function sendAssistantMessage() {
         typingEl.id = typingId;
         typingEl.className = "ai-msg-row assistant";
         typingEl.innerHTML = `
-            <div class="ai-msg-avatar">${ASSISTANT_PERSONAS[activeAssistantPersona].avatar}</div>
-            <div class="ai-msg-bubble" style="font-style:italic; color:var(--text-muted);">
-                <i class="fa-solid fa-spinner fa-spin"></i> ${ASSISTANT_PERSONAS[activeAssistantPersona].name} düşünüyor...
+            <div class="ai-msg-avatar">${persona.avatar}</div>
+            <div class="ai-msg-bubble" style="display:flex; align-items:center; gap:8px; color:var(--text-muted);">
+                <span>${persona.name} yazıyor</span>
+                <span class="ai-typing-dots">
+                    <span class="ai-typing-dot"></span>
+                    <span class="ai-typing-dot"></span>
+                    <span class="ai-typing-dot"></span>
+                </span>
             </div>
         `;
         container.appendChild(typingEl);
         container.scrollTop = container.scrollHeight;
     }
+
+    const startTime = Date.now();
 
     // 3. Process with Gemini API or Deep Semantic Offline Engine
     const apiKey = localStorage.getItem("OMAR_GEMINI_API_KEY");
@@ -5417,13 +5425,19 @@ async function sendAssistantMessage() {
         try {
             aiResponse = await callGeminiAssistantApi(activeAssistantPersona, userText, apiKey);
         } catch (e) {
-            console.warn("Gemini API Error, falling back to comprehensive offline engine:", e);
+            console.error("Gemini API Request Failed, falling back to offline engine:", e);
         }
     }
 
     if (!aiResponse) {
         // Deep semantic offline engine
         aiResponse = processOfflineAssistantResponse(activeAssistantPersona, userText);
+    }
+
+    // Natural typing delay for realistic interaction feel (minimum 600ms)
+    const elapsed = Date.now() - startTime;
+    if (elapsed < 600) {
+        await new Promise(r => setTimeout(r, 600 - elapsed));
     }
 
     // Remove typing indicator
@@ -5449,14 +5463,15 @@ async function callGeminiAssistantApi(personaKey, userText, apiKey) {
     const consumed = appData.todayNutrition || {};
     const target = appData.targets || DEFAULT_TARGETS;
 
-    const systemPrompt = `
-Sen '${persona.name}' adında, ${persona.role} olarak konuşan bir karaktersin.
+    const systemPrompt = `Sen '${persona.name}' adında, ${persona.role} olarak konuşan bir karaktersin.
 Karakterinin Temel Özellikleri:
-- Sokak ve salon ağzıyla (argolu, dobra, çok samimi, babacan, esprili, lafını sakınmayan) konuşursun.
-- Hitapların: "aslanım, paşam, demir bükücü, kütle kralı, şampiyon, usta".
-- Antrenman sorularında 1'e 1 anatomik biyomekanik eşdeğerleri bilirsin (örn: lat pulldown yerine asla row önermezsin, dikey lat hareketini korursun).
-- Beslenme sorularında kuru tavuk/lapadan kurtarıp pratik, lezzetli, yüksek proteinli tarifler verirsin.
-- Suplement sorularında para tuzağı fuzuli tozları gömer, nokta atışı bilimsel takviyeleri yazarsın.
+- Sokak ve salon ağzıyla (argolu, samimi, babacan, esprili, lafını sakınmayan, dobra bir Türk spor salonu efsanesi) konuşursun.
+- Hitapların: "aslanım, paşam, demir bükücü, kütle kralı, şampiyon, usta, canavar".
+- Asla resmi/robotik konuşma; tamamen doğal, canlı ve eğlenceli ol.
+- Antrenman sorularında 1'e 1 anatomik biyomekanik eşdeğerleri bilirsin (örn: lat pulldown yerine asla row önermezsin, omuz batmasında açıyı korursun).
+- Beslenme sorularında pratik, lezzetli, yüksek proteinli tarifler verirsin.
+- Suplement sorularında para tuzağı fuzuli tozları eler, nokta atışı bilimsel takviyeleri yazarsın.
+- Sporcu mide bulantısı, halsizlik, uyku veya sakatlık yaşadığında anında şefkatli ama dobra sporcu tüyoları verirsin.
 
 Kullanıcının Canlı Uygulama Durumu:
 - Aktif Günün Antrenmanı: ${currentPlan.title} (${currentPlan.desc})
@@ -5468,71 +5483,102 @@ Kullanıcının Canlı Uygulama Durumu:
 
 Format Kuralları:
 - Paragraflar arasına <br><br> koy.
-- Vurgulamak istediğin hareket, besin ve takviye isimlerini <strong>...</strong> içine al.
-- Çok uzun ansiklopedik yazma, vurucu, eğlenceli ve pratik ol.
-`;
+- Vurgulamak istediğin önemli noktaları <strong>...</strong> içine al.
+- Yanıtların ne çok kısa ne de gereksiz ansiklopedik olsun; vurucu, samimi ve pratik tavsiyeler ver.`;
 
-    // Build multi-turn history from current chat
+    // 1. Build strict alternating turn history for Gemini API
     const history = assistantChatHistory[personaKey] || [];
-    const contents = [];
+    const rawContents = [];
 
-    // Add recent turns (up to last 6 messages)
-    const recent = history.slice(-6);
-    recent.forEach(m => {
-        contents.push({
-            role: m.sender === "user" ? "user" : "model",
-            parts: [{ text: m.text.replace(/<[^>]*>?/gm, '') }]
+    history.forEach(m => {
+        const role = m.sender === "user" ? "user" : "model";
+        const cleanText = (m.text || "").replace(/<[^>]*>?/gm, ' ').replace(/&nbsp;/g, ' ').trim();
+        if (!cleanText) return;
+
+        if (rawContents.length > 0 && rawContents[rawContents.length - 1].role === role) {
+            rawContents[rawContents.length - 1].parts[0].text += "\n" + cleanText;
+        } else {
+            rawContents.push({
+                role: role,
+                parts: [{ text: cleanText }]
+            });
+        }
+    });
+
+    // Make sure rawContents ends with current user turn
+    if (rawContents.length === 0 || rawContents[rawContents.length - 1].role !== "user") {
+        rawContents.push({
+            role: "user",
+            parts: [{ text: userText }]
         });
-    });
+    }
 
-    // Add current user prompt with context header
-    contents.push({
-        role: "user",
-        parts: [{ text: `[SİSTEM BİLGİSİ: ${systemPrompt}]\n\nKullanıcı: ${userText}` }]
-    });
+    // Keep up to 8 alternating turns and ensure first turn is user
+    let recentContents = rawContents.slice(-8);
+    while (recentContents.length > 0 && recentContents[0].role !== "user") {
+        recentContents.shift();
+    }
+    if (recentContents.length === 0) {
+        recentContents.push({
+            role: "user",
+            parts: [{ text: userText }]
+        });
+    }
 
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-    const fallbackEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    const requestPayload = {
+        system_instruction: {
+            parts: [{ text: systemPrompt }]
+        },
+        contents: recentContents,
+        generationConfig: {
+            temperature: 0.85,
+            maxOutputTokens: 1000
+        }
+    };
 
-    let response = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            contents: contents,
-            generationConfig: {
-                temperature: 0.85,
-                maxOutputTokens: 800
+    // Endpoints in priority order
+    const endpoints = [
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`
+    ];
+
+    let lastError = null;
+    let data = null;
+
+    for (const ep of endpoints) {
+        try {
+            const response = await fetch(ep, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(requestPayload)
+            });
+
+            if (response.ok) {
+                data = await response.json();
+                break;
+            } else {
+                const errText = await response.text();
+                console.warn(`Gemini Endpoint ${ep.split('models/')[1]?.split(':')[0]} returned ${response.status}:`, errText);
+                lastError = new Error(`HTTP ${response.status}: ${errText}`);
             }
-        })
-    });
-
-    if (!response.ok) {
-        // Try fallback model
-        response = await fetch(fallbackEndpoint, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                contents: contents,
-                generationConfig: {
-                    temperature: 0.85,
-                    maxOutputTokens: 800
-                }
-            })
-        });
+        } catch (fetchErr) {
+            console.warn(`Fetch error on endpoint:`, fetchErr);
+            lastError = fetchErr;
+        }
     }
 
-    if (!response.ok) {
-        throw new Error(`Gemini API HTTP Error ${response.status}`);
+    if (!data) {
+        throw lastError || new Error("All Gemini endpoints failed.");
     }
 
-    const data = await response.json();
     const reply = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0] && data.candidates[0].content.parts[0].text;
 
-    if (!reply) throw new Error("Empty text from Gemini");
+    if (!reply) throw new Error("Empty text from Gemini response candidates");
 
     let formattedText = reply.replace(/\n\n/g, "<br><br>").replace(/\n/g, "<br>");
     
-    // Intelligently auto-generate action buttons if specific movements/supplements/recipes were mentioned
+    // Auto-generate dynamic action buttons if relevant
     let actionHtml = null;
     const lowerReply = reply.toLowerCase();
 
@@ -5610,6 +5656,38 @@ function processOfflineAssistantResponse(personaKey, userText) {
         } else if (personaKey === "kuray") {
             return {
                 text: `Aleyküm eyvallah paşam! Toz-hap dünyasına hoş geldin. Gece uyku mu tutmuyor, bulkta miden davul gibi mi şişiyor yoksa damarları mı patlatacağız? Söyle derdini, nokta atışı takviyeyi yazayım.`
+            };
+        }
+    }
+
+    // -------------------------------------------------------------
+    // WELLNESS, NAUSEA, FATIGUE, DIZZINESS & ENERGY ISSUES (ALL PERSONAS)
+    // -------------------------------------------------------------
+    if (t.includes("mide") || t.includes("bulantı") || t.includes("bulan") || t.includes("kusma") || t.includes("halsiz") || t.includes("yorgun") || t.includes("efor") || t.includes("enerji") || t.includes("baş dön") || t.includes("tansiyon") || t.includes("güçsüz") || t.includes("bitkin") || t.includes("kötü his")) {
+        if (personaKey === "enes") {
+            return {
+                text: `Aman dikkat aslanım! Mide bulantısıyla veya düşük tansiyonla ağır demire girilmez, bayılıp kendini sakatlarsın.<br><br>
+                       <strong>Hemen şunları yap:</strong><br>
+                       1. 🛑 <strong>Ağır setleri hemen durdur:</strong> Bir banka otur, derin derin diyafram nefesi al ve yüzüne soğuk su çarp.<br>
+                       2. 💧 <strong>Elektrolit & Su:</strong> Bir şişe maden suyunu yudum yudum iç (tuz ve mineral tansiyonu toparlar).<br>
+                       3. 💡 <strong>Neden oldu?</strong> Antrenmandan çok kısa süre önce ağır bir öğün yediysen kan mideye çekilmiştir veya preworkout kafeini çarpmıştır.<br><br>
+                       Eğer 10 dakikaya toparlarsan bugün <strong>RIR 3-4</strong> (hafif pompa) şeklinde bitir; toparlayamazsan antrenmanı bırak evine git, dinlen. Kütle kaçmıyor, önce sağlık!`
+            };
+        } else if (personaKey === "vedat") {
+            return {
+                text: `Usta geçmiş olsun! Mide bulanıyorsa kesin antrenmana girmeden 20-30 dakika önce yağlı veya ağır bir şey gömdün, sindirim sistemi kitlendi.<br><br>
+                       <strong>Hemen kurtarma taktiği:</strong><br>
+                       - Sakın üstüne lıkır lıkır soğuk su dikme!<br>
+                       - Bir şişe <strong>maden suyunun içine çeyrek limon sık</strong> ve bir fiske tuz at, küçük yudumlarla iç.<br>
+                       - Bir sonraki antrenmanında ana öğününü salona gelmeden en az <strong>1.5 - 2 saat önce</strong> bitirmiş ol.`
+            };
+        } else {
+            return {
+                text: `Reis preworkout kafein dozu yüksek geldiyse veya aç karnına yoğun efora girdiysen tansiyon çakılmış olabilir.<br><br>
+                       <strong>Takviye & Reçete:</strong><br>
+                       - Hemen <strong>Maden Suyu + 1 tutam Himalaya Tuzu</strong> ile sodyum/potasyumu yerine koy.<br>
+                       - Mideni rahatlatmak için 1 bardak ılık suya yarım limon ve az zencefil çok iyi gelir.<br>
+                       - Bir dahaki sefere antrenman öncesi preworkout dozunu yarıya düşür veya pumpsuz kafeinsiz formüllere geç!`
             };
         }
     }
