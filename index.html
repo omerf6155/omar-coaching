@@ -21,7 +21,11 @@
                     <span class="sub-status" id="header-date">Bugün: 74.0 kg • %14 Yağ</span>
                 </div>
             </div>
-            <button class="icon-btn" id="theme-btn" title="Bilgi"><i class="fa-solid fa-sliders"></i></button>
+            <div class="top-actions">
+                <button class="icon-btn" onclick="openModal('modal-settings')" title="Hedefleri ve Ayarları Düzenle">
+                    <i class="fa-solid fa-sliders"></i>
+                </button>
+            </div>
         </header>
 
         <!-- Main Content Area with Views -->
@@ -29,8 +33,8 @@
             <!-- VIEW 1: DASHBOARD / BUGÜN -->
             <section id="view-dashboard" class="tab-view active">
                 <div class="coach-alert-card" id="coach-daily-banner">
-                    <div class="coach-badge"><i class="fa-solid fa-circle-info"></i> KOÇ BİLGİLENDİRMESİ</div>
-                    <p class="coach-text" id="daily-coach-tip">Bugün odak bölgelerine (Arka Omuz & Triceps) taze enerjiyle yükleniyoruz. Kalori hedefini şaşma!</p>
+                    <div class="coach-badge"><i class="fa-solid fa-fire"></i> KOÇ BİLGİLENDİRMESİ</div>
+                    <p class="coach-text" id="daily-coach-tip">Bugün odak bölgelerine (Arka Omuz & Triceps) taze enerjiyle yükleniyoruz. Kalori ve adımlarını aksatma!</p>
                 </div>
 
                 <!-- Daily Macro Summary Card -->
@@ -43,21 +47,21 @@
                     <div class="calorie-summary-row">
                         <div>
                             <span class="cal-number-big" id="consumed-cal">0</span>
-                            <small class="text-secondary" style="font-size:0.85rem; font-weight:600;"> / 2.770 kcal</small>
+                            <small class="text-secondary" style="font-size:0.85rem; font-weight:600;" id="target-cal-lbl"> / 2.770 kcal</small>
                         </div>
                         <div class="cal-meta-stats">
                             <span>Kalan: <strong id="remaining-cal">2770</strong></span>
                             <span>•</span>
-                            <span>Su: <strong id="water-consumed">0.0</strong> / 3.5L</span>
+                            <span>Su: <strong id="water-consumed">0.0</strong> / <span id="target-water-lbl">3.5</span>L</span>
                         </div>
                     </div>
 
-                    <!-- Steps & Water Activity Row -->
+                    <!-- Steps Activity Row -->
                     <div class="activity-tracker-row">
                         <div class="activity-metric-box">
                             <div class="activity-metric-header">
                                 <span><i class="fa-solid fa-shoe-prints"></i> GÜNLÜK ADIM</span>
-                                <span class="activity-val"><strong id="steps-val">0</strong> / 7.500</span>
+                                <span class="activity-val"><strong id="steps-val">0</strong> / <span id="target-steps-lbl">7.500</span></span>
                             </div>
                             <div class="progress-track"><div class="progress-fill step-fill" id="bar-steps" style="width: 0%"></div></div>
                         </div>
@@ -66,30 +70,33 @@
                     <div class="macro-grid">
                         <div class="macro-box">
                             <span class="macro-box-title">Protein</span>
-                            <span class="macro-box-value"><span id="consumed-p">0</span><small> / 167g</small></span>
+                            <span class="macro-box-value"><span id="consumed-p">0</span><small id="target-p-lbl"> / 167g</small></span>
                             <div class="progress-track"><div class="progress-fill p-fill" id="bar-p" style="width: 0%"></div></div>
                         </div>
                         <div class="macro-box">
                             <span class="macro-box-title">Karb</span>
-                            <span class="macro-box-value"><span id="consumed-c">0</span><small> / 344g</small></span>
+                            <span class="macro-box-value"><span id="consumed-c">0</span><small id="target-c-lbl"> / 344g</small></span>
                             <div class="progress-track"><div class="progress-fill c-fill" id="bar-c" style="width: 0%"></div></div>
                         </div>
                         <div class="macro-box">
                             <span class="macro-box-title">Yağ</span>
-                            <span class="macro-box-value"><span id="consumed-f">0</span><small> / 77g</small></span>
+                            <span class="macro-box-value"><span id="consumed-f">0</span><small id="target-f-lbl"> / 77g</small></span>
                             <div class="progress-track"><div class="progress-fill f-fill" id="bar-f" style="width: 0%"></div></div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Quick Actions Grid -->
-                <div class="quick-actions-grid">
-                    <button class="quick-action-btn" onclick="addSteps(1000)"><i class="fa-solid fa-shoe-prints"></i> +1.000 Adım</button>
-                    <button class="quick-action-btn" onclick="promptCustomSteps()"><i class="fa-solid fa-pen"></i> Manuel Adım</button>
-                    <button class="quick-action-btn" onclick="addWater(0.5)"><i class="fa-solid fa-plus"></i> 500ml Su</button>
-                    <button class="quick-action-btn" onclick="logPresetMeal('pancake')"><i class="fa-solid fa-plus"></i> Pankek Kahvaltı</button>
-                    <button class="quick-action-btn" onclick="logPresetMeal('preworkout')"><i class="fa-solid fa-plus"></i> Ön Öğün</button>
-                    <button class="quick-action-btn" onclick="logPresetMeal('postworkout')"><i class="fa-solid fa-plus"></i> Sonrası Öğün</button>
+                <!-- Quick Actions Grid (Customizable) -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2>HIZLI İŞLEMLER</h2>
+                        <button class="btn btn-xs btn-outline" onclick="openModal('modal-quick-actions')" title="Hızlı butonları düzenle">
+                            <i class="fa-solid fa-pen"></i> Özelleştir
+                        </button>
+                    </div>
+                    <div class="quick-actions-grid" id="dashboard-quick-actions-container">
+                        <!-- Dynamically populated based on user settings -->
+                    </div>
                 </div>
 
                 <!-- Today's Workout Quick Launcher -->
@@ -105,6 +112,17 @@
                     <button class="btn btn-primary btn-block" onclick="navigateToTab('workout')">
                         Antrenman Defterini Aç
                     </button>
+                </div>
+
+                <!-- Supplements Summary Mini-Checklist -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2>GÜNLÜK SUPLEMENTLER</h2>
+                        <button class="btn btn-xs btn-outline" onclick="navigateToTab('supplements')">Tümünü Gör</button>
+                    </div>
+                    <div id="dashboard-supplements-summary" class="supplements-mini-list">
+                        <!-- Mini checklist -->
+                    </div>
                 </div>
             </section>
 
@@ -127,65 +145,57 @@
 
             <!-- VIEW 3: BESLENME & ÖĞÜNLER -->
             <section id="view-nutrition" class="tab-view">
+                <!-- Action Bar: Add custom meal -->
+                <div class="nutrition-top-actions">
+                    <button class="btn btn-primary btn-block" onclick="openModal('modal-meal-builder')">
+                        <i class="fa-solid fa-plus"></i> Özel Öğün / Besin Oluştur
+                    </button>
+                </div>
+
+                <!-- Custom / Preset Meals Library -->
                 <div class="card">
                     <div class="card-header">
-                        <h2>HAZIR GÜNLÜK ŞABLON</h2>
+                        <h2>HAZIR ŞABLONLAR & ÖĞÜNLER</h2>
                         <button class="btn btn-sm btn-outline" onclick="logAllDailyPresets()">Tümünü Ekle</button>
                     </div>
-                    <div class="preset-meals-list">
-                        <div class="meal-preset-item">
-                            <div class="meal-preset-details">
-                                <strong>1. Kahvaltı Pankek</strong>
-                                <span>60g Pirinç unu, 1 Muz, 30g Bal, 30g Fıstık ezmesi, 3 Yumurta</span>
-                                <small>810 kcal • 31g P • 106g C • 31g F</small>
-                            </div>
-                            <button class="btn-circle-add" onclick="logPresetMeal('pancake')"><i class="fa-solid fa-plus"></i></button>
-                        </div>
-
-                        <div class="meal-preset-item">
-                            <div class="meal-preset-details">
-                                <strong>2. Antrenmandan 2 Saat Önce</strong>
-                                <span>150g Çiğ Pirinç (~400g pişmiş) + 200g Tavuk Göğsü + H.Cevizi Yağı</span>
-                                <small>850 kcal • 56g P • 118g C • 16g F</small>
-                            </div>
-                            <button class="btn-circle-add" onclick="logPresetMeal('preworkout')"><i class="fa-solid fa-plus"></i></button>
-                        </div>
-
-                        <div class="meal-preset-item">
-                            <div class="meal-preset-details">
-                                <strong>3. Antrenman Sonrası (Post-Workout)</strong>
-                                <span>75g Çiğ Pirinç + 150g Tavuk Göğsü + H.Cevizi Yağı</span>
-                                <small>550 kcal • 40g P • 60g C • 15g F</small>
-                            </div>
-                            <button class="btn-circle-add" onclick="logPresetMeal('postworkout')"><i class="fa-solid fa-plus"></i></button>
-                        </div>
-
-                        <div class="meal-preset-item">
-                            <div class="meal-preset-details">
-                                <strong>4. Akşam / Gece Öğünü</strong>
-                                <span>75g Çiğ Pirinç + 150g Tavuk Göğsü + H.Cevizi Yağı</span>
-                                <small>550 kcal • 40g P • 60g C • 15g F</small>
-                            </div>
-                            <button class="btn-circle-add" onclick="logPresetMeal('dinner')"><i class="fa-solid fa-plus"></i></button>
-                        </div>
+                    <div class="preset-meals-list" id="preset-meals-container">
+                        <!-- Populated dynamically -->
                     </div>
                 </div>
 
-                <!-- Custom Food Log List -->
+                <!-- Today's Logged Meals with Individual Deletion -->
                 <div class="card">
                     <div class="card-header">
-                        <h2>GÜNLÜK KAYITLAR</h2>
-                        <button class="btn btn-sm btn-danger" onclick="clearTodayMeals()">Temizle</button>
+                        <h2>BUGÜNKÜ GÜNLÜK KAYITLAR</h2>
+                        <button class="btn btn-sm btn-danger" onclick="clearTodayMeals()">Tümünü Sıfırla</button>
                     </div>
                     <div id="today-logged-foods-list">
-                        <!-- Logged meals appear here -->
+                        <!-- Logged meals with trash button appear here -->
                     </div>
                 </div>
             </section>
 
-            <!-- VIEW 4: TARTI & KOÇLUK ALGORİTMASI -->
+            <!-- VIEW 4: SUPLEMENTLER (SUPPLEMENT TRACKER) -->
+            <section id="view-supplements" class="tab-view">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>SUPLEMENT PROTOKOLÜ</h2>
+                        <button class="btn btn-sm btn-primary" onclick="openModal('modal-add-supplement')">
+                            <i class="fa-solid fa-plus"></i> Takviye Ekle
+                        </button>
+                    </div>
+                    <p class="text-secondary" style="font-size:0.8rem; line-height:1.4;">
+                        Günlük takviyelerini zamanında alarak kas onarımını ve hidrasyonu maksimumda tut.
+                    </p>
+                    <div id="supplements-full-list" class="supplements-full-list">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW 5: TARTI & RAPOR (SCALE & SMART COACH) -->
             <section id="view-scale" class="tab-view">
-                <!-- Smart Coach Verdict Banner -->
+                <!-- Smart Coach Verdict Banner (Authentic / Tough-love Motivation) -->
                 <div class="card coach-decision-card" id="coach-weigh-verdict-box">
                     <div class="verdict-header">
                         <i class="fa-solid fa-chart-line"></i>
@@ -193,7 +203,9 @@
                     </div>
                     <div class="verdict-body">
                         <div class="verdict-status-badge" id="coach-verdict-badge">Veri Bekleniyor</div>
-                        <p id="coach-verdict-text" class="text-secondary" style="font-size:0.82rem; line-height:1.45;">Son 7 günlük tartı ortalamanı hesaplayarak anlık kalori ve bulk yönlendirmesi yapacağız.</p>
+                        <p id="coach-verdict-text" class="text-secondary" style="font-size:0.85rem; line-height:1.5;">
+                            Son 7 günlük tartı ortalamanı ve antrenman performansını analiz ederek yönlendirme yapıyoruz.
+                        </p>
                     </div>
                 </div>
 
@@ -214,7 +226,7 @@
                 <!-- 7-Day Average & Trends -->
                 <div class="card">
                     <div class="card-header">
-                        <h2>7 GÜNLÜK ORTALAMA</h2>
+                        <h2>7 GÜNLÜK TARTI ORTALAMASI</h2>
                     </div>
                     <div class="stats-2col">
                         <div class="stat-box">
@@ -230,39 +242,40 @@
                         <!-- Weight history rows -->
                     </div>
                 </div>
-            </section>
 
-            <!-- VIEW 5: RAPOR & KOÇA GÖNDER -->
-            <section id="view-report" class="tab-view">
+                <!-- Weekly Report Generator -->
                 <div class="card">
                     <div class="card-header">
-                        <h2>HAFTALIK RAPOR</h2>
+                        <h2>HAFTALIK KOÇLUK RAPORU</h2>
                     </div>
-                    <p class="text-secondary" style="font-size:0.8rem; line-height:1.4;">Haftalık ağırlıklarını, ortalama kilonu ve makro durumunu içeren koçluk özetini panoya kopyalar.</p>
+                    <p class="text-secondary" style="font-size:0.8rem; line-height:1.4;">
+                        Ağırlıklarını, ortalama kilonu ve makro durumunu koçluk formatında kopyalar.
+                    </p>
                     
                     <div class="report-preview-box" id="report-text-preview">
                         <!-- Generated summary text -->
                     </div>
 
                     <button class="btn btn-primary btn-block" onclick="copyCoachReport()">
-                        Raporu Kopyala
+                        <i class="fa-solid fa-copy"></i> Raporu Kopyala
                     </button>
                 </div>
 
+                <!-- Data Backup / Restore -->
                 <div class="card">
                     <div class="card-header">
-                        <h2>VERİ YÖNETİMİ</h2>
+                        <h2>VERİ YÖNETİMİ & YEDEK</h2>
                     </div>
                     <div class="data-actions-grid">
-                        <button class="btn btn-outline btn-block" onclick="exportDataJSON()">Yedek İndir (JSON)</button>
-                        <button class="btn btn-outline btn-block" onclick="document.getElementById('import-file').click()">Yedekten Yükle</button>
+                        <button class="btn btn-outline btn-block" onclick="exportDataJSON()"><i class="fa-solid fa-download"></i> Yedek İndir (JSON)</button>
+                        <button class="btn btn-outline btn-block" onclick="document.getElementById('import-file').click()"><i class="fa-solid fa-upload"></i> Yedekten Yükle</button>
                         <input type="file" id="import-file" style="display:none" onchange="importDataJSON(event)">
                     </div>
                 </div>
             </section>
         </main>
 
-        <!-- Bottom Navigation Bar (Minimalist Apple Style) -->
+        <!-- Bottom Navigation Bar (Minimalist Matte Slate) -->
         <nav class="bottom-nav">
             <button class="nav-item active" onclick="navigateToTab('dashboard')">
                 <i class="fa-solid fa-house"></i>
@@ -276,15 +289,179 @@
                 <i class="fa-solid fa-utensils"></i>
                 <span>Beslenme</span>
             </button>
-            <button class="nav-item" onclick="navigateToTab('scale')">
-                <i class="fa-solid fa-weight-scale"></i>
-                <span>Tartı</span>
+            <button class="nav-item" onclick="navigateToTab('supplements')">
+                <i class="fa-solid fa-capsules"></i>
+                <span>Suplement</span>
             </button>
-            <button class="nav-item" onclick="navigateToTab('report')">
-                <i class="fa-solid fa-file-lines"></i>
-                <span>Rapor</span>
+            <button class="nav-item" onclick="navigateToTab('scale')">
+                <i class="fa-solid fa-chart-simple"></i>
+                <span>Tartı/Rapor</span>
             </button>
         </nav>
+    </div>
+
+    <!-- ==================== MODALS ==================== -->
+
+    <!-- 1. TARGETS & SETTINGS MODAL -->
+    <div id="modal-settings" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-sliders"></i> Hedefleri ve Ayarları Düzenle</h3>
+                <button class="modal-close-btn" onclick="closeModal('modal-settings')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="text-secondary" style="font-size:0.8rem; margin-bottom:12px;">
+                    Uygulamadaki tüm kalori, makro, su ve adım hedeflerini kendi güncel planına göre ayarlayabilirsin.
+                </p>
+                <div class="form-group">
+                    <label>Günlük Kalori Hedefi (kcal)</label>
+                    <input type="number" id="setting-calories" placeholder="2770">
+                </div>
+                <div class="form-row-3">
+                    <div class="form-group">
+                        <label>Protein (g)</label>
+                        <input type="number" id="setting-protein" placeholder="167">
+                    </div>
+                    <div class="form-group">
+                        <label>Karb (g)</label>
+                        <input type="number" id="setting-carbs" placeholder="344">
+                    </div>
+                    <div class="form-group">
+                        <label>Yağ (g)</label>
+                        <input type="number" id="setting-fat" placeholder="77">
+                    </div>
+                </div>
+                <div class="form-row-2">
+                    <div class="form-group">
+                        <label>Günlük Su Hedefi (Litre)</label>
+                        <input type="number" step="0.1" id="setting-water" placeholder="3.5">
+                    </div>
+                    <div class="form-group">
+                        <label>Günlük Adım Hedefi</label>
+                        <input type="number" id="setting-steps" placeholder="7500">
+                    </div>
+                </div>
+                <div class="form-row-2">
+                    <div class="form-group">
+                        <label>Min Haftalık Kilo Artışı (kg)</label>
+                        <input type="number" step="0.05" id="setting-gain-min" placeholder="0.15">
+                    </div>
+                    <div class="form-group">
+                        <label>Maks Haftalık Kilo Artışı (kg)</label>
+                        <input type="number" step="0.05" id="setting-gain-max" placeholder="0.35">
+                    </div>
+                </div>
+                <button class="btn btn-primary btn-block" style="margin-top:10px;" onclick="saveCustomTargets()">
+                    Hedefleri Kaydet
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. QUICK ACTIONS CUSTOMIZATION MODAL -->
+    <div id="modal-quick-actions" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-wand-magic-sparkles"></i> Hızlı Butonları Seç</h3>
+                <button class="modal-close-btn" onclick="closeModal('modal-quick-actions')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="text-secondary" style="font-size:0.8rem; margin-bottom:12px;">
+                    Ana ekranda (Dashboard) görmek istediğin hızlı işlem butonlarını işaretle:
+                </p>
+                <div id="quick-actions-toggle-list" class="toggle-list">
+                    <!-- Dynamically populated checkbox items -->
+                </div>
+                <button class="btn btn-primary btn-block" style="margin-top:14px;" onclick="saveQuickActionsConfig()">
+                    Değişiklikleri Kaydet
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. CUSTOM MEAL / FOOD BUILDER MODAL -->
+    <div id="modal-meal-builder" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-utensils"></i> Özel Öğün / Besin Oluşturucu</h3>
+                <button class="modal-close-btn" onclick="closeModal('modal-meal-builder')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Öğün / Besin Adı</label>
+                    <input type="text" id="meal-name" placeholder="Örn: Tavuklu Pilav & Yağ">
+                </div>
+                <div class="form-group">
+                    <label>İçerik & Gramaj Açıklaması</label>
+                    <input type="text" id="meal-desc" placeholder="Örn: 200g Tavuk Göğsü, 150g Çiğ Pirinç, 10g Zeytinyağı">
+                </div>
+                <div class="form-row-3">
+                    <div class="form-group">
+                        <label>Protein (g)</label>
+                        <input type="number" id="meal-p" placeholder="0" oninput="calculateMealCalories()">
+                    </div>
+                    <div class="form-group">
+                        <label>Karb (g)</label>
+                        <input type="number" id="meal-c" placeholder="0" oninput="calculateMealCalories()">
+                    </div>
+                    <div class="form-group">
+                        <label>Yağ (g)</label>
+                        <input type="number" id="meal-f" placeholder="0" oninput="calculateMealCalories()">
+                    </div>
+                </div>
+
+                <div class="calc-result-banner">
+                    <span>Hesaplanan Kalori:</span>
+                    <strong id="meal-calc-cal">0 kcal</strong>
+                </div>
+
+                <div class="form-checkbox-row">
+                    <label>
+                        <input type="checkbox" id="save-as-preset-chk" checked>
+                        <span>Hazır Şablonlarıma (Kütüphaneye) da kaydet</span>
+                    </label>
+                </div>
+
+                <div style="display:flex; gap:8px; margin-top:12px;">
+                    <button class="btn btn-primary btn-block" onclick="submitCustomMeal(true)">
+                        Bugüne Ekle
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. ADD SUPPLEMENT MODAL -->
+    <div id="modal-add-supplement" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-capsules"></i> Yeni Suplement Ekle</h3>
+                <button class="modal-close-btn" onclick="closeModal('modal-add-supplement')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Suplement Adı</label>
+                    <input type="text" id="supp-name" placeholder="Örn: Kreatin Monohidrat">
+                </div>
+                <div class="form-group">
+                    <label>Dozaj / Miktar</label>
+                    <input type="text" id="supp-dosage" placeholder="Örn: 5 gram">
+                </div>
+                <div class="form-group">
+                    <label>Kullanım Zamanı</label>
+                    <select id="supp-timing">
+                        <option value="Sabah / Kahvaltı">Sabah / Kahvaltı</option>
+                        <option value="Antrenmandan 30dk Önce">Antrenmandan 30dk Önce</option>
+                        <option value="Antrenman Sonrası">Antrenman Sonrası</option>
+                        <option value="Yemekle Birlikte">Yemekle Birlikte</option>
+                        <option value="Gece / Yatmadan Önce">Gece / Yatmadan Önce</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary btn-block" style="margin-top:10px;" onclick="submitNewSupplement()">
+                    Suplementi Kaydet
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- Notification Toast -->
