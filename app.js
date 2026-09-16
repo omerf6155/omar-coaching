@@ -3534,7 +3534,7 @@ function insertCoachQuickReply(text) {
 
 function renderCoachSettings() {
     const pinInput = document.getElementById("coach-settings-master-pin");
-    if (pinInput) pinInput.value = getCoachMasterPin();
+    if (pinInput) pinInput.value = "";
 }
 
 function handleCoachCreateAthlete(event) {

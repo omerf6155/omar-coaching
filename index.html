@@ -668,7 +668,7 @@
                     <div class="form-group" style="margin-top:10px;">
                         <label>Antrenör Güvenlik Anahtarı (Master PIN)</label>
                         <div style="display:flex; gap:8px;">
-                            <input type="text" id="coach-settings-master-pin" value="COACH2026" style="flex:1;">
+                            <input type="password" id="coach-settings-master-pin" placeholder="Yeni Güvenlik Anahtarı" style="flex:1;">
                             <button class="btn btn-sm btn-outline" onclick="updateCoachMasterPin()">Kaydet</button>
                         </div>
                         <small class="text-secondary" style="font-size:0.7rem; margin-top:4px; display:block;">
@@ -1525,7 +1525,7 @@
                 <!-- Coach Master PIN for Coach Role -->
                 <div class="form-group" id="login-coach-key-group" style="display:none;">
                     <label style="color:var(--status-amber);"><i class="fa-solid fa-key"></i> Antrenör Güvenlik Anahtarı (Master PIN)</label>
-                    <input type="password" id="login-coach-key" placeholder="Örn: COACH2026">
+                    <input type="password" id="login-coach-key" placeholder="Güvenlik Anahtarını Girin">
                 </div>
 
                 <div id="login-error-msg" class="auth-error-banner" style="display:none;"></div>
@@ -1565,7 +1565,7 @@
                 <!-- Coach Master PIN for Coach Role Registration -->
                 <div class="form-group" id="reg-coach-key-group" style="display:none;">
                     <label style="color:var(--status-amber);"><i class="fa-solid fa-key"></i> Antrenör Güvenlik Anahtarı (Master PIN)</label>
-                    <input type="password" id="reg-coach-key" placeholder="Örn: COACH2026">
+                    <input type="password" id="reg-coach-key" placeholder="Güvenlik Anahtarını Girin">
                 </div>
 
                 <div id="register-error-msg" class="auth-error-banner" style="display:none;"></div>
