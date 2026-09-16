@@ -159,6 +159,9 @@
                     <button class="btn btn-primary btn-block" onclick="openNewRecipeBuilderModal()">
                         <i class="fa-solid fa-plus"></i> Çiğ Gramajlı Öğün / Şablon Oluştur
                     </button>
+                    <button class="btn btn-outline btn-block" style="margin-top:8px;" onclick="openOnboardingWizard()">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> Sihirbaz ile Otomatik Diyet Oluştur
+                    </button>
                 </div>
 
                 <!-- Custom / Preset Meals Library with Gram Ingredients -->
@@ -366,6 +369,11 @@
                 <button class="btn btn-primary btn-block" style="margin-top:10px;" onclick="saveCustomTargets()">
                     Hedefleri Kaydet
                 </button>
+                <div style="margin-top:12px; padding-top:12px; border-top:1px solid var(--border-subtle);">
+                    <button class="btn btn-outline btn-block" style="border-color:var(--status-blue); color:#ffffff; background:rgba(10, 132, 255, 0.12);" onclick="closeModal('modal-settings'); openOnboardingWizard();">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> Diyet & Hedef Sihirbazını Başlat
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -575,6 +583,280 @@
 
                 <button class="btn btn-primary btn-block" style="margin-top:14px;" onclick="closeModal('modal-exercise-manager')">
                     Tamamla & Antrenmana Dön
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 8. ONBOARDING & PERSONALIZED DIET WIZARD MODAL -->
+    <div id="modal-onboarding-wizard" class="modal-overlay">
+        <div class="modal-card wizard-modal-card">
+            <!-- Wizard Header with Step Progress Bar -->
+            <div class="wizard-header">
+                <div class="wizard-title-row">
+                    <span class="wizard-step-badge" id="wizard-step-badge">ADIM 1 / 5</span>
+                    <button class="modal-close-btn" onclick="closeModal('modal-onboarding-wizard')">&times;</button>
+                </div>
+                <h3 id="wizard-main-heading">Hedefini Belirle</h3>
+                <div class="wizard-progress-track">
+                    <div class="wizard-progress-bar" id="wizard-progress-bar" style="width: 20%;"></div>
+                </div>
+            </div>
+
+            <!-- Wizard Body with Steps -->
+            <div class="modal-body wizard-body">
+                <!-- STEP 1: GOAL SELECTION -->
+                <div class="wizard-step-view active" id="wizard-step-1">
+                    <p class="wizard-intro-text">
+                        Omar Coaching sistemine hoş geldin. Maksimum verim almak için ana hedefini seç:
+                    </p>
+                    <div class="goal-selection-grid">
+                        <!-- Goal 1: Bulk -->
+                        <div class="goal-card active" onclick="selectWizardGoal('bulk')" id="goal-card-bulk">
+                            <div class="goal-card-header">
+                                <div class="goal-icon-badge bulk-icon"><i class="fa-solid fa-fire"></i></div>
+                                <div>
+                                    <h4 class="goal-title">Kütle Eklemek (Lean Bulk)</h4>
+                                    <span class="goal-tag">Kas Kütlesi & Hacim Odaklı</span>
+                                </div>
+                            </div>
+                            <p class="goal-desc">
+                                Kontrollü kalori fazlası (+300 kcal) ve yüksek karbonhidrat ile minimum yağlanma, maksimum hipertrofi ve güç artışı hedefler.
+                            </p>
+                        </div>
+
+                        <!-- Goal 2: Cutting -->
+                        <div class="goal-card" onclick="selectWizardGoal('cut')" id="goal-card-cut">
+                            <div class="goal-card-header">
+                                <div class="goal-icon-badge cut-icon"><i class="fa-solid fa-scissors"></i></div>
+                                <div>
+                                    <h4 class="goal-title">Diyet Yapmak (Cutting)</h4>
+                                    <span class="goal-tag">Yağ Yakımı & Definasyon</span>
+                                </div>
+                            </div>
+                            <p class="goal-desc">
+                                Kas kütlesini koruyarak yağ oranını düşürür (-450 kcal açık). Yüksek protein ve optimize makrolarla damarlı ve sert hatlar sağlar.
+                            </p>
+                        </div>
+
+                        <!-- Goal 3: Recomp -->
+                        <div class="goal-card" onclick="selectWizardGoal('recomp')" id="goal-card-recomp">
+                            <div class="goal-card-header">
+                                <div class="goal-icon-badge recomp-icon"><i class="fa-solid fa-arrows-rotate"></i></div>
+                                <div>
+                                    <h4 class="goal-title">Body Recomposition</h4>
+                                    <span class="goal-tag">Aynı Anda Kas Kazanımı & Yağ Yakımı</span>
+                                </div>
+                            </div>
+                            <p class="goal-desc">
+                                Bakım kalorisinde kalarak yağ kütlesini azaltıp kas liflerini yoğunlaştırır. Kilosunu sabit tutup formunu dönüştürmek isteyenler için idealdir.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STEP 2: PHYSICAL PROFILE -->
+                <div class="wizard-step-view" id="wizard-step-2" style="display:none;">
+                    <p class="wizard-intro-text">
+                        Metabolizma hızını ve günlük kalori ihtiyacını (BMR/TDEE) hesaplamak için fiziksel bilgilerini gir:
+                    </p>
+                    <div class="form-group">
+                        <label>Cinsiyet</label>
+                        <div class="gender-toggle-grid">
+                            <button type="button" class="gender-btn active" id="wizard-gender-male" onclick="setWizardGender('male')"><i class="fa-solid fa-mars"></i> Erkek</button>
+                            <button type="button" class="gender-btn" id="wizard-gender-female" onclick="setWizardGender('female')"><i class="fa-solid fa-venus"></i> Kadın</button>
+                        </div>
+                    </div>
+                    <div class="form-row-3">
+                        <div class="form-group">
+                            <label>Yaş</label>
+                            <input type="number" id="wizard-age" value="24" min="14" max="80" placeholder="24">
+                        </div>
+                        <div class="form-group">
+                            <label>Boy (cm)</label>
+                            <input type="number" id="wizard-height" value="178" min="120" max="230" placeholder="178">
+                        </div>
+                        <div class="form-group">
+                            <label>Kilo (kg)</label>
+                            <input type="number" step="0.1" id="wizard-weight" value="74" min="35" max="200" placeholder="74.0">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Haftalık Antrenman Sıklığı</label>
+                        <select id="wizard-workout-frequency">
+                            <option value="3">3 - 4 Gün (Klasik Split / Fullbody)</option>
+                            <option value="5" selected>4 - 5 Gün (Push/Pull/Legs - İdeal)</option>
+                            <option value="6">5 - 6 Gün (Yüksek Frekanslı İleri Düzey)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Günlük Gün İçi Hareketlilik (Adım / İş)</label>
+                        <select id="wizard-activity-level">
+                            <option value="sedentary">Masa Başı / Düşük Aktivite (&lt; 5.000 Adım)</option>
+                            <option value="moderate" selected>Orta Hareketli (7.000 - 10.000 Adım)</option>
+                            <option value="active">Yüksek Hareketli / Ayakta İş (12.000+ Adım)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- STEP 3: SETUP PATH SELECTION -->
+                <div class="wizard-step-view" id="wizard-step-3" style="display:none;">
+                    <p class="wizard-intro-text">
+                        Beslenme programını nasıl oluşturmak istersin?
+                    </p>
+                    <div class="path-selection-grid">
+                        <!-- Path A: Auto Wizard -->
+                        <div class="path-card active" onclick="selectWizardPath('auto')" id="path-card-auto">
+                            <div class="path-icon-badge"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                            <div class="path-content">
+                                <h4 class="path-title">Bana Özel Otomatik Diyet Oluştur (Tavsiye Edilen)</h4>
+                                <p class="path-desc">
+                                    Yiyebileceğin besinleri (pirinç, tavuk, yulaf, fıstık ezmesi vb.) seç; sistem hedefine göre tam çiğ gramajları hesaplayıp öğün şablonlarını otomatik oluştursun.
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Path B: Manual Entry -->
+                        <div class="path-card" onclick="selectWizardPath('manual')" id="path-card-manual">
+                            <div class="path-icon-badge"><i class="fa-solid fa-sliders"></i></div>
+                            <div class="path-content">
+                                <h4 class="path-title">Kendi Hazır Planım Var (Manuel Giriş)</h4>
+                                <p class="path-desc">
+                                    Kendi belirlediğin kalori ve makro (Protein, Karb, Yağ) hedeflerini doğrudan sisteme gir.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STEP 4A: MANUAL MACROS (if path === 'manual') -->
+                <div class="wizard-step-view" id="wizard-step-4-manual" style="display:none;">
+                    <p class="wizard-intro-text">
+                        Günlük hedef kalori ve makrolarını belirle:
+                    </p>
+                    <div class="form-group">
+                        <label>Günlük Kalori Hedefi (kcal)</label>
+                        <input type="number" id="wizard-manual-cal" placeholder="2770">
+                    </div>
+                    <div class="form-row-3">
+                        <div class="form-group">
+                            <label>Protein (g)</label>
+                            <input type="number" id="wizard-manual-p" placeholder="167">
+                        </div>
+                        <div class="form-group">
+                            <label>Karb (g)</label>
+                            <input type="number" id="wizard-manual-c" placeholder="344">
+                        </div>
+                        <div class="form-group">
+                            <label>Yağ (g)</label>
+                            <input type="number" id="wizard-manual-f" placeholder="77">
+                        </div>
+                    </div>
+                    <div class="form-row-2">
+                        <div class="form-group">
+                            <label>Günlük Su (Litre)</label>
+                            <input type="number" step="0.1" id="wizard-manual-water" value="3.5" placeholder="3.5">
+                        </div>
+                        <div class="form-group">
+                            <label>Günlük Adım</label>
+                            <input type="number" id="wizard-manual-steps" value="7500" placeholder="7500">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STEP 4B: AUTO DIET FOOD SELECTION & MEAL COUNT (if path === 'auto') -->
+                <div class="wizard-step-view" id="wizard-step-4-auto" style="display:none;">
+                    <div class="wizard-food-section">
+                        <div class="section-label-row">
+                            <span><i class="fa-solid fa-bowl-rice"></i> 1. Tüketebileceğin Karbonhidratlar</span>
+                            <small class="text-secondary">Seç / Kaldır</small>
+                        </div>
+                        <div class="food-chips-grid" id="wizard-carbs-grid">
+                            <!-- Populated with carb foods -->
+                        </div>
+                    </div>
+
+                    <div class="wizard-food-section" style="margin-top:14px;">
+                        <div class="section-label-row">
+                            <span><i class="fa-solid fa-drumstick-bite"></i> 2. Tüketebileceğin Proteinler</span>
+                            <small class="text-secondary">Seç / Kaldır</small>
+                        </div>
+                        <div class="food-chips-grid" id="wizard-proteins-grid">
+                            <!-- Populated with protein foods -->
+                        </div>
+                    </div>
+
+                    <div class="wizard-food-section" style="margin-top:14px;">
+                        <div class="section-label-row">
+                            <span><i class="fa-solid fa-seedling"></i> 3. Tüketebileceğin Sağlıklı Yağlar</span>
+                            <small class="text-secondary">Seç / Kaldır</small>
+                        </div>
+                        <div class="food-chips-grid" id="wizard-fats-grid">
+                            <!-- Populated with fat foods -->
+                        </div>
+                    </div>
+
+                    <div class="wizard-food-section" style="margin-top:16px;">
+                        <div class="section-label-row">
+                            <span><i class="fa-solid fa-utensils"></i> Günlük Kaç Öğün Yemek İstersin?</span>
+                        </div>
+                        <div class="meal-count-toggle-grid">
+                            <button type="button" class="meal-cnt-btn" onclick="setWizardMealCount(3)" id="wizard-meal-cnt-3">3 Öğün</button>
+                            <button type="button" class="meal-cnt-btn active" onclick="setWizardMealCount(4)" id="wizard-meal-cnt-4">4 Öğün (İdeal)</button>
+                            <button type="button" class="meal-cnt-btn" onclick="setWizardMealCount(5)" id="wizard-meal-cnt-5">5 Öğün</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STEP 5: FINAL SUMMARY & GENERATED MEALS PREVIEW -->
+                <div class="wizard-step-view" id="wizard-step-5" style="display:none;">
+                    <div class="wizard-plan-summary-card">
+                        <div class="summary-top-row">
+                            <div>
+                                <span class="summary-goal-badge" id="summary-goal-badge">LEAN BULK PLANI</span>
+                                <h3 id="summary-cal-val" class="summary-cal-number">2.770 kcal / gün</h3>
+                            </div>
+                            <div class="summary-bmr-box">
+                                <span>BMR: <strong id="summary-bmr-val">1720</strong> kcal</span>
+                                <span>TDEE: <strong id="summary-tdee-val">2470</strong> kcal</span>
+                            </div>
+                        </div>
+
+                        <div class="summary-macros-grid">
+                            <div class="summary-macro-pill p-pill">
+                                <span>PROTEİN</span>
+                                <strong id="summary-p-val">167g</strong>
+                                <small id="summary-p-pct">(~%24)</small>
+                            </div>
+                            <div class="summary-macro-pill c-pill">
+                                <span>KARBONHİDRAT</span>
+                                <strong id="summary-c-val">344g</strong>
+                                <small id="summary-c-pct">(~%50)</small>
+                            </div>
+                            <div class="summary-macro-pill f-pill">
+                                <span>SAĞLIKLI YAĞ</span>
+                                <strong id="summary-f-val">77g</strong>
+                                <small id="summary-f-pct">(~%26)</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-header" style="margin-top:16px; margin-bottom:8px;">
+                        <h2 style="font-size:0.75rem;"><i class="fa-solid fa-list-check"></i> OLUŞTURULAN ÇİĞ GRAMAJLI ÖĞÜNLER</h2>
+                    </div>
+                    <div class="wizard-generated-meals-box" id="wizard-generated-meals-container">
+                        <!-- Preview of generated meals with exact raw grams -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Wizard Footer Controls -->
+            <div class="wizard-footer">
+                <button class="btn btn-outline" id="wizard-btn-prev" onclick="prevWizardStep()" style="visibility: hidden;">
+                    <i class="fa-solid fa-chevron-left"></i> Geri
+                </button>
+                <button class="btn btn-primary" id="wizard-btn-next" onclick="nextWizardStep()">
+                    Devam Et <i class="fa-solid fa-chevron-right"></i>
                 </button>
             </div>
         </div>

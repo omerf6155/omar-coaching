@@ -323,6 +323,7 @@ document.addEventListener("DOMContentLoaded", () => {
     updateCoachReport();
     initSettingsForm();
     renderSupplementCatalog();
+    checkOnboardingStatus();
 });
 
 // Storage Management
@@ -344,7 +345,9 @@ function loadDataFromStorage() {
                 workoutLogs: parsed.workoutLogs || {},
                 exerciseSetsCount: parsed.exerciseSetsCount || {},
                 seatSettings: parsed.seatSettings || {},
-                weightHistory: parsed.weightHistory || []
+                weightHistory: parsed.weightHistory || [],
+                onboardingCompleted: parsed.onboardingCompleted !== undefined ? parsed.onboardingCompleted : false,
+                userProfile: parsed.userProfile || null
             };
         } catch (e) {
             console.error("Storage load error:", e);
@@ -1611,4 +1614,677 @@ function importDataJSON(event) {
         }
     };
     reader.readAsText(file);
+}
+
+// ==================== ONBOARDING & PERSONALIZED DIET WIZARD ENGINE ====================
+
+const WIZARD_FOOD_CATEGORIES = {
+    carbs: [
+        { id: "cig_pirinc", name: "🍚 Çiğ Pirinç (Basmati/Yasemin)" },
+        { id: "pirinc_unu", name: "🥣 Çiğ Pirinç Unu" },
+        { id: "cig_yulaf", name: "🌾 Çiğ Yulaf Ezmesi" },
+        { id: "cig_makarna", name: "🍝 Çiğ Makarna" },
+        { id: "cig_patates", name: "🥔 Çiğ Patates" },
+        { id: "cig_tatli_patates", name: "🍠 Çiğ Tatlı Patates" },
+        { id: "cig_karabugday", name: "🌱 Çiğ Karabuğday" },
+        { id: "muz", name: "🍌 Muz" },
+        { id: "bal", name: "🍯 Bal / Pekmez" },
+        { id: "hurma", name: "🌴 Hurma" },
+        { id: "pirinc_patlagi", name: "🍘 Pirinç Patlağı" }
+    ],
+    proteins: [
+        { id: "tavuk_gogsu", name: "🍗 Çiğ Tavuk Göğsü" },
+        { id: "hindi_gogsu", name: "🦃 Çiğ Hindi Göğsü" },
+        { id: "dana_kiyma", name: "🥩 Çiğ Dana Kıyma (%10-12)" },
+        { id: "dana_biftek", name: "🥩 Çiğ Dana Biftek" },
+        { id: "yumurta_butun", name: "🥚 Bütün Yumurta" },
+        { id: "yumurta_beyazi", name: "🍳 Yumurta Beyazı" },
+        { id: "somon", name: "🐟 Çiğ Somon" },
+        { id: "ton_baligi", name: "🥫 Ton Balığı (Süzme)" },
+        { id: "lor_peyniri", name: "🧀 Lor Peyniri" },
+        { id: "quark_yogurt", name: "🥛 Süzme Yoğurt / Quark" },
+        { id: "whey_toz", name: "⚡ Whey Protein Tozu" }
+    ],
+    fats: [
+        { id: "zeytinyagi", name: "🫒 Zeytinyağı" },
+        { id: "hindistan_cevizi_yagi", name: "🥥 Hindistan Cevizi Yağı" },
+        { id: "fistik_ezmesi", name: "🥜 Fıstık Ezmesi" },
+        { id: "cig_badem", name: "🌰 Çiğ Badem" },
+        { id: "cig_ceviz", name: "🥜 Çiğ Ceviz" },
+        { id: "avokado", name: "🥑 Avokado" },
+        { id: "tereyagi", name: "🧈 Tereyağı / Sade Yağ" }
+    ]
+};
+
+let wizardState = {
+    currentStep: 1,
+    goal: "bulk", // "bulk", "cut", "recomp"
+    gender: "male", // "male", "female"
+    age: 24,
+    height: 178,
+    weight: 74.0,
+    frequency: 5, // 3, 5, 6
+    activity: "moderate", // "sedentary", "moderate", "active"
+    path: "auto", // "auto", "manual"
+    manualKcal: 2770,
+    manualP: 167,
+    manualC: 344,
+    manualF: 77,
+    manualWater: 3.5,
+    manualSteps: 7500,
+    selectedCarbs: ["cig_pirinc", "pirinc_unu", "cig_yulaf", "muz", "bal"],
+    selectedProteins: ["tavuk_gogsu", "yumurta_butun", "whey_toz"],
+    selectedFats: ["fistik_ezmesi", "zeytinyagi", "hindistan_cevizi_yagi"],
+    mealCount: 4,
+    calculated: null
+};
+
+function checkOnboardingStatus() {
+    if (!appData.onboardingCompleted) {
+        setTimeout(() => {
+            openOnboardingWizard();
+        }, 400);
+    }
+}
+
+function openOnboardingWizard() {
+    wizardState.currentStep = 1;
+
+    // Load saved userProfile if exists
+    if (appData.userProfile) {
+        const p = appData.userProfile;
+        wizardState.gender = p.gender || "male";
+        wizardState.age = p.age || 24;
+        wizardState.height = p.height || 178;
+        wizardState.weight = p.weight || 74.0;
+        wizardState.frequency = p.frequency || 5;
+        wizardState.activity = p.activity || "moderate";
+        wizardState.goal = p.goal || "bulk";
+        wizardState.path = p.path || "auto";
+        if (p.mealCount) wizardState.mealCount = p.mealCount;
+        if (p.selectedCarbs) wizardState.selectedCarbs = [...p.selectedCarbs];
+        if (p.selectedProteins) wizardState.selectedProteins = [...p.selectedProteins];
+        if (p.selectedFats) wizardState.selectedFats = [...p.selectedFats];
+    } else {
+        // Use current weight history if available
+        if (appData.weightHistory && appData.weightHistory.length > 0) {
+            wizardState.weight = appData.weightHistory[0].weight;
+        }
+    }
+
+    // Prepopulate inputs
+    document.getElementById("wizard-age").value = wizardState.age;
+    document.getElementById("wizard-height").value = wizardState.height;
+    document.getElementById("wizard-weight").value = wizardState.weight;
+    document.getElementById("wizard-workout-frequency").value = wizardState.frequency;
+    document.getElementById("wizard-activity-level").value = wizardState.activity;
+
+    // Prepopulate manual targets from appData
+    const t = appData.targets;
+    document.getElementById("wizard-manual-cal").value = t.calories || 2770;
+    document.getElementById("wizard-manual-p").value = t.protein || 167;
+    document.getElementById("wizard-manual-c").value = t.carbs || 344;
+    document.getElementById("wizard-manual-f").value = t.fat || 77;
+    document.getElementById("wizard-manual-water").value = t.water || 3.5;
+    document.getElementById("wizard-manual-steps").value = t.steps || 7500;
+
+    selectWizardGoal(wizardState.goal);
+    setWizardGender(wizardState.gender);
+    selectWizardPath(wizardState.path);
+    setWizardMealCount(wizardState.mealCount);
+
+    renderWizardFoodChips();
+    renderWizardStep();
+    openModal("modal-onboarding-wizard");
+}
+
+function selectWizardGoal(goal) {
+    wizardState.goal = goal;
+    document.querySelectorAll(".goal-card").forEach(el => el.classList.remove("active"));
+    const card = document.getElementById(`goal-card-${goal}`);
+    if (card) card.classList.add("active");
+}
+
+function setWizardGender(gender) {
+    wizardState.gender = gender;
+    const maleBtn = document.getElementById("wizard-gender-male");
+    const femaleBtn = document.getElementById("wizard-gender-female");
+    if (maleBtn) maleBtn.classList.toggle("active", gender === "male");
+    if (femaleBtn) femaleBtn.classList.toggle("active", gender === "female");
+}
+
+function selectWizardPath(path) {
+    wizardState.path = path;
+    document.querySelectorAll(".path-card").forEach(el => el.classList.remove("active"));
+    const card = document.getElementById(`path-card-${path}`);
+    if (card) card.classList.add("active");
+}
+
+function setWizardMealCount(cnt) {
+    wizardState.mealCount = cnt;
+    [3, 4, 5].forEach(num => {
+        const btn = document.getElementById(`wizard-meal-cnt-${num}`);
+        if (btn) btn.classList.toggle("active", num === cnt);
+    });
+}
+
+function toggleWizardFood(foodId, category) {
+    let list;
+    if (category === "carbs") list = wizardState.selectedCarbs;
+    else if (category === "proteins") list = wizardState.selectedProteins;
+    else if (category === "fats") list = wizardState.selectedFats;
+
+    if (!list) return;
+    const idx = list.indexOf(foodId);
+    if (idx >= 0) {
+        if (list.length <= 1) {
+            showToast("Her kategoriden en az 1 besin seçmelisin!");
+            return;
+        }
+        list.splice(idx, 1);
+    } else {
+        list.push(foodId);
+    }
+    renderWizardFoodChips();
+}
+
+function renderWizardFoodChips() {
+    const renderCategory = (containerId, items, selectedList, cat) => {
+        const el = document.getElementById(containerId);
+        if (!el) return;
+        el.innerHTML = items.map(item => {
+            const isSelected = selectedList.includes(item.id);
+            return `
+                <div class="food-chip ${isSelected ? 'selected' : ''}" onclick="toggleWizardFood('${item.id}', '${cat}')">
+                    <i class="fa-solid ${isSelected ? 'fa-check' : 'fa-plus'}"></i>
+                    <span>${item.name}</span>
+                </div>
+            `;
+        }).join("");
+    };
+
+    renderCategory("wizard-carbs-grid", WIZARD_FOOD_CATEGORIES.carbs, wizardState.selectedCarbs, "carbs");
+    renderCategory("wizard-proteins-grid", WIZARD_FOOD_CATEGORIES.proteins, wizardState.selectedProteins, "proteins");
+    renderCategory("wizard-fats-grid", WIZARD_FOOD_CATEGORIES.fats, wizardState.selectedFats, "fats");
+}
+
+function renderWizardStep() {
+    const step = wizardState.currentStep;
+    
+    // Update Badge & Progress Bar
+    const badge = document.getElementById("wizard-step-badge");
+    const pbar = document.getElementById("wizard-progress-bar");
+    const heading = document.getElementById("wizard-main-heading");
+    const prevBtn = document.getElementById("wizard-btn-prev");
+    const nextBtn = document.getElementById("wizard-btn-next");
+
+    if (badge) badge.innerText = `ADIM ${step} / 5`;
+    if (pbar) pbar.style.width = `${(step / 5) * 100}%`;
+
+    // Hide all step views
+    const allStepViews = [
+        "wizard-step-1",
+        "wizard-step-2",
+        "wizard-step-3",
+        "wizard-step-4-manual",
+        "wizard-step-4-auto",
+        "wizard-step-5"
+    ];
+    allStepViews.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = "none";
+    });
+
+    if (prevBtn) prevBtn.style.visibility = step === 1 ? "hidden" : "visible";
+
+    if (step === 1) {
+        heading.innerText = "1. Ana Hedefini Belirle";
+        document.getElementById("wizard-step-1").style.display = "block";
+        nextBtn.innerHTML = 'Devam Et <i class="fa-solid fa-chevron-right"></i>';
+    } else if (step === 2) {
+        heading.innerText = "2. Fiziksel Profil Bilgileri";
+        document.getElementById("wizard-step-2").style.display = "block";
+        nextBtn.innerHTML = 'Devam Et <i class="fa-solid fa-chevron-right"></i>';
+    } else if (step === 3) {
+        heading.innerText = "3. Kurulum Yöntemi";
+        document.getElementById("wizard-step-3").style.display = "block";
+        nextBtn.innerHTML = 'Devam Et <i class="fa-solid fa-chevron-right"></i>';
+    } else if (step === 4) {
+        if (wizardState.path === "manual") {
+            heading.innerText = "4. Kalori ve Makro Hedeflerin";
+            document.getElementById("wizard-step-4-manual").style.display = "block";
+        } else {
+            heading.innerText = "4. Besin Tercihlerin & Öğün Sayısı";
+            document.getElementById("wizard-step-4-auto").style.display = "block";
+        }
+        nextBtn.innerHTML = 'Hesapla & Önizle <i class="fa-solid fa-wand-magic-sparkles"></i>';
+    } else if (step === 5) {
+        heading.innerText = "5. Kişiye Özel Plan Özeti";
+        document.getElementById("wizard-step-5").style.display = "block";
+        nextBtn.innerHTML = 'Planı Uygula ve Başla 🚀';
+    }
+}
+
+function nextWizardStep() {
+    if (wizardState.currentStep === 1) {
+        wizardState.currentStep = 2;
+        renderWizardStep();
+    } else if (wizardState.currentStep === 2) {
+        const age = parseInt(document.getElementById("wizard-age").value) || 24;
+        const height = parseInt(document.getElementById("wizard-height").value) || 178;
+        const weight = parseFloat(document.getElementById("wizard-weight").value) || 74.0;
+        const frequency = parseInt(document.getElementById("wizard-workout-frequency").value) || 5;
+        const activity = document.getElementById("wizard-activity-level").value || "moderate";
+
+        wizardState.age = age;
+        wizardState.height = height;
+        wizardState.weight = weight;
+        wizardState.frequency = frequency;
+        wizardState.activity = activity;
+
+        wizardState.currentStep = 3;
+        renderWizardStep();
+    } else if (wizardState.currentStep === 3) {
+        wizardState.currentStep = 4;
+        renderWizardStep();
+    } else if (wizardState.currentStep === 4) {
+        if (wizardState.path === "manual") {
+            const cal = parseInt(document.getElementById("wizard-manual-cal").value) || 2770;
+            const p = parseInt(document.getElementById("wizard-manual-p").value) || 167;
+            const c = parseInt(document.getElementById("wizard-manual-c").value) || 344;
+            const f = parseInt(document.getElementById("wizard-manual-f").value) || 77;
+            const water = parseFloat(document.getElementById("wizard-manual-water").value) || 3.5;
+            const steps = parseInt(document.getElementById("wizard-manual-steps").value) || 7500;
+
+            wizardState.manualKcal = cal;
+            wizardState.manualP = p;
+            wizardState.manualC = c;
+            wizardState.manualF = f;
+            wizardState.manualWater = water;
+            wizardState.manualSteps = steps;
+        }
+
+        calculateWizardPlan();
+        wizardState.currentStep = 5;
+        renderWizardStep();
+    } else if (wizardState.currentStep === 5) {
+        applyWizardPlanAndFinish();
+    }
+}
+
+function prevWizardStep() {
+    if (wizardState.currentStep > 1) {
+        wizardState.currentStep--;
+        renderWizardStep();
+    }
+}
+
+function calculateWizardPlan() {
+    const { gender, age, height, weight, frequency, activity, goal, path, mealCount, selectedCarbs, selectedProteins, selectedFats } = wizardState;
+
+    // 1. Mifflin-St Jeor BMR
+    let bmr = (10 * weight) + (6.25 * height) - (5 * age);
+    if (gender === "male") {
+        bmr += 5;
+    } else {
+        bmr -= 161;
+    }
+    bmr = Math.round(bmr);
+
+    // 2. Activity Multiplier
+    let activityMult = 1.35;
+    if (activity === "sedentary") activityMult = 1.25 + (frequency * 0.025);
+    else if (activity === "moderate") activityMult = 1.35 + (frequency * 0.03);
+    else if (activity === "active") activityMult = 1.45 + (frequency * 0.035);
+
+    const tdee = Math.round(bmr * activityMult);
+
+    let targetCal, targetP, targetF, targetC;
+    let gainMin = 0.15, gainMax = 0.35;
+
+    if (path === "manual") {
+        targetCal = wizardState.manualKcal;
+        targetP = wizardState.manualP;
+        targetC = wizardState.manualC;
+        targetF = wizardState.manualF;
+    } else {
+        // Automatic Calculation based on Goal
+        if (goal === "bulk") {
+            targetCal = tdee + 300;
+            targetP = Math.round(weight * 2.0); // 2.0g/kg
+            targetF = Math.round(weight * 0.9); // 0.9g/kg
+            targetC = Math.max(50, Math.round((targetCal - (targetP * 4 + targetF * 9)) / 4));
+            gainMin = 0.15;
+            gainMax = 0.35;
+        } else if (goal === "cut") {
+            targetCal = Math.max(1300, tdee - 450);
+            targetP = Math.round(weight * 2.3); // 2.3g/kg (preserve muscle in deficit)
+            targetF = Math.round(weight * 0.8); // 0.8g/kg
+            targetC = Math.max(50, Math.round((targetCal - (targetP * 4 + targetF * 9)) / 4));
+            gainMin = -0.7;
+            gainMax = -0.3; // fat loss target range
+        } else { // recomp
+            targetCal = tdee;
+            targetP = Math.round(weight * 2.2); // 2.2g/kg
+            targetF = Math.round(weight * 0.85); // 0.85g/kg
+            targetC = Math.max(50, Math.round((targetCal - (targetP * 4 + targetF * 9)) / 4));
+            gainMin = -0.1;
+            gainMax = 0.1;
+        }
+    }
+
+    const targetWater = path === "manual" ? wizardState.manualWater : Math.max(2.5, +(weight * 0.045).toFixed(1));
+    const targetSteps = path === "manual" ? wizardState.manualSteps : (activity === "active" ? 10000 : (activity === "moderate" ? 8000 : 6000));
+
+    // 3. Generate Intelligent Meal Presets with RAW Grams if auto
+    let generatedPresets = {};
+    if (path === "auto") {
+        generatedPresets = generateAutoMealPresets({
+            mealCount,
+            totalP: targetP,
+            totalC: targetC,
+            totalF: targetF,
+            totalCal: targetCal,
+            selectedCarbs,
+            selectedProteins,
+            selectedFats
+        });
+    } else {
+        generatedPresets = { ...appData.customPresets };
+    }
+
+    wizardState.calculated = {
+        bmr,
+        tdee,
+        calories: targetCal,
+        protein: targetP,
+        carbs: targetC,
+        fat: targetF,
+        water: targetWater,
+        steps: targetSteps,
+        weeklyGainMin: gainMin,
+        weeklyGainMax: gainMax,
+        generatedPresets
+    };
+
+    // Update Summary UI in Step 5
+    renderWizardSummaryUI();
+}
+
+function getMealSubtotalMacros(ingredients) {
+    let totP = 0, totC = 0, totF = 0, totCal = 0;
+    let descParts = [];
+
+    ingredients.forEach(item => {
+        const food = RAW_FOODS_DATABASE.find(f => f.id === item.foodId);
+        if (food) {
+            const factor = (item.amount || 0) / 100;
+            totP += food.p * factor;
+            totC += food.c * factor;
+            totF += food.f * factor;
+            totCal += food.cal * factor;
+            descParts.push(`${item.amount}g ${food.name.split(' (')[0]}`);
+        }
+    });
+
+    return {
+        p: Math.round(totP * 10) / 10,
+        c: Math.round(totC * 10) / 10,
+        f: Math.round(totF * 10) / 10,
+        cal: Math.round(totCal),
+        desc: descParts.join(" + ")
+    };
+}
+
+function generateAutoMealPresets({ mealCount, totalP, totalC, totalF, totalCal, selectedCarbs, selectedProteins, selectedFats }) {
+    const presets = {};
+
+    // 1. MEAL 1: KAHVALTI (BREAKFAST)
+    const bfastIngredients = [];
+
+    // Breakfast Protein
+    let bfastP = 0;
+    if (selectedProteins.includes("yumurta_butun")) {
+        bfastIngredients.push({ foodId: "yumurta_butun", amount: 150 }); // 3 Yumurta = 150g (~20g P, 15g F)
+        bfastP += 20;
+    } else if (selectedProteins.includes("yumurta_beyazi")) {
+        bfastIngredients.push({ foodId: "yumurta_beyazi", amount: 200 }); // 200g (~22g P)
+        bfastP += 22;
+    } else if (selectedProteins.includes("whey_toz")) {
+        bfastIngredients.push({ foodId: "whey_toz", amount: 30 }); // 30g (~24g P)
+        bfastP += 24;
+    } else if (selectedProteins.includes("lor_peyniri")) {
+        bfastIngredients.push({ foodId: "lor_peyniri", amount: 150 }); // 150g (~25g P)
+        bfastP += 25;
+    } else {
+        bfastIngredients.push({ foodId: "yumurta_butun", amount: 150 });
+        bfastP += 20;
+    }
+
+    // Breakfast Carbs
+    let bfastC = 0;
+    if (selectedCarbs.includes("pirinc_unu")) {
+        bfastIngredients.push({ foodId: "pirinc_unu", amount: 60 });
+        bfastC += 48;
+    } else if (selectedCarbs.includes("cig_yulaf")) {
+        bfastIngredients.push({ foodId: "cig_yulaf", amount: 70 });
+        bfastC += 42;
+    } else {
+        bfastIngredients.push({ foodId: selectedCarbs[0] || "cig_yulaf", amount: 60 });
+        bfastC += 40;
+    }
+
+    if (selectedCarbs.includes("muz")) {
+        bfastIngredients.push({ foodId: "muz", amount: 100 }); // 1 Muz (~23g C)
+        bfastC += 23;
+    }
+    if (selectedCarbs.includes("bal")) {
+        bfastIngredients.push({ foodId: "bal", amount: 25 }); // 25g Bal (~20g C)
+        bfastC += 20;
+    }
+
+    // Breakfast Fats
+    let bfastF = 0;
+    if (selectedFats.includes("fistik_ezmesi")) {
+        bfastIngredients.push({ foodId: "fistik_ezmesi", amount: 25 });
+        bfastF += 13;
+    } else if (selectedFats.includes("cig_badem")) {
+        bfastIngredients.push({ foodId: "cig_badem", amount: 20 });
+        bfastF += 10;
+    } else if (selectedFats.includes("cig_ceviz")) {
+        bfastIngredients.push({ foodId: "cig_ceviz", amount: 20 });
+        bfastF += 13;
+    }
+
+    const bfastTotals = getMealSubtotalMacros(bfastIngredients);
+    presets["preset_meal_1"] = {
+        id: "preset_meal_1",
+        name: "1. Kahvaltı (Pankek / Kase)",
+        ingredients: bfastIngredients,
+        desc: bfastTotals.desc,
+        cal: bfastTotals.cal,
+        p: bfastTotals.p,
+        c: bfastTotals.c,
+        f: bfastTotals.f
+    };
+
+    // 2. MAIN MEALS (Remaining meals)
+    const mainMealsCount = Math.max(2, mealCount - 1);
+    const remP = Math.max(30, totalP - bfastTotals.p);
+    const remC = Math.max(50, totalC - bfastTotals.c);
+    const remF = Math.max(15, totalF - bfastTotals.f);
+
+    const mealTargetP = remP / mainMealsCount;
+    const mealTargetC = remC / mainMealsCount;
+    const mealTargetF = remF / mainMealsCount;
+
+    // Filter main meal preferred foods
+    const mainProteinPool = selectedProteins.filter(p => !["yumurta_beyazi", "lor_peyniri"].includes(p));
+    const activeProtPool = mainProteinPool.length > 0 ? mainProteinPool : ["tavuk_gogsu"];
+
+    const mainCarbPool = selectedCarbs.filter(c => !["bal", "hurma", "muz"].includes(c));
+    const activeCarbPool = mainCarbPool.length > 0 ? mainCarbPool : ["cig_pirinc"];
+
+    const mainFatPool = selectedFats.filter(f => !["fistik_ezmesi"].includes(f));
+    const activeFatPool = mainFatPool.length > 0 ? mainFatPool : ["zeytinyagi"];
+
+    const mealTitles = {
+        3: ["2. Öğle & Antrenman Önü", "3. Akşam Yemeği & Toparlanma"],
+        4: ["2. Öğle Yemeği (Antrenman Önü)", "3. Antrenman Sonrası (Post-Workout)", "4. Akşam / Gece Öğünü"],
+        5: ["2. Kuşluk / Ara Öğün", "3. Öğle Yemeği (Antrenman Önü)", "4. Antrenman Sonrası (Post-Workout)", "5. Akşam Yemeği"]
+    }[mealCount] || ["2. Öğle Yemeği", "3. Antrenman Sonrası", "4. Akşam Yemeği"];
+
+    for (let i = 0; i < mainMealsCount; i++) {
+        const mealNum = i + 2;
+        const mealKey = `preset_meal_${mealNum}`;
+        const mealName = mealTitles[i] || `${mealNum}. Ana Öğün`;
+
+        // Pick rotating protein
+        const protId = activeProtPool[i % activeProtPool.length];
+        const protFood = RAW_FOODS_DATABASE.find(f => f.id === protId) || RAW_FOODS_DATABASE[11]; // tavuk_gogsu
+        const protGrams = Math.max(50, Math.round((mealTargetP / (protFood.p / 100)) / 10) * 10);
+
+        // Pick rotating carb
+        const carbId = activeCarbPool[i % activeCarbPool.length];
+        const carbFood = RAW_FOODS_DATABASE.find(f => f.id === carbId) || RAW_FOODS_DATABASE[0]; // cig_pirinc
+        const carbGrams = Math.max(30, Math.round((mealTargetC / (carbFood.c / 100)) / 5) * 5);
+
+        // Pick rotating fat
+        const fatId = activeFatPool[i % activeFatPool.length];
+        const fatFood = RAW_FOODS_DATABASE.find(f => f.id === fatId) || RAW_FOODS_DATABASE[22]; // zeytinyagi
+        const fatGrams = Math.max(5, Math.round((mealTargetF / (fatFood.f / 100)) / 5) * 5);
+
+        const mealIngredients = [
+            { foodId: carbFood.id, amount: carbGrams },
+            { foodId: protFood.id, amount: protGrams },
+            { foodId: fatFood.id, amount: fatGrams }
+        ];
+
+        const mealTotals = getMealSubtotalMacros(mealIngredients);
+        presets[mealKey] = {
+            id: mealKey,
+            name: mealName,
+            ingredients: mealIngredients,
+            desc: mealTotals.desc,
+            cal: mealTotals.cal,
+            p: mealTotals.p,
+            c: mealTotals.c,
+            f: mealTotals.f
+        };
+    }
+
+    return presets;
+}
+
+function renderWizardSummaryUI() {
+    const calc = wizardState.calculated;
+    if (!calc) return;
+
+    // Badges & numbers
+    const goalBadge = document.getElementById("summary-goal-badge");
+    const goalTitles = {
+        bulk: "🔥 LEAN BULK PLANI (KÜTLE & HACİM)",
+        cut: "✂️ DEFINASYON & YAĞ YAKIMI (CUTTING)",
+        recomp: "⚡ BODY RECOMPOSITION PLANI"
+    };
+    if (goalBadge) goalBadge.innerText = goalTitles[wizardState.goal] || "KİŞİYE ÖZEL BESLENME PLANI";
+
+    document.getElementById("summary-cal-val").innerText = `${calc.calories.toLocaleString('tr-TR')} kcal / gün`;
+    document.getElementById("summary-bmr-val").innerText = calc.bmr;
+    document.getElementById("summary-tdee-val").innerText = calc.tdee;
+
+    document.getElementById("summary-p-val").innerText = `${calc.protein}g`;
+    document.getElementById("summary-c-val").innerText = `${calc.carbs}g`;
+    document.getElementById("summary-f-val").innerText = `${calc.fat}g`;
+
+    const totalCals = (calc.protein * 4) + (calc.carbs * 4) + (calc.fat * 9);
+    const pPct = Math.round(((calc.protein * 4) / totalCals) * 100);
+    const cPct = Math.round(((calc.carbs * 4) / totalCals) * 100);
+    const fPct = Math.round(((calc.fat * 9) / totalCals) * 100);
+
+    const pPctEl = document.getElementById("summary-p-pct");
+    const cPctEl = document.getElementById("summary-c-pct");
+    const fPctEl = document.getElementById("summary-f-pct");
+
+    if (pPctEl) pPctEl.innerText = `(~%${pPct})`;
+    if (cPctEl) cPctEl.innerText = `(~%${cPct})`;
+    if (fPctEl) fPctEl.innerText = `(~%${fPct})`;
+
+    // Render Generated Meals List
+    const mealsContainer = document.getElementById("wizard-generated-meals-container");
+    if (!mealsContainer) return;
+
+    const presets = calc.generatedPresets || {};
+    const presetKeys = Object.keys(presets);
+
+    if (presetKeys.length === 0) {
+        mealsContainer.innerHTML = `<p class="text-secondary" style="font-size:0.8rem;">Mevcut kayıtlı öğünleriniz kullanılacak.</p>`;
+        return;
+    }
+
+    mealsContainer.innerHTML = presetKeys.map(key => {
+        const m = presets[key];
+        return `
+            <div class="wizard-gen-meal-card">
+                <div class="gen-meal-header">
+                    <span class="gen-meal-title">${m.name}</span>
+                    <span class="gen-meal-macros">${m.cal} kcal • ${m.p}P / ${m.c}C / ${m.f}F</span>
+                </div>
+                <div class="gen-meal-ingredients">
+                    <i class="fa-solid fa-scale-balanced" style="font-size:0.68rem; margin-right:4px;"></i>${m.desc}
+                </div>
+            </div>
+        `;
+    }).join("");
+}
+
+function applyWizardPlanAndFinish() {
+    const calc = wizardState.calculated;
+    if (!calc) return;
+
+    // Apply targets
+    appData.targets = {
+        calories: calc.calories,
+        protein: calc.protein,
+        carbs: calc.carbs,
+        fat: calc.fat,
+        water: calc.water,
+        steps: calc.steps,
+        weeklyGainMin: calc.weeklyGainMin,
+        weeklyGainMax: calc.weeklyGainMax
+    };
+
+    // Apply auto-generated presets if created
+    if (wizardState.path === "auto" && calc.generatedPresets && Object.keys(calc.generatedPresets).length > 0) {
+        appData.customPresets = JSON.parse(JSON.stringify(calc.generatedPresets));
+    }
+
+    // Save user profile & flag
+    appData.userProfile = {
+        gender: wizardState.gender,
+        age: wizardState.age,
+        height: wizardState.height,
+        weight: wizardState.weight,
+        frequency: wizardState.frequency,
+        activity: wizardState.activity,
+        goal: wizardState.goal,
+        path: wizardState.path,
+        mealCount: wizardState.mealCount,
+        selectedCarbs: [...wizardState.selectedCarbs],
+        selectedProteins: [...wizardState.selectedProteins],
+        selectedFats: [...wizardState.selectedFats]
+    };
+    appData.onboardingCompleted = true;
+
+    // Save and re-render everything
+    saveDataToStorage();
+    recalculateDailyTotals();
+    updateDateDisplay();
+    renderDashboard();
+    renderNutritionView();
+    initSettingsForm();
+    updateCoachReport();
+
+    closeModal("modal-onboarding-wizard");
+    showToast("Kişiye özel diyet planın ve hedeflerin başarıyla uygulandı! 🔥🎯");
 }

@@ -1355,3 +1355,450 @@ body {
     visibility: visible;
     transform: translateX(-50%) translateY(0);
 }
+
+/* ==================== ONBOARDING & DIET WIZARD STYLES ==================== */
+.wizard-modal-card {
+    max-height: 94vh;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    overflow: hidden;
+}
+
+.wizard-header {
+    padding: 16px 18px 12px;
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.wizard-title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.wizard-step-badge {
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    color: var(--status-blue);
+    background: rgba(10, 132, 255, 0.15);
+    padding: 3px 8px;
+    border-radius: 4px;
+}
+
+#wizard-main-heading {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #ffffff;
+    margin-top: 6px;
+}
+
+.wizard-progress-track {
+    width: 100%;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 2px;
+    margin-top: 10px;
+    overflow: hidden;
+}
+
+.wizard-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--status-blue), #5ac8fa);
+    transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.wizard-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 18px;
+}
+
+.wizard-intro-text {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    line-height: 1.45;
+    margin-bottom: 14px;
+}
+
+/* Goal Cards */
+.goal-selection-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.goal-card {
+    background: var(--bg-card-subtle);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.goal-card:active {
+    transform: scale(0.985);
+}
+
+.goal-card.active {
+    border-color: var(--status-blue);
+    background: rgba(10, 132, 255, 0.08);
+    box-shadow: 0 0 16px rgba(10, 132, 255, 0.18);
+}
+
+.goal-card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.goal-icon-badge {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
+
+.bulk-icon {
+    background: rgba(255, 159, 10, 0.2);
+    color: var(--status-amber);
+}
+
+.cut-icon {
+    background: rgba(255, 69, 58, 0.2);
+    color: var(--status-red);
+}
+
+.recomp-icon {
+    background: rgba(48, 209, 88, 0.2);
+    color: var(--status-green);
+}
+
+.goal-title {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.goal-tag {
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.goal-desc {
+    font-size: 0.76rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+/* Gender Toggle */
+.gender-toggle-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.gender-btn {
+    padding: 10px;
+    border-radius: var(--radius-sm);
+    background: var(--bg-input);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.15s ease;
+}
+
+.gender-btn.active {
+    background: #ffffff;
+    color: #000000;
+    border-color: #ffffff;
+    font-weight: 700;
+}
+
+/* Path Selection */
+.path-selection-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.path-card {
+    background: var(--bg-card-subtle);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 14px;
+    cursor: pointer;
+    display: flex;
+    gap: 12px;
+    transition: all 0.2s ease;
+}
+
+.path-card:active {
+    transform: scale(0.985);
+}
+
+.path-card.active {
+    border-color: var(--status-blue);
+    background: rgba(10, 132, 255, 0.08);
+    box-shadow: 0 0 16px rgba(10, 132, 255, 0.18);
+}
+
+.path-icon-badge {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    color: var(--status-blue);
+    flex-shrink: 0;
+}
+
+.path-title {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #ffffff;
+    margin-bottom: 4px;
+}
+
+.path-desc {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    line-height: 1.35;
+}
+
+/* Food Selection Pills */
+.wizard-food-section {
+    background: var(--bg-card-subtle);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 12px;
+}
+
+.section-label-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.food-chips-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.food-chip {
+    padding: 6px 11px;
+    border-radius: 20px;
+    background: var(--bg-input);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s ease;
+    user-select: none;
+}
+
+.food-chip:active {
+    transform: scale(0.96);
+}
+
+.food-chip.selected {
+    background: rgba(10, 132, 255, 0.22);
+    border-color: var(--status-blue);
+    color: #ffffff;
+    font-weight: 700;
+}
+
+/* Meal Count Toggle */
+.meal-count-toggle-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+}
+
+.meal-cnt-btn {
+    padding: 8px 4px;
+    border-radius: var(--radius-sm);
+    background: var(--bg-input);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.meal-cnt-btn.active {
+    background: #ffffff;
+    color: #000000;
+    border-color: #ffffff;
+    font-weight: 700;
+}
+
+/* Summary Card */
+.wizard-plan-summary-card {
+    background: linear-gradient(135deg, rgba(19, 20, 24, 0.95), rgba(26, 27, 34, 0.95));
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: var(--radius-md);
+    padding: 14px;
+}
+
+.summary-top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.summary-goal-badge {
+    font-size: 0.68rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: var(--status-blue);
+    background: rgba(10, 132, 255, 0.15);
+    padding: 3px 8px;
+    border-radius: 4px;
+    display: inline-block;
+    margin-bottom: 4px;
+}
+
+.summary-cal-number {
+    font-size: 1.45rem;
+    font-weight: 800;
+    color: #ffffff;
+}
+
+.summary-bmr-box {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+}
+
+.summary-macros-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.summary-macro-pill {
+    padding: 8px 6px;
+    border-radius: var(--radius-sm);
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.summary-macro-pill.p-pill {
+    background: rgba(255, 69, 58, 0.12);
+    border: 1px solid rgba(255, 69, 58, 0.25);
+    color: var(--status-red);
+}
+
+.summary-macro-pill.c-pill {
+    background: rgba(255, 159, 10, 0.12);
+    border: 1px solid rgba(255, 159, 10, 0.25);
+    color: var(--status-amber);
+}
+
+.summary-macro-pill.f-pill {
+    background: rgba(48, 209, 88, 0.12);
+    border: 1px solid rgba(48, 209, 88, 0.25);
+    color: var(--status-green);
+}
+
+.summary-macro-pill span {
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.summary-macro-pill strong {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #ffffff;
+}
+
+.summary-macro-pill small {
+    font-size: 0.65rem;
+    color: var(--text-secondary);
+}
+
+/* Generated Meals List in Wizard */
+.wizard-generated-meals-box {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.wizard-gen-meal-card {
+    background: var(--bg-card-subtle);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+}
+
+.gen-meal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.gen-meal-title {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.gen-meal-macros {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--status-amber);
+}
+
+.gen-meal-ingredients {
+    font-size: 0.74rem;
+    color: var(--accent-secondary);
+    line-height: 1.4;
+}
+
+/* Wizard Footer */
+.wizard-footer {
+    padding: 12px 18px;
+    border-top: 1px solid var(--border-subtle);
+    background: var(--bg-card);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+
