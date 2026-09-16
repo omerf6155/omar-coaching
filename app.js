@@ -2448,12 +2448,58 @@ function saveRevisionsDB(db) {
     localStorage.setItem("OMAR_REVISIONS_DB", JSON.stringify(db));
 }
 
-// Seed Demo Registry & Data if First Time
+// Generate Unique 4-Digit Random Athlete Identity Tag (#1000 - #9999)
+function generateUniqueAthleteTag(registry) {
+    registry = registry || getUsersRegistry();
+    const existingTags = new Set(
+        Object.values(registry)
+            .map(u => u.athleteTag)
+            .filter(Boolean)
+    );
+    let tag = "";
+    let attempts = 0;
+    while (attempts < 10000) {
+        const randNum = Math.floor(1000 + Math.random() * 9000); // 1000 - 9999
+        tag = `#${randNum}`;
+        if (!existingTags.has(tag)) {
+            return tag;
+        }
+        attempts++;
+    }
+    return `#${Math.floor(1000 + Math.random() * 9000)}`;
+}
+
+// Copy Athlete ID Tag to Clipboard with 1-Click
+function copyAthleteTag() {
+    const activeUsername = getActiveSessionUsername();
+    const registry = getUsersRegistry();
+    const user = activeUsername && registry[activeUsername];
+    const tag = (user && user.athleteTag) || "#4829";
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(tag).then(() => {
+            showToast(`Sporcu Kimlik Kodun (${tag}) panoya kopyalandı! 📋`);
+        }).catch(() => {
+            showToast(`Sporcu Kimlik Kodun: ${tag}`);
+        });
+    } else {
+        showToast(`Sporcu Kimlik Kodun: ${tag}`);
+    }
+}
+
+// Seed Demo Registry & Clean Up Fake Accounts
 function seedInitialUsersAndDemoData() {
     let registry = getUsersRegistry();
     let chatDb = getChatDB();
     let revDb = getRevisionsDB();
     let needsSave = false;
+
+    // Purge fake demo accounts if present
+    if (registry["caner"]) { delete registry["caner"]; needsSave = true; }
+    if (registry["burak"]) { delete registry["burak"]; needsSave = true; }
+    if (registry["mert"]) { delete registry["mert"]; needsSave = true; }
+    if (chatDb["caner"]) { delete chatDb["caner"]; saveChatDB(chatDb); }
+    if (chatDb["burak"]) { delete chatDb["burak"]; saveChatDB(chatDb); }
 
     // Coach Account
     if (!registry["coach_omar"]) {
@@ -2468,7 +2514,7 @@ function seedInitialUsersAndDemoData() {
         needsSave = true;
     }
 
-    // Athlete 1: Ömer Faruk (Lean Bulk)
+    // Athlete 1: Ömer Faruk (Real User - Lean Bulk)
     if (!registry["omer"]) {
         const omerData = createDefaultAppData();
         omerData.userProfile = { age: 24, height: 178, weight: 74.0, gender: "male", frequency: 5, activity: "moderate", goal: "bulk" };
@@ -2506,82 +2552,26 @@ function seedInitialUsersAndDemoData() {
             username: "omer",
             displayName: "Ömer Faruk",
             role: "athlete",
+            athleteTag: "#4829",
             passwordHash: "1234",
             createdAt: "2026-09-01",
             data: omerData
         };
         needsSave = true;
-    }
-
-    // Athlete 2: Caner Bulut (Recomposition)
-    if (!registry["caner"]) {
-        const canerData = createDefaultAppData();
-        canerData.userProfile = { age: 26, height: 182, weight: 82.5, gender: "male", frequency: 4, activity: "moderate", goal: "recomp" };
-        canerData.targets = { calories: 2450, protein: 180, carbs: 260, fat: 65, water: 3.5, steps: 8500, weeklyGainMin: -0.1, weeklyGainMax: 0.1 };
-        canerData.todayNutrition = {
-            consumedCal: 1980,
-            consumedP: 150,
-            consumedC: 210,
-            consumedF: 52,
-            consumedWater: 2.8,
-            steps: 7200,
-            meals: [
-                { id: "m1", name: "Yulaf & Yumurta", cal: 650, p: 45, c: 75, f: 18, time: "09:00" },
-                { id: "m2", name: "Tavuk & Basmati Pirinç", cal: 780, p: 60, c: 95, f: 12, time: "13:30" }
-            ]
-        };
-        canerData.workoutLogs = {
-            "pzt_1": [{ weight: 90, reps: 6, rir: "RIR 0", date: "2026-09-16" }]
-        };
-        canerData.weightHistory = [{ date: "2026-09-16", weight: 82.5 }, { date: "2026-09-09", weight: 82.7 }];
-        canerData.onboardingCompleted = true;
-
-        registry["caner"] = {
-            username: "caner",
-            displayName: "Caner Bulut",
-            role: "athlete",
-            passwordHash: "1234",
-            createdAt: "2026-09-05",
-            data: canerData
-        };
+    } else if (!registry["omer"].athleteTag) {
+        registry["omer"].athleteTag = "#4829";
         needsSave = true;
     }
 
-    // Athlete 3: Burak Terzi (Cutting)
-    if (!registry["burak"]) {
-        const burakData = createDefaultAppData();
-        burakData.userProfile = { age: 23, height: 175, weight: 88.0, gender: "male", frequency: 5, activity: "active", goal: "cut" };
-        burakData.targets = { calories: 2150, protein: 195, carbs: 190, fat: 55, water: 4.0, steps: 10000, weeklyGainMin: -0.7, weeklyGainMax: -0.4 };
-        burakData.todayNutrition = {
-            consumedCal: 1850,
-            consumedP: 170,
-            consumedC: 160,
-            consumedF: 45,
-            consumedWater: 3.5,
-            steps: 9400,
-            meals: [
-                { id: "m1", name: "Beyaz Omlet & Yulaf", cal: 520, p: 48, c: 55, f: 10, time: "08:00" },
-                { id: "m2", name: "Hindi Göğsü & Patates", cal: 720, p: 65, c: 75, f: 12, time: "13:00" }
-            ]
-        };
-        burakData.workoutLogs = {
-            "sal_1": [{ weight: 110, reps: 5, rir: "RIR 0", date: "2026-09-16" }]
-        };
-        burakData.weightHistory = [{ date: "2026-09-16", weight: 88.0 }, { date: "2026-09-09", weight: 89.2 }];
-        burakData.onboardingCompleted = true;
+    // Ensure all existing athlete accounts have an athleteTag
+    Object.values(registry).forEach(u => {
+        if (u.role === "athlete" && !u.athleteTag) {
+            u.athleteTag = generateUniqueAthleteTag(registry);
+            needsSave = true;
+        }
+    });
 
-        registry["burak"] = {
-            username: "burak",
-            displayName: "Burak Terzi",
-            role: "athlete",
-            passwordHash: "1234",
-            createdAt: "2026-09-08",
-            data: burakData
-        };
-        needsSave = true;
-    }
-
-    // Seed Demo Messages
+    // Seed Demo Messages for Real User
     if (!chatDb["omer"]) {
         chatDb["omer"] = [
             { sender: "coach", text: "Selam Ömer! Bugün Push 1 günün, Bench Press'te 80kg top sete odaklan.", time: "10:30", date: "2026-09-16", read: true },
@@ -2590,15 +2580,8 @@ function seedInitialUsersAndDemoData() {
         ];
         saveChatDB(chatDb);
     }
-    if (!chatDb["caner"]) {
-        chatDb["caner"] = [
-            { sender: "athlete", text: "Hocam antrenmandan sonra omuzumda hafif bir gerilme oldu.", time: "11:00", date: "2026-09-16", read: false },
-            { sender: "coach", text: "Incline bench koltuk ayarını 1 tık dik konuma getir, arka omuz esnetmelerini yap.", time: "11:30", date: "2026-09-16", read: true }
-        ];
-        saveChatDB(chatDb);
-    }
 
-    // Seed Demo Revision
+    // Seed Demo Revision for Real User
     if (!revDb["omer"]) {
         revDb["omer"] = {
             calories: 2850,
@@ -2846,11 +2829,13 @@ async function handleRegisterSubmit(event) {
 
     const passwordHash = await hashPassword(password);
     const initialData = createDefaultAppData();
+    const athleteTag = (currentAuthRole === "athlete") ? generateUniqueAthleteTag(registry) : null;
 
     registry[username] = {
         username,
         displayName,
         role: currentAuthRole,
+        athleteTag,
         passwordHash,
         createdAt: new Date().toISOString().split('T')[0],
         data: initialData
@@ -2874,7 +2859,7 @@ async function handleRegisterSubmit(event) {
         renderScaleView();
         initSettingsForm();
         switchAppPortal("athlete");
-        showToast(`Hesabın başarıyla oluşturuldu! Hoş geldin, ${displayName}! 🚀`);
+        showToast(`Hesabın oluşturuldu! Özel Sporcu Kodun: ${athleteTag} 🚀`);
 
         setTimeout(() => {
             openOnboardingWizard();
@@ -3006,7 +2991,8 @@ function renderCoachRoster() {
     if (searchVal) {
         athletes = athletes.filter(a => 
             (a.displayName && a.displayName.toLowerCase().includes(searchVal)) || 
-            (a.username && a.username.toLowerCase().includes(searchVal))
+            (a.username && a.username.toLowerCase().includes(searchVal)) ||
+            (a.athleteTag && a.athleteTag.toLowerCase().includes(searchVal))
         );
     }
 
@@ -3060,7 +3046,10 @@ function renderCoachRoster() {
                     <div class="arc-left">
                         <div class="arc-avatar">${initial}</div>
                         <div class="arc-name-group">
-                            <h3>${ath.displayName || ath.username}</h3>
+                            <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                                <h3>${ath.displayName || ath.username}</h3>
+                                <span class="badge-id">${ath.athleteTag || '#----'}</span>
+                            </div>
                             <span class="arc-uname">@${ath.username}</span>
                         </div>
                     </div>
@@ -3537,53 +3526,51 @@ function renderCoachSettings() {
     if (pinInput) pinInput.value = "";
 }
 
-function handleCoachCreateAthlete(event) {
-    event.preventDefault();
-    const name = document.getElementById("new-ath-name").value.trim();
-    const username = document.getElementById("new-ath-username").value.trim().toLowerCase();
-    const pwd = document.getElementById("new-ath-pwd").value;
-    const goal = document.getElementById("new-ath-goal").value;
-    const weight = parseFloat(document.getElementById("new-ath-weight").value) || 75.0;
-    const cal = parseInt(document.getElementById("new-ath-cal").value) || 2800;
-    const protein = parseInt(document.getElementById("new-ath-p").value) || 170;
-    const errBanner = document.getElementById("new-ath-error");
+function handleCoachConnectAthleteById(event) {
+    if (event) event.preventDefault();
+    const inputEl = document.getElementById("connect-ath-id");
+    const errBanner = document.getElementById("connect-ath-error");
+    if (!inputEl) return;
 
-    if (!name || !username || !pwd) {
+    let query = inputEl.value.trim();
+    if (!query) {
         if (errBanner) {
-            errBanner.innerText = "Lütfen tüm zorunlu alanları doldurun.";
+            errBanner.innerText = "Lütfen bir sporcu kimlik kodu (#ID) veya kullanıcı adı girin.";
             errBanner.style.display = "block";
         }
         return;
     }
+
+    // Clean query
+    if (query.startsWith("@")) query = query.substring(1).trim();
+    const queryLower = query.toLowerCase();
+    const queryAsTag = query.startsWith("#") ? query.toUpperCase() : `#${query.toUpperCase()}`;
 
     const registry = getUsersRegistry();
-    if (registry[username]) {
+    const athletes = Object.values(registry).filter(u => u.role !== "coach");
+
+    // Search by athleteTag or username
+    const found = athletes.find(a => 
+        (a.athleteTag && a.athleteTag.toUpperCase() === queryAsTag) ||
+        (a.athleteTag && a.athleteTag.toLowerCase() === queryLower) ||
+        (a.username && a.username.toLowerCase() === queryLower)
+    );
+
+    if (!found) {
         if (errBanner) {
-            errBanner.innerText = "Bu kullanıcı adı zaten alınmış.";
+            errBanner.innerText = `"${query}" kimliğine veya kullanıcı adına sahip kayıtlı bir sporcu bulunamadı. Sporcunun profilinde yer alan 4 haneli #ID kodunu doğru girdiğinizden emin olun.`;
             errBanner.style.display = "block";
         }
         return;
     }
 
-    const initialData = createDefaultAppData();
-    initialData.userProfile = { age: 24, height: 178, weight: weight, gender: "male", frequency: 5, activity: "moderate", goal: goal };
-    initialData.targets = { ...DEFAULT_TARGETS, calories: cal, protein: protein };
-    initialData.weightHistory = [{ date: new Date().toISOString().split('T')[0], weight: weight }];
-    initialData.onboardingCompleted = true;
-
-    registry[username] = {
-        username,
-        displayName: name,
-        role: "athlete",
-        passwordHash: pwd,
-        createdAt: new Date().toISOString().split('T')[0],
-        data: initialData
-    };
-
-    saveUsersRegistry(registry);
+    if (errBanner) errBanner.style.display = "none";
+    inputEl.value = "";
     closeModal("modal-coach-new-athlete");
-    showToast(`Yeni sporcu (${name}) başarıyla eklendi! 🎉`);
+
+    currentCoachSelectedAthlete = found.username;
     renderCoachPortal();
+    showToast(`Sporcu (${found.displayName || found.username} ${found.athleteTag || ''}) listenize bağlandı! 🎯🔥`);
 }
 
 function exportCoachAllDataJSON() {
@@ -3805,6 +3792,7 @@ function openUserProfileModal() {
 
     const nameEl = document.getElementById("profile-display-name");
     const unameEl = document.getElementById("profile-username-tag");
+    const idTagEl = document.getElementById("profile-athlete-id-tag");
     const goalEl = document.getElementById("profile-goal-tag");
     const dateEl = document.getElementById("profile-created-date");
     const avatarEl = document.getElementById("profile-avatar-large");
@@ -3812,6 +3800,7 @@ function openUserProfileModal() {
     const displayName = user.displayName || user.username;
     if (nameEl) nameEl.innerText = displayName;
     if (unameEl) unameEl.innerText = `@${user.username}`;
+    if (idTagEl) idTagEl.innerText = user.athleteTag || (user.role === 'coach' ? '👑 KOÇ' : '#4829');
     if (dateEl) dateEl.innerText = `Kayıt: ${user.createdAt || '2026-09-16'}`;
 
     if (avatarEl) {
@@ -3929,6 +3918,7 @@ function updateTopBarUserHeader() {
     const dashName = document.getElementById("dash-user-name");
     const dashUname = document.getElementById("dash-user-uname");
     const dashGoal = document.getElementById("dash-user-goal");
+    const dashIdBadge = document.getElementById("dash-user-id-badge");
 
     const history = appData.weightHistory || [];
     const currentW = history.length > 0 ? history[0].weight : (appData.userProfile ? appData.userProfile.weight : 74.0);
@@ -3946,6 +3936,7 @@ function updateTopBarUserHeader() {
         if (dashName) dashName.innerText = displayName;
         if (dashUname) dashUname.innerText = `@${user.username}`;
         if (dashGoal) dashGoal.innerText = goalName;
+        if (dashIdBadge) dashIdBadge.innerText = user.athleteTag || (user.role === 'coach' ? '👑 KOÇ' : '#4829');
     } else {
         if (nameEl) nameEl.innerText = "OMAR COACHING";
         if (avatarEl) avatarEl.innerHTML = `<i class="fa-solid fa-user"></i>`;
@@ -3953,6 +3944,7 @@ function updateTopBarUserHeader() {
         if (dashName) dashName.innerText = "OMAR COACHING";
         if (dashUname) dashUname.innerText = "@misafir";
         if (dashGoal) dashGoal.innerText = goalName;
+        if (dashIdBadge) dashIdBadge.innerText = "#----";
     }
 
     if (subStatusEl) {

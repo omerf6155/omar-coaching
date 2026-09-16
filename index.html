@@ -53,6 +53,7 @@
                             </div>
                             <div class="user-hero-tags">
                                 <span class="badge-role"><i class="fa-solid fa-crown"></i> Sporcu</span>
+                                <span class="badge-id" id="dash-user-id-badge">#4829</span>
                                 <span class="badge-goal" id="dash-user-goal">🔥 Lean Bulk</span>
                             </div>
                         </div>
@@ -425,7 +426,7 @@
                     <div class="card-header" style="margin-bottom:4px;">
                         <h2><i class="fa-solid fa-users-viewfinder"></i> ANTRENÖR KONTROL PANELİ</h2>
                         <button class="btn btn-xs btn-primary" onclick="openModal('modal-coach-new-athlete')">
-                            <i class="fa-solid fa-user-plus"></i> Sporcu Ekle
+                            <i class="fa-solid fa-hashtag"></i> Sporcu Bağla (ID)
                         </button>
                     </div>
                     <p class="text-secondary" style="font-size:0.75rem; line-height:1.4;">
@@ -1294,6 +1295,11 @@
                     <div class="profile-details">
                         <h4 class="profile-name" id="profile-display-name">Ömer Faruk</h4>
                         <span class="profile-username" id="profile-username-tag">@omer</span>
+                        <div class="profile-id-box" onclick="copyAthleteTag()" title="Kodu Kopyalamak İçin Tıkla" style="cursor:pointer;">
+                            <span class="id-lbl"><i class="fa-solid fa-id-card"></i> Sporcu ID:</span>
+                            <strong class="id-code" id="profile-athlete-id-tag">#4829</strong>
+                            <i class="fa-solid fa-copy copy-icon"></i>
+                        </div>
                         <div class="profile-meta-row">
                             <span class="profile-badge" id="profile-goal-tag">🔥 Lean Bulk</span>
                             <span class="profile-since" id="profile-created-date">Kayıt: 2026-09-16</span>
@@ -1424,54 +1430,33 @@
         </div>
     </div>
 
-    <!-- 11. COACH NEW ATHLETE MODAL -->
+    <!-- 11. COACH CONNECT ATHLETE BY ID MODAL -->
     <div id="modal-coach-new-athlete" class="modal-overlay">
         <div class="modal-card">
             <div class="modal-header">
-                <h3><i class="fa-solid fa-user-plus"></i> Yeni Sporcu Kaydet</h3>
+                <h3><i class="fa-solid fa-hashtag"></i> Sporcu Kimlik Kodu (ID) ile Bağla</h3>
                 <button class="modal-close-btn" onclick="closeModal('modal-coach-new-athlete')">&times;</button>
             </div>
             <div class="modal-body">
-                <form onsubmit="handleCoachCreateAthlete(event)">
+                <p class="text-secondary" style="font-size:0.78rem; line-height:1.45; margin-bottom:14px;">
+                    Sisteme kayıt olan sporcunun profilinde yer alan <strong>4 haneli benzersiz kimlik kodunu</strong> (Örn: <span style="color:#ffd60a; font-weight:800;">#4829</span>) veya kullanıcı adını girerek antrenör listenize bağlayın.
+                </p>
+                <form onsubmit="handleCoachConnectAthleteById(event)">
                     <div class="form-group">
-                        <label>Sporcu İsim & Soyisim</label>
-                        <input type="text" id="new-ath-name" required placeholder="Örn: Ahmet Yılmaz">
+                        <label><i class="fa-solid fa-id-card"></i> Sporcu Kimlik Kodu (#ID) veya Kullanıcı Adı</label>
+                        <input type="text" id="connect-ath-id" required placeholder="Örn: #4829 veya omer" autocapitalize="none" style="font-size:0.95rem; font-weight:700; letter-spacing:0.5px; border-color:rgba(255,214,10,0.4);">
                     </div>
-                    <div class="form-group">
-                        <label>Kullanıcı Adı</label>
-                        <input type="text" id="new-ath-username" required placeholder="ahmetyilmaz" autocapitalize="none">
-                    </div>
-                    <div class="form-group">
-                        <label>Giriş Şifresi</label>
-                        <input type="password" id="new-ath-pwd" required minlength="4" placeholder="••••••••">
-                    </div>
-                    <div class="form-row-2">
-                        <div class="form-group">
-                            <label>Hedef</label>
-                            <select id="new-ath-goal">
-                                <option value="bulk">Lean Bulk (Kütle)</option>
-                                <option value="cut">Cutting (Diyet)</option>
-                                <option value="recomp">Recomposition</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Güncel Kilo (kg)</label>
-                            <input type="number" step="0.1" id="new-ath-weight" value="75.0" placeholder="75.0">
+                    
+                    <div class="card" style="background:var(--bg-card-subtle); padding:10px; margin-bottom:12px; border:1px dashed var(--border-subtle);">
+                        <div style="font-size:0.72rem; color:var(--text-secondary); display:flex; align-items:center; gap:6px;">
+                            <i class="fa-solid fa-circle-info" style="color:var(--status-blue);"></i>
+                            <span>Sporcular kayıt olduklarında kendilerine özel tekil bir <strong>#ID</strong> kodu alırlar. Bu kodu profil sayfalarından kopyalayabilirler.</span>
                         </div>
                     </div>
-                    <div class="form-row-2">
-                        <div class="form-group">
-                            <label>Kalori Hedefi (kcal)</label>
-                            <input type="number" id="new-ath-cal" value="2800" placeholder="2800">
-                        </div>
-                        <div class="form-group">
-                            <label>Protein (g)</label>
-                            <input type="number" id="new-ath-p" value="170" placeholder="170">
-                        </div>
-                    </div>
-                    <div id="new-ath-error" class="auth-error-banner" style="display:none;"></div>
-                    <button type="submit" class="btn btn-primary btn-block" style="margin-top:12px;">
-                        Sporcuyu Oluştur & Listeye Ekle 🚀
+
+                    <div id="connect-ath-error" class="auth-error-banner" style="display:none;"></div>
+                    <button type="submit" class="btn btn-primary btn-block" style="margin-top:10px;">
+                        <i class="fa-solid fa-link"></i> Sporcuyu Bul & Listeye Bağla 🚀
                     </button>
                 </form>
             </div>

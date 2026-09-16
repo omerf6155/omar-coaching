@@ -3051,6 +3051,63 @@ body {
     transform: scale(0.92);
 }
 
+/* ==================== ATHLETE ID BADGE & PROFILE ID BOX ==================== */
+.badge-id {
+    background: rgba(255, 214, 10, 0.12);
+    color: #ffd60a;
+    border: 1px solid rgba(255, 214, 10, 0.35);
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
 
+.profile-id-box {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 214, 10, 0.1);
+    border: 1px solid rgba(255, 214, 10, 0.3);
+    border-radius: var(--radius-sm);
+    padding: 4px 10px;
+    margin-top: 5px;
+    margin-bottom: 5px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
 
+.profile-id-box:hover {
+    background: rgba(255, 214, 10, 0.2);
+    border-color: #ffd60a;
+    transform: translateY(-1px);
+}
 
+.profile-id-box .id-lbl {
+    font-size: 0.68rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.profile-id-box .id-code {
+    font-size: 0.88rem;
+    color: #ffd60a;
+    font-weight: 900;
+    letter-spacing: 1px;
+}
+
+.profile-id-box .copy-icon {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    transition: color 0.2s;
+}
+
+.profile-id-box:hover .copy-icon {
+    color: #ffd60a;
+}
