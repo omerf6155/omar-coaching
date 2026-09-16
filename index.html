@@ -15,15 +15,21 @@
     <div id="app-container">
         <!-- Top App Bar -->
         <header class="top-bar">
-            <div class="user-badge">
+            <div class="user-badge" onclick="openUserProfileModal()" style="cursor: pointer;" title="Profil ve Hesap">
+                <div class="user-avatar-circle" id="header-user-avatar">
+                    <i class="fa-solid fa-user"></i>
+                </div>
                 <div>
-                    <h1 class="app-title">OMAR COACHING</h1>
+                    <h1 class="app-title" id="header-user-name">OMAR COACHING</h1>
                     <span class="sub-status" id="header-date">Bugün: 74.0 kg • %14 Yağ</span>
                 </div>
             </div>
             <div class="top-actions">
                 <button class="icon-btn" onclick="openModal('modal-settings')" title="Hedefleri ve Ayarları Düzenle">
                     <i class="fa-solid fa-sliders"></i>
+                </button>
+                <button class="icon-btn" onclick="openUserProfileModal()" title="Hesap ve Profil">
+                    <i class="fa-solid fa-circle-user"></i>
                 </button>
             </div>
         </header>
@@ -859,6 +865,136 @@
                     Devam Et <i class="fa-solid fa-chevron-right"></i>
                 </button>
             </div>
+        </div>
+    </div>
+
+    <!-- 9. USER PROFILE & ACCOUNT MODAL -->
+    <div id="modal-user-profile" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-circle-user"></i> Kullanıcı Hesabı & Profil</h3>
+                <button class="modal-close-btn" onclick="closeModal('modal-user-profile')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- User Summary Card -->
+                <div class="profile-summary-card">
+                    <div class="profile-avatar-large" id="profile-avatar-large">
+                        <i class="fa-solid fa-user"></i>
+                    </div>
+                    <div class="profile-details">
+                        <h4 class="profile-name" id="profile-display-name">Ömer Faruk</h4>
+                        <span class="profile-username" id="profile-username-tag">@omer</span>
+                        <div class="profile-meta-row">
+                            <span class="profile-badge" id="profile-goal-tag">Lean Bulk</span>
+                            <span class="profile-since" id="profile-created-date">Kayıt: 2026-09-16</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Account Actions -->
+                <div class="profile-section-title">HESAP GÜVENLİĞİ</div>
+                
+                <!-- Change Password Form -->
+                <div class="card" style="background:var(--bg-card-subtle); padding:12px; margin-bottom:12px;">
+                    <div class="card-header" style="margin-bottom:8px;">
+                        <h2 style="font-size:0.75rem;"><i class="fa-solid fa-key"></i> ŞİFRE DEĞİŞTİR</h2>
+                    </div>
+                    <div class="form-group">
+                        <label>Mevcut Şifre</label>
+                        <input type="password" id="pwd-old" placeholder="Mevcut şifreniz">
+                    </div>
+                    <div class="form-group">
+                        <label>Yeni Şifre</label>
+                        <input type="password" id="pwd-new" minlength="4" placeholder="Yeni şifreniz (min 4 karakter)">
+                    </div>
+                    <button class="btn btn-sm btn-outline btn-block" onclick="handleChangePasswordSubmit()">Şifreyi Güncelle</button>
+                </div>
+
+                <!-- Switch Account / Logout -->
+                <div class="profile-actions-grid">
+                    <button class="btn btn-outline btn-block" onclick="closeModal('modal-user-profile'); openAuthModal('login');">
+                        <i class="fa-solid fa-users"></i> Farklı Hesaba Giriş Yap
+                    </button>
+                    <button class="btn btn-danger btn-block" onclick="logoutCurrentUser()">
+                        <i class="fa-solid fa-right-from-bracket"></i> Oturumu Kapat (Çıkış)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== AUTHENTICATION OVERLAY (LOGIN / REGISTER) ==================== -->
+    <div id="modal-auth-overlay" class="auth-overlay" style="display:none;">
+        <div class="auth-card">
+            <div class="auth-brand">
+                <div class="auth-logo-badge"><i class="fa-solid fa-dumbbell"></i></div>
+                <h2 class="auth-title">OMAR COACHING</h2>
+                <p class="auth-subtitle">Hypertrophy & Progressive Overload Engine</p>
+            </div>
+
+            <!-- Auth Tabs -->
+            <div class="auth-tabs">
+                <button class="auth-tab active" id="auth-tab-login" onclick="switchAuthTab('login')">Giriş Yap</button>
+                <button class="auth-tab" id="auth-tab-register" onclick="switchAuthTab('register')">Hesap Oluştur</button>
+            </div>
+
+            <!-- LOGIN FORM -->
+            <form id="auth-form-login" class="auth-form" onsubmit="handleLoginSubmit(event)">
+                <div class="form-group">
+                    <label><i class="fa-solid fa-user"></i> Kullanıcı Adı</label>
+                    <input type="text" id="login-username" required placeholder="kullaniciadi" autocomplete="username" autocapitalize="none">
+                </div>
+                <div class="form-group">
+                    <label><i class="fa-solid fa-lock"></i> Şifre</label>
+                    <div class="password-input-wrap">
+                        <input type="password" id="login-password" required placeholder="••••••••" autocomplete="current-password">
+                        <button type="button" class="btn-toggle-pwd" onclick="togglePasswordVisibility('login-password')">
+                            <i class="fa-solid fa-eye" id="login-password-eye"></i>
+                        </button>
+                    </div>
+                </div>
+                <div id="login-error-msg" class="auth-error-banner" style="display:none;"></div>
+                <button type="submit" class="btn btn-primary btn-block auth-submit-btn">
+                    Giriş Yap <i class="fa-solid fa-arrow-right-to-bracket"></i>
+                </button>
+                <div class="auth-switch-prompt">
+                    <span>Hesabın yok mu?</span>
+                    <a href="javascript:void(0)" onclick="switchAuthTab('register')">Hemen Kayıt Ol</a>
+                </div>
+            </form>
+
+            <!-- REGISTER FORM -->
+            <form id="auth-form-register" class="auth-form" style="display:none;" onsubmit="handleRegisterSubmit(event)">
+                <div class="form-group">
+                    <label><i class="fa-solid fa-id-card"></i> İsim & Soyisim (veya Rumuz)</label>
+                    <input type="text" id="reg-name" required placeholder="Örn: Ömer Faruk">
+                </div>
+                <div class="form-group">
+                    <label><i class="fa-solid fa-at"></i> Kullanıcı Adı (Giriş için)</label>
+                    <input type="text" id="reg-username" required placeholder="omer123" autocomplete="username" autocapitalize="none">
+                </div>
+                <div class="form-group">
+                    <label><i class="fa-solid fa-lock"></i> Şifre</label>
+                    <div class="password-input-wrap">
+                        <input type="password" id="reg-password" required minlength="4" placeholder="En az 4 karakter" autocomplete="new-password">
+                        <button type="button" class="btn-toggle-pwd" onclick="togglePasswordVisibility('reg-password')">
+                            <i class="fa-solid fa-eye" id="reg-password-eye"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label><i class="fa-solid fa-shield-halved"></i> Şifre Tekrarı</label>
+                    <input type="password" id="reg-password-confirm" required minlength="4" placeholder="Şifrenizi tekrar girin" autocomplete="new-password">
+                </div>
+                <div id="register-error-msg" class="auth-error-banner" style="display:none;"></div>
+                <button type="submit" class="btn btn-primary btn-block auth-submit-btn">
+                    Hesap Oluştur ve Başla <i class="fa-solid fa-rocket"></i>
+                </button>
+                <div class="auth-switch-prompt">
+                    <span>Zaten hesabın var mı?</span>
+                    <a href="javascript:void(0)" onclick="switchAuthTab('login')">Giriş Yap</a>
+                </div>
+            </form>
         </div>
     </div>
 

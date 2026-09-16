@@ -275,35 +275,41 @@ const DEFAULT_WORKOUT_PLAN = {
     }
 };
 
+function createDefaultAppData() {
+    return {
+        targets: { ...DEFAULT_TARGETS },
+        pinnedQuickActions: ["water", "pancake", "steps_1000", "steps_manual"],
+        customPresets: { ...DEFAULT_PRESET_MEALS },
+        customWorkoutPlan: JSON.parse(JSON.stringify(DEFAULT_WORKOUT_PLAN)),
+        supplements: [
+            MASTER_SUPPLEMENT_DATABASE[0], // Kreatin
+            MASTER_SUPPLEMENT_DATABASE[10], // Whey Isolate
+            MASTER_SUPPLEMENT_DATABASE[30], // Omega 3
+            MASTER_SUPPLEMENT_DATABASE[20], // D3+K2
+            MASTER_SUPPLEMENT_DATABASE[21]  // Magnezyum Bisglisinat
+        ],
+        supplementsLog: {},
+        todayNutrition: {
+            date: new Date().toISOString().split('T')[0],
+            calories: 0,
+            protein: 0,
+            carbs: 0,
+            fat: 0,
+            water: 0,
+            steps: 0,
+            meals: []
+        },
+        workoutLogs: {},
+        exerciseSetsCount: {},
+        seatSettings: {},
+        weightHistory: [],
+        onboardingCompleted: false,
+        userProfile: null
+    };
+}
+
 // Global App State
-let appData = {
-    targets: { ...DEFAULT_TARGETS },
-    pinnedQuickActions: ["water", "pancake", "steps_1000", "steps_manual"],
-    customPresets: { ...DEFAULT_PRESET_MEALS },
-    customWorkoutPlan: JSON.parse(JSON.stringify(DEFAULT_WORKOUT_PLAN)),
-    supplements: [
-        MASTER_SUPPLEMENT_DATABASE[0], // Kreatin
-        MASTER_SUPPLEMENT_DATABASE[10], // Whey Isolate
-        MASTER_SUPPLEMENT_DATABASE[30], // Omega 3
-        MASTER_SUPPLEMENT_DATABASE[20], // D3+K2
-        MASTER_SUPPLEMENT_DATABASE[21]  // Magnezyum Bisglisinat
-    ],
-    supplementsLog: {},
-    todayNutrition: {
-        date: new Date().toISOString().split('T')[0],
-        calories: 0,
-        protein: 0,
-        carbs: 0,
-        fat: 0,
-        water: 0,
-        steps: 0,
-        meals: []
-    },
-    workoutLogs: {},
-    exerciseSetsCount: {},
-    seatSettings: {},
-    weightHistory: []
-};
+let appData = createDefaultAppData();
 
 let currentActiveDay = "pzt";
 let currentSuppCatalogCategory = "all";
@@ -311,10 +317,11 @@ let currentRecipeIngredients = []; // [ { foodId, amount } ]
 
 // Initialize Application
 document.addEventListener("DOMContentLoaded", () => {
-    loadDataFromStorage();
+    const hasActiveSession = loadDataFromStorage();
     checkAndResetDailyNutrition();
     recalculateDailyTotals();
     updateDateDisplay();
+    updateTopBarUserHeader();
     renderDashboard();
     renderWorkoutView(currentActiveDay);
     renderNutritionView();
@@ -323,24 +330,56 @@ document.addEventListener("DOMContentLoaded", () => {
     updateCoachReport();
     initSettingsForm();
     renderSupplementCatalog();
-    checkOnboardingStatus();
+
+    if (!hasActiveSession && !getActiveSessionUsername()) {
+        openAuthModal("login");
+    } else {
+        checkOnboardingStatus();
+    }
 });
 
 // Storage Management
 function loadDataFromStorage() {
+    const activeUsername = getActiveSessionUsername();
+    const registry = getUsersRegistry();
+
+    // 1. If active user exists in registry, load their isolated data
+    if (activeUsername && registry[activeUsername] && registry[activeUsername].data) {
+        const parsed = registry[activeUsername].data;
+        appData = {
+            ...createDefaultAppData(),
+            ...parsed,
+            targets: { ...DEFAULT_TARGETS, ...(parsed.targets || {}) },
+            customPresets: { ...DEFAULT_PRESET_MEALS, ...(parsed.customPresets || {}) },
+            customWorkoutPlan: parsed.customWorkoutPlan || JSON.parse(JSON.stringify(DEFAULT_WORKOUT_PLAN)),
+            supplements: parsed.supplements && parsed.supplements.length > 0 ? parsed.supplements : appData.supplements,
+            pinnedQuickActions: parsed.pinnedQuickActions || ["water", "pancake", "steps_1000", "steps_manual"],
+            todayNutrition: { ...createDefaultAppData().todayNutrition, ...(parsed.todayNutrition || {}) },
+            supplementsLog: parsed.supplementsLog || {},
+            workoutLogs: parsed.workoutLogs || {},
+            exerciseSetsCount: parsed.exerciseSetsCount || {},
+            seatSettings: parsed.seatSettings || {},
+            weightHistory: parsed.weightHistory || [],
+            onboardingCompleted: parsed.onboardingCompleted !== undefined ? parsed.onboardingCompleted : false,
+            userProfile: parsed.userProfile || null
+        };
+        return true;
+    }
+
+    // 2. Legacy fallback
     const saved = localStorage.getItem("LEAN_BULK_APP_DATA");
     if (saved) {
         try {
             const parsed = JSON.parse(saved);
             appData = {
-                ...appData,
+                ...createDefaultAppData(),
                 ...parsed,
                 targets: { ...DEFAULT_TARGETS, ...(parsed.targets || {}) },
                 customPresets: { ...DEFAULT_PRESET_MEALS, ...(parsed.customPresets || {}) },
                 customWorkoutPlan: parsed.customWorkoutPlan || JSON.parse(JSON.stringify(DEFAULT_WORKOUT_PLAN)),
                 supplements: parsed.supplements && parsed.supplements.length > 0 ? parsed.supplements : appData.supplements,
                 pinnedQuickActions: parsed.pinnedQuickActions || ["water", "pancake", "steps_1000", "steps_manual"],
-                todayNutrition: { ...appData.todayNutrition, ...(parsed.todayNutrition || {}) },
+                todayNutrition: { ...createDefaultAppData().todayNutrition, ...(parsed.todayNutrition || {}) },
                 supplementsLog: parsed.supplementsLog || {},
                 workoutLogs: parsed.workoutLogs || {},
                 exerciseSetsCount: parsed.exerciseSetsCount || {},
@@ -349,13 +388,23 @@ function loadDataFromStorage() {
                 onboardingCompleted: parsed.onboardingCompleted !== undefined ? parsed.onboardingCompleted : false,
                 userProfile: parsed.userProfile || null
             };
+            return true;
         } catch (e) {
             console.error("Storage load error:", e);
         }
     }
+    return false;
 }
 
 function saveDataToStorage() {
+    const activeUsername = getActiveSessionUsername();
+    if (activeUsername) {
+        const registry = getUsersRegistry();
+        if (registry[activeUsername]) {
+            registry[activeUsername].data = JSON.parse(JSON.stringify(appData));
+            saveUsersRegistry(registry);
+        }
+    }
     localStorage.setItem("LEAN_BULK_APP_DATA", JSON.stringify(appData));
 }
 
@@ -2288,3 +2337,356 @@ function applyWizardPlanAndFinish() {
     closeModal("modal-onboarding-wizard");
     showToast("Kişiye özel diyet planın ve hedeflerin başarıyla uygulandı! 🔥🎯");
 }
+
+// ==================== AUTHENTICATION & USER MANAGEMENT ====================
+
+async function hashPassword(password) {
+    try {
+        const encoder = new TextEncoder();
+        const data = encoder.encode(password + "_omar_salt_2026");
+        const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    } catch (e) {
+        // Fallback simple hash for environments without crypto.subtle
+        let hash = 0;
+        const str = password + "_omar_salt_2026";
+        for (let i = 0; i < str.length; i++) {
+            const char = str.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash |= 0;
+        }
+        return "fallback_" + Math.abs(hash);
+    }
+}
+
+function getUsersRegistry() {
+    try {
+        const data = localStorage.getItem("OMAR_USERS_REGISTRY");
+        return data ? JSON.parse(data) : {};
+    } catch (e) {
+        return {};
+    }
+}
+
+function saveUsersRegistry(registry) {
+    localStorage.setItem("OMAR_USERS_REGISTRY", JSON.stringify(registry));
+}
+
+function getActiveSessionUsername() {
+    return localStorage.getItem("OMAR_ACTIVE_SESSION_USER") || null;
+}
+
+function setActiveSessionUsername(username) {
+    localStorage.setItem("OMAR_ACTIVE_SESSION_USER", username);
+}
+
+function clearActiveSessionUsername() {
+    localStorage.removeItem("OMAR_ACTIVE_SESSION_USER");
+}
+
+function openAuthModal(tab = "login") {
+    const overlay = document.getElementById("modal-auth-overlay");
+    if (overlay) overlay.style.display = "flex";
+    switchAuthTab(tab);
+}
+
+function closeAuthModal() {
+    const overlay = document.getElementById("modal-auth-overlay");
+    if (overlay) overlay.style.display = "none";
+}
+
+function switchAuthTab(tab) {
+    const loginTab = document.getElementById("auth-tab-login");
+    const regTab = document.getElementById("auth-tab-register");
+    const loginForm = document.getElementById("auth-form-login");
+    const regForm = document.getElementById("auth-form-register");
+    const loginErr = document.getElementById("login-error-msg");
+    const regErr = document.getElementById("register-error-msg");
+
+    if (loginErr) loginErr.style.display = "none";
+    if (regErr) regErr.style.display = "none";
+
+    if (tab === "login") {
+        if (loginTab) loginTab.classList.add("active");
+        if (regTab) regTab.classList.remove("active");
+        if (loginForm) loginForm.style.display = "block";
+        if (regForm) regForm.style.display = "none";
+    } else {
+        if (loginTab) loginTab.classList.remove("active");
+        if (regTab) regTab.classList.add("active");
+        if (loginForm) loginForm.style.display = "none";
+        if (regForm) regForm.style.display = "block";
+    }
+}
+
+function togglePasswordVisibility(inputId) {
+    const input = document.getElementById(inputId);
+    const eye = document.getElementById(inputId + "-eye");
+    if (!input) return;
+
+    if (input.type === "password") {
+        input.type = "text";
+        if (eye) {
+            eye.classList.remove("fa-eye");
+            eye.classList.add("fa-eye-slash");
+        }
+    } else {
+        input.type = "password";
+        if (eye) {
+            eye.classList.remove("fa-eye-slash");
+            eye.classList.add("fa-eye");
+        }
+    }
+}
+
+async function handleLoginSubmit(event) {
+    event.preventDefault();
+    const usernameInput = document.getElementById("login-username").value.trim().toLowerCase();
+    const passwordInput = document.getElementById("login-password").value;
+    const errBanner = document.getElementById("login-error-msg");
+
+    if (!usernameInput || !passwordInput) {
+        if (errBanner) {
+            errBanner.innerText = "Lütfen kullanıcı adı ve şifrenizi girin.";
+            errBanner.style.display = "block";
+        }
+        return;
+    }
+
+    const registry = getUsersRegistry();
+    const user = registry[usernameInput];
+
+    if (!user) {
+        if (errBanner) {
+            errBanner.innerText = "Bu kullanıcı adına ait bir hesap bulunamadı.";
+            errBanner.style.display = "block";
+        }
+        return;
+    }
+
+    const inputHash = await hashPassword(passwordInput);
+    if (user.passwordHash !== inputHash) {
+        if (errBanner) {
+            errBanner.innerText = "Hatalı şifre girdiniz. Lütfen tekrar deneyin.";
+            errBanner.style.display = "block";
+        }
+        return;
+    }
+
+    // Success login
+    setActiveSessionUsername(usernameInput);
+    loadDataFromStorage();
+    checkAndResetDailyNutrition();
+    recalculateDailyTotals();
+    updateDateDisplay();
+    updateTopBarUserHeader();
+    renderDashboard();
+    renderWorkoutView(currentActiveDay);
+    renderNutritionView();
+    renderSupplementsView();
+    renderScaleView();
+    updateCoachReport();
+    initSettingsForm();
+
+    closeAuthModal();
+    showToast(`Tekrar hoş geldin, ${user.displayName || user.username}! 🔥`);
+
+    if (!appData.onboardingCompleted) {
+        setTimeout(openOnboardingWizard, 300);
+    }
+}
+
+async function handleRegisterSubmit(event) {
+    event.preventDefault();
+    const displayName = document.getElementById("reg-name").value.trim();
+    const username = document.getElementById("reg-username").value.trim().toLowerCase();
+    const password = document.getElementById("reg-password").value;
+    const confirm = document.getElementById("reg-password-confirm").value;
+    const errBanner = document.getElementById("register-error-msg");
+
+    if (!displayName || !username || !password) {
+        if (errBanner) {
+            errBanner.innerText = "Lütfen tüm alanları doldurun.";
+            errBanner.style.display = "block";
+        }
+        return;
+    }
+
+    if (username.length < 3) {
+        if (errBanner) {
+            errBanner.innerText = "Kullanıcı adı en az 3 karakter olmalıdır.";
+            errBanner.style.display = "block";
+        }
+        return;
+    }
+
+    if (password.length < 4) {
+        if (errBanner) {
+            errBanner.innerText = "Şifre en az 4 karakter olmalıdır.";
+            errBanner.style.display = "block";
+        }
+        return;
+    }
+
+    if (password !== confirm) {
+        if (errBanner) {
+            errBanner.innerText = "Girdiğiniz şifreler birbiriyle eşleşmiyor.";
+            errBanner.style.display = "block";
+        }
+        return;
+    }
+
+    const registry = getUsersRegistry();
+    if (registry[username]) {
+        if (errBanner) {
+            errBanner.innerText = "Bu kullanıcı adı zaten alınmış. Farklı bir kullanıcı adı seçin.";
+            errBanner.style.display = "block";
+        }
+        return;
+    }
+
+    const passwordHash = await hashPassword(password);
+    const initialData = createDefaultAppData();
+
+    registry[username] = {
+        username,
+        displayName,
+        passwordHash,
+        createdAt: new Date().toISOString().split('T')[0],
+        data: initialData
+    };
+
+    saveUsersRegistry(registry);
+    setActiveSessionUsername(username);
+
+    // Load newly created user data
+    loadDataFromStorage();
+    updateTopBarUserHeader();
+    renderDashboard();
+    renderWorkoutView(currentActiveDay);
+    renderNutritionView();
+    renderSupplementsView();
+    renderScaleView();
+    initSettingsForm();
+
+    closeAuthModal();
+    showToast(`Hesabın başarıyla oluşturuldu! Hoş geldin, ${displayName}! 🚀`);
+
+    // Launch Onboarding Wizard for new user
+    setTimeout(() => {
+        openOnboardingWizard();
+    }, 400);
+}
+
+function openUserProfileModal() {
+    const activeUsername = getActiveSessionUsername();
+    const registry = getUsersRegistry();
+    const user = activeUsername && registry[activeUsername];
+
+    if (!user) {
+        openAuthModal("login");
+        return;
+    }
+
+    const nameEl = document.getElementById("profile-display-name");
+    const unameEl = document.getElementById("profile-username-tag");
+    const goalEl = document.getElementById("profile-goal-tag");
+    const dateEl = document.getElementById("profile-created-date");
+    const avatarEl = document.getElementById("profile-avatar-large");
+
+    if (nameEl) nameEl.innerText = user.displayName || user.username;
+    if (unameEl) unameEl.innerText = `@${user.username}`;
+    if (dateEl) dateEl.innerText = `Kayıt: ${user.createdAt || '2026-09-16'}`;
+
+    if (avatarEl) {
+        const initial = (user.displayName || user.username || "O").charAt(0).toUpperCase();
+        avatarEl.innerHTML = `<span>${initial}</span>`;
+    }
+
+    const goalMap = { bulk: "🔥 Lean Bulk", cut: "✂️ Cutting", recomp: "⚡ Recomp" };
+    const goalName = (appData.userProfile && goalMap[appData.userProfile.goal]) || "🔥 Lean Bulk";
+    if (goalEl) goalEl.innerText = goalName;
+
+    // Reset password inputs
+    const oldP = document.getElementById("pwd-old");
+    const newP = document.getElementById("pwd-new");
+    if (oldP) oldP.value = "";
+    if (newP) newP.value = "";
+
+    openModal("modal-user-profile");
+}
+
+async function handleChangePasswordSubmit() {
+    const activeUsername = getActiveSessionUsername();
+    const registry = getUsersRegistry();
+    const user = activeUsername && registry[activeUsername];
+
+    if (!user) return;
+
+    const oldP = document.getElementById("pwd-old").value;
+    const newP = document.getElementById("pwd-new").value;
+
+    if (!oldP || !newP) {
+        showToast("Lütfen mevcut ve yeni şifrenizi girin.");
+        return;
+    }
+
+    if (newP.length < 4) {
+        showToast("Yeni şifre en az 4 karakter olmalıdır.");
+        return;
+    }
+
+    const oldHash = await hashPassword(oldP);
+    if (user.passwordHash !== oldHash) {
+        showToast("Mevcut şifreniz hatalı!");
+        return;
+    }
+
+    const newHash = await hashPassword(newP);
+    user.passwordHash = newHash;
+    registry[activeUsername] = user;
+    saveUsersRegistry(registry);
+
+    document.getElementById("pwd-old").value = "";
+    document.getElementById("pwd-new").value = "";
+    showToast("Şifreniz başarıyla değiştirildi! 🔑");
+}
+
+function logoutCurrentUser() {
+    clearActiveSessionUsername();
+    closeModal("modal-user-profile");
+    updateTopBarUserHeader();
+    openAuthModal("login");
+    showToast("Oturum kapatıldı.");
+}
+
+function updateTopBarUserHeader() {
+    const activeUsername = getActiveSessionUsername();
+    const registry = getUsersRegistry();
+    const user = activeUsername && registry[activeUsername];
+
+    const nameEl = document.getElementById("header-user-name");
+    const avatarEl = document.getElementById("header-user-avatar");
+    const subStatusEl = document.getElementById("header-date");
+
+    if (user) {
+        if (nameEl) nameEl.innerText = user.displayName ? user.displayName.toUpperCase() : user.username.toUpperCase();
+        if (avatarEl) {
+            const initial = (user.displayName || user.username || "O").charAt(0).toUpperCase();
+            avatarEl.innerHTML = `<span>${initial}</span>`;
+        }
+    } else {
+        if (nameEl) nameEl.innerText = "OMAR COACHING";
+        if (avatarEl) avatarEl.innerHTML = `<i class="fa-solid fa-user"></i>`;
+    }
+
+    if (subStatusEl) {
+        const history = appData.weightHistory || [];
+        const currentW = history.length > 0 ? history[0].weight : (appData.userProfile ? appData.userProfile.weight : 74.0);
+        const goalMap = { bulk: "Lean Bulk", cut: "Cutting", recomp: "Recomp" };
+        const goalName = (appData.userProfile && goalMap[appData.userProfile.goal]) || "Lean Bulk";
+        subStatusEl.innerText = `Bugün: ${currentW.toFixed(1)} kg • ${goalName}`;
+    }
+}
+
