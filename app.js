@@ -5241,9 +5241,30 @@ async function saveModalGeminiKey() {
     if (!input) return;
     const key = input.value.trim();
 
-    if (!key) {
-        alert("Lütfen geçerli bir Google Gemini API Anahtarı girin.");
+    if (!key || key.length < 10) {
+        alert("Lütfen geçerli bir Google Gemini API Anahtarı girin (AIzaSy...).");
         return;
+    }
+
+    showToast("🔄 Gemini API Anahtarı test ediliyor...");
+
+    try {
+        const testRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                contents: [{ role: "user", parts: [{ text: "test ping" }] }]
+            })
+        });
+
+        if (!testRes.ok) {
+            const errBody = await testRes.text();
+            console.error("Gemini Key Validation Failed:", testRes.status, errBody);
+            alert(`⚠️ Google Gemini API Anahtarı Doğrulanamadı (HTTP ${testRes.status})\n\nLütfen anahtarın başında veya sonunda boşluk olmadığından ve Google AI Studio'dan doğru kopyalandığından emin olun.`);
+            return;
+        }
+    } catch (e) {
+        console.warn("Connection test error:", e);
     }
 
     localStorage.setItem("OMAR_GEMINI_API_KEY", key);
@@ -5252,13 +5273,13 @@ async function saveModalGeminiKey() {
 
     updateAssistantModalHeader();
     toggleApiSetupDrawer();
-    showToast("🎉 Canlı Gemini AI Modu Başarıyla Etkinleştirildi! Artık tamamen serbest sohbet edebilirsiniz.");
+    showToast("🎉 Canlı Gemini AI Modu Doğrulandı & Aktif Edildi!");
 
     // Send a live test greeting from active persona
     if (!assistantChatHistory[activeAssistantPersona]) assistantChatHistory[activeAssistantPersona] = [];
     assistantChatHistory[activeAssistantPersona].push({
         sender: "assistant",
-        text: `🚀 <strong>Online Gemini 2.5 Flash Bağlandı!</strong><br>Artık kısıtlama yok aslanım, aklına ne gelirse sor, istediğin gibi muhabbet edelim!`,
+        text: `🚀 <strong>Online Gemini Bağlandı!</strong><br>Canlı yapay zeka devrede aslanım. Aklına ne gelirse sor, tüm biyomekanik ve fizyoloji bilgimle buradayım!`,
         time: getCurrentTimeStr()
     });
     renderAssistantMessages();
@@ -5471,7 +5492,7 @@ Karakterinin Temel Özellikleri:
 - Antrenman sorularında 1'e 1 anatomik biyomekanik eşdeğerleri bilirsin (örn: lat pulldown yerine asla row önermezsin, omuz batmasında açıyı korursun).
 - Beslenme sorularında pratik, lezzetli, yüksek proteinli tarifler verirsin.
 - Suplement sorularında para tuzağı fuzuli tozları eler, nokta atışı bilimsel takviyeleri yazarsın.
-- Sporcu mide bulantısı, halsizlik, uyku veya sakatlık yaşadığında anında şefkatli ama dobra sporcu tüyoları verirsin.
+- Sporcu tükenişte baş ağrısı (exertion headache/Valsalva), mide bulantısı, halsizlik, eklem batması veya sakatlık yaşadığında anında şefkatli ama dobra sporcu tüyoları ve fizyolojik çözümleri verirsin.
 
 Kullanıcının Canlı Uygulama Durumu:
 - Aktif Günün Antrenmanı: ${currentPlan.title} (${currentPlan.desc})
@@ -5486,35 +5507,33 @@ Format Kuralları:
 - Vurgulamak istediğin önemli noktaları <strong>...</strong> içine al.
 - Yanıtların ne çok kısa ne de gereksiz ansiklopedik olsun; vurucu, samimi ve pratik tavsiyeler ver.`;
 
-    // 1. Build strict alternating turn history for Gemini API
+    // 1. Build conversation history
     const history = assistantChatHistory[personaKey] || [];
-    const rawContents = [];
+    const contents = [];
 
     history.forEach(m => {
         const role = m.sender === "user" ? "user" : "model";
         const cleanText = (m.text || "").replace(/<[^>]*>?/gm, ' ').replace(/&nbsp;/g, ' ').trim();
         if (!cleanText) return;
 
-        if (rawContents.length > 0 && rawContents[rawContents.length - 1].role === role) {
-            rawContents[rawContents.length - 1].parts[0].text += "\n" + cleanText;
+        if (contents.length > 0 && contents[contents.length - 1].role === role) {
+            contents[contents.length - 1].parts[0].text += "\n" + cleanText;
         } else {
-            rawContents.push({
+            contents.push({
                 role: role,
                 parts: [{ text: cleanText }]
             });
         }
     });
 
-    // Make sure rawContents ends with current user turn
-    if (rawContents.length === 0 || rawContents[rawContents.length - 1].role !== "user") {
-        rawContents.push({
+    if (contents.length === 0 || contents[contents.length - 1].role !== "user") {
+        contents.push({
             role: "user",
             parts: [{ text: userText }]
         });
     }
 
-    // Keep up to 8 alternating turns and ensure first turn is user
-    let recentContents = rawContents.slice(-8);
+    let recentContents = contents.slice(-8);
     while (recentContents.length > 0 && recentContents[0].role !== "user") {
         recentContents.shift();
     }
@@ -5525,60 +5544,73 @@ Format Kuralları:
         });
     }
 
-    const requestPayload = {
-        system_instruction: {
-            parts: [{ text: systemPrompt }]
-        },
+    const payloadWithSys = {
+        system_instruction: { parts: [{ text: systemPrompt }] },
         contents: recentContents,
-        generationConfig: {
-            temperature: 0.85,
-            maxOutputTokens: 1000
-        }
+        generationConfig: { temperature: 0.85, maxOutputTokens: 1000 }
     };
 
-    // Endpoints in priority order
-    const endpoints = [
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`
-    ];
+    const payloadSimple = {
+        contents: [
+            {
+                role: "user",
+                parts: [{ text: `[SİSTEM REHBERİ: ${systemPrompt}]\n\nKullanıcı: ${userText}` }]
+            }
+        ],
+        generationConfig: { temperature: 0.85, maxOutputTokens: 1000 }
+    };
 
-    let lastError = null;
+    const models = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-2.5-flash", "gemini-1.5-pro"];
     let data = null;
+    let lastError = null;
 
-    for (const ep of endpoints) {
+    for (const model of models) {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+        
         try {
-            const response = await fetch(ep, {
+            const res = await fetch(url, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(requestPayload)
+                body: JSON.stringify(payloadWithSys)
             });
-
-            if (response.ok) {
-                data = await response.json();
+            if (res.ok) {
+                data = await res.json();
                 break;
             } else {
-                const errText = await response.text();
-                console.warn(`Gemini Endpoint ${ep.split('models/')[1]?.split(':')[0]} returned ${response.status}:`, errText);
-                lastError = new Error(`HTTP ${response.status}: ${errText}`);
+                const err = await res.text();
+                console.warn(`${model} sys error:`, res.status, err);
+                lastError = new Error(`${model} HTTP ${res.status}: ${err}`);
             }
-        } catch (fetchErr) {
-            console.warn(`Fetch error on endpoint:`, fetchErr);
-            lastError = fetchErr;
+        } catch (e) {
+            lastError = e;
+        }
+
+        try {
+            const res2 = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payloadSimple)
+            });
+            if (res2.ok) {
+                data = await res2.json();
+                break;
+            }
+        } catch (e) {
+            lastError = e;
         }
     }
 
     if (!data) {
-        throw lastError || new Error("All Gemini endpoints failed.");
+        throw lastError || new Error("Gemini API isteği başarısız oldu.");
     }
 
     const reply = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0] && data.candidates[0].content.parts[0].text;
 
-    if (!reply) throw new Error("Empty text from Gemini response candidates");
+    if (!reply) throw new Error("Boş Gemini yanıtı");
 
     let formattedText = reply.replace(/\n\n/g, "<br><br>").replace(/\n/g, "<br>");
     
-    // Auto-generate dynamic action buttons if relevant
+    // Auto-generate dynamic action buttons
     let actionHtml = null;
     const lowerReply = reply.toLowerCase();
 
@@ -5831,6 +5863,19 @@ function processOfflineAssistantResponse(personaKey, userText) {
                         <i class="fa-solid fa-arrows-rotate"></i> Programda Kablo Halat Crunch Ekle 🧱
                     </button>
                 `
+            };
+        }
+
+        // Baş Ağrısı & Efor / Valsalva / Nefes Tutma Hatası
+        if (t.includes("baş ağrı") || t.includes("başım") || t.includes("şakak") || t.includes("ense") || t.includes("zonkla") || t.includes("ıkın") || t.includes("nefes tut")) {
+            return {
+                text: `Eyvah aslanım, sakın o seti zorlama! Buna spor hekimliğinde <strong>Efor Baş Ağrısı (Weightlifter's / Exertion Headache)</strong> denir.<br><br>
+                       <strong>Neden Başına Geldi?</strong><br>
+                       Tükenişe yaklaşırken nefesini boğazında kilitlediğin an (hatalı Valsalva manevrası) göğüs içi ve kafa içi venöz basınç bir anda tavan yapar; ense ve şakak damarlarında zonklayıcı çılgın bir baş ağrısı başlatır.<br><br>
+                       <strong>Acil Kurtarma Adımları:</strong><br>
+                       1. 🛑 <strong>Ağırlığı hemen bırak</strong>, oturup boyun ve trapez kaslarını tamamen gevşet.<br>
+                       2. 🫁 <strong>Doğru Nefes Tekniği:</strong> Bir sonraki sette ağırlığı kaldırırken/iterken (konsantrik fazda) mutlaka <strong>ağzından kuvvetlice 'Tısss' diye nefes ver</strong>, havayı içinde hapsetme!<br>
+                       3. 💧 Bir şişe maden suyu içip tansiyonu dengele. Eğer zonklama 15 dakikada geçmezse bugünkü antrenmanı derhal sonlandır, beyin damarlarına şaka olmaz!`
             };
         }
 
