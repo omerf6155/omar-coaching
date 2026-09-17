@@ -1875,6 +1875,9 @@ function onLiveGeoSuccess(pos) {
 
 function onLiveGeoError(err) {
     console.warn("Geolocation watch warning:", err.message);
+    if (err && err.code === 1) {
+        showToast("⚠️ Konum İzni Kapalı! Adres çubuğundaki kilit (🔒) simgesinden izin verebilirsiniz.");
+    }
 }
 
 // Great-circle Haversine Distance in Meters
