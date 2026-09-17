@@ -1533,11 +1533,13 @@ function renderDashboardQuickActions() {
     const container = document.getElementById("dashboard-quick-actions-container");
     if (!container) return;
 
-    const pinned = appData.pinnedQuickActions || ["water", "pancake", "steps_1000", "steps_manual"];
+    const pinned = appData.pinnedQuickActions || ["steps_live", "water", "steps_1000", "pancake"];
     let buttonsHtml = "";
 
     pinned.forEach(key => {
-        if (key === "water") {
+        if (key === "steps_live") {
+            buttonsHtml += `<button class="quick-action-btn" onclick="openStepTrackerModal()" style="border-color:rgba(48,209,88,0.4);"><i class="fa-solid fa-person-walking" style="color:var(--status-green);"></i> Canlı Adım Takip</button>`;
+        } else if (key === "water") {
             buttonsHtml += `<button class="quick-action-btn" onclick="addWater(0.5)"><i class="fa-solid fa-glass-water"></i> +500ml Su</button>`;
         } else if (key === "steps_1000") {
             buttonsHtml += `<button class="quick-action-btn" onclick="addSteps(1000)"><i class="fa-solid fa-shoe-prints"></i> +1.000 Adım</button>`;
@@ -1562,6 +1564,7 @@ function renderQuickActionsConfig() {
 
     const pinned = appData.pinnedQuickActions || [];
     const builtInActions = [
+        { key: "steps_live", label: "Canlı Adım & GPS Takip Merkezi", icon: "fa-person-walking" },
         { key: "water", label: "+500ml Su Ekle", icon: "fa-glass-water" },
         { key: "steps_1000", label: "+1.000 Adım Ekle", icon: "fa-shoe-prints" },
         { key: "steps_manual", label: "Manuel Adım Girişi", icon: "fa-pen" }

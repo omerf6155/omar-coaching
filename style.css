@@ -3902,11 +3902,33 @@ body.modal-open {
 .compact-step-box {
     transition: all 0.2s ease;
     cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
 }
 
 .compact-step-box:hover {
     border-color: rgba(48, 209, 88, 0.4);
     background: rgba(48, 209, 88, 0.05);
+}
+
+.compact-step-box:active {
+    transform: scale(0.98);
+    border-color: var(--status-green);
+}
+
+.step-open-badge {
+    font-size: 0.62rem;
+    font-weight: 700;
+    background: rgba(48, 209, 88, 0.15);
+    color: var(--status-green);
+    border: 1px solid rgba(48, 209, 88, 0.3);
+    border-radius: 12px;
+    padding: 2px 7px;
+    margin-left: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
 }
 
 .step-title-group {
