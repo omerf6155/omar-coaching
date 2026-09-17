@@ -798,6 +798,17 @@
                         </div>
                     </div>
 
+                    <!-- Live Realtime Cloud Badge & Typing Indicator -->
+                    <div class="chat-live-badge-bar">
+                        <div class="chat-live-status-pill">
+                            <span class="chat-live-dot pulse" id="coach-live-dot"></span>
+                            <span id="coach-live-status-text">Canlı Bulut Bağlantısı Aktif 🟢</span>
+                        </div>
+                        <div id="coach-typing-indicator" class="chat-typing-indicator" style="display:none;">
+                            <i class="fa-solid fa-pen-nib"></i> <span id="coach-typing-text">Sporcu yazıyor...</span>
+                        </div>
+                    </div>
+
                     <!-- Chat Quick Template Chips for Coach -->
                     <div class="quick-chips-scroll">
                         <button class="quick-chip" onclick="insertCoachQuickReply('Form videonu bekliyorum 📹')">📹 Form Videosu</button>
@@ -814,7 +825,7 @@
 
                     <!-- Chat Input Bar -->
                     <form class="chat-input-bar" onsubmit="handleCoachSendMessage(event)">
-                        <input type="text" id="coach-chat-input" placeholder="Sporcuna direktif veya mesaj yaz..." autocomplete="off">
+                        <input type="text" id="coach-chat-input" placeholder="Sporcuna direktif veya mesaj yaz..." autocomplete="off" oninput="notifyLiveTyping('coach')">
                         <button type="submit" class="btn-chat-send" title="Gönder">
                             <i class="fa-solid fa-paper-plane"></i>
                         </button>
@@ -1612,6 +1623,17 @@
                 </div>
             </div>
             
+            <!-- Live Realtime Cloud Badge & Typing Indicator -->
+            <div class="chat-live-badge-bar">
+                <div class="chat-live-status-pill">
+                    <span class="chat-live-dot pulse" id="athlete-live-dot"></span>
+                    <span id="athlete-live-status-text">Canlı Bulut Bağlantısı Aktif 🟢</span>
+                </div>
+                <div id="athlete-typing-indicator" class="chat-typing-indicator" style="display:none;">
+                    <i class="fa-solid fa-pen-nib"></i> <span id="athlete-typing-text">Koç Ömer yazıyor...</span>
+                </div>
+            </div>
+
             <!-- Quick Question Chips for Athlete -->
             <div class="quick-chips-scroll" style="padding:8px 12px; background:var(--bg-card-subtle); border-bottom:1px solid var(--border-subtle);">
                 <button class="quick-chip" onclick="insertAthleteQuickMessage('Bugünkü öğünü değiştirebilir miyim?')">🍽️ Öğün Değişimi</button>
@@ -1627,7 +1649,7 @@
 
             <!-- Input Bar -->
             <form class="chat-input-bar" onsubmit="handleAthleteSendMessage(event)">
-                <input type="text" id="athlete-chat-input" placeholder="Koçuna soru sor veya durum bildir..." autocomplete="off">
+                <input type="text" id="athlete-chat-input" placeholder="Koçuna soru sor veya durum bildir..." autocomplete="off" oninput="notifyLiveTyping('athlete')">
                 <button type="submit" class="btn-chat-send" title="Gönder">
                     <i class="fa-solid fa-paper-plane"></i>
                 </button>

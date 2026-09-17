@@ -4984,6 +4984,75 @@ body.modal-open {
     gap: 6px;
 }
 
+/* ==================== REALTIME ONLINE CLOUD CHAT & LIVE INDICATORS ==================== */
+.chat-live-badge-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 12px;
+    background: rgba(16, 185, 129, 0.08);
+    border-bottom: 1px solid rgba(16, 185, 129, 0.2);
+    font-size: 0.7rem;
+    min-height: 32px;
+}
+
+.chat-live-status-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--status-green);
+    letter-spacing: 0.2px;
+}
+
+.chat-live-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--status-green);
+    display: inline-block;
+}
+
+.chat-live-dot.pulse {
+    animation: livePulseDot 1.4s infinite ease-in-out;
+}
+
+.chat-live-dot.offline {
+    background: #94a3b8;
+    animation: none;
+}
+
+.chat-live-dot.connecting {
+    background: #f59e0b;
+    animation: livePulseDot 0.8s infinite ease-in-out;
+}
+
+@keyframes livePulseDot {
+    0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(48, 209, 88, 0.7); }
+    70% { transform: scale(1.1); box-shadow: 0 0 0 7px rgba(48, 209, 88, 0); }
+    100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(48, 209, 88, 0); }
+}
+
+.chat-typing-indicator {
+    font-size: 0.68rem;
+    color: #ffd60a;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    animation: fadeInMsg 0.2s ease;
+}
+
+.chat-typing-indicator i {
+    animation: typingPenWiggle 0.8s infinite ease-in-out;
+}
+
+@keyframes typingPenWiggle {
+    0%, 100% { transform: rotate(0deg); }
+    50% { transform: rotate(-15deg) translateY(-2px); }
+}
+
 
 
 

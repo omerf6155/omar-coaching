@@ -5219,6 +5219,7 @@ function switchAppPortal(mode) {
         if (athleteContainer) athleteContainer.style.display = "none";
         if (coachContainer) coachContainer.style.display = "flex";
         renderCoachPortal();
+        refreshRealtimeChatConnection();
         showToast("Antrenör Yönetim Paneline Geçildi 👑");
     } else {
         currentPortalMode = "athlete";
@@ -5229,6 +5230,7 @@ function switchAppPortal(mode) {
         renderDashboard();
         checkAthletePendingRevision();
         checkAthleteUnreadMessages();
+        refreshRealtimeChatConnection();
         showToast("Sporcu Portalı Aktif 🏃‍♂️");
     }
 }
@@ -5754,8 +5756,413 @@ function submitCoachPrescription() {
     renderCoachPrescriptions(username);
 }
 
+// ==================== REALTIME ONLINE CLOUD CHAT & LIVE PUBSUB ENGINE ====================
+
+const OMAR_REALTIME_CONFIG = {
+    brokerBase: "https://ntfy.sh",
+    topicPrefix: "omar_coaching_chat_",
+    localChannelName: "omar_coaching_live_bus",
+    syncHistoryHours: 24,
+    typingTimeoutMs: 2500,
+    typingThrottleMs: 1200
+};
+
+let realtimeChatState = {
+    sseSource: null,
+    currentTopic: null,
+    localBus: null,
+    typingTimer: null,
+    lastTypingSent: 0,
+    processedMsgIds: new Set(),
+    audioCtx: null,
+    status: "disconnected"
+};
+
+// Pure Web Audio API Synthesizer (Zero external MP3 or CDN dependencies)
+function playLiveChatTone(isSent) {
+    try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        if (!realtimeChatState.audioCtx) {
+            realtimeChatState.audioCtx = new AudioContext();
+        }
+        if (realtimeChatState.audioCtx.state === "suspended") {
+            realtimeChatState.audioCtx.resume();
+        }
+
+        const now = realtimeChatState.audioCtx.currentTime;
+        const osc = realtimeChatState.audioCtx.createOscillator();
+        const gain = realtimeChatState.audioCtx.createGain();
+
+        osc.type = "sine";
+        if (isSent) {
+            // Soft pleasant sent chime (C5 -> E5)
+            osc.frequency.setValueAtTime(523.25, now);
+            osc.frequency.exponentialRampToValueAtTime(659.25, now + 0.08);
+            gain.gain.setValueAtTime(0.08, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+            osc.connect(gain);
+            gain.connect(realtimeChatState.audioCtx.destination);
+            osc.start(now);
+            osc.stop(now + 0.16);
+        } else {
+            // Vibrant incoming message bell (E5 -> A5)
+            osc.frequency.setValueAtTime(659.25, now);
+            osc.frequency.exponentialRampToValueAtTime(880.00, now + 0.12);
+            gain.gain.setValueAtTime(0.12, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+            osc.connect(gain);
+            gain.connect(realtimeChatState.audioCtx.destination);
+            osc.start(now);
+            osc.stop(now + 0.36);
+        }
+    } catch (e) {
+        // AudioContext may be blocked before first user gesture
+    }
+}
+
+// Initialise Local BroadcastChannel & Cloud SSE Engine
+function initRealtimeChatEngine() {
+    if ("BroadcastChannel" in window && !realtimeChatState.localBus) {
+        try {
+            realtimeChatState.localBus = new BroadcastChannel(OMAR_REALTIME_CONFIG.localChannelName);
+            realtimeChatState.localBus.onmessage = (event) => {
+                if (event.data) {
+                    handleIncomingLiveEvent(event.data, "local");
+                }
+            };
+        } catch (err) {
+            console.warn("BroadcastChannel error:", err);
+        }
+    }
+
+    refreshRealtimeChatConnection();
+}
+
+function refreshRealtimeChatConnection() {
+    const activeUsername = getActiveSessionUsername() || "omer";
+    let targetAthlete = activeUsername;
+
+    if (currentPortalMode === "coach") {
+        targetAthlete = currentCoachSelectedAthlete || "omer";
+    }
+
+    if (targetAthlete) {
+        connectRealtimeChatCloud(targetAthlete);
+    }
+}
+
+function updateRealtimeConnectionUI(status) {
+    realtimeChatState.status = status;
+    const coachDot = document.getElementById("coach-live-dot");
+    const coachText = document.getElementById("coach-live-status-text");
+    const athleteDot = document.getElementById("athlete-live-dot");
+    const athleteText = document.getElementById("athlete-live-status-text");
+
+    let statusText = "Canlı Bulut Bağlantısı Aktif 🟢";
+    let dotClass = "chat-live-dot pulse";
+
+    if (status === "connecting") {
+        statusText = "Buluta Bağlanıyor... 🟡";
+        dotClass = "chat-live-dot connecting";
+    } else if (status === "disconnected" || status === "error") {
+        statusText = "Çevrimdışı (Yeniden Bağlanıyor...) 🔴";
+        dotClass = "chat-live-dot offline";
+    }
+
+    if (coachDot) coachDot.className = dotClass;
+    if (coachText) coachText.innerText = statusText;
+    if (athleteDot) athleteDot.className = dotClass;
+    if (athleteText) athleteText.innerText = statusText;
+}
+
+function connectRealtimeChatCloud(targetAthleteUsername) {
+    if (!targetAthleteUsername) return;
+    const topic = `${OMAR_REALTIME_CONFIG.topicPrefix}${targetAthleteUsername.toLowerCase().trim()}`;
+
+    if (realtimeChatState.sseSource && realtimeChatState.currentTopic === topic) {
+        return;
+    }
+
+    if (realtimeChatState.sseSource) {
+        try {
+            realtimeChatState.sseSource.close();
+        } catch (e) {}
+        realtimeChatState.sseSource = null;
+    }
+
+    realtimeChatState.currentTopic = topic;
+    updateRealtimeConnectionUI("connecting");
+
+    // Catch up any offline messages from past 24h
+    syncCloudHistory(targetAthleteUsername);
+
+    try {
+        const sseUrl = `${OMAR_REALTIME_CONFIG.brokerBase}/${topic}/sse`;
+        const sse = new EventSource(sseUrl);
+
+        sse.onopen = () => {
+            updateRealtimeConnectionUI("connected");
+        };
+
+        sse.onmessage = (event) => {
+            try {
+                if (!event.data) return;
+                const data = JSON.parse(event.data);
+                if (data.event === "message" && data.message) {
+                    let innerPayload = null;
+                    try {
+                        innerPayload = JSON.parse(data.message);
+                    } catch (pe) {
+                        innerPayload = { text: data.message, sender: "cloud" };
+                    }
+                    if (innerPayload) {
+                        handleIncomingLiveEvent(innerPayload, "cloud");
+                    }
+                }
+            } catch (err) {}
+        };
+
+        sse.onerror = () => {
+            updateRealtimeConnectionUI("error");
+        };
+
+        realtimeChatState.sseSource = sse;
+    } catch (err) {
+        console.error("Realtime SSE connection error:", err);
+        updateRealtimeConnectionUI("error");
+    }
+}
+
+async function syncCloudHistory(targetAthleteUsername) {
+    if (!targetAthleteUsername) return;
+    const topic = `${OMAR_REALTIME_CONFIG.topicPrefix}${targetAthleteUsername.toLowerCase().trim()}`;
+    try {
+        const pollUrl = `${OMAR_REALTIME_CONFIG.brokerBase}/${topic}/json?poll=1&since=24h`;
+        const res = await fetch(pollUrl);
+        if (!res.ok) return;
+        const text = await res.text();
+        const lines = text.trim().split("\n");
+        lines.forEach(line => {
+            if (!line.trim()) return;
+            try {
+                const item = JSON.parse(line);
+                if (item.event === "message" && item.message) {
+                    const payload = JSON.parse(item.message);
+                    handleIncomingLiveEvent(payload, "history");
+                }
+            } catch (e) {}
+        });
+    } catch (e) {
+        console.warn("Cloud history sync poll warning:", e);
+    }
+}
+
+function handleIncomingLiveEvent(payload, source) {
+    if (!payload || !payload.type) return;
+
+    if (payload.type === "chat_msg") {
+        const msgId = payload.id;
+        if (!msgId || realtimeChatState.processedMsgIds.has(msgId)) {
+            return;
+        }
+        realtimeChatState.processedMsgIds.add(msgId);
+
+        const athleteUsername = payload.athleteUsername || "omer";
+        const chatDb = getChatDB();
+        if (!chatDb[athleteUsername]) chatDb[athleteUsername] = [];
+
+        const exists = chatDb[athleteUsername].some(m => m.id === msgId || (m.text === payload.text && m.time === payload.time && m.sender === payload.sender));
+        if (!exists) {
+            chatDb[athleteUsername].push({
+                id: msgId,
+                sender: payload.sender,
+                text: payload.text,
+                time: payload.time || getCurrentTimeStr(),
+                date: payload.date || new Date().toISOString().split('T')[0],
+                read: payload.read || false
+            });
+            saveChatDB(chatDb);
+        }
+
+        hideLiveTypingIndicator(payload.sender === "coach" ? "athlete" : "coach");
+
+        if (currentPortalMode === "coach" && currentCoachSelectedAthlete === athleteUsername) {
+            renderCoachChat(athleteUsername);
+        } else if (currentPortalMode === "athlete") {
+            const activeUsername = getActiveSessionUsername() || "omer";
+            if (activeUsername === athleteUsername) {
+                renderAthleteChatMessages(athleteUsername);
+                checkAthleteUnreadMessages();
+            }
+        }
+
+        if (source !== "history") {
+            const currentRole = currentPortalMode;
+            if (currentRole === "coach" && payload.sender === "athlete") {
+                playLiveChatTone(false);
+                showToast(`💬 @${athleteUsername}: "${payload.text.substring(0, 30)}..."`);
+            } else if (currentRole === "athlete" && payload.sender === "coach") {
+                playLiveChatTone(false);
+                showToast(`👑 Koç Ömer: "${payload.text.substring(0, 30)}..."`);
+            }
+        }
+    } else if (payload.type === "typing") {
+        handleIncomingTyping(payload);
+    } else if (payload.type === "chat_clear") {
+        const athleteUsername = payload.athleteUsername || "omer";
+        const chatDb = getChatDB();
+        chatDb[athleteUsername] = [];
+        saveChatDB(chatDb);
+        if (currentPortalMode === "coach" && currentCoachSelectedAthlete === athleteUsername) {
+            renderCoachChat(athleteUsername);
+        } else if (currentPortalMode === "athlete") {
+            renderAthleteChatMessages(athleteUsername);
+        }
+    }
+}
+
+async function sendLiveChatMessage(senderRole, targetAthleteUsername, text) {
+    if (!text || !targetAthleteUsername) return;
+    const msgId = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 7)}`;
+    const timeStr = getCurrentTimeStr();
+    const dateStr = new Date().toISOString().split('T')[0];
+
+    const messagePayload = {
+        type: "chat_msg",
+        id: msgId,
+        sender: senderRole,
+        athleteUsername: targetAthleteUsername,
+        text: text,
+        time: timeStr,
+        date: dateStr,
+        timestamp: Date.now()
+    };
+
+    realtimeChatState.processedMsgIds.add(msgId);
+
+    // 1. Save locally
+    const chatDb = getChatDB();
+    if (!chatDb[targetAthleteUsername]) chatDb[targetAthleteUsername] = [];
+    chatDb[targetAthleteUsername].push({
+        id: msgId,
+        sender: senderRole,
+        text: text,
+        time: timeStr,
+        date: dateStr,
+        read: senderRole === "coach" ? false : false
+    });
+    saveChatDB(chatDb);
+
+    // 2. Broadcast to other tabs on same machine
+    if (realtimeChatState.localBus) {
+        try {
+            realtimeChatState.localBus.postMessage(messagePayload);
+        } catch (e) {}
+    }
+
+    // 3. Play pleasant tone
+    playLiveChatTone(true);
+
+    // 4. Publish to Cloud ntfy topic (Sub-second delivery across devices)
+    const topic = `${OMAR_REALTIME_CONFIG.topicPrefix}${targetAthleteUsername.toLowerCase().trim()}`;
+    try {
+        fetch(`${OMAR_REALTIME_CONFIG.brokerBase}/${topic}`, {
+            method: "POST",
+            headers: {
+                "Title": senderRole === "coach" ? "👑 Koç Ömer Direktif" : `💬 ${targetAthleteUsername}`,
+                "Priority": "high",
+                "Tags": "speech_balloon,fire"
+            },
+            body: JSON.stringify(messagePayload)
+        }).catch(err => console.warn("Cloud live message send notice:", err));
+    } catch (err) {
+        console.warn("Cloud live message POST error:", err);
+    }
+
+    // 5. Update local view
+    if (senderRole === "coach") {
+        renderCoachChat(targetAthleteUsername);
+    } else {
+        renderAthleteChatMessages(targetAthleteUsername);
+    }
+}
+
+function notifyLiveTyping(senderRole) {
+    const now = Date.now();
+    if (now - realtimeChatState.lastTypingSent < OMAR_REALTIME_CONFIG.typingThrottleMs) {
+        return;
+    }
+    realtimeChatState.lastTypingSent = now;
+
+    let targetAthlete = "";
+    if (senderRole === "coach") {
+        targetAthlete = currentCoachSelectedAthlete || "omer";
+    } else {
+        targetAthlete = getActiveSessionUsername() || "omer";
+    }
+
+    const typingPayload = {
+        type: "typing",
+        sender: senderRole,
+        athleteUsername: targetAthlete,
+        timestamp: now
+    };
+
+    if (realtimeChatState.localBus) {
+        try {
+            realtimeChatState.localBus.postMessage(typingPayload);
+        } catch (e) {}
+    }
+
+    const topic = `${OMAR_REALTIME_CONFIG.topicPrefix}${targetAthlete.toLowerCase().trim()}`;
+    try {
+        fetch(`${OMAR_REALTIME_CONFIG.brokerBase}/${topic}`, {
+            method: "POST",
+            body: JSON.stringify(typingPayload)
+        }).catch(() => {});
+    } catch (e) {}
+}
+
+function handleIncomingTyping(payload) {
+    if (payload.sender === "athlete" && currentPortalMode === "coach") {
+        const ind = document.getElementById("coach-typing-indicator");
+        const text = document.getElementById("coach-typing-text");
+        if (ind && text) {
+            text.innerText = `@${payload.athleteUsername || 'Sporcu'} yazıyor...`;
+            ind.style.display = "flex";
+            clearTimeout(realtimeChatState.typingTimer);
+            realtimeChatState.typingTimer = setTimeout(() => {
+                ind.style.display = "none";
+            }, OMAR_REALTIME_CONFIG.typingTimeoutMs);
+        }
+    } else if (payload.sender === "coach" && currentPortalMode === "athlete") {
+        const ind = document.getElementById("athlete-typing-indicator");
+        const text = document.getElementById("athlete-typing-text");
+        if (ind && text) {
+            text.innerText = "Koç Ömer yazıyor...";
+            ind.style.display = "flex";
+            clearTimeout(realtimeChatState.typingTimer);
+            realtimeChatState.typingTimer = setTimeout(() => {
+                ind.style.display = "none";
+            }, OMAR_REALTIME_CONFIG.typingTimeoutMs);
+        }
+    }
+}
+
+function hideLiveTypingIndicator(recipientRole) {
+    if (recipientRole === "coach") {
+        const ind = document.getElementById("coach-typing-indicator");
+        if (ind) ind.style.display = "none";
+    } else {
+        const ind = document.getElementById("athlete-typing-indicator");
+        if (ind) ind.style.display = "none";
+    }
+}
+
 function selectCoachChatAthlete(username) {
     currentCoachSelectedAthlete = username;
+    connectRealtimeChatCloud(username);
     navigateCoachTab("chat");
 }
 
@@ -5765,7 +6172,6 @@ function renderCoachChat(username) {
     const ath = registry[username];
     if (!ath) return;
 
-    // Dropdown
     const selectEl = document.getElementById("coach-chat-athlete-select");
     if (selectEl) {
         const athletes = Object.values(registry).filter(u => u.role !== "coach");
@@ -5777,14 +6183,12 @@ function renderCoachChat(username) {
     if (avatarEl) avatarEl.innerText = (ath.displayName || ath.username).charAt(0).toUpperCase();
     if (nameEl) nameEl.innerText = ath.displayName || ath.username;
 
-    // Messages
     const msgsArea = document.getElementById("coach-chat-messages-area");
     if (!msgsArea) return;
 
     let msgs = chatDb[username] || [];
     msgs = msgs.filter(m => !m.text || (!m.text.includes("Bench Press'te 80kg") && !m.text.includes("Mükemmel iş! Gelecek hafta") && !m.text.includes("Hocam 80kg ile 8 rep")));
 
-    // Mark as read
     msgs.forEach(m => {
         if (m.sender === "athlete") m.read = true;
     });
@@ -5825,22 +6229,10 @@ function handleCoachSendMessage(event) {
     if (!input || !input.value.trim()) return;
 
     const text = input.value.trim();
-    const username = currentCoachSelectedAthlete;
-
-    const chatDb = getChatDB();
-    if (!chatDb[username]) chatDb[username] = [];
-
-    chatDb[username].push({
-        sender: "coach",
-        text: text,
-        time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
-        date: new Date().toISOString().split('T')[0],
-        read: false
-    });
-
-    saveChatDB(chatDb);
+    const username = currentCoachSelectedAthlete || "omer";
     input.value = "";
-    renderCoachChat(username);
+
+    sendLiveChatMessage("coach", username, text);
 }
 
 function insertCoachQuickReply(text) {
@@ -5848,6 +6240,7 @@ function insertCoachQuickReply(text) {
     if (input) {
         input.value = text;
         input.focus();
+        notifyLiveTyping('coach');
     }
 }
 
@@ -5857,6 +6250,17 @@ function clearCoachActiveChat() {
     chatDb[username] = [];
     saveChatDB(chatDb);
     renderCoachChat(username);
+
+    const clearPayload = { type: "chat_clear", athleteUsername: username };
+    if (realtimeChatState.localBus) {
+        try { realtimeChatState.localBus.postMessage(clearPayload); } catch (e) {}
+    }
+    const topic = `${OMAR_REALTIME_CONFIG.topicPrefix}${username.toLowerCase().trim()}`;
+    fetch(`${OMAR_REALTIME_CONFIG.brokerBase}/${topic}`, {
+        method: "POST",
+        body: JSON.stringify(clearPayload)
+    }).catch(() => {});
+
     showToast("Sohbet geçmişi temizlendi 🗑️");
 }
 
@@ -5880,7 +6284,6 @@ function handleCoachConnectAthleteById(event) {
         return;
     }
 
-    // Clean query
     if (query.startsWith("@")) query = query.substring(1).trim();
     const queryLower = query.toLowerCase();
     const queryAsTag = query.startsWith("#") ? query.toUpperCase() : `#${query.toUpperCase()}`;
@@ -5888,7 +6291,6 @@ function handleCoachConnectAthleteById(event) {
     const registry = getUsersRegistry();
     const athletes = Object.values(registry).filter(u => u.role !== "coach");
 
-    // Search by athleteTag or username
     const found = athletes.find(a => 
         (a.athleteTag && a.athleteTag.toUpperCase() === queryAsTag) ||
         (a.athleteTag && a.athleteTag.toLowerCase() === queryLower) ||
@@ -5954,6 +6356,8 @@ function importCoachAllDataJSON(event) {
 
 function openAthleteChatModal() {
     const activeUsername = getActiveSessionUsername() || "omer";
+    connectRealtimeChatCloud(activeUsername);
+
     const chatDb = getChatDB();
     const msgs = chatDb[activeUsername] || [];
 
@@ -6016,21 +6420,9 @@ function handleAthleteSendMessage(event) {
 
     const text = input.value.trim();
     const activeUsername = getActiveSessionUsername() || "omer";
-
-    const chatDb = getChatDB();
-    if (!chatDb[activeUsername]) chatDb[activeUsername] = [];
-
-    chatDb[activeUsername].push({
-        sender: "athlete",
-        text: text,
-        time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
-        date: new Date().toISOString().split('T')[0],
-        read: false
-    });
-
-    saveChatDB(chatDb);
     input.value = "";
-    renderAthleteChatMessages(activeUsername);
+
+    sendLiveChatMessage("athlete", activeUsername, text);
     showToast("Mesajın Koç Ömer'e iletildi! 💬");
 }
 
@@ -6039,6 +6431,7 @@ function insertAthleteQuickMessage(text) {
     if (input) {
         input.value = text;
         input.focus();
+        notifyLiveTyping('athlete');
     }
 }
 
@@ -6048,6 +6441,17 @@ function clearAthleteChat() {
     chatDb[activeUsername] = [];
     saveChatDB(chatDb);
     renderAthleteChatMessages(activeUsername);
+
+    const clearPayload = { type: "chat_clear", athleteUsername: activeUsername };
+    if (realtimeChatState.localBus) {
+        try { realtimeChatState.localBus.postMessage(clearPayload); } catch (e) {}
+    }
+    const topic = `${OMAR_REALTIME_CONFIG.topicPrefix}${activeUsername.toLowerCase().trim()}`;
+    fetch(`${OMAR_REALTIME_CONFIG.brokerBase}/${topic}`, {
+        method: "POST",
+        body: JSON.stringify(clearPayload)
+    }).catch(() => {});
+
     showToast("Sohbet geçmişi temizlendi 🗑️");
 }
 
@@ -7383,7 +7787,11 @@ function initModalBackdropHandlers() {
 }
 
 if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", initModalBackdropHandlers);
+    document.addEventListener("DOMContentLoaded", () => {
+        initModalBackdropHandlers();
+        initRealtimeChatEngine();
+    });
 } else {
     initModalBackdropHandlers();
+    initRealtimeChatEngine();
 }
