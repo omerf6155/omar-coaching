@@ -87,6 +87,60 @@
                     <p class="coach-text" id="daily-coach-tip">Bugün odak bölgelerine (Arka Omuz & Triceps) taze enerjiyle yükleniyoruz. Kalori ve adımlarını aksatma!</p>
                 </div>
 
+                <!-- RPG SANAL KARAKTER & GÜNLÜK STREAK KARTI -->
+                <div class="card rpg-hero-card" onclick="openCharacterHubModal()" title="Sanal Karakterini ve Gelişimini İncele">
+                    <div class="rpg-card-header">
+                        <div class="rpg-avatar-badge" id="rpg-dash-avatar">
+                            <span class="rpg-avatar-icon" id="rpg-dash-avatar-icon">🛡️</span>
+                            <span class="rpg-lvl-badge" id="rpg-dash-lvl">Lv.1</span>
+                        </div>
+                        <div class="rpg-header-info">
+                            <div class="rpg-title-row">
+                                <h3 id="rpg-dash-title">Çaylak Sporcu</h3>
+                                <span class="rpg-streak-pill" id="rpg-dash-streak"><i class="fa-solid fa-fire"></i> 0 Gün Seri</span>
+                            </div>
+                            <div class="rpg-xp-row">
+                                <div class="rpg-xp-track">
+                                    <div class="rpg-xp-bar" id="rpg-dash-xp-bar" style="width: 0%;"></div>
+                                </div>
+                                <span class="rpg-xp-text" id="rpg-dash-xp-text">0 / 250 XP</span>
+                            </div>
+                        </div>
+                        <div class="rpg-coins-badge" id="rpg-dash-coins">
+                            <i class="fa-solid fa-coins"></i> <span id="rpg-dash-coins-val">100</span>
+                        </div>
+                    </div>
+
+                    <!-- 4 RPG Core Stats Bar -->
+                    <div class="rpg-stats-grid">
+                        <div class="rpg-stat-chip stat-str" title="Power / Güç: Antrenman setleriyle artar">
+                            <div class="stat-chip-top"><i class="fa-solid fa-bolt"></i> <strong>STR</strong></div>
+                            <span class="stat-chip-val" id="rpg-stat-str">10</span>
+                        </div>
+                        <div class="rpg-stat-chip stat-mob" title="Mobility / Esneklik: Esneme ve mobilite ile artar">
+                            <div class="stat-chip-top"><i class="fa-solid fa-person-praying"></i> <strong>MOB</strong></div>
+                            <span class="stat-chip-val" id="rpg-stat-mob">10</span>
+                        </div>
+                        <div class="rpg-stat-chip stat-end" title="Endurance / Dayanıklılık: Günlük adımlarla artar">
+                            <div class="stat-chip-top"><i class="fa-solid fa-person-running"></i> <strong>END</strong></div>
+                            <span class="stat-chip-val" id="rpg-stat-end">10</span>
+                        </div>
+                        <div class="rpg-stat-chip stat-rec" title="Recovery / Yenilenme: Beslenme ve toparlanma ile artar">
+                            <div class="stat-chip-top"><i class="fa-solid fa-heart-pulse"></i> <strong>REC</strong></div>
+                            <span class="stat-chip-val" id="rpg-stat-rec">10</span>
+                        </div>
+                    </div>
+
+                    <div class="rpg-quick-actions-bar">
+                        <button type="button" class="btn-rpg-action" onclick="event.stopPropagation(); openStretchingModal()">
+                            <i class="fa-solid fa-person-praying" style="color:#c084fc;"></i> Esneme Yap <span class="badge-mini-gain">+MOB</span>
+                        </button>
+                        <button type="button" class="btn-rpg-action" onclick="event.stopPropagation(); openCharacterHubModal()">
+                            <i class="fa-solid fa-id-card-clip" style="color:#ffd60a;"></i> Karakter Merkezi <i class="fa-solid fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+
                 <!-- Daily Macro Summary Card -->
                 <div class="card macro-overview-card">
                     <div class="card-header">
@@ -225,8 +279,11 @@
                 </div>
 
                 <div class="workout-action-bar">
+                    <button class="btn btn-xs btn-outline" onclick="openStretchingModal()" style="border-color:rgba(192,132,252,0.4); color:#c084fc;">
+                        <i class="fa-solid fa-person-praying"></i> 🧘 Esneme & Mobilite
+                    </button>
                     <button class="btn btn-xs btn-outline" onclick="openModal('modal-rir-guide')">
-                        <i class="fa-solid fa-circle-question"></i> RIR Mantığı ve Rehberi
+                        <i class="fa-solid fa-circle-question"></i> RIR Rehberi
                     </button>
                     <button class="btn btn-xs btn-primary" onclick="openExerciseManagerModal()">
                         <i class="fa-solid fa-pen-to-square"></i> Bu Günü Düzenle
@@ -1762,6 +1819,192 @@
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== 14. ESNEME & MOBİLİTE KÜTÜPHANESİ MODALİ ==================== -->
+    <div id="modal-stretching-hub" class="modal-overlay">
+        <div class="modal-card stretching-modal-card">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-person-praying" style="color:#c084fc;"></i> Esneme & Mobilite Kütüphanesi</h3>
+                <button class="modal-close-btn" onclick="closeModal('modal-stretching-hub')">&times;</button>
+            </div>
+            
+            <div class="modal-body">
+                <!-- Live Active Timer Centerpiece (Hidden when idle) -->
+                <div class="stretching-timer-banner" id="stretch-active-timer-box" style="display:none;">
+                    <div class="timer-banner-header">
+                        <span class="pulse-tag"><i class="fa-solid fa-stopwatch"></i> SEANS AKTİF</span>
+                        <h4 id="stretch-timer-exercise-name">Doorway Pec Stretch</h4>
+                    </div>
+                    <div class="timer-countdown-display" id="stretch-timer-countdown">30</div>
+                    <div class="timer-controls-row">
+                        <button type="button" class="btn btn-xs btn-outline" onclick="pauseOrResumeStretchTimer()" id="btn-stretch-pause">
+                            <i class="fa-solid fa-pause"></i> Duraklat
+                        </button>
+                        <button type="button" class="btn btn-xs btn-primary" onclick="finishCurrentStretch(true)">
+                            <i class="fa-solid fa-check"></i> Hemen Tamamla (+MOB)
+                        </button>
+                        <button type="button" class="btn btn-xs btn-danger" onclick="cancelStretchTimer()">
+                            <i class="fa-solid fa-xmark"></i> İptal
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Category Filter Pills -->
+                <div class="stretching-category-pills">
+                    <button type="button" class="stretch-pill active" onclick="filterStretchingCategory('all', this)">Tümü (24)</button>
+                    <button type="button" class="stretch-pill" onclick="filterStretchingCategory('chest_shoulder', this)">Göğüs & Omuz</button>
+                    <button type="button" class="stretch-pill" onclick="filterStretchingCategory('back_spine', this)">Sırt & Omurga</button>
+                    <button type="button" class="stretch-pill" onclick="filterStretchingCategory('hips_hamstrings', this)">Kalça & Hamstring</button>
+                    <button type="button" class="stretch-pill" onclick="filterStretchingCategory('quad_calf', this)">Bacak & Kalf</button>
+                    <button type="button" class="stretch-pill" onclick="filterStretchingCategory('neck_traps', this)">Boyun & Trapez</button>
+                    <button type="button" class="stretch-pill" onclick="filterStretchingCategory('wrist', this)">Bilek & Kol</button>
+                </div>
+
+                <!-- Search Box -->
+                <div class="form-group" style="margin-bottom:10px;">
+                    <div class="roster-search-wrap">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" id="stretch-search-input" placeholder="Esneme veya kas grubu ara..." oninput="renderStretchingList()">
+                    </div>
+                </div>
+
+                <!-- Exercises List Container -->
+                <div class="stretching-exercises-grid" id="stretching-exercises-list">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== 15. SANAL RPG KARAKTER GELİŞİM MERKEZİ MODALİ ==================== -->
+    <div id="modal-character-hub" class="modal-overlay">
+        <div class="modal-card rpg-character-modal-card">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-shield-halved" style="color:#ffd60a;"></i> Sanal Karakter & Gelişim Merkezi</h3>
+                <button class="modal-close-btn" onclick="closeModal('modal-character-hub')">&times;</button>
+            </div>
+            
+            <div class="modal-body">
+                <!-- Character Avatar Showcase Hero -->
+                <div class="character-sheet-hero">
+                    <div class="character-sheet-avatar-wrap">
+                        <div class="character-sheet-avatar" id="ch-hub-avatar-display">🛡️</div>
+                        <span class="character-sheet-lvl" id="ch-hub-lvl-display">Lv. 1</span>
+                    </div>
+                    <div class="character-sheet-info">
+                        <h3 id="ch-hub-name-display">Ömer Faruk</h3>
+                        <div class="ch-hub-title-badge" id="ch-hub-title-display">🐣 Çaylak Sporcu</div>
+                        <div class="ch-hub-streak-coins-row">
+                            <span class="ch-hub-streak-pill"><i class="fa-solid fa-fire"></i> <span id="ch-hub-streak-num">0</span> Gün Seri</span>
+                            <span class="ch-hub-coins-pill"><i class="fa-solid fa-coins"></i> <span id="ch-hub-coins-num">100</span> Omar Coins</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- XP Bar & Level Progress -->
+                <div class="ch-hub-xp-card">
+                    <div class="ch-hub-xp-header">
+                        <span>Seviye İlerlemesi</span>
+                        <strong id="ch-hub-xp-ratio">0 / 250 XP</strong>
+                    </div>
+                    <div class="progress-track" style="height:10px;">
+                        <div class="progress-fill" id="ch-hub-xp-fill" style="width:0%; background:linear-gradient(90deg, #ffd60a, #ff9f0a);"></div>
+                    </div>
+                    <small class="text-secondary" id="ch-hub-xp-hint" style="font-size:0.7rem; display:block; margin-top:4px;">
+                        Bir sonraki seviyeye 250 XP kaldı.
+                    </small>
+                </div>
+
+                <!-- Detailed 4 Stats Breakdown -->
+                <div class="ch-hub-stats-section">
+                    <h4 class="ch-hub-section-title"><i class="fa-solid fa-chart-radar"></i> RPG Nitelikler ve Güç</h4>
+                    <div class="ch-hub-stats-list">
+                        <!-- STR -->
+                        <div class="ch-stat-row">
+                            <div class="ch-stat-info">
+                                <div class="ch-stat-badge str"><i class="fa-solid fa-bolt"></i></div>
+                                <div>
+                                    <strong>STR (Power & Hipertrofi)</strong>
+                                    <small>Ağırlık antrenmanı ve tamamlanan setlerle artar</small>
+                                </div>
+                            </div>
+                            <span class="ch-stat-num" id="ch-stat-num-str">10</span>
+                        </div>
+                        <!-- MOB -->
+                        <div class="ch-stat-row">
+                            <div class="ch-stat-info">
+                                <div class="ch-stat-badge mob"><i class="fa-solid fa-person-praying"></i></div>
+                                <div>
+                                    <strong>MOB (Mobilite & Esneklik)</strong>
+                                    <small>Esneme seansları ve hareket rutinleriyle artar</small>
+                                </div>
+                            </div>
+                            <span class="ch-stat-num" id="ch-stat-num-mob">10</span>
+                        </div>
+                        <!-- END -->
+                        <div class="ch-stat-row">
+                            <div class="ch-stat-info">
+                                <div class="ch-stat-badge end"><i class="fa-solid fa-person-running"></i></div>
+                                <div>
+                                    <strong>END (Dayanıklılık & Kardiyo)</strong>
+                                    <small>Günlük adım hedefleri ve canlı GPS takibiyle artar</small>
+                                </div>
+                            </div>
+                            <span class="ch-stat-num" id="ch-stat-num-end">10</span>
+                        </div>
+                        <!-- REC -->
+                        <div class="ch-stat-row">
+                            <div class="ch-stat-info">
+                                <div class="ch-stat-badge rec"><i class="fa-solid fa-heart-pulse"></i></div>
+                                <div>
+                                    <strong>REC (Yenilenme & Beslenme)</strong>
+                                    <small>Kalori, protein, su ve uyku disipliniyle artar</small>
+                                </div>
+                            </div>
+                            <span class="ch-stat-num" id="ch-stat-num-rec">10</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Level Ladder & Titles List -->
+                <div class="ch-hub-ladder-section">
+                    <h4 class="ch-hub-section-title"><i class="fa-solid fa-ranking-star"></i> Seviye Ağacı ve Unvanlar</h4>
+                    <div class="ch-hub-ladder-grid" id="ch-hub-ladder-container">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+
+                <!-- Avatar Selection Bar -->
+                <div class="ch-hub-avatars-section">
+                    <h4 class="ch-hub-section-title"><i class="fa-solid fa-masks-theater"></i> Karakter Avatarını Seç</h4>
+                    <div class="ch-hub-avatar-options" id="ch-hub-avatar-options">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== 16. SEVİYE ATLAMA / LEVEL UP KUTLAMA MODALİ ==================== -->
+    <div id="modal-level-up" class="modal-overlay" style="z-index: 2000;">
+        <div class="modal-card level-up-modal-card">
+            <div class="level-up-sparkle-bg"></div>
+            <div class="level-up-content">
+                <div class="level-up-crown"><i class="fa-solid fa-crown"></i></div>
+                <h2 class="level-up-title">SEVİYE ATLADIN!</h2>
+                <div class="level-up-badge" id="lvl-up-badge-txt">LEVEL 2</div>
+                <h3 class="level-up-unvan" id="lvl-up-title-txt">Demir Çırağı</h3>
+                <p class="level-up-desc" id="lvl-up-desc-txt">Disiplinin karşılığını verdi! Karakterinin tüm nitelikleri ve gücü arttı.</p>
+                <div class="level-up-rewards-box">
+                    <div class="reward-pill"><i class="fa-solid fa-coins"></i> +50 Omar Coins</div>
+                    <div class="reward-pill"><i class="fa-solid fa-bolt"></i> Tüm Statlar +2</div>
+                </div>
+                <button type="button" class="btn btn-primary btn-block" onclick="closeModal('modal-level-up')" style="margin-top:16px;">
+                    Harika, Devam Et! 🚀
+                </button>
             </div>
         </div>
     </div>

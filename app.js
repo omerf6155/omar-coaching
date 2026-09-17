@@ -1148,10 +1148,356 @@ const DEFAULT_WORKOUT_PLAN = {
     }
 };
 
+// ==================== MASTER STRETCHING & MOBILITY DATABASE ====================
+const MASTER_STRETCHING_DATABASE = [
+    // GÖĞÜS & OMUZ
+    {
+        id: "stretch_door_pec",
+        name: "Doorway Pectoral Stretch (Kapı Pervazı Göğüs)",
+        category: "chest_shoulder",
+        target: "Göğüs & Ön Omuz",
+        duration: 30,
+        mobGain: 12,
+        xpGain: 35,
+        coinsGain: 20,
+        desc: "Kolunuzu 90 derece kapı pervazına yaslayarak göğüs kaslarınızı öne doğru esnetin.",
+        tips: "Nefes vererek hafifçe öne adım atın. Omuz eklemini zorlamadan göğüs liflerini gerin."
+    },
+    {
+        id: "stretch_cross_shoulder",
+        name: "Cross-Body Posterior Deltoid (Arka Omuz Germe)",
+        category: "chest_shoulder",
+        target: "Arka Omuz & Üst Sırt",
+        duration: 30,
+        mobGain: 10,
+        xpGain: 30,
+        coinsGain: 15,
+        desc: "Bir kolunuzu göğsünüzün önünden karşıya uzatın ve diğer elinizle dirsekten kendinize çekin.",
+        tips: "Omuzlarınızı kulaklarınıza çekmeyin, aşağıda ve rahat tutun."
+    },
+    {
+        id: "stretch_overhead_triceps",
+        name: "Overhead Triceps & Lat Stretch",
+        category: "chest_shoulder",
+        target: "Triceps Uzun Baş & Üst Kanat",
+        duration: 30,
+        mobGain: 10,
+        xpGain: 30,
+        coinsGain: 15,
+        desc: "Dirseğinizi başınızın arkasına bükün, diğer elinizle dirsekten hafifçe geriye bastırın.",
+        tips: "Omurganızı dik tutun, boynunuzu öne eğmeyin."
+    },
+    {
+        id: "stretch_chest_hands_behind",
+        name: "Behind-The-Back Chest Expander (Eller Arkada Göğüs Açıcı)",
+        category: "chest_shoulder",
+        target: "Tüm Göğüs & Biceps Başı",
+        duration: 35,
+        mobGain: 12,
+        xpGain: 35,
+        coinsGain: 20,
+        desc: "Ellerinizi belinizin arkasında kenetleyin ve göğsü dışarı iterek kolları hafifçe yukarı kaldırın.",
+        tips: "Derin nefes alın ve kürek kemiklerini birbirine yaklaştırın."
+    },
+
+    // SIRT & OMURGA
+    {
+        id: "stretch_cat_cow",
+        name: "Cat-Cow Spinal Wave (Kedi-Deve Omurga)",
+        category: "back_spine",
+        target: "Tüm Omurga & Bel Esnekliği",
+        duration: 45,
+        mobGain: 15,
+        xpGain: 40,
+        coinsGain: 25,
+        desc: "Dört ayak üzerinde nefes alarak belinizi çukurlaştırın (Cow), nefes vererek sırtınızı kubbeleştirin (Cat).",
+        tips: "Hareketi acele etmeden, omur omur hissederek akıcı uygulayın."
+    },
+    {
+        id: "stretch_lat_child_pose",
+        name: "Extended Child's Pose with Lat Reach (Kanat Çocuk Duruşu)",
+        category: "back_spine",
+        target: "Lats (Kanat) & Bel Fasyası",
+        duration: 40,
+        mobGain: 14,
+        xpGain: 35,
+        coinsGain: 20,
+        desc: "Dizlerinizin üzerine oturup ellerinizi öne uzatın; ardından elleri hafifçe sağa ve sola kaydırarak kanatları gerin.",
+        tips: "Kalçayı topuklardan kaldırmadan koltuk altını yere yaklaştırın."
+    },
+    {
+        id: "stretch_t_spine_rotation",
+        name: "Thread the Needle (Torasik Omurga Rotasyonu)",
+        category: "back_spine",
+        target: "Orta Sırt & Torasik Mobilite",
+        duration: 40,
+        mobGain: 14,
+        xpGain: 40,
+        coinsGain: 20,
+        desc: "Dört ayaktayken bir kolunuzu gövdenin altından diğer tarafa uzatarak omuz ve şakağınızı yere bırakın.",
+        tips: "Orta sırttaki kilitlenmeleri açar ve rotasyon kabiliyetini artırır."
+    },
+    {
+        id: "stretch_worlds_greatest",
+        name: "World's Greatest Stretch (Dünyanın En İyi Mobilitesi)",
+        category: "back_spine",
+        target: "Kalça, Göğüs Kafesi & Hamstring",
+        duration: 45,
+        mobGain: 18,
+        xpGain: 50,
+        coinsGain: 30,
+        desc: "Derin lunge pozisyonunda dirseğinizi ayak bileğinize indirin, ardından aynı kolu tavana doğru açarak göğsü döndürün.",
+        tips: "Antrenman öncesi veya sonrası tüm kinetik zinciri açan en etkili tam vücut mobilite hareketidir."
+    },
+    {
+        id: "stretch_cobra",
+        name: "Prone Cobra / Sphinx (Kobra Karın & Bel Açıcı)",
+        category: "back_spine",
+        target: "Karın Kasları & Bel Ekstansiyonu",
+        duration: 30,
+        mobGain: 10,
+        xpGain: 30,
+        coinsGain: 15,
+        desc: "Yüzüstü yatarken ellerinizden destek alarak gövdenizi yukarı kaldırın ve göğsü ileri açın.",
+        tips: "Omuzları kulaklardan uzaklaştırın, alt omurları sıkıştırmayın."
+    },
+
+    // KALÇA & HAMSTRING
+    {
+        id: "stretch_pigeon_pose",
+        name: "Elevated Pigeon Pose (Güvercin Kalça Açıcı)",
+        category: "hips_hamstrings",
+        target: "Gluteus Medius & Piriformis (Kalça)",
+        duration: 45,
+        mobGain: 16,
+        xpGain: 45,
+        coinsGain: 25,
+        desc: "Ön bacağınızı 90 derece büküp yere yatırın, arka bacağı geriye uzatarak kalçanızı esnetin.",
+        tips: "Squat derinliği ve siyatik rahatlaması için altın standarttır."
+    },
+    {
+        id: "stretch_90_90_hip",
+        name: "90/90 Hip Mobility (90/90 Kalça Rotasyonu)",
+        category: "hips_hamstrings",
+        target: "İç & Dış Kalça Rotatörleri",
+        duration: 45,
+        mobGain: 15,
+        xpGain: 40,
+        coinsGain: 25,
+        desc: "Yerde iki bacağınızı 90'ar derece açıyla yerleştirin; gövdeyi dik tutarak öne ve yana ağırlık aktarın.",
+        tips: "Kalça eklem kapsülünü yağlar ve bel ağrılarını önler."
+    },
+    {
+        id: "stretch_couch_stretch",
+        name: "Couch Stretch (Duvar Destekli Quad & Psoas)",
+        category: "hips_hamstrings",
+        target: "Psoas (Kalça Fleksör) & Rectus Femoris",
+        duration: 45,
+        mobGain: 18,
+        xpGain: 50,
+        coinsGain: 30,
+        desc: "Arka dizinizi duvara dayayıp kaval kemiğinizi dik tutun; diğer ayakla lunge pozisyonu alarak kalçayı öne bastırın.",
+        tips: "Masa başı oturanların kısalan kalça fleksörlerini açan en güçlü esnemedir."
+    },
+    {
+        id: "stretch_standing_hamstring",
+        name: "Standing Single-Leg Hamstring Sweep (Arka Bacak Süpürme)",
+        category: "hips_hamstrings",
+        target: "Hamstring & Aşil Tendonu",
+        duration: 35,
+        mobGain: 12,
+        xpGain: 35,
+        coinsGain: 20,
+        desc: "Bir topuğu öne koyun, kalçayı geriye iterek ellerinizle yerden yukarı doğru süpürme hareketi yapın.",
+        tips: "Diz arkasındaki gerginliği hissedin, sırtınızı yuvarlamayın."
+    },
+    {
+        id: "stretch_butterfly",
+        name: "Seated Butterfly Stretch (Kelebek İç Bacak)",
+        category: "hips_hamstrings",
+        target: "Adduktör (İç Bacak) & Kasık",
+        duration: 40,
+        mobGain: 12,
+        xpGain: 35,
+        coinsGain: 20,
+        desc: "Ayak tabanlarınızı birbirine yapıştırıp oturun; dizlerinizi hafifçe yere doğru serbest bırakın.",
+        tips: "Dirseklerinizle dizlerinize nazikçe baskı uygulayabilirsiniz."
+    },
+    {
+        id: "stretch_frog_stretch",
+        name: "Frog Stretch (Kurbağa Kalça & Pelvis Açıcı)",
+        category: "hips_hamstrings",
+        target: "Derin Kasık & Kalça Kapsülü",
+        duration: 45,
+        mobGain: 16,
+        xpGain: 45,
+        coinsGain: 25,
+        desc: "Dizlerinizi yana alabildiğine açıp ön kollarınızın üzerine inin; kalçayı yavaşça geriye doğru itin.",
+        tips: "Geniş squat derinliğini olağanüstü artıran bir pratiktir."
+    },
+
+    // BACAK & KALF
+    {
+        id: "stretch_standing_quad",
+        name: "Flamingo Quad Stretch (Ayakta Ön Bacak)",
+        category: "quad_calf",
+        target: "Quadriceps (Ön Bacak)",
+        duration: 30,
+        mobGain: 10,
+        xpGain: 30,
+        coinsGain: 15,
+        desc: "Ayaktayken ayağınızı arkadan tutun ve topuğu kalçaya doğru çekin.",
+        tips: "Dizinizin diğer dizle hizada kalmasına özen gösterin, kalçayı geriye kaçırmayın."
+    },
+    {
+        id: "stretch_wall_calf",
+        name: "Wall Calf & Soleus Stretch (Duvar Kalf Germe)",
+        category: "quad_calf",
+        target: "Gastrocnemius & Soleus (Kalf)",
+        duration: 35,
+        mobGain: 10,
+        xpGain: 30,
+        coinsGain: 15,
+        desc: "Ellerinizi duvara yaslayın, arka bacağı düz tutup topuğu yere basarak öne eğilin.",
+        tips: "Ayak bileği mobilitesini artırarak squatta topuk kalkmasını önler."
+    },
+    {
+        id: "stretch_ankle_dorsiflexion",
+        name: "Combat Knee-to-Wall (Ayak Bileği Mobilizasyonu)",
+        category: "quad_calf",
+        target: "Aşil Tendonu & Ayak Bileği Açısı",
+        duration: 40,
+        mobGain: 14,
+        xpGain: 40,
+        coinsGain: 20,
+        desc: "Ayağınızı duvardan 10 cm geriye koyun ve topuğu yerden kaldırmadan dizinizi duvara dokundurun.",
+        tips: "Bilek hareket kabiliyeti diz ve kalça sağlığının temelidir."
+    },
+    {
+        id: "stretch_deep_squat_hold",
+        name: "Deep Malasana Squat Hold (Derin Squat Oturuşu)",
+        category: "quad_calf",
+        target: "Ayak Bileği, Kalça & Omurga",
+        duration: 45,
+        mobGain: 18,
+        xpGain: 50,
+        coinsGain: 30,
+        desc: "Tam derinlikte squata oturun, dirseklerinizle dizlerinizi yana itin ve göğsü dik tutun.",
+        tips: "Vücudun doğal ilkel oturuş pozisyonudur; her gün yapılması önerilir."
+    },
+
+    // BOYUN & TRAPEZ
+    {
+        id: "stretch_neck_trap_side",
+        name: "Upper Trap Lateral Tilt (Yan Boyun & Üst Trapez)",
+        category: "neck_traps",
+        target: "Üst Trapez & Sternocleidomastoid",
+        duration: 30,
+        mobGain: 10,
+        xpGain: 30,
+        coinsGain: 15,
+        desc: "Başınızı omzunuza doğru yana yatırın, aynı taraftaki elinizle çok hafifçe aşağı çekin.",
+        tips: "Aşırı kuvvet uygulamayın; tatlı bir gerilme hissedene kadar tutun."
+    },
+    {
+        id: "stretch_levator_scapulae",
+        name: "Levator Scapulae (Kürek Kemiği Kaldırıcı Germe)",
+        category: "neck_traps",
+        target: "Arka Boyun & Kürek Kemiği Bağlantısı",
+        duration: 30,
+        mobGain: 10,
+        xpGain: 30,
+        coinsGain: 15,
+        desc: "Başınızı 45 derece çapraza çevirin ve burnunuzla koltuk altınıza bakar gibi başı öne eğin.",
+        tips: "Özellikle ağır shrug ve itiş antrenmanları sonrası boyun tutulmalarını sıfırlar."
+    },
+    {
+        id: "stretch_chin_tucks",
+        name: "Deep Cervical Chin Tucks (Duruş Düzeltici)",
+        category: "neck_traps",
+        target: "Derin Boyun Fleksörleri & Duruş",
+        duration: 30,
+        mobGain: 10,
+        xpGain: 30,
+        coinsGain: 15,
+        desc: "Başınızı geriye doğru çekerek çenenizi boynunuza yaklaştırın (çift çene yapın).",
+        tips: "İleri baş postürünü (Forward head) düzeltmek için harikadır."
+    },
+
+    // BİLEK & KOL
+    {
+        id: "stretch_wrist_flexor",
+        name: "Prayer & Reverse Wrist Stretch (El Bileği & Ön Kol)",
+        category: "wrist",
+        target: "Ön Kol Fleksör & Ekstansörleri",
+        duration: 30,
+        mobGain: 10,
+        xpGain: 30,
+        coinsGain: 15,
+        desc: "Avuç içlerinizi dua pozisyonunda birbirine bastırın; ardından ters çevirip el sırtlarını birleştirin.",
+        tips: "Ağır bench press ve barbell curl öncesi bilek ağrılarını engeller."
+    },
+    {
+        id: "stretch_quadruped_wrist",
+        name: "Quadruped Wrist Waves (Dört Ayak Bilek Mobilizasyonu)",
+        category: "wrist",
+        target: "El Bilek Eklem Kapsülü",
+        duration: 35,
+        mobGain: 12,
+        xpGain: 35,
+        coinsGain: 20,
+        desc: "Dört ayaktayken parmak uçlarınızı dizlerinize doğru çevirin ve kalçayı geriye doğru hafifçe verin.",
+        tips: "Dirsekleri kilitlemeden ön kol kasılmasını hissedin."
+    }
+];
+
+// ==================== RPG KARAKTER, LEVEL LADDER & AVATARLAR ====================
+const RPG_LEVEL_LADDER = [
+    { level: 1, minXp: 0, title: "Çaylak Sporcu", icon: "🐣", reqText: "Başlangıç Seviyesi" },
+    { level: 2, minXp: 250, title: "Demir Çırağı", icon: "🥉", reqText: "250 XP" },
+    { level: 3, minXp: 600, title: "Ağırlık Avcısı", icon: "🥈", reqText: "600 XP" },
+    { level: 4, minXp: 1100, title: "Hipertrofi Şövalyesi", icon: "🥇", reqText: "1.100 XP" },
+    { level: 5, minXp: 1800, title: "Biyomekanik Ustası", icon: "💎", reqText: "1.800 XP" },
+    { level: 6, minXp: 2700, title: "Bulk Gladyatörü", icon: "🔥", reqText: "2.700 XP" },
+    { level: 7, minXp: 3800, title: "Apex Predator", icon: "⚡", reqText: "3.800 XP" },
+    { level: 8, minXp: 5100, title: "Demir Titan", icon: "👑", reqText: "5.100 XP" },
+    { level: 9, minXp: 6600, title: "Mythic Lifter", icon: "🌌", reqText: "6.600 XP" },
+    { level: 10, minXp: 8500, title: "Omar Coaching Legend", icon: "🔱", reqText: "8.500+ XP" }
+];
+
+const RPG_AVATARS = [
+    { key: "warrior_iron", name: "Demir Muhafız", icon: "🛡️", minLevel: 1 },
+    { key: "beast_ape", name: "Primal Beast", icon: "🦍", minLevel: 2 },
+    { key: "ninja_shadow", name: "Gölge Ninjası", icon: "🥷", minLevel: 3 },
+    { key: "spartan_helm", name: "Spartalı", icon: "⚔️", minLevel: 4 },
+    { key: "cyber_cyborg", name: "Biyonik Savaşçı", icon: "🤖", minLevel: 5 },
+    { key: "fire_dragon", name: "Ateş Ejderi", icon: "🐉", minLevel: 6 },
+    { key: "titan_gold", name: "Altın Titan", icon: "👑", minLevel: 8 },
+    { key: "mythic_god", name: "Olimpos Efsanesi", icon: "🔱", minLevel: 10 }
+];
+
+function createDefaultRpgCharacter() {
+    return {
+        level: 1,
+        xp: 0,
+        power: 10,     // STR (Antrenman setleri & PR'lar)
+        mobility: 10,  // MOB (Esneme & mobilite rutinleri)
+        endurance: 10, // END (Günlük adımlar & GPS yürüyüş)
+        recovery: 10,  // REC (Beslenme, kalori, su & uyku)
+        coins: 100,    // 🪙 Omar Coins
+        streak: 0,     // 🔥 Günlük seri
+        bestStreak: 0,
+        lastStreakDate: null,
+        completedStretchesToday: {},
+        avatarKey: "warrior_iron",
+        history: []
+    };
+}
+
 function createDefaultAppData() {
     return {
         targets: { ...DEFAULT_TARGETS },
-        pinnedQuickActions: ["water", "pancake", "steps_1000", "steps_manual"],
+        pinnedQuickActions: ["steps_live", "water", "steps_1000", "pancake"],
         customPresets: { ...DEFAULT_PRESET_MEALS },
         customWorkoutPlan: JSON.parse(JSON.stringify(DEFAULT_WORKOUT_PLAN)),
         supplements: [
@@ -1163,6 +1509,7 @@ function createDefaultAppData() {
         ],
         supplementsLog: {},
         stepHistory: {},
+        rpgCharacter: createDefaultRpgCharacter(),
         todayNutrition: {
             date: new Date().toISOString().split('T')[0],
             calories: 0,
@@ -1248,10 +1595,11 @@ function loadDataFromStorage() {
             customPresets: { ...DEFAULT_PRESET_MEALS, ...(parsed.customPresets || {}) },
             customWorkoutPlan: parsed.customWorkoutPlan || JSON.parse(JSON.stringify(DEFAULT_WORKOUT_PLAN)),
             supplements: parsed.supplements && parsed.supplements.length > 0 ? parsed.supplements : appData.supplements,
-            pinnedQuickActions: parsed.pinnedQuickActions || ["water", "pancake", "steps_1000", "steps_manual"],
+            pinnedQuickActions: parsed.pinnedQuickActions || ["steps_live", "water", "steps_1000", "pancake"],
             todayNutrition: { ...createDefaultAppData().todayNutrition, ...(parsed.todayNutrition || {}) },
             supplementsLog: parsed.supplementsLog || {},
             stepHistory: parsed.stepHistory || {},
+            rpgCharacter: { ...createDefaultRpgCharacter(), ...(parsed.rpgCharacter || {}) },
             workoutLogs: parsed.workoutLogs || {},
             exerciseSetsCount: parsed.exerciseSetsCount || {},
             seatSettings: parsed.seatSettings || {},
@@ -1274,10 +1622,11 @@ function loadDataFromStorage() {
                 customPresets: { ...DEFAULT_PRESET_MEALS, ...(parsed.customPresets || {}) },
                 customWorkoutPlan: parsed.customWorkoutPlan || JSON.parse(JSON.stringify(DEFAULT_WORKOUT_PLAN)),
                 supplements: parsed.supplements && parsed.supplements.length > 0 ? parsed.supplements : appData.supplements,
-                pinnedQuickActions: parsed.pinnedQuickActions || ["water", "pancake", "steps_1000", "steps_manual"],
+                pinnedQuickActions: parsed.pinnedQuickActions || ["steps_live", "water", "steps_1000", "pancake"],
                 todayNutrition: { ...createDefaultAppData().todayNutrition, ...(parsed.todayNutrition || {}) },
                 supplementsLog: parsed.supplementsLog || {},
                 stepHistory: parsed.stepHistory || {},
+                rpgCharacter: { ...createDefaultRpgCharacter(), ...(parsed.rpgCharacter || {}) },
                 workoutLogs: parsed.workoutLogs || {},
                 exerciseSetsCount: parsed.exerciseSetsCount || {},
                 seatSettings: parsed.seatSettings || {},
@@ -1527,6 +1876,8 @@ function renderDashboard() {
 
     renderDashboardQuickActions();
     renderDashboardSupplementsSummary();
+    renderRpgDashboardCard();
+    evaluateDailyStreak();
 }
 
 function renderDashboardQuickActions() {
@@ -1539,6 +1890,8 @@ function renderDashboardQuickActions() {
     pinned.forEach(key => {
         if (key === "steps_live") {
             buttonsHtml += `<button class="quick-action-btn" onclick="openStepTrackerModal()" style="border-color:rgba(48,209,88,0.4);"><i class="fa-solid fa-person-walking" style="color:var(--status-green);"></i> Canlı Adım Takip</button>`;
+        } else if (key === "stretching") {
+            buttonsHtml += `<button class="quick-action-btn" onclick="openStretchingModal()" style="border-color:rgba(192,132,252,0.4);"><i class="fa-solid fa-person-praying" style="color:#c084fc;"></i> Esneme & Mobilite</button>`;
         } else if (key === "water") {
             buttonsHtml += `<button class="quick-action-btn" onclick="addWater(0.5)"><i class="fa-solid fa-glass-water"></i> +500ml Su</button>`;
         } else if (key === "steps_1000") {
@@ -1565,6 +1918,7 @@ function renderQuickActionsConfig() {
     const pinned = appData.pinnedQuickActions || [];
     const builtInActions = [
         { key: "steps_live", label: "Canlı Adım & GPS Takip Merkezi", icon: "fa-person-walking" },
+        { key: "stretching", label: "Esneme & Mobilite Rutinleri", icon: "fa-person-praying" },
         { key: "water", label: "+500ml Su Ekle", icon: "fa-glass-water" },
         { key: "steps_1000", label: "+1.000 Adım Ekle", icon: "fa-shoe-prints" },
         { key: "steps_manual", label: "Manuel Adım Girişi", icon: "fa-pen" }
@@ -1603,6 +1957,400 @@ function saveQuickActionsConfig() {
     renderDashboard();
     closeModal('modal-quick-actions');
     showToast("Hızlı işlemler güncellendi! ⚡");
+}
+
+// ==================== RPG SANAL KARAKTER & GAMIFICATION MOTORU ====================
+
+let currentStretchingCategory = "all";
+let currentStretchingState = {
+    activeExerciseId: null,
+    timerInterval: null,
+    totalSeconds: 30,
+    remainingSeconds: 30,
+    isPaused: false
+};
+
+function renderRpgDashboardCard() {
+    if (!appData.rpgCharacter) appData.rpgCharacter = createDefaultRpgCharacter();
+    const c = appData.rpgCharacter;
+
+    const curLvlObj = RPG_LEVEL_LADDER.find(l => l.level === c.level) || RPG_LEVEL_LADDER[0];
+    const nextLvlObj = RPG_LEVEL_LADDER.find(l => l.level === c.level + 1);
+    const activeAvatar = RPG_AVATARS.find(a => a.key === c.avatarKey) || RPG_AVATARS[0];
+
+    const curBaseXp = curLvlObj.minXp;
+    const nextTargetXp = nextLvlObj ? nextLvlObj.minXp : (curBaseXp + 2000);
+    const xpDiff = Math.max(1, nextTargetXp - curBaseXp);
+    const xpCurrentInLevel = Math.max(0, (c.xp || 0) - curBaseXp);
+    const xpPct = Math.min(100, Math.max(0, Math.round((xpCurrentInLevel / xpDiff) * 100)));
+
+    const avatarIconEl = document.getElementById("rpg-dash-avatar-icon");
+    if (avatarIconEl) avatarIconEl.innerText = activeAvatar.icon;
+
+    const lvlBadge = document.getElementById("rpg-dash-lvl");
+    if (lvlBadge) lvlBadge.innerText = `Lv.${c.level}`;
+
+    const titleEl = document.getElementById("rpg-dash-title");
+    if (titleEl) titleEl.innerText = curLvlObj.title;
+
+    const streakEl = document.getElementById("rpg-dash-streak");
+    if (streakEl) streakEl.innerHTML = `<i class="fa-solid fa-fire"></i> ${c.streak || 0} Gün Seri`;
+
+    const xpBar = document.getElementById("rpg-dash-xp-bar");
+    if (xpBar) xpBar.style.width = `${xpPct}%`;
+
+    const xpText = document.getElementById("rpg-dash-xp-text");
+    if (xpText) xpText.innerText = `${(c.xp || 0).toLocaleString('tr-TR')} / ${nextTargetXp.toLocaleString('tr-TR')} XP`;
+
+    const coinsVal = document.getElementById("rpg-dash-coins-val");
+    if (coinsVal) coinsVal.innerText = (c.coins || 0).toLocaleString('tr-TR');
+
+    const strEl = document.getElementById("rpg-stat-str");
+    if (strEl) strEl.innerText = c.power || 10;
+
+    const mobEl = document.getElementById("rpg-stat-mob");
+    if (mobEl) mobEl.innerText = c.mobility || 10;
+
+    const endEl = document.getElementById("rpg-stat-end");
+    if (endEl) endEl.innerText = c.endurance || 10;
+
+    const recEl = document.getElementById("rpg-stat-rec");
+    if (recEl) recEl.innerText = c.recovery || 10;
+}
+
+function addRpgStatGain(statType, statAmount, xpAmount, reasonTitle) {
+    if (!appData.rpgCharacter) appData.rpgCharacter = createDefaultRpgCharacter();
+    const c = appData.rpgCharacter;
+
+    // Streak Multiplier
+    const streakMult = 1 + Math.min(1.0, ((c.streak || 0) * 0.05));
+    const calcXp = Math.round(xpAmount * streakMult);
+    const calcCoins = Math.round((statAmount * 2) * streakMult);
+
+    if (statType === 'power') c.power = (c.power || 10) + statAmount;
+    if (statType === 'mobility') c.mobility = (c.mobility || 10) + statAmount;
+    if (statType === 'endurance') c.endurance = (c.endurance || 10) + statAmount;
+    if (statType === 'recovery') c.recovery = (c.recovery || 10) + statAmount;
+
+    c.xp = (c.xp || 0) + calcXp;
+    c.coins = (c.coins || 0) + calcCoins;
+
+    checkLevelUp(c);
+    saveDataToStorage();
+    renderRpgDashboardCard();
+
+    if (reasonTitle) {
+        showToast(`⚡ +${statAmount} ${statType.toUpperCase()} | +${calcXp} XP (${reasonTitle})`);
+    }
+}
+
+function checkLevelUp(c) {
+    let highestLevel = 1;
+    for (let i = 0; i < RPG_LEVEL_LADDER.length; i++) {
+        if (c.xp >= RPG_LEVEL_LADDER[i].minXp) {
+            highestLevel = RPG_LEVEL_LADDER[i].level;
+        }
+    }
+
+    if (highestLevel > (c.level || 1)) {
+        c.level = highestLevel;
+        c.power = (c.power || 10) + 2;
+        c.mobility = (c.mobility || 10) + 2;
+        c.endurance = (c.endurance || 10) + 2;
+        c.recovery = (c.recovery || 10) + 2;
+        c.coins = (c.coins || 0) + 50;
+
+        const newLvlObj = RPG_LEVEL_LADDER.find(l => l.level === c.level) || RPG_LEVEL_LADDER[0];
+        
+        const badgeTxt = document.getElementById("lvl-up-badge-txt");
+        if (badgeTxt) badgeTxt.innerText = `LEVEL ${c.level}`;
+
+        const titleTxt = document.getElementById("lvl-up-title-txt");
+        if (titleTxt) titleTxt.innerText = `${newLvlObj.icon} ${newLvlObj.title}`;
+
+        const descTxt = document.getElementById("lvl-up-desc-txt");
+        if (descTxt) descTxt.innerText = `Tebrikler! ${c.level}. seviyeye ulaştın. Tüm statlarına +2 ve 50 Omar Coins kazandın!`;
+
+        openModal('modal-level-up');
+    }
+}
+
+function evaluateDailyStreak() {
+    if (!appData.rpgCharacter) appData.rpgCharacter = createDefaultRpgCharacter();
+    const c = appData.rpgCharacter;
+    const todayStr = appData.todayNutrition.date || new Date().toISOString().split('T')[0];
+
+    // Check if streak was broken (missed yesterday)
+    if (c.lastStreakDate && c.lastStreakDate !== todayStr) {
+        const lastDate = new Date(c.lastStreakDate);
+        const todayDate = new Date(todayStr);
+        const diffDays = Math.round((todayDate - lastDate) / (1000 * 60 * 60 * 24));
+        if (diffDays > 1) {
+            c.streak = 0; // Missed a day
+        }
+    }
+
+    // Check if today qualifies for streak increment (has workout sets logged today AND >=75% calories or protein)
+    const hasWorkout = Object.values(appData.workoutLogs || {}).some(sets => 
+        Array.isArray(sets) && sets.some(s => s && s.date === todayStr && ((s.weight || 0) > 0 || (s.reps || 0) > 0))
+    );
+    const hasCal = (appData.todayNutrition.calories || 0) >= ((appData.targets.calories || 2770) * 0.75);
+    const hasProt = (appData.todayNutrition.protein || 0) >= ((appData.targets.protein || 167) * 0.75);
+
+    if (hasWorkout && (hasCal || hasProt) && c.lastStreakDate !== todayStr) {
+        c.streak = (c.streak || 0) + 1;
+        c.bestStreak = Math.max(c.bestStreak || 0, c.streak);
+        c.lastStreakDate = todayStr;
+        const bonusCoins = 50 * c.streak;
+        c.coins = (c.coins || 0) + bonusCoins;
+
+        addRpgStatGain('recovery', 10, 100 * c.streak, '🔥 Günlük Streak Bonusu');
+        showToast(`🔥 TEBRİKLER! ${c.streak} Günlük Streak Serisi Yapıldı! +${bonusCoins} 🪙`);
+    }
+}
+
+// ==================== CHARACTER HUB MODAL ====================
+function openCharacterHubModal() {
+    openModal('modal-character-hub');
+    renderCharacterHub();
+}
+
+function renderCharacterHub() {
+    if (!appData.rpgCharacter) appData.rpgCharacter = createDefaultRpgCharacter();
+    const c = appData.rpgCharacter;
+
+    const curLvlObj = RPG_LEVEL_LADDER.find(l => l.level === c.level) || RPG_LEVEL_LADDER[0];
+    const nextLvlObj = RPG_LEVEL_LADDER.find(l => l.level === c.level + 1);
+    const activeAvatar = RPG_AVATARS.find(a => a.key === c.avatarKey) || RPG_AVATARS[0];
+
+    const curBaseXp = curLvlObj.minXp;
+    const nextTargetXp = nextLvlObj ? nextLvlObj.minXp : (curBaseXp + 2000);
+    const xpDiff = Math.max(1, nextTargetXp - curBaseXp);
+    const xpCurrentInLevel = Math.max(0, (c.xp || 0) - curBaseXp);
+    const xpPct = Math.min(100, Math.max(0, Math.round((xpCurrentInLevel / xpDiff) * 100)));
+
+    const avDisplay = document.getElementById("ch-hub-avatar-display");
+    if (avDisplay) avDisplay.innerText = activeAvatar.icon;
+
+    const lvlDisplay = document.getElementById("ch-hub-lvl-display");
+    if (lvlDisplay) lvlDisplay.innerText = `Lv. ${c.level}`;
+
+    const nameDisplay = document.getElementById("ch-hub-name-display");
+    if (nameDisplay) nameDisplay.innerText = (appData.userProfile && appData.userProfile.name) || "Ömer Faruk";
+
+    const titleDisplay = document.getElementById("ch-hub-title-display");
+    if (titleDisplay) titleDisplay.innerText = `${curLvlObj.icon} ${curLvlObj.title}`;
+
+    const streakNum = document.getElementById("ch-hub-streak-num");
+    if (streakNum) streakNum.innerText = c.streak || 0;
+
+    const coinsNum = document.getElementById("ch-hub-coins-num");
+    if (coinsNum) coinsNum.innerText = (c.coins || 0).toLocaleString('tr-TR');
+
+    const xpRatio = document.getElementById("ch-hub-xp-ratio");
+    if (xpRatio) xpRatio.innerText = `${(c.xp || 0).toLocaleString('tr-TR')} / ${nextTargetXp.toLocaleString('tr-TR')} XP`;
+
+    const xpFill = document.getElementById("ch-hub-xp-fill");
+    if (xpFill) xpFill.style.width = `${xpPct}%`;
+
+    const xpHint = document.getElementById("ch-hub-xp-hint");
+    if (xpHint) {
+        if (nextLvlObj) {
+            const rem = nextLvlObj.minXp - (c.xp || 0);
+            xpHint.innerText = `Seviye ${nextLvlObj.level} (${nextLvlObj.title}) için ${rem.toLocaleString('tr-TR')} XP kaldı.`;
+        } else {
+            xpHint.innerText = `Maksimum seviyeye ulaştın! Efsanevi sporcusun.`;
+        }
+    }
+
+    const strNum = document.getElementById("ch-stat-num-str");
+    if (strNum) strNum.innerText = c.power || 10;
+
+    const mobNum = document.getElementById("ch-stat-num-mob");
+    if (mobNum) mobNum.innerText = c.mobility || 10;
+
+    const endNum = document.getElementById("ch-stat-num-end");
+    if (endNum) endNum.innerText = c.endurance || 10;
+
+    const recNum = document.getElementById("ch-stat-num-rec");
+    if (recNum) recNum.innerText = c.recovery || 10;
+
+    // Render Ladder
+    const ladderContainer = document.getElementById("ch-hub-ladder-container");
+    if (ladderContainer) {
+        ladderContainer.innerHTML = RPG_LEVEL_LADDER.map(l => {
+            const isUnlocked = c.level >= l.level;
+            const isCurrent = c.level === l.level;
+            return `
+                <div class="ladder-item ${isUnlocked ? 'unlocked' : ''} ${isCurrent ? 'current' : ''}">
+                    <span class="ladder-lvl">Lv.${l.level}</span>
+                    <span style="font-size:1.1rem;">${l.icon}</span>
+                    <div style="min-width:0; flex:1;">
+                        <span class="ladder-name">${l.title}</span>
+                        <small style="font-size:0.6rem; color:var(--text-secondary); display:block;">${l.reqText}</small>
+                    </div>
+                </div>
+            `;
+        }).join("");
+    }
+
+    // Render Avatars
+    const avatarContainer = document.getElementById("ch-hub-avatar-options");
+    if (avatarContainer) {
+        avatarContainer.innerHTML = RPG_AVATARS.map(a => {
+            const isUnlocked = (c.level || 1) >= a.minLevel;
+            const isSelected = c.avatarKey === a.key;
+            return `
+                <div class="avatar-select-pill ${isSelected ? 'active' : ''}" style="${!isUnlocked ? 'opacity:0.4;' : ''}" onclick="${isUnlocked ? `selectRpgAvatar('${a.key}')` : `alert('Bu avatar Seviye ${a.minLevel} olunca açılır!')`}">
+                    <span>${a.icon}</span>
+                    <small>${a.name}</small>
+                    <span style="font-size:0.55rem; color:${isUnlocked ? '#ffd60a' : 'var(--text-muted)'};">${isUnlocked ? (isSelected ? 'Seçili' : 'Açık') : `Lv.${a.minLevel}`}</span>
+                </div>
+            `;
+        }).join("");
+    }
+}
+
+function selectRpgAvatar(avatarKey) {
+    if (!appData.rpgCharacter) appData.rpgCharacter = createDefaultRpgCharacter();
+    appData.rpgCharacter.avatarKey = avatarKey;
+    saveDataToStorage();
+    renderCharacterHub();
+    renderRpgDashboardCard();
+    showToast("Karakter avatarı güncellendi! 🛡️");
+}
+
+// ==================== ESNEME & MOBİLİTE KÜTÜPHANESİ FONKSİYONLARI ====================
+function openStretchingModal() {
+    openModal('modal-stretching-hub');
+    renderStretchingList();
+}
+
+function filterStretchingCategory(cat, btn) {
+    document.querySelectorAll('.stretch-pill').forEach(p => p.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    currentStretchingCategory = cat;
+    renderStretchingList();
+}
+
+function renderStretchingList() {
+    const listContainer = document.getElementById("stretching-exercises-list");
+    if (!listContainer) return;
+
+    const search = (document.getElementById("stretch-search-input")?.value || "").toLowerCase().trim();
+    const todayStr = appData.todayNutrition.date || new Date().toISOString().split('T')[0];
+    const completedMap = (appData.rpgCharacter && appData.rpgCharacter.completedStretchesToday) || {};
+
+    let list = MASTER_STRETCHING_DATABASE;
+    if (currentStretchingCategory && currentStretchingCategory !== "all") {
+        list = list.filter(e => e.category === currentStretchingCategory);
+    }
+    if (search) {
+        list = list.filter(e => e.name.toLowerCase().includes(search) || e.target.toLowerCase().includes(search) || e.desc.toLowerCase().includes(search));
+    }
+
+    listContainer.innerHTML = list.map(e => {
+        const isDone = completedMap[e.id] === todayStr;
+        return `
+            <div class="stretch-card ${isDone ? 'completed-today' : ''}">
+                <div class="stretch-card-header">
+                    <div>
+                        <h4 class="stretch-card-title">${e.name}</h4>
+                        <span class="stretch-target-tag"><i class="fa-solid fa-bullseye"></i> ${e.target}</span>
+                    </div>
+                    <button type="button" class="btn-start-stretch" onclick="startStretchingTimer('${e.id}')">
+                        <i class="fa-solid fa-play"></i> ${isDone ? 'Tekrar Yap' : 'Başlat'}
+                    </button>
+                </div>
+                <p class="stretch-card-desc">${e.desc}</p>
+                <div class="stretch-meta-row">
+                    <span class="stretch-time-badge"><i class="fa-solid fa-stopwatch"></i> ${e.duration} sn • ${e.tips}</span>
+                    <span class="stretch-gain-tag">+${e.mobGain} MOB • +${e.xpGain} XP</span>
+                </div>
+            </div>
+        `;
+    }).join("");
+}
+
+function startStretchingTimer(exerciseId) {
+    const ex = MASTER_STRETCHING_DATABASE.find(e => e.id === exerciseId);
+    if (!ex) return;
+
+    if (currentStretchingState.timerInterval) clearInterval(currentStretchingState.timerInterval);
+
+    currentStretchingState.activeExerciseId = exerciseId;
+    currentStretchingState.totalSeconds = ex.duration || 30;
+    currentStretchingState.remainingSeconds = ex.duration || 30;
+    currentStretchingState.isPaused = false;
+
+    const timerBox = document.getElementById("stretch-active-timer-box");
+    const nameEl = document.getElementById("stretch-timer-exercise-name");
+    const countEl = document.getElementById("stretch-timer-countdown");
+    const pauseBtn = document.getElementById("btn-stretch-pause");
+
+    if (timerBox) timerBox.style.display = "block";
+    if (nameEl) nameEl.innerText = ex.name;
+    if (countEl) countEl.innerText = currentStretchingState.remainingSeconds;
+    if (pauseBtn) pauseBtn.innerHTML = `<i class="fa-solid fa-pause"></i> Duraklat`;
+
+    currentStretchingState.timerInterval = setInterval(() => {
+        if (!currentStretchingState.isPaused) {
+            currentStretchingState.remainingSeconds--;
+            if (countEl) countEl.innerText = currentStretchingState.remainingSeconds;
+
+            if (currentStretchingState.remainingSeconds <= 0) {
+                clearInterval(currentStretchingState.timerInterval);
+                finishCurrentStretch(false);
+            }
+        }
+    }, 1000);
+}
+
+function pauseOrResumeStretchTimer() {
+    currentStretchingState.isPaused = !currentStretchingState.isPaused;
+    const pauseBtn = document.getElementById("btn-stretch-pause");
+    if (pauseBtn) {
+        pauseBtn.innerHTML = currentStretchingState.isPaused
+            ? `<i class="fa-solid fa-play"></i> Devam Et`
+            : `<i class="fa-solid fa-pause"></i> Duraklat`;
+    }
+}
+
+function finishCurrentStretch(manualTrigger) {
+    if (currentStretchingState.timerInterval) {
+        clearInterval(currentStretchingState.timerInterval);
+        currentStretchingState.timerInterval = null;
+    }
+
+    const ex = MASTER_STRETCHING_DATABASE.find(e => e.id === currentStretchingState.activeExerciseId);
+    const timerBox = document.getElementById("stretch-active-timer-box");
+    if (timerBox) timerBox.style.display = "none";
+
+    if (ex) {
+        if (!appData.rpgCharacter) appData.rpgCharacter = createDefaultRpgCharacter();
+        const todayStr = appData.todayNutrition.date || new Date().toISOString().split('T')[0];
+        if (!appData.rpgCharacter.completedStretchesToday) appData.rpgCharacter.completedStretchesToday = {};
+        appData.rpgCharacter.completedStretchesToday[ex.id] = todayStr;
+
+        addRpgStatGain('mobility', ex.mobGain, ex.xpGain, ex.name);
+        appData.rpgCharacter.coins = (appData.rpgCharacter.coins || 0) + (ex.coinsGain || 20);
+        saveDataToStorage();
+        renderStretchingList();
+        renderRpgDashboardCard();
+        showToast(`🧘 Harika! ${ex.name} tamamlandı! +${ex.mobGain} MOB • +${ex.xpGain} XP • +${ex.coinsGain} 🪙`);
+    }
+
+    currentStretchingState.activeExerciseId = null;
+}
+
+function cancelStretchTimer() {
+    if (currentStretchingState.timerInterval) {
+        clearInterval(currentStretchingState.timerInterval);
+        currentStretchingState.timerInterval = null;
+    }
+    const timerBox = document.getElementById("stretch-active-timer-box");
+    if (timerBox) timerBox.style.display = "none";
+    currentStretchingState.activeExerciseId = null;
 }
 
 // ==================== LIVE STEP & GPS TRACKER ENGINE ====================
@@ -1784,6 +2532,11 @@ function stopLiveStepTracking() {
     }
 
     detachDeviceMotionListener();
+
+    if (liveStepTrackerState.sessionSteps > 0) {
+        addRpgStatGain('endurance', Math.max(1, Math.round(liveStepTrackerState.sessionSteps / 500)), Math.round(liveStepTrackerState.sessionSteps / 50), 'Canlı Yürüyüş');
+        evaluateDailyStreak();
+    }
 
     recordDailyStepHistory(appData.todayNutrition.steps || 0);
     saveDataToStorage();
@@ -1975,6 +2728,8 @@ function renderStepHistoryTable() {
 function addSteps(amount) {
     appData.todayNutrition.steps = (appData.todayNutrition.steps || 0) + amount;
     recordDailyStepHistory(appData.todayNutrition.steps);
+    addRpgStatGain('endurance', Math.max(1, Math.round(amount / 500)), Math.round(amount / 50), 'Adım');
+    evaluateDailyStreak();
     saveDataToStorage();
     renderDashboard();
     updateLiveStepTrackerUI();
@@ -1986,8 +2741,13 @@ function promptCustomSteps() {
     const input = prompt("Bugünkü toplam adım sayını girin:", current > 0 ? current : "7500");
     if (input !== null) {
         const val = parseInt(input.replace(/[^0-9]/g, '')) || 0;
+        const diff = Math.max(0, val - current);
         appData.todayNutrition.steps = val;
         recordDailyStepHistory(appData.todayNutrition.steps);
+        if (diff > 0) {
+            addRpgStatGain('endurance', Math.max(1, Math.round(diff / 500)), Math.round(diff / 50), 'Adım');
+            evaluateDailyStreak();
+        }
         saveDataToStorage();
         renderDashboard();
         updateLiveStepTrackerUI();
@@ -2223,6 +2983,8 @@ function saveRecipeBuilderMeal() {
             f: totals.f,
             time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
         });
+        addRpgStatGain('recovery', 3, 30, 'Öğün Kaydı');
+        evaluateDailyStreak();
     }
 
     recalculateDailyTotals();
@@ -2249,6 +3011,8 @@ function logPresetMeal(key) {
     });
 
     recalculateDailyTotals();
+    addRpgStatGain('recovery', 3, 30, 'Öğün Kaydı');
+    evaluateDailyStreak();
     saveDataToStorage();
     renderDashboard();
     renderNutritionView();
@@ -2692,6 +3456,8 @@ function autoSaveSet(exId, setIndex) {
         date: new Date().toISOString().split('T')[0]
     };
 
+    addRpgStatGain('power', 2, 25, 'Antrenman Seti');
+    evaluateDailyStreak();
     saveDataToStorage();
     showToast(`Set ${setIndex} Kaydedildi! 💪`);
 }
@@ -6473,6 +7239,8 @@ function applyAiMealAdd(mealId, mealName, p, c, f, cal) {
 
     appData.todayNutrition.meals.push(newLoggedMeal);
     recalculateDailyTotals();
+    addRpgStatGain('recovery', 3, 30, 'Öğün Kaydı');
+    evaluateDailyStreak();
     saveDataToStorage();
     renderNutritionView();
     renderDashboard();
