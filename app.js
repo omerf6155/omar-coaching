@@ -4751,10 +4751,13 @@ function seedInitialUsersAndDemoData() {
             username: "coach_omar",
             displayName: "Koç Ömer",
             role: "coach",
-            passwordHash: "coach_pass_hash_2026",
+            passwordHash: "1234",
             createdAt: "2026-09-01",
             data: createDefaultAppData()
         };
+        needsSave = true;
+    } else if (registry["coach_omar"].passwordHash === "coach_pass_hash_2026") {
+        registry["coach_omar"].passwordHash = "1234";
         needsSave = true;
     }
 
