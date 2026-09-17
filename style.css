@@ -2935,6 +2935,38 @@ body.modal-open {
     padding: 8px 12px;
     background: rgba(16, 17, 21, 0.8);
     border-bottom: 1px solid var(--border-subtle);
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    -webkit-overflow-scrolling: touch;
+}
+
+.quick-chips-scroll::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+}
+
+.btn-chat-clear {
+    background: rgba(255, 69, 58, 0.15);
+    color: #ff453a;
+    border: 1px solid rgba(255, 69, 58, 0.35);
+    padding: 5px 10px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.2s ease;
+    z-index: 10;
+    position: relative;
+}
+
+.btn-chat-clear:hover {
+    background: rgba(255, 69, 58, 0.3);
+    color: #fff;
+    border-color: #ff453a;
 }
 
 .quick-chip {

@@ -789,7 +789,7 @@
                             </div>
                         </div>
                         <div style="display:flex; align-items:center; gap:8px;">
-                            <button type="button" class="btn btn-xs btn-outline" onclick="clearCoachActiveChat()" title="Sohbeti Temizle" style="padding:4px 8px; font-size:0.75rem; border-radius:6px; color:var(--text-muted); cursor:pointer;">
+                            <button type="button" class="btn-chat-clear" onclick="clearCoachActiveChat()" title="Sohbeti Temizle">
                                 <i class="fa-solid fa-trash-can"></i> Temizle
                             </button>
                             <select id="coach-chat-athlete-select" onchange="selectCoachChatAthlete(this.value)" class="form-select-sm">
@@ -1605,7 +1605,7 @@
                     </div>
                 </div>
                 <div style="display:flex; align-items:center; gap:8px;">
-                    <button type="button" class="btn btn-xs btn-outline" onclick="clearAthleteChat()" title="Sohbeti Temizle" style="padding:4px 8px; font-size:0.75rem; border-radius:6px; color:var(--text-muted); cursor:pointer;">
+                    <button type="button" class="btn-chat-clear" onclick="clearAthleteChat()" title="Sohbeti Temizle">
                         <i class="fa-solid fa-trash-can"></i> Temizle
                     </button>
                     <button class="modal-close-btn" onclick="closeModal('modal-athlete-chat')">&times;</button>

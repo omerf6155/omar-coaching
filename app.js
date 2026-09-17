@@ -5781,7 +5781,8 @@ function renderCoachChat(username) {
     const msgsArea = document.getElementById("coach-chat-messages-area");
     if (!msgsArea) return;
 
-    const msgs = chatDb[username] || [];
+    let msgs = chatDb[username] || [];
+    msgs = msgs.filter(m => !m.text || (!m.text.includes("Bench Press'te 80kg") && !m.text.includes("Mükemmel iş! Gelecek hafta") && !m.text.includes("Hocam 80kg ile 8 rep")));
 
     // Mark as read
     msgs.forEach(m => {
@@ -5852,13 +5853,11 @@ function insertCoachQuickReply(text) {
 
 function clearCoachActiveChat() {
     const username = currentCoachSelectedAthlete || "omer";
-    if (confirm("Bu sporcuyla olan sohbet geçmişini temizlemek istiyor musunuz?")) {
-        const chatDb = getChatDB();
-        chatDb[username] = [];
-        saveChatDB(chatDb);
-        renderCoachChat(username);
-        showToast("Sohbet geçmişi temizlendi 🗑️");
-    }
+    const chatDb = getChatDB();
+    chatDb[username] = [];
+    saveChatDB(chatDb);
+    renderCoachChat(username);
+    showToast("Sohbet geçmişi temizlendi 🗑️");
 }
 
 function renderCoachSettings() {
@@ -5977,7 +5976,10 @@ function renderAthleteChatMessages(username) {
     if (!msgsArea) return;
 
     const chatDb = getChatDB();
-    const msgs = chatDb[username] || [];
+    let msgs = chatDb[username] || [];
+    msgs = msgs.filter(m => !m.text || (!m.text.includes("Bench Press'te 80kg") && !m.text.includes("Mükemmel iş! Gelecek hafta") && !m.text.includes("Hocam 80kg ile 8 rep")));
+    chatDb[username] = msgs;
+    saveChatDB(chatDb);
 
     if (msgs.length === 0) {
         msgsArea.innerHTML = `
@@ -6042,13 +6044,11 @@ function insertAthleteQuickMessage(text) {
 
 function clearAthleteChat() {
     const activeUsername = getActiveSessionUsername() || "omer";
-    if (confirm("Koçunuz ile olan sohbet geçmişini temizlemek istiyor musunuz?")) {
-        const chatDb = getChatDB();
-        chatDb[activeUsername] = [];
-        saveChatDB(chatDb);
-        renderAthleteChatMessages(activeUsername);
-        showToast("Sohbet geçmişi temizlendi 🗑️");
-    }
+    const chatDb = getChatDB();
+    chatDb[activeUsername] = [];
+    saveChatDB(chatDb);
+    renderAthleteChatMessages(activeUsername);
+    showToast("Sohbet geçmişi temizlendi 🗑️");
 }
 
 function checkAthletePendingRevision() {
