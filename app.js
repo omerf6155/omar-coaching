@@ -1578,6 +1578,8 @@ document.addEventListener("DOMContentLoaded", () => {
             checkAthleteUnreadMessages();
         }
     }
+    initModalBackdropHandlers();
+    initRealtimeChatEngine();
 });
 
 // Storage Management
@@ -5761,19 +5763,17 @@ function submitCoachPrescription() {
 const OMAR_REALTIME_CONFIG = {
     brokerBase: "https://ntfy.sh",
     topicPrefix: "omar_coaching_chat_",
-    globalTopic: "omar_coaching_chat_global",
-    syncBusTopic: "omar_coaching_sync_bus",
     localChannelName: "omar_coaching_live_bus",
     syncHistoryHours: 24,
     typingTimeoutMs: 2500,
-    typingThrottleMs: 800,
-    activePollIntervalMs: 2000, // 2s when in chat
-    idlePollIntervalMs: 5000    // 5s in background
+    typingThrottleMs: 1000,
+    minSyncIntervalMs: 5000,       // Never auto-sync more often than every 5s
+    activePollIntervalMs: 20000,   // Gentle 20s keepalive fallback when chat view is active
+    idlePollIntervalMs: 60000      // 60s fallback in background
 };
 
 let realtimeChatState = {
     sseSource: null,
-    globalSseSource: null,
     currentTopic: null,
     localBus: null,
     typingTimer: null,
@@ -5782,7 +5782,8 @@ let realtimeChatState = {
     processedMsgIds: new Set(),
     audioCtx: null,
     status: "disconnected",
-    lastSyncTime: 0
+    lastSyncTime: 0,
+    isSyncing: false
 };
 
 // Pure Web Audio API Synthesizer (Zero external MP3 or CDN dependencies)
@@ -5851,21 +5852,21 @@ function initRealtimeChatEngine() {
 function attachMobileLifecycleListeners() {
     window.addEventListener("focus", () => {
         refreshRealtimeChatConnection();
-        pollActiveChatCloud();
+        debouncedPollActiveChatCloud();
     });
     document.addEventListener("visibilitychange", () => {
         if (!document.hidden) {
             refreshRealtimeChatConnection();
-            pollActiveChatCloud();
+            debouncedPollActiveChatCloud();
         }
     });
     window.addEventListener("online", () => {
         refreshRealtimeChatConnection();
-        pollActiveChatCloud();
+        debouncedPollActiveChatCloud();
     });
     window.addEventListener("pageshow", () => {
         refreshRealtimeChatConnection();
-        pollActiveChatCloud();
+        debouncedPollActiveChatCloud();
     });
 }
 
@@ -5873,9 +5874,10 @@ function startRealtimePollingLoop() {
     if (realtimeChatState.pollingIntervalTimer) {
         clearInterval(realtimeChatState.pollingIntervalTimer);
     }
+    const interval = isChatViewActive() ? OMAR_REALTIME_CONFIG.activePollIntervalMs : OMAR_REALTIME_CONFIG.idlePollIntervalMs;
     realtimeChatState.pollingIntervalTimer = setInterval(() => {
-        pollActiveChatCloud();
-    }, isChatViewActive() ? OMAR_REALTIME_CONFIG.activePollIntervalMs : OMAR_REALTIME_CONFIG.idlePollIntervalMs);
+        debouncedPollActiveChatCloud();
+    }, interval);
 }
 
 function isChatViewActive() {
@@ -5885,7 +5887,11 @@ function isChatViewActive() {
     return false;
 }
 
-function pollActiveChatCloud() {
+function debouncedPollActiveChatCloud() {
+    const now = Date.now();
+    if (now - realtimeChatState.lastSyncTime < OMAR_REALTIME_CONFIG.minSyncIntervalMs) {
+        return;
+    }
     const activeUsername = getActiveSessionUsername() || "omer";
     let targetAthlete = activeUsername;
 
@@ -5894,9 +5900,8 @@ function pollActiveChatCloud() {
     }
 
     if (targetAthlete) {
-        syncCloudHistory(targetAthlete);
+        syncCloudHistory(targetAthlete, false);
     }
-    syncCloudGlobalChannel();
 }
 
 function refreshRealtimeChatConnection() {
@@ -5938,7 +5943,8 @@ function updateRealtimeConnectionUI(status) {
 
 function connectRealtimeChatCloud(targetAthleteUsername) {
     if (!targetAthleteUsername) return;
-    const topic = `${OMAR_REALTIME_CONFIG.topicPrefix}${targetAthleteUsername.toLowerCase().trim()}`;
+    const cleanTarget = targetAthleteUsername.toLowerCase().trim();
+    const topic = `${OMAR_REALTIME_CONFIG.topicPrefix}${cleanTarget}`;
 
     if (realtimeChatState.sseSource && realtimeChatState.currentTopic === topic) {
         return;
@@ -5955,8 +5961,7 @@ function connectRealtimeChatCloud(targetAthleteUsername) {
     updateRealtimeConnectionUI("connecting");
 
     // Catch up any offline messages from past 24h
-    syncCloudHistory(targetAthleteUsername);
-    syncCloudGlobalChannel();
+    syncCloudHistory(cleanTarget, false);
 
     try {
         const sseUrl = `${OMAR_REALTIME_CONFIG.brokerBase}/${topic}/sse`;
@@ -5995,49 +6000,78 @@ function connectRealtimeChatCloud(targetAthleteUsername) {
     }
 }
 
-async function syncCloudHistory(targetAthleteUsername) {
+async function syncCloudHistory(targetAthleteUsername, force = false) {
     if (!targetAthleteUsername) return;
-    const topic = `${OMAR_REALTIME_CONFIG.topicPrefix}${targetAthleteUsername.toLowerCase().trim()}`;
+    const cleanTarget = targetAthleteUsername.toLowerCase().trim();
+    const now = Date.now();
+
+    if (!force && realtimeChatState.isSyncing) return;
+    if (!force && (now - realtimeChatState.lastSyncTime < OMAR_REALTIME_CONFIG.minSyncIntervalMs)) return;
+
+    realtimeChatState.isSyncing = true;
+    realtimeChatState.lastSyncTime = now;
+
+    const topic = `${OMAR_REALTIME_CONFIG.topicPrefix}${cleanTarget}`;
     try {
         const pollUrl = `${OMAR_REALTIME_CONFIG.brokerBase}/${topic}/json?poll=1&since=24h`;
         const res = await fetch(pollUrl);
-        if (!res.ok) return;
+        if (!res.ok) {
+            realtimeChatState.isSyncing = false;
+            return;
+        }
         const text = await res.text();
         const lines = text.trim().split("\n");
+
+        const chatDb = getChatDB();
+        if (!chatDb[cleanTarget]) chatDb[cleanTarget] = [];
+        let hasNewMessages = false;
+
         lines.forEach(line => {
             if (!line.trim()) return;
             try {
                 const item = JSON.parse(line);
                 if (item.event === "message" && item.message) {
                     const payload = JSON.parse(item.message);
-                    handleIncomingLiveEvent(payload, "history");
+                    if (payload && payload.type === "chat_msg") {
+                        const msgId = payload.id;
+                        if (msgId) {
+                            if (realtimeChatState.processedMsgIds.has(msgId)) return;
+                            realtimeChatState.processedMsgIds.add(msgId);
+                        }
+                        const exists = chatDb[cleanTarget].some(m => (msgId && m.id === msgId) || (m.text === payload.text && m.time === payload.time && m.sender === payload.sender));
+                        if (!exists) {
+                            chatDb[cleanTarget].push({
+                                id: msgId || `msg_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+                                sender: payload.sender,
+                                text: payload.text,
+                                time: payload.time || getCurrentTimeStr(),
+                                date: payload.date || new Date().toISOString().split('T')[0],
+                                read: payload.read || false
+                            });
+                            hasNewMessages = true;
+                        }
+                    }
                 }
             } catch (e) {}
         });
-        realtimeChatState.lastSyncTime = Date.now();
+
+        if (hasNewMessages) {
+            saveChatDB(chatDb);
+            if (currentPortalMode === "coach" && currentCoachSelectedAthlete === cleanTarget) {
+                renderCoachChat(cleanTarget);
+            } else if (currentPortalMode === "athlete") {
+                const activeUsername = (getActiveSessionUsername() || "omer").toLowerCase().trim();
+                if (activeUsername === cleanTarget || activeUsername === "omer") {
+                    renderAthleteChatMessages(activeUsername);
+                    checkAthleteUnreadMessages();
+                }
+            }
+        }
     } catch (e) {
         console.warn("Cloud history sync poll warning:", e);
+    } finally {
+        realtimeChatState.isSyncing = false;
     }
-}
-
-async function syncCloudGlobalChannel() {
-    try {
-        const pollUrl = `${OMAR_REALTIME_CONFIG.brokerBase}/${OMAR_REALTIME_CONFIG.globalTopic}/json?poll=1&since=24h`;
-        const res = await fetch(pollUrl);
-        if (!res.ok) return;
-        const text = await res.text();
-        const lines = text.trim().split("\n");
-        lines.forEach(line => {
-            if (!line.trim()) return;
-            try {
-                const item = JSON.parse(line);
-                if (item.event === "message" && item.message) {
-                    const payload = JSON.parse(item.message);
-                    handleIncomingLiveEvent(payload, "history");
-                }
-            } catch (e) {}
-        });
-    } catch (e) {}
 }
 
 async function forceSyncLiveChat() {
@@ -6049,8 +6083,7 @@ async function forceSyncLiveChat() {
     }
 
     updateRealtimeConnectionUI("connecting");
-    await syncCloudHistory(targetAthlete);
-    await syncCloudGlobalChannel();
+    await syncCloudHistory(targetAthlete, true);
     updateRealtimeConnectionUI("connected");
 
     if (currentPortalMode === "coach") {
@@ -6067,19 +6100,21 @@ function handleIncomingLiveEvent(payload, source) {
 
     if (payload.type === "chat_msg") {
         const msgId = payload.id;
-        if (!msgId || realtimeChatState.processedMsgIds.has(msgId)) {
+        if (msgId && realtimeChatState.processedMsgIds.has(msgId)) {
             return;
         }
-        realtimeChatState.processedMsgIds.add(msgId);
+        if (msgId) {
+            realtimeChatState.processedMsgIds.add(msgId);
+        }
 
         const athleteUsername = (payload.athleteUsername || "omer").toLowerCase().trim();
         const chatDb = getChatDB();
         if (!chatDb[athleteUsername]) chatDb[athleteUsername] = [];
 
-        const exists = chatDb[athleteUsername].some(m => m.id === msgId || (m.text === payload.text && m.time === payload.time && m.sender === payload.sender));
+        const exists = chatDb[athleteUsername].some(m => (msgId && m.id === msgId) || (m.text === payload.text && m.time === payload.time && m.sender === payload.sender));
         if (!exists) {
             chatDb[athleteUsername].push({
-                id: msgId,
+                id: msgId || `msg_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
                 sender: payload.sender,
                 text: payload.text,
                 time: payload.time || getCurrentTimeStr(),
@@ -6089,7 +6124,7 @@ function handleIncomingLiveEvent(payload, source) {
             saveChatDB(chatDb);
         }
 
-        // Auto ensure athlete is in registry if new
+        // Auto ensure athlete is in registry if new (without forcing full portal reload)
         const registry = getUsersRegistry();
         if (!registry[athleteUsername] && athleteUsername !== "coach" && athleteUsername !== "omer_coach") {
             registry[athleteUsername] = {
@@ -6102,9 +6137,6 @@ function handleIncomingLiveEvent(payload, source) {
                 data: createDefaultAppData()
             };
             saveUsersRegistry(registry);
-            if (currentPortalMode === "coach") {
-                renderCoachPortal();
-            }
         }
 
         hideLiveTypingIndicator(payload.sender === "coach" ? "athlete" : "coach");
@@ -6195,17 +6227,10 @@ async function sendLiveChatMessage(senderRole, targetAthleteUsername, text) {
     const athleteTopic = `${OMAR_REALTIME_CONFIG.topicPrefix}${cleanTarget}`;
     const payloadStr = JSON.stringify(messagePayload);
 
-    // Send to specific athlete topic
     fetch(`${OMAR_REALTIME_CONFIG.brokerBase}/${athleteTopic}`, {
         method: "POST",
         body: payloadStr
     }).catch(err => console.warn("Cloud athlete topic send notice:", err));
-
-    // Also send to global topic so Coach on any device receives all athlete chats
-    fetch(`${OMAR_REALTIME_CONFIG.brokerBase}/${OMAR_REALTIME_CONFIG.globalTopic}`, {
-        method: "POST",
-        body: payloadStr
-    }).catch(() => {});
 
     // 5. Update local view
     if (senderRole === "coach") {
@@ -6246,10 +6271,6 @@ function notifyLiveTyping(senderRole) {
     const payloadStr = JSON.stringify(typingPayload);
     try {
         fetch(`${OMAR_REALTIME_CONFIG.brokerBase}/${topic}`, {
-            method: "POST",
-            body: payloadStr
-        }).catch(() => {});
-        fetch(`${OMAR_REALTIME_CONFIG.brokerBase}/${OMAR_REALTIME_CONFIG.globalTopic}`, {
             method: "POST",
             body: payloadStr
         }).catch(() => {});
@@ -6398,10 +6419,6 @@ function clearCoachActiveChat() {
         method: "POST",
         body: payloadStr
     }).catch(() => {});
-    fetch(`${OMAR_REALTIME_CONFIG.brokerBase}/${OMAR_REALTIME_CONFIG.globalTopic}`, {
-        method: "POST",
-        body: payloadStr
-    }).catch(() => {});
 
     showToast("Sohbet geçmişi temizlendi 🗑️");
 }
@@ -6517,7 +6534,7 @@ function openAthleteChatModal() {
     openModal("modal-athlete-chat");
 
     // Force an immediate cloud catch-up poll
-    pollActiveChatCloud();
+    syncCloudHistory(activeUsername, true);
 }
 
 function renderAthleteChatMessages(username) {
@@ -6597,10 +6614,6 @@ function clearAthleteChat() {
     const topic = `${OMAR_REALTIME_CONFIG.topicPrefix}${activeUsername}`;
     const payloadStr = JSON.stringify(clearPayload);
     fetch(`${OMAR_REALTIME_CONFIG.brokerBase}/${topic}`, {
-        method: "POST",
-        body: payloadStr
-    }).catch(() => {});
-    fetch(`${OMAR_REALTIME_CONFIG.brokerBase}/${OMAR_REALTIME_CONFIG.globalTopic}`, {
         method: "POST",
         body: payloadStr
     }).catch(() => {});
@@ -7939,12 +7952,3 @@ function initModalBackdropHandlers() {
     });
 }
 
-if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", () => {
-        initModalBackdropHandlers();
-        initRealtimeChatEngine();
-    });
-} else {
-    initModalBackdropHandlers();
-    initRealtimeChatEngine();
-}
