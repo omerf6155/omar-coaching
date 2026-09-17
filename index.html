@@ -106,12 +106,16 @@
                         </div>
                     </div>
 
-                    <!-- Steps Activity Row -->
-                    <div class="activity-tracker-row">
-                        <div class="activity-metric-box">
+                    <!-- Streamlined Step & Live Tracking Interactive Bar -->
+                    <div class="activity-tracker-row" onclick="openStepTrackerModal()" style="cursor: pointer;" title="Canlı Adım Sayar ve Takip Merkezini Aç">
+                        <div class="activity-metric-box compact-step-box">
                             <div class="activity-metric-header">
-                                <span><i class="fa-solid fa-shoe-prints"></i> GÜNLÜK ADIM</span>
-                                <span class="activity-val"><strong id="steps-val">0</strong> / <span id="target-steps-lbl">7.500</span></span>
+                                <div class="step-title-group">
+                                    <i class="fa-solid fa-shoe-prints step-icon-pulse" id="dash-step-icon"></i>
+                                    <span>GÜNLÜK ADIM</span>
+                                    <span class="step-live-pill" id="dash-step-live-pill" style="display:none;"><i class="fa-solid fa-satellite-dish"></i> CANLI GPS</span>
+                                </div>
+                                <span class="activity-val"><strong id="steps-val">0</strong> / <span id="target-steps-lbl">7.500</span> <i class="fa-solid fa-chevron-right step-arrow-icon"></i></span>
                             </div>
                             <div class="progress-track"><div class="progress-fill step-fill" id="bar-steps" style="width: 0%"></div></div>
                         </div>
@@ -918,6 +922,100 @@
         </div>
     </div>
 
+    <!-- 2B. LIVE STEP TRACKER & GPS PEDOMETER MODAL -->
+    <div id="modal-step-tracker" class="modal-overlay">
+        <div class="modal-card step-tracker-modal-card" style="max-height: 92vh;">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-shoe-prints" style="color:var(--status-green);"></i> Canlı Adım & GPS Takip Merkezi</h3>
+                <button class="modal-close-btn" onclick="closeModal('modal-step-tracker')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- Live Status Banner -->
+                <div class="step-live-status-card" id="step-live-status-banner">
+                    <div class="live-status-left">
+                        <span class="live-status-dot" id="live-status-dot"></span>
+                        <div>
+                            <strong id="live-status-title">Canlı Takip Beklemede</strong>
+                            <span id="live-status-desc" style="font-size:0.7rem; color:var(--text-secondary); display:block;">GPS ve hareket sensörüyle otomatik adım sayımı için başlatın</span>
+                        </div>
+                    </div>
+                    <button class="btn btn-sm btn-live-toggle" id="btn-toggle-live-gps" onclick="toggleLiveStepTracking()">
+                        <i class="fa-solid fa-play"></i> Başlat
+                    </button>
+                </div>
+
+                <!-- Main Progress Dial / Circular Card -->
+                <div class="step-dial-card">
+                    <div class="step-dial-center">
+                        <span class="step-dial-sub">Bugünkü Toplam Adım</span>
+                        <h2 class="step-dial-number" id="step-dial-current">0</h2>
+                        <span class="step-dial-target" id="step-dial-target">/ 7.500 Adım Hedefi</span>
+                        <div class="step-dial-progress-track">
+                            <div class="step-dial-progress-bar" id="step-dial-bar" style="width: 0%;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Live Session Stats Grid -->
+                    <div class="step-metrics-4grid">
+                        <div class="step-mini-stat">
+                            <span class="stat-lbl"><i class="fa-solid fa-route"></i> Mesafe</span>
+                            <strong class="stat-val" id="step-metric-dist">0.00 km</strong>
+                        </div>
+                        <div class="step-mini-stat">
+                            <span class="stat-lbl"><i class="fa-solid fa-fire"></i> Yakılan</span>
+                            <strong class="stat-val" id="step-metric-cal">0 kcal</strong>
+                        </div>
+                        <div class="step-mini-stat">
+                            <span class="stat-lbl"><i class="fa-solid fa-stopwatch"></i> Süre</span>
+                            <strong class="stat-val" id="step-metric-time">00:00</strong>
+                        </div>
+                        <div class="step-mini-stat">
+                            <span class="stat-lbl"><i class="fa-solid fa-gauge-high"></i> Anlık Hız</span>
+                            <strong class="stat-val" id="step-metric-speed">0.0 km/s</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Step Increment Chips -->
+                <div class="card" style="background:var(--bg-card-subtle); padding:10px; margin-top:10px;">
+                    <div class="card-header" style="margin-bottom:6px;">
+                        <h2 style="font-size:0.75rem;"><i class="fa-solid fa-hand-pointer"></i> HIZLI ADIM EKLE / DÜZENLE</h2>
+                    </div>
+                    <div class="step-quick-buttons-grid">
+                        <button class="btn btn-sm btn-outline" onclick="addSteps(500)">+500</button>
+                        <button class="btn btn-sm btn-outline" onclick="addSteps(1000)">+1.000</button>
+                        <button class="btn btn-sm btn-outline" onclick="addSteps(2500)">+2.500</button>
+                        <button class="btn btn-sm btn-outline" onclick="promptCustomSteps()"><i class="fa-solid fa-pen"></i> Manuel Düzenle</button>
+                    </div>
+                </div>
+
+                <!-- Collapsible Step History Section (Gizlenebilir Tablo) -->
+                <div class="step-history-accordion" style="margin-top:10px;">
+                    <button type="button" class="btn-step-history-toggle" onclick="toggleStepHistoryAccordion()">
+                        <span><i class="fa-solid fa-calendar-days"></i> Son 7 Günün Adım Tablosu</span>
+                        <i class="fa-solid fa-chevron-down" id="step-history-chevron"></i>
+                    </button>
+                    <div class="step-history-content" id="step-history-container" style="display:none;">
+                        <div id="step-history-table-list" class="step-history-table">
+                            <!-- Populated dynamically with 7-day logs -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- GPS & Sensor Info Note -->
+                <div class="card" style="margin-top:10px; background:rgba(48,209,88,0.06); border:1px solid rgba(48,209,88,0.2); padding:10px;">
+                    <div style="font-size:0.72rem; color:var(--text-secondary); line-height:1.45; display:flex; gap:8px;">
+                        <i class="fa-solid fa-circle-info" style="color:var(--status-green); font-size:0.9rem; margin-top:2px;"></i>
+                        <div>
+                            <strong style="color:#ffffff;">Konum (GPS) & Hareket İzni ile Canlı Takip:</strong><br>
+                            "Başlat" dediğinizde telefonunuzun GPS koordinatları ve ivmeölçer sensörü devreye girer. Yürürken ekranı cebinize atsanız dahi adımlarınız ve kat ettiğiniz mesafe otomatik kaydedilir.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- 3. SMART RECIPE & RAW INGREDIENT BUILDER MODAL -->
     <div id="modal-recipe-builder" class="modal-overlay">
         <div class="modal-card" style="max-height:92vh;">
@@ -1662,6 +1760,96 @@
                 <div class="ai-input-footer-note">
                     <span>💡 <span id="ai-footer-hint">1'e 1 anatomik biyomekanik eşleştirme ve anında program revizesi</span></span>
                     <span class="ai-badge-ready"><i class="fa-solid fa-bolt"></i> Canlı & Hazır</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== 13. CANLI ADIM SAYAR & GPS TAKİP MERKEZİ MODALİ ==================== -->
+    <div id="modal-step-tracker" class="modal-overlay">
+        <div class="modal-card step-tracker-modal-card">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-person-walking" style="color:var(--status-green);"></i> Canlı Adım & GPS Takibi</h3>
+                <button class="modal-close-btn" onclick="closeModal('modal-step-tracker')">&times;</button>
+            </div>
+            
+            <div class="modal-body" style="padding-top: 10px;">
+                <!-- Live GPS & Motion Status Card -->
+                <div class="step-live-status-card">
+                    <div class="step-live-status-left">
+                        <span class="live-status-dot" id="live-status-indicator"></span>
+                        <div>
+                            <h4 id="live-status-title">Canlı Takip: Kapalı</h4>
+                            <p id="live-status-subtitle">Konum ve hareket sensörü hazırda bekliyor</p>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-live-toggle" id="btn-live-step-toggle" onclick="toggleLiveStepTracking()">
+                        <i class="fa-solid fa-play" id="btn-live-step-icon"></i>
+                        <span id="btn-live-step-label">Başlat</span>
+                    </button>
+                </div>
+
+                <!-- Dial & Progress Centerpiece -->
+                <div class="step-dial-card">
+                    <div class="step-dial-center">
+                        <span class="step-dial-sub">Bugünkü Toplam Adım</span>
+                        <div class="step-dial-number" id="live-steps-count">0</div>
+                        <div class="step-dial-target">Hedef: <strong id="live-steps-target">7.500</strong> adım</div>
+                        <div class="step-dial-progress-track">
+                            <div class="step-dial-progress-bar" id="live-steps-progress-bar" style="width: 0%;"></div>
+                        </div>
+                    </div>
+
+                    <!-- 4-Stat Metrics Grid -->
+                    <div class="step-metrics-4grid">
+                        <div class="step-mini-stat">
+                            <span class="stat-lbl"><i class="fa-solid fa-route"></i> Mesafe</span>
+                            <span class="stat-val" id="live-stat-km">0.00 <small>km</small></span>
+                        </div>
+                        <div class="step-mini-stat">
+                            <span class="stat-lbl"><i class="fa-solid fa-fire"></i> Kalori</span>
+                            <span class="stat-val" id="live-stat-kcal">0 <small>kcal</small></span>
+                        </div>
+                        <div class="step-mini-stat">
+                            <span class="stat-lbl"><i class="fa-solid fa-stopwatch"></i> Süre</span>
+                            <span class="stat-val" id="live-stat-time">00:00</span>
+                        </div>
+                        <div class="step-mini-stat">
+                            <span class="stat-lbl"><i class="fa-solid fa-gauge"></i> Hız</span>
+                            <span class="stat-val" id="live-stat-speed">0.0 <small>km/s</small></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Manual Adjustments -->
+                <div style="margin-top: 14px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                        <label style="font-size:0.75rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase;">
+                            <i class="fa-solid fa-plus-minus"></i> Hızlı Adım Ekle / Düzelt
+                        </label>
+                        <button type="button" class="btn btn-xs btn-outline" onclick="promptCustomSteps()">
+                            <i class="fa-solid fa-pen"></i> Manuel Gir
+                        </button>
+                    </div>
+                    <div class="step-quick-buttons-grid">
+                        <button type="button" class="btn btn-outline" onclick="addSteps(500)">+500</button>
+                        <button type="button" class="btn btn-outline" onclick="addSteps(1000)">+1.000</button>
+                        <button type="button" class="btn btn-outline" onclick="addSteps(2500)">+2.500</button>
+                        <button type="button" class="btn btn-outline" onclick="addSteps(5000)">+5.000</button>
+                    </div>
+                </div>
+
+                <!-- Collapsible 7-Day History Accordion -->
+                <div style="margin-top: 16px;">
+                    <button type="button" class="btn-step-history-toggle" id="btn-step-hist-accordion" onclick="toggleStepHistoryAccordion()">
+                        <span><i class="fa-solid fa-clock-rotate-left"></i> Son 7 Günlük Adım Geçmişi</span>
+                        <i class="fa-solid fa-chevron-down" id="step-hist-chevron"></i>
+                    </button>
+                    <div class="step-history-content" id="step-history-accordion-content" style="display:none;">
+                        <div class="step-history-table" id="step-history-list">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

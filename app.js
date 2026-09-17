@@ -1162,6 +1162,7 @@ function createDefaultAppData() {
             MASTER_SUPPLEMENT_DATABASE[21]  // Magnezyum Bisglisinat
         ],
         supplementsLog: {},
+        stepHistory: {},
         todayNutrition: {
             date: new Date().toISOString().split('T')[0],
             calories: 0,
@@ -1250,6 +1251,7 @@ function loadDataFromStorage() {
             pinnedQuickActions: parsed.pinnedQuickActions || ["water", "pancake", "steps_1000", "steps_manual"],
             todayNutrition: { ...createDefaultAppData().todayNutrition, ...(parsed.todayNutrition || {}) },
             supplementsLog: parsed.supplementsLog || {},
+            stepHistory: parsed.stepHistory || {},
             workoutLogs: parsed.workoutLogs || {},
             exerciseSetsCount: parsed.exerciseSetsCount || {},
             seatSettings: parsed.seatSettings || {},
@@ -1275,6 +1277,7 @@ function loadDataFromStorage() {
                 pinnedQuickActions: parsed.pinnedQuickActions || ["water", "pancake", "steps_1000", "steps_manual"],
                 todayNutrition: { ...createDefaultAppData().todayNutrition, ...(parsed.todayNutrition || {}) },
                 supplementsLog: parsed.supplementsLog || {},
+                stepHistory: parsed.stepHistory || {},
                 workoutLogs: parsed.workoutLogs || {},
                 exerciseSetsCount: parsed.exerciseSetsCount || {},
                 seatSettings: parsed.seatSettings || {},
@@ -1305,6 +1308,10 @@ function saveDataToStorage() {
 function checkAndResetDailyNutrition() {
     const todayStr = new Date().toISOString().split('T')[0];
     if (appData.todayNutrition.date !== todayStr) {
+        if (!appData.stepHistory) appData.stepHistory = {};
+        if (appData.todayNutrition.date && (appData.todayNutrition.steps > 0)) {
+            appData.stepHistory[appData.todayNutrition.date] = appData.todayNutrition.steps;
+        }
         appData.todayNutrition = {
             date: todayStr,
             calories: 0,
@@ -1595,10 +1602,363 @@ function saveQuickActionsConfig() {
     showToast("Hızlı işlemler güncellendi! ⚡");
 }
 
+// ==================== LIVE STEP & GPS TRACKER ENGINE ====================
+let liveStepTrackerState = {
+    active: false,
+    watchId: null,
+    timerInterval: null,
+    startTime: null,
+    elapsedSeconds: 0,
+    sessionSteps: 0,
+    totalGpsDistanceMeters: 0,
+    lastPosition: null, // { lat, lng, time }
+    currentSpeedKmh: 0,
+    lastMotionStepTime: 0,
+    motionListenerAttached: false
+};
+
+function openStepTrackerModal() {
+    openModal('modal-step-tracker');
+    updateLiveStepTrackerUI();
+    renderStepHistoryTable();
+}
+
+function updateLiveStepTrackerUI() {
+    const t = appData.targets || DEFAULT_TARGETS;
+    const currentSteps = appData.todayNutrition.steps || 0;
+    const targetSteps = t.steps || 7500;
+    const pct = Math.min(100, Math.round((currentSteps / targetSteps) * 100));
+
+    // Modal Dial & Counts
+    const dialCount = document.getElementById("live-steps-count");
+    if (dialCount) dialCount.innerText = currentSteps.toLocaleString('tr-TR');
+
+    const dialTarget = document.getElementById("live-steps-target");
+    if (dialTarget) dialTarget.innerText = targetSteps.toLocaleString('tr-TR');
+
+    const dialBar = document.getElementById("live-steps-progress-bar");
+    if (dialBar) dialBar.style.width = `${pct}%`;
+
+    // 4-Stat Metrics Calculation
+    // Total distance in km: based on steps (stride ~0.74m) or GPS distance (whichever is larger/active)
+    const userHeight = (appData.userProfile && appData.userProfile.height) ? parseFloat(appData.userProfile.height) : 178;
+    const userWeight = (appData.userProfile && appData.userProfile.weight) ? parseFloat(appData.userProfile.weight) : 74;
+    const strideLengthMeters = (userHeight * 0.414) / 100; // ~0.737m
+    
+    const stepBasedKm = (currentSteps * strideLengthMeters) / 1000;
+    const totalKm = Math.max(stepBasedKm, (liveStepTrackerState.totalGpsDistanceMeters / 1000));
+    
+    // Calorie calculation (~0.75 kcal per kg per km or ~0.04 kcal per step)
+    const burnedKcal = Math.round(userWeight * totalKm * 0.75);
+
+    // Format Duration
+    const durMins = Math.floor(liveStepTrackerState.elapsedSeconds / 60);
+    const durSecs = liveStepTrackerState.elapsedSeconds % 60;
+    const formattedDuration = `${durMins.toString().padStart(2, '0')}:${durSecs.toString().padStart(2, '0')}`;
+
+    const statKm = document.getElementById("live-stat-km");
+    if (statKm) statKm.innerHTML = `${totalKm.toFixed(2)} <small>km</small>`;
+
+    const statKcal = document.getElementById("live-stat-kcal");
+    if (statKcal) statKcal.innerHTML = `${burnedKcal} <small>kcal</small>`;
+
+    const statTime = document.getElementById("live-stat-time");
+    if (statTime) statTime.innerText = formattedDuration;
+
+    const statSpeed = document.getElementById("live-stat-speed");
+    if (statSpeed) statSpeed.innerHTML = `${liveStepTrackerState.currentSpeedKmh.toFixed(1)} <small>km/s</small>`;
+
+    // Status Card & Dash live pill
+    const statusDot = document.getElementById("live-status-indicator");
+    const statusTitle = document.getElementById("live-status-title");
+    const statusSubtitle = document.getElementById("live-status-subtitle");
+    const toggleBtn = document.getElementById("btn-live-step-toggle");
+    const toggleIcon = document.getElementById("btn-live-step-icon");
+    const toggleLbl = document.getElementById("btn-live-step-label");
+    const dashLivePill = document.getElementById("dash-step-live-pill");
+    const dashStepIcon = document.getElementById("dash-step-icon");
+
+    if (liveStepTrackerState.active) {
+        if (statusDot) statusDot.className = "live-status-dot active";
+        if (statusTitle) statusTitle.innerText = "Canlı GPS & Adım Takibi Aktif 🟢";
+        if (statusSubtitle) statusSubtitle.innerText = "Yürüyüş ve koşunuz anlık sayılıyor...";
+        if (toggleBtn) toggleBtn.className = "btn-live-toggle active";
+        if (toggleIcon) toggleIcon.className = "fa-solid fa-stop";
+        if (toggleLbl) toggleLbl.innerText = "Durdur";
+        if (dashLivePill) dashLivePill.style.display = "inline-flex";
+        if (dashStepIcon) dashStepIcon.classList.add("tracking");
+    } else {
+        if (statusDot) statusDot.className = "live-status-dot";
+        if (statusTitle) statusTitle.innerText = "Canlı Takip: Kapalı";
+        if (statusSubtitle) statusSubtitle.innerText = "Konum ve hareket sensörü hazırda bekliyor";
+        if (toggleBtn) toggleBtn.className = "btn-live-toggle";
+        if (toggleIcon) toggleIcon.className = "fa-solid fa-play";
+        if (toggleLbl) toggleLbl.innerText = "Başlat";
+        if (dashLivePill) dashLivePill.style.display = "none";
+        if (dashStepIcon) dashStepIcon.classList.remove("tracking");
+    }
+}
+
+function toggleLiveStepTracking() {
+    if (liveStepTrackerState.active) {
+        stopLiveStepTracking();
+    } else {
+        startLiveStepTracking();
+    }
+}
+
+function startLiveStepTracking() {
+    if (!navigator.geolocation && !window.DeviceMotionEvent) {
+        alert("Cihazınız veya tarayıcınız konum / hareket sensörlerini desteklemiyor.");
+        return;
+    }
+
+    liveStepTrackerState.active = true;
+    liveStepTrackerState.startTime = Date.now();
+    liveStepTrackerState.lastPosition = null;
+    liveStepTrackerState.currentSpeedKmh = 0;
+
+    // 1. Request iOS 13+ DeviceMotion permission if available
+    if (typeof DeviceMotionEvent !== "undefined" && typeof DeviceMotionEvent.requestPermission === "function") {
+        DeviceMotionEvent.requestPermission()
+            .then(perm => {
+                if (perm === "granted") {
+                    attachDeviceMotionListener();
+                }
+            })
+            .catch(err => console.warn("Motion permission rejected:", err));
+    } else if (window.DeviceMotionEvent) {
+        attachDeviceMotionListener();
+    }
+
+    // 2. Start GPS Geolocation Watcher
+    if (navigator.geolocation) {
+        liveStepTrackerState.watchId = navigator.geolocation.watchPosition(
+            onLiveGeoSuccess,
+            onLiveGeoError,
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 2000 }
+        );
+    }
+
+    // 3. Start Live 1s Timer
+    if (liveStepTrackerState.timerInterval) clearInterval(liveStepTrackerState.timerInterval);
+    liveStepTrackerState.timerInterval = setInterval(() => {
+        if (liveStepTrackerState.active) {
+            liveStepTrackerState.elapsedSeconds++;
+            updateLiveStepTrackerUI();
+        }
+    }, 1000);
+
+    updateLiveStepTrackerUI();
+    renderDashboard();
+    showToast("Canlı Takip Başlatıldı! 🚀 Konum & Sensör devrede.");
+}
+
+function stopLiveStepTracking() {
+    liveStepTrackerState.active = false;
+    
+    if (liveStepTrackerState.watchId !== null) {
+        navigator.geolocation.clearWatch(liveStepTrackerState.watchId);
+        liveStepTrackerState.watchId = null;
+    }
+
+    if (liveStepTrackerState.timerInterval) {
+        clearInterval(liveStepTrackerState.timerInterval);
+        liveStepTrackerState.timerInterval = null;
+    }
+
+    detachDeviceMotionListener();
+
+    recordDailyStepHistory(appData.todayNutrition.steps || 0);
+    saveDataToStorage();
+    updateLiveStepTrackerUI();
+    renderDashboard();
+    showToast(`Canlı Takip Durduruldu. Toplam: ${(appData.todayNutrition.steps || 0).toLocaleString('tr-TR')} Adım.`);
+}
+
+function attachDeviceMotionListener() {
+    if (!liveStepTrackerState.motionListenerAttached) {
+        window.addEventListener("devicemotion", onLiveDeviceMotion, { passive: true });
+        liveStepTrackerState.motionListenerAttached = true;
+    }
+}
+
+function detachDeviceMotionListener() {
+    if (liveStepTrackerState.motionListenerAttached) {
+        window.removeEventListener("devicemotion", onLiveDeviceMotion);
+        liveStepTrackerState.motionListenerAttached = false;
+    }
+}
+
+// Accelerometer Step Detection Peak Algorithm
+function onLiveDeviceMotion(e) {
+    if (!liveStepTrackerState.active) return;
+
+    const acc = e.accelerationIncludingGravity || e.acceleration;
+    if (!acc) return;
+
+    const ax = acc.x || 0;
+    const ay = acc.y || 0;
+    const az = acc.z || 0;
+    const mag = Math.sqrt(ax * ax + ay * ay + az * az);
+
+    // Peak threshold for physical footfall (standard gravity is ~9.8 m/s^2, footstep impact spikes above ~11.8)
+    const threshold = 11.8;
+    const now = Date.now();
+
+    // Debounce to prevent multiple triggers on a single step (min 320ms ~ max ~3.1 steps/sec)
+    if (mag > threshold && (now - liveStepTrackerState.lastMotionStepTime) > 320) {
+        liveStepTrackerState.lastMotionStepTime = now;
+        liveStepTrackerState.sessionSteps++;
+        
+        appData.todayNutrition.steps = (appData.todayNutrition.steps || 0) + 1;
+        recordDailyStepHistory(appData.todayNutrition.steps);
+        
+        // Save periodically every 10 steps to prevent storage thrashing
+        if (liveStepTrackerState.sessionSteps % 10 === 0) {
+            saveDataToStorage();
+            renderDashboard();
+        }
+        updateLiveStepTrackerUI();
+    }
+}
+
+// GPS Distance & Speed Handler (Haversine Formula)
+function onLiveGeoSuccess(pos) {
+    if (!liveStepTrackerState.active || !pos || !pos.coords) return;
+
+    const { latitude, longitude, speed } = pos.coords;
+    const now = Date.now();
+
+    if (speed !== null && speed !== undefined && speed >= 0) {
+        liveStepTrackerState.currentSpeedKmh = speed * 3.6; // m/s to km/h
+    }
+
+    if (liveStepTrackerState.lastPosition) {
+        const distMeters = calculateGpsDistance(
+            liveStepTrackerState.lastPosition.lat,
+            liveStepTrackerState.lastPosition.lng,
+            latitude,
+            longitude
+        );
+
+        // Ignore GPS noise (< 1.8 meters) and driving (> 25 km/h)
+        if (distMeters >= 1.8 && distMeters < 300) {
+            const timeDiffSecs = (now - liveStepTrackerState.lastPosition.time) / 1000;
+            const calcSpeedKmh = (distMeters / (timeDiffSecs || 1)) * 3.6;
+
+            if (calcSpeedKmh <= 25) {
+                liveStepTrackerState.totalGpsDistanceMeters += distMeters;
+                if (!speed || speed < 0) liveStepTrackerState.currentSpeedKmh = calcSpeedKmh;
+
+                // If device motion wasn't triggered (e.g. phone in stationary bag / hand GPS), calculate steps from distance
+                const userHeight = (appData.userProfile && appData.userProfile.height) ? parseFloat(appData.userProfile.height) : 178;
+                const strideLengthMeters = (userHeight * 0.414) / 100;
+                
+                // If motion steps are lagging significantly behind GPS distance steps, sync forward
+                const expectedStepsFromGps = Math.round(liveStepTrackerState.totalGpsDistanceMeters / strideLengthMeters);
+                if (expectedStepsFromGps > (liveStepTrackerState.sessionSteps + 5)) {
+                    const diff = expectedStepsFromGps - liveStepTrackerState.sessionSteps;
+                    liveStepTrackerState.sessionSteps += diff;
+                    appData.todayNutrition.steps = (appData.todayNutrition.steps || 0) + diff;
+                    recordDailyStepHistory(appData.todayNutrition.steps);
+                    saveDataToStorage();
+                    renderDashboard();
+                }
+            }
+        }
+    }
+
+    liveStepTrackerState.lastPosition = { lat: latitude, lng: longitude, time: now };
+    updateLiveStepTrackerUI();
+}
+
+function onLiveGeoError(err) {
+    console.warn("Geolocation watch warning:", err.message);
+}
+
+// Great-circle Haversine Distance in Meters
+function calculateGpsDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371e3; // metres
+    const φ1 = lat1 * Math.PI / 180;
+    const φ2 = lat2 * Math.PI / 180;
+    const Δφ = (lat2 - lat1) * Math.PI / 180;
+    const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+              Math.cos(φ1) * Math.cos(φ2) *
+              Math.sin(Δλ/2) * Math.sin(Δλ/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+    return R * c;
+}
+
+// Step History Storage & Accordion
+function recordDailyStepHistory(steps) {
+    if (!appData.stepHistory) appData.stepHistory = {};
+    const todayStr = appData.todayNutrition.date || new Date().toISOString().split('T')[0];
+    appData.stepHistory[todayStr] = steps;
+}
+
+function toggleStepHistoryAccordion() {
+    const content = document.getElementById("step-history-accordion-content");
+    const chevron = document.getElementById("step-hist-chevron");
+    if (!content) return;
+
+    if (content.style.display === "none" || content.style.display === "") {
+        content.style.display = "block";
+        if (chevron) chevron.className = "fa-solid fa-chevron-up";
+        renderStepHistoryTable();
+    } else {
+        content.style.display = "none";
+        if (chevron) chevron.className = "fa-solid fa-chevron-down";
+    }
+}
+
+function renderStepHistoryTable() {
+    const listContainer = document.getElementById("step-history-list");
+    if (!listContainer) return;
+
+    if (!appData.stepHistory) appData.stepHistory = {};
+    const todayStr = appData.todayNutrition.date || new Date().toISOString().split('T')[0];
+    appData.stepHistory[todayStr] = appData.todayNutrition.steps || 0;
+
+    const targetSteps = (appData.targets && appData.targets.steps) || DEFAULT_TARGETS.steps;
+    
+    // Generate past 7 days array
+    const days = [];
+    for (let i = 0; i < 7; i++) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const iso = d.toISOString().split('T')[0];
+        const dayNames = ["Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt"];
+        const dayLabel = i === 0 ? "Bugün" : (i === 1 ? "Dün" : `${dayNames[d.getDay()]} (${d.getDate()}/${d.getMonth()+1})`);
+        
+        const steps = appData.stepHistory[iso] || (i === 0 ? (appData.todayNutrition.steps || 0) : 0);
+        days.push({ iso, dayLabel, steps });
+    }
+
+    listContainer.innerHTML = days.map(d => {
+        const isMet = d.steps >= targetSteps;
+        const pct = Math.round((d.steps / targetSteps) * 100);
+        return `
+            <div class="step-hist-row">
+                <span class="date-col">${d.dayLabel}</span>
+                <span class="steps-col">${d.steps.toLocaleString('tr-TR')} <small style="color:var(--text-secondary); font-weight:normal;">/ ${targetSteps.toLocaleString('tr-TR')}</small></span>
+                <span class="${isMet ? 'badge-met' : 'badge-unmet'}">
+                    ${isMet ? `<i class="fa-solid fa-check"></i> %${pct}` : `%${pct}`}
+                </span>
+            </div>
+        `;
+    }).join("");
+}
+
 function addSteps(amount) {
     appData.todayNutrition.steps = (appData.todayNutrition.steps || 0) + amount;
+    recordDailyStepHistory(appData.todayNutrition.steps);
     saveDataToStorage();
     renderDashboard();
+    updateLiveStepTrackerUI();
     showToast(`+${amount.toLocaleString('tr-TR')} Adım Eklendi 👟`);
 }
 
@@ -1608,8 +1968,10 @@ function promptCustomSteps() {
     if (input !== null) {
         const val = parseInt(input.replace(/[^0-9]/g, '')) || 0;
         appData.todayNutrition.steps = val;
+        recordDailyStepHistory(appData.todayNutrition.steps);
         saveDataToStorage();
         renderDashboard();
+        updateLiveStepTrackerUI();
         showToast(`${val.toLocaleString('tr-TR')} Adım Kaydedildi 👟`);
     }
 }

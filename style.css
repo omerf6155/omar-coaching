@@ -3898,4 +3898,287 @@ body.modal-open {
     gap: 4px;
 }
 
+/* ==================== LIVE STEP TRACKER & GPS PEDOMETER ==================== */
+.compact-step-box {
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.compact-step-box:hover {
+    border-color: rgba(48, 209, 88, 0.4);
+    background: rgba(48, 209, 88, 0.05);
+}
+
+.step-title-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.step-live-pill {
+    font-size: 0.6rem;
+    font-weight: 800;
+    background: rgba(48, 209, 88, 0.2);
+    color: var(--status-green);
+    border: 1px solid rgba(48, 209, 88, 0.4);
+    padding: 1px 6px;
+    border-radius: 10px;
+    animation: livePulse 1.5s infinite;
+}
+
+.step-icon-pulse.tracking {
+    color: var(--status-green) !important;
+    animation: stepIconBounce 1s infinite alternate ease-in-out;
+}
+
+@keyframes stepIconBounce {
+    from { transform: translateY(0); }
+    to { transform: translateY(-2px); }
+}
+
+@keyframes livePulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.7; transform: scale(0.96); }
+}
+
+.step-arrow-icon {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    margin-left: 4px;
+}
+
+/* Live Step Modal Cards */
+.step-live-status-card {
+    background: var(--bg-card-subtle);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 12px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.live-status-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.live-status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #64748b;
+    flex-shrink: 0;
+}
+
+.live-status-dot.active {
+    background: var(--status-green);
+    box-shadow: 0 0 10px rgba(48, 209, 88, 0.8);
+    animation: livePulse 1.2s infinite;
+}
+
+.btn-live-toggle {
+    background: linear-gradient(135deg, var(--status-green), #059669);
+    color: #ffffff;
+    border: none;
+    font-weight: 700;
+    padding: 6px 14px;
+    border-radius: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.78rem;
+    transition: all 0.2s ease;
+}
+
+.btn-live-toggle:hover {
+    filter: brightness(1.15);
+    transform: scale(1.03);
+}
+
+.btn-live-toggle.active {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+/* Step Dial Card */
+.step-dial-card {
+    background: linear-gradient(135deg, #181c24, #12151b);
+    border: 1px solid var(--border-active);
+    border-radius: var(--radius-lg);
+    padding: 20px 16px;
+    text-align: center;
+    box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);
+}
+
+.step-dial-center {
+    margin-bottom: 16px;
+}
+
+.step-dial-sub {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.step-dial-number {
+    font-size: 2.8rem;
+    font-weight: 900;
+    color: #ffffff;
+    letter-spacing: -1px;
+    margin: 4px 0 2px 0;
+}
+
+.step-dial-target {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.step-dial-progress-track {
+    width: 80%;
+    max-width: 260px;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 4px;
+    margin: 12px auto 0 auto;
+    overflow: hidden;
+}
+
+.step-dial-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #10b981, #34d399);
+    border-radius: 4px;
+    transition: width 0.4s ease;
+}
+
+/* 4-Stat Metric Grid */
+.step-metrics-4grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.step-mini-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    text-align: center;
+}
+
+.step-mini-stat .stat-lbl {
+    font-size: 0.65rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+}
+
+.step-mini-stat .stat-lbl i {
+    font-size: 0.62rem;
+    color: var(--status-green);
+}
+
+.step-mini-stat .stat-val {
+    font-size: 0.85rem;
+    color: #ffffff;
+    font-weight: 800;
+}
+
+.step-quick-buttons-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+}
+
+.step-quick-buttons-grid .btn {
+    font-size: 0.72rem;
+    padding: 6px 4px;
+    font-weight: 700;
+}
+
+/* Step History Accordion & Table */
+.btn-step-history-toggle {
+    width: 100%;
+    background: var(--bg-card-subtle);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-secondary);
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-step-history-toggle:hover {
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.step-history-content {
+    background: var(--bg-card-subtle);
+    border: 1px solid var(--border-subtle);
+    border-top: none;
+    border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+    padding: 10px;
+    animation: fadeInMsg 0.2s ease;
+}
+
+.step-history-table {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.step-hist-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 10px;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 6px;
+    font-size: 0.74rem;
+}
+
+.step-hist-row .date-col {
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.step-hist-row .steps-col {
+    color: #ffffff;
+    font-weight: 700;
+}
+
+.step-hist-row .badge-met {
+    font-size: 0.62rem;
+    padding: 2px 6px;
+    border-radius: 10px;
+    background: rgba(48, 209, 88, 0.15);
+    color: var(--status-green);
+    font-weight: 700;
+}
+
+.step-hist-row .badge-unmet {
+    font-size: 0.62rem;
+    padding: 2px 6px;
+    border-radius: 10px;
+    background: rgba(245, 158, 11, 0.15);
+    color: var(--status-amber);
+    font-weight: 700;
+}
+
+
 
