@@ -1610,6 +1610,7 @@ let liveStepTrackerState = {
     active: false,
     watchId: null,
     timerInterval: null,
+    wakeLock: null,
     startTime: null,
     elapsedSeconds: 0,
     sessionSteps: 0,
@@ -1721,7 +1722,14 @@ function startLiveStepTracking() {
     liveStepTrackerState.lastPosition = null;
     liveStepTrackerState.currentSpeedKmh = 0;
 
-    // 1. Request iOS 13+ DeviceMotion permission if available
+    // 1. Keep Screen Awake during live walk/workout
+    if ('wakeLock' in navigator) {
+        navigator.wakeLock.request('screen')
+            .then(lock => { liveStepTrackerState.wakeLock = lock; })
+            .catch(err => console.log('WakeLock not acquired:', err));
+    }
+
+    // 2. Request iOS 13+ DeviceMotion permission if available
     if (typeof DeviceMotionEvent !== "undefined" && typeof DeviceMotionEvent.requestPermission === "function") {
         DeviceMotionEvent.requestPermission()
             .then(perm => {
@@ -1734,7 +1742,7 @@ function startLiveStepTracking() {
         attachDeviceMotionListener();
     }
 
-    // 2. Start GPS Geolocation Watcher
+    // 3. Start GPS Geolocation Watcher
     if (navigator.geolocation) {
         liveStepTrackerState.watchId = navigator.geolocation.watchPosition(
             onLiveGeoSuccess,
@@ -1743,7 +1751,7 @@ function startLiveStepTracking() {
         );
     }
 
-    // 3. Start Live 1s Timer
+    // 4. Start Live 1s Timer
     if (liveStepTrackerState.timerInterval) clearInterval(liveStepTrackerState.timerInterval);
     liveStepTrackerState.timerInterval = setInterval(() => {
         if (liveStepTrackerState.active) {
@@ -1754,12 +1762,17 @@ function startLiveStepTracking() {
 
     updateLiveStepTrackerUI();
     renderDashboard();
-    showToast("Canlı Takip Başlatıldı! 🚀 Konum & Sensör devrede.");
+    showToast("Canlı Takip Başlatıldı! 🚀 Ekran açık tutuluyor, konum & sensör devrede.");
 }
 
 function stopLiveStepTracking() {
     liveStepTrackerState.active = false;
     
+    if (liveStepTrackerState.wakeLock) {
+        liveStepTrackerState.wakeLock.release().catch(() => {});
+        liveStepTrackerState.wakeLock = null;
+    }
+
     if (liveStepTrackerState.watchId !== null) {
         navigator.geolocation.clearWatch(liveStepTrackerState.watchId);
         liveStepTrackerState.watchId = null;
