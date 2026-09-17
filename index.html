@@ -788,7 +788,10 @@
                                 <span class="chat-status-text" id="coach-chat-active-status">Çevrimiçi • Sporcu</span>
                             </div>
                         </div>
-                        <div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <button type="button" class="btn btn-xs btn-outline" onclick="clearCoachActiveChat()" title="Sohbeti Temizle" style="padding:4px 8px; font-size:0.75rem; border-radius:6px; color:var(--text-muted); cursor:pointer;">
+                                <i class="fa-solid fa-trash-can"></i> Temizle
+                            </button>
                             <select id="coach-chat-athlete-select" onchange="selectCoachChatAthlete(this.value)" class="form-select-sm">
                                 <!-- Populated dynamically -->
                             </select>
@@ -1601,7 +1604,12 @@
                         <span style="font-size:0.7rem; color:var(--status-green); font-weight:600;"><i class="fa-solid fa-circle" style="font-size:0.5rem;"></i> Çevrimiçi • Baş Antrenör</span>
                     </div>
                 </div>
-                <button class="modal-close-btn" onclick="closeModal('modal-athlete-chat')">&times;</button>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <button type="button" class="btn btn-xs btn-outline" onclick="clearAthleteChat()" title="Sohbeti Temizle" style="padding:4px 8px; font-size:0.75rem; border-radius:6px; color:var(--text-muted); cursor:pointer;">
+                        <i class="fa-solid fa-trash-can"></i> Temizle
+                    </button>
+                    <button class="modal-close-btn" onclick="closeModal('modal-athlete-chat')">&times;</button>
+                </div>
             </div>
             
             <!-- Quick Question Chips for Athlete -->

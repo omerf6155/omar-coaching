@@ -4819,13 +4819,9 @@ function seedInitialUsersAndDemoData() {
         }
     });
 
-    // Seed Demo Messages for Real User
-    if (!chatDb["omer"]) {
-        chatDb["omer"] = [
-            { sender: "coach", text: "Selam Ömer! Bugün Push 1 günün, Bench Press'te 80kg top sete odaklan.", time: "10:30", date: "2026-09-16", read: true },
-            { sender: "athlete", text: "Hocam 80kg ile 8 rep tam RIR 0 çıkardım! 🔥", time: "14:15", date: "2026-09-16", read: true },
-            { sender: "coach", text: "Mükemmel iş! Gelecek hafta 82.5kg deneyeceğiz, dinlenmeni ve suyunu aksatma.", time: "14:20", date: "2026-09-16", read: true }
-        ];
+    // Purge fake demo chat messages if present
+    if (chatDb["omer"] && chatDb["omer"].some(m => m.text && m.text.includes("Bench Press'te 80kg"))) {
+        chatDb["omer"] = [];
         saveChatDB(chatDb);
     }
 
@@ -5854,6 +5850,17 @@ function insertCoachQuickReply(text) {
     }
 }
 
+function clearCoachActiveChat() {
+    const username = currentCoachSelectedAthlete || "omer";
+    if (confirm("Bu sporcuyla olan sohbet geçmişini temizlemek istiyor musunuz?")) {
+        const chatDb = getChatDB();
+        chatDb[username] = [];
+        saveChatDB(chatDb);
+        renderCoachChat(username);
+        showToast("Sohbet geçmişi temizlendi 🗑️");
+    }
+}
+
 function renderCoachSettings() {
     const pinInput = document.getElementById("coach-settings-master-pin");
     if (pinInput) pinInput.value = "";
@@ -6030,6 +6037,17 @@ function insertAthleteQuickMessage(text) {
     if (input) {
         input.value = text;
         input.focus();
+    }
+}
+
+function clearAthleteChat() {
+    const activeUsername = getActiveSessionUsername() || "omer";
+    if (confirm("Koçunuz ile olan sohbet geçmişini temizlemek istiyor musunuz?")) {
+        const chatDb = getChatDB();
+        chatDb[activeUsername] = [];
+        saveChatDB(chatDb);
+        renderAthleteChatMessages(activeUsername);
+        showToast("Sohbet geçmişi temizlendi 🗑️");
     }
 }
 
