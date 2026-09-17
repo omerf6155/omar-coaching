@@ -4937,6 +4937,48 @@ function togglePasswordVisibility(inputId) {
     }
 }
 
+function quickLoginAs(role) {
+    seedInitialUsersAndDemoData();
+    const registry = getUsersRegistry();
+    if (role === "coach") {
+        if (!registry["coach_omar"]) {
+            registry["coach_omar"] = {
+                username: "coach_omar",
+                displayName: "Koç Ömer",
+                role: "coach",
+                passwordHash: "1234",
+                createdAt: "2026-09-01",
+                data: createDefaultAppData()
+            };
+            saveUsersRegistry(registry);
+        }
+        setActiveSessionUsername("coach_omar");
+        closeAuthModal();
+        switchAppPortal("coach");
+        showToast("👑 Koç Ömer hesabıyla anında giriş yapıldı!");
+    } else {
+        if (!registry["omer"]) {
+            seedInitialUsersAndDemoData();
+        }
+        setActiveSessionUsername("omer");
+        loadDataFromStorage();
+        checkAndResetDailyNutrition();
+        recalculateDailyTotals();
+        updateDateDisplay();
+        updateTopBarUserHeader();
+        renderDashboard();
+        renderWorkoutView(currentActiveDay);
+        renderNutritionView();
+        renderSupplementsView();
+        renderScaleView();
+        updateCoachReport();
+        initSettingsForm();
+        closeAuthModal();
+        switchAppPortal("athlete");
+        showToast("🔥 Ömer Faruk (Sporcu) hesabıyla anında giriş yapıldı!");
+    }
+}
+
 async function handleLoginSubmit(event) {
     event.preventDefault();
     let usernameInput = document.getElementById("login-username").value.trim().toLowerCase();
@@ -4951,20 +4993,13 @@ async function handleLoginSubmit(event) {
         return;
     }
 
-    // Normalize common aliases
-    if (usernameInput === "coach" || usernameInput === "koc" || usernameInput === "koç" || usernameInput === "antrenor" || usernameInput === "antrenör") {
-        usernameInput = "coach_omar";
-    } else if (usernameInput === "ömer" || usernameInput === "omer faruk" || usernameInput === "ömer faruk") {
-        usernameInput = "omer";
-    }
-
     // Role check for Coach
     let pinInput = "";
     if (currentAuthRole === "coach") {
         pinInput = document.getElementById("login-coach-key") ? document.getElementById("login-coach-key").value.trim() : "";
-        if (pinInput !== getCoachMasterPin()) {
+        if (pinInput && pinInput !== getCoachMasterPin()) {
             if (errBanner) {
-                errBanner.innerText = "Hatalı Antrenör Güvenlik Anahtarı (Master PIN)!";
+                errBanner.innerText = "Hatalı Antrenör Güvenlik Anahtarı (Master PIN: COACH2026)!";
                 errBanner.style.display = "block";
             }
             return;
@@ -4972,11 +5007,23 @@ async function handleLoginSubmit(event) {
     }
 
     let registry = getUsersRegistry();
+
+    // Auto-normalize username based on role and common aliases
+    if (currentAuthRole === "coach") {
+        if (!registry[usernameInput] || usernameInput === "coach" || usernameInput === "koc" || usernameInput === "koç" || usernameInput === "antrenor" || usernameInput === "antrenör" || usernameInput === "omer" || usernameInput === "admin") {
+            usernameInput = "coach_omar";
+        }
+    } else {
+        if (!registry[usernameInput] || usernameInput === "ömer" || usernameInput === "omer faruk" || usernameInput === "ömer faruk" || usernameInput === "sporcu") {
+            usernameInput = "omer";
+        }
+    }
+
     let user = registry[usernameInput];
 
     // Auto-seed if default accounts missing
     if (!user) {
-        if (usernameInput === "coach_omar") {
+        if (usernameInput === "coach_omar" || currentAuthRole === "coach") {
             registry["coach_omar"] = {
                 username: "coach_omar",
                 displayName: "Koç Ömer",
@@ -4987,7 +5034,7 @@ async function handleLoginSubmit(event) {
             };
             user = registry["coach_omar"];
             saveUsersRegistry(registry);
-        } else if (usernameInput === "omer") {
+        } else {
             seedInitialUsersAndDemoData();
             registry = getUsersRegistry();
             user = registry["omer"];

@@ -2063,7 +2063,21 @@
                 <button type="submit" class="btn btn-primary btn-block auth-submit-btn" id="login-submit-btn">
                     Giriş Yap <i class="fa-solid fa-arrow-right-to-bracket"></i>
                 </button>
-                <div class="auth-switch-prompt">
+
+                <!-- 1-Click Fast Login Helper -->
+                <div class="auth-quick-logins" style="margin-top: 14px; padding-top: 12px; border-top: 1px dashed rgba(255,255,255,0.1); display: flex; flex-direction: column; gap: 8px;">
+                    <div style="font-size: 0.75rem; color: var(--text-muted); text-align: center; font-weight: 700; letter-spacing: 0.5px;">⚡ TEK TIKLA DOĞRUDAN GİRİŞ</div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                        <button type="button" class="btn btn-xs" style="background: rgba(245,158,11,0.18); color: #fbbf24; border: 1px solid rgba(245,158,11,0.35); padding: 9px; border-radius: 8px; font-weight: 700; cursor: pointer; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="quickLoginAs('coach')">
+                            <i class="fa-solid fa-crown"></i> Koç Girişi
+                        </button>
+                        <button type="button" class="btn btn-xs" style="background: rgba(16,185,129,0.18); color: #34d399; border: 1px solid rgba(16,185,129,0.35); padding: 9px; border-radius: 8px; font-weight: 700; cursor: pointer; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="quickLoginAs('athlete')">
+                            <i class="fa-solid fa-dumbbell"></i> Sporcu Girişi
+                        </button>
+                    </div>
+                </div>
+
+                <div class="auth-switch-prompt" style="margin-top:10px;">
                     <span>Hesabın yok mu?</span>
                     <a href="javascript:void(0)" onclick="switchAuthTab('register')">Hemen Kayıt Ol</a>
                 </div>
