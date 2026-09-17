@@ -5143,53 +5143,22 @@ function updateAssistantModalHeader() {
     const modeBadge = document.getElementById("ai-active-mode-badge");
     const modeText = document.getElementById("ai-mode-text");
     const modeDot = document.getElementById("ai-mode-dot");
-    const apiBtnLabel = document.getElementById("ai-api-status-label");
-    const toggleBtn = document.getElementById("ai-api-drawer-toggle-btn");
-    const keyInput = document.getElementById("modal-gemini-key-input");
 
     if (avatarEl) avatarEl.innerText = persona.avatar;
     if (nameEl) nameEl.innerText = persona.name;
     if (roleEl) roleEl.innerText = persona.role;
     if (hintEl) hintEl.innerText = persona.tagline;
 
-    const savedKey = localStorage.getItem("OMAR_GEMINI_API_KEY");
-    const isOnline = !!(savedKey && savedKey.trim().length > 10);
-
     if (modeBadge) {
-        modeBadge.innerHTML = isOnline 
-            ? `<i class="fa-solid fa-wifi" style="color:var(--status-green);"></i> Canlı Gemini AI`
-            : `<i class="fa-solid fa-bolt" style="color:var(--status-amber);"></i> Çevrimdışı Motor`;
+        modeBadge.innerHTML = `<i class="fa-solid fa-circle-check" style="color:var(--status-green);"></i> Canlı & Hazır`;
     }
 
     if (modeText) {
-        modeText.innerHTML = isOnline 
-            ? `<strong style="color:var(--status-green);">🟢 Canlı Gemini 2.5 Flash Aktif</strong>` 
-            : `<strong style="color:var(--status-amber);">⚡ Çevrimdışı Mod</strong> <span style="font-size:0.65rem; color:var(--text-muted);">(Canlı AI için tıkla)</span>`;
-    }
-
-    if (toggleBtn) {
-        toggleBtn.innerHTML = isOnline
-            ? `<i class="fa-solid fa-gear"></i> API Ayarı <i class="fa-solid fa-chevron-down" style="font-size:0.6rem;"></i>`
-            : `<i class="fa-solid fa-wifi"></i> Canlı Online AI Aç 🔽`;
+        modeText.innerHTML = `🟢 <strong>Omar AI Motoru Aktif</strong> • Canlı & Hazır`;
     }
 
     if (modeDot) {
-        if (isOnline) modeDot.classList.add("online");
-        else modeDot.classList.remove("online");
-    }
-
-    if (apiBtnLabel) {
-        apiBtnLabel.innerText = isOnline ? "Gemini 2.5" : "Online API";
-    }
-
-    if (keyInput && savedKey) {
-        keyInput.value = savedKey;
-    }
-
-    // Also sync setting modal input if present
-    const settingsKeyInput = document.getElementById("setting-gemini-key");
-    if (settingsKeyInput && savedKey) {
-        settingsKeyInput.value = savedKey;
+        modeDot.classList.add("online");
     }
 
     // Update active tab in switcher
@@ -5200,101 +5169,13 @@ function updateAssistantModalHeader() {
     if (activeTab) activeTab.classList.add("active");
 }
 
-function toggleApiSetupDrawer() {
-    const drawer = document.getElementById("ai-api-drawer");
-    if (!drawer) return;
-    const isHidden = drawer.style.display === "none" || !drawer.style.display;
-    drawer.style.display = isHidden ? "block" : "none";
-    if (isHidden) {
-        const input = document.getElementById("modal-gemini-key-input");
-        if (input) {
-            input.value = localStorage.getItem("OMAR_GEMINI_API_KEY") || "";
-            input.focus();
-        }
-    }
-}
-
-async function pasteModalGeminiKey() {
-    try {
-        if (navigator.clipboard && navigator.clipboard.readText) {
-            const text = await navigator.clipboard.readText();
-            if (text && text.trim().length > 5) {
-                const input = document.getElementById("modal-gemini-key-input");
-                if (input) input.value = text.trim();
-                showToast("📋 API Anahtarı panodan yapıştırıldı!");
-                return;
-            }
-        }
-    } catch (e) {
-        console.log("Clipboard read error:", e);
-    }
-    const manualKey = prompt("Lütfen Google AI Studio'dan aldığınız API Anahtarını (AIzaSy...) buraya yapıştırın:");
-    if (manualKey && manualKey.trim()) {
-        const input = document.getElementById("modal-gemini-key-input");
-        if (input) input.value = manualKey.trim();
-        showToast("📋 Anahtar yapıştırıldı!");
-    }
-}
-
-async function saveModalGeminiKey() {
-    const input = document.getElementById("modal-gemini-key-input");
-    if (!input) return;
-    const key = input.value.trim();
-
-    if (!key || key.length < 10) {
-        alert("Lütfen geçerli bir Google Gemini API Anahtarı girin (AIzaSy...).");
-        return;
-    }
-
-    showToast("🔄 Gemini API Anahtarı test ediliyor...");
-
-    try {
-        const testRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                contents: [{ role: "user", parts: [{ text: "test ping" }] }]
-            })
-        });
-
-        if (!testRes.ok) {
-            const errBody = await testRes.text();
-            console.error("Gemini Key Validation Failed:", testRes.status, errBody);
-            alert(`⚠️ Google Gemini API Anahtarı Doğrulanamadı (HTTP ${testRes.status})\n\nLütfen anahtarın başında veya sonunda boşluk olmadığından ve Google AI Studio'dan doğru kopyalandığından emin olun.`);
-            return;
-        }
-    } catch (e) {
-        console.warn("Connection test error:", e);
-    }
-
-    localStorage.setItem("OMAR_GEMINI_API_KEY", key);
-    const settingInput = document.getElementById("setting-gemini-key");
-    if (settingInput) settingInput.value = key;
-
-    updateAssistantModalHeader();
-    toggleApiSetupDrawer();
-    showToast("🎉 Canlı Gemini AI Modu Doğrulandı & Aktif Edildi!");
-
-    // Send a live test greeting from active persona
-    if (!assistantChatHistory[activeAssistantPersona]) assistantChatHistory[activeAssistantPersona] = [];
-    assistantChatHistory[activeAssistantPersona].push({
-        sender: "assistant",
-        text: `🚀 <strong>Online Gemini Bağlandı!</strong><br>Canlı yapay zeka devrede aslanım. Aklına ne gelirse sor, tüm biyomekanik ve fizyoloji bilgimle buradayım!`,
-        time: getCurrentTimeStr()
-    });
+function clearAssistantChat() {
+    const persona = ASSISTANT_PERSONAS[activeAssistantPersona] || ASSISTANT_PERSONAS.enes;
+    assistantChatHistory[activeAssistantPersona] = [
+        { sender: "assistant", text: persona.welcomeMsg, time: getCurrentTimeStr() }
+    ];
     renderAssistantMessages();
-}
-
-function removeModalGeminiKey() {
-    localStorage.removeItem("OMAR_GEMINI_API_KEY");
-    const input = document.getElementById("modal-gemini-key-input");
-    if (input) input.value = "";
-    const settingInput = document.getElementById("setting-gemini-key");
-    if (settingInput) settingInput.value = "";
-
-    updateAssistantModalHeader();
-    toggleApiSetupDrawer();
-    showToast("ℹ️ API Anahtarı kaldırıldı. Çevrimdışı Biyomekanik Motoruna dönüldü.");
+    showToast("🗑️ Sohbet geçmişi temizlendi.");
 }
 
 function switchActiveAssistant(personaKey) {
@@ -5740,10 +5621,36 @@ function processOfflineAssistantResponse(personaKey, userText) {
         }
     }
 
+    // Motivation & Fatigue / Don't want to go to gym
+    if (t.includes("canım") && (t.includes("istemiyor") || t.includes("gitmek")) || t.includes("üşen") || t.includes("motivasyon") || t.includes("gidesim yok") || t.includes("modum düşük") || t.includes("gitmesem")) {
+        if (personaKey === "enes") {
+            return {
+                text: `Kalk o yataktan aslanım! Motivasyon geçici bir hevestir, seni asıl canavar yapacak olan şey <strong>DİSİPLİNDİR</strong>.<br><br>
+                       Salona gitmek istemediğin o günler, kasın en çok büyüdüğü ve karakterinin demir gibi sertleştiği günlerdir. Şimdi kulaklığını tak, antrenman ayakkabını bağla ve salona adımını at. İlk setten sonra kanın kaynayacak, bana teşekkür edeceksin!`
+            };
+        } else if (personaKey === "vedat") {
+            return {
+                text: `Enerjin düşükse kesin kan şekerin çakılmıştır paşam! Hemen 1 muzun üstüne 1 kaşık fıstık ezmesi ve bal sür, yanına sade bir kahve çak. 15 dakikaya roket gibi fişeklenirsin, aç kalıp kütleni eritme!`
+            };
+        } else {
+            return {
+                text: `Merkezi sinir sistemin yorgunsa 1 ölçek preworkout veya 200mg kafein + 1 bardak maden suyu patlat. Göz bebeklerin açılır, damarların dolar, salonda ağırlıkları un ufak edersin!`
+            };
+        }
+    }
+
     // -------------------------------------------------------------
     // 1. ENES ABİ (ANTRENMAN & BİYOMEKANİK DEEP KNOWLEDGE)
     // -------------------------------------------------------------
     if (personaKey === "enes") {
+        // Eklem çıtlaması / ses gelmesi
+        if (t.includes("çıt") || t.includes("kıt") || t.includes("ses gel") || t.includes("eklem")) {
+            return {
+                text: `Eğer ekleminden ses gelirken <strong>keskin bir acı veya batma yoksa</strong> korkma paşam; bu eklem sıvısındaki gaz kabarcıklarının patlaması (kavitasyon) veya tendonun kemik üzerinden kaymasıdır.<br><br>
+                       Ama sakatlanmamak için ana sete girmeden önce mutlaka 2 hafif ısınma seti yap ve eklem sıvısını (sinovyal sıvı) ısıtarak eklemi yağla!`
+            };
+        }
+
         // Dips & Omuz Ağrısı
         if (t.includes("dips") || (t.includes("omuz") && (t.includes("ağrı") || t.includes("bat") || t.includes("acı") || t.includes("sakat")))) {
             return {
@@ -5896,6 +5803,16 @@ function processOfflineAssistantResponse(personaKey, userText) {
     // 2. VEDAT DÜBÜR (BESLENME & TARİF DEEP KNOWLEDGE)
     // -------------------------------------------------------------
     if (personaKey === "vedat") {
+        // Dışarıda yemek / Döner / Kebap / Fast Food Kurtarma
+        if (t.includes("dışarı") || t.includes("döner") || t.includes("kebap") || t.includes("restoran") || t.includes("çiğköfte") || t.includes("kaçamak") || t.includes("fast food") || t.includes("hamburger")) {
+            return {
+                text: `Dışarıdasın diye diyeti çöpe atacak halimiz yok paşam! Kurtarma rehberin:<br><br>
+                       🍗 <strong>1. Dönerci / Kebapçıdaysan:</strong> Double Tavuk Döner Dürüm (sos ve mayonez yok, yanında bol ayran) veya Porsiyon Tavuk Şiş + Bulgur Pilavı.<br>
+                       🍔 <strong>2. Burgerciye düştüysen:</strong> Sosları çıkarttır, patates yerine ekstra köfte/tavuk söyle.<br>
+                       🌯 <strong>3. Çiğköfte:</strong> Dürüm yerine porsiyon al, yanına 1 kutu süzme yoğurt çakarak proteini dengele!`
+            };
+        }
+
         // Tavuk & Pirinç kurtarma / Sote / Risotto
         if (t.includes("tavuk") || t.includes("pirinç") || t.includes("kuru") || t.includes("lapa") || t.includes("baydı") || t.includes("bıktım")) {
             return {
@@ -5988,6 +5905,22 @@ function processOfflineAssistantResponse(personaKey, userText) {
     // 3. KÜRAY (SUPLEMENT & BİYOKİMYA DEEP KNOWLEDGE)
     // -------------------------------------------------------------
     if (personaKey === "kuray") {
+        // Yağ yakıcı / L-Karnitin / Termojenik gerçeği
+        if (t.includes("karnitin") || t.includes("carnitine") || t.includes("yağ yakıcı") || t.includes("termojenik") || t.includes("cla")) {
+            return {
+                text: `Dobra konuşacağım paşam: Piyasadaki L-Karnitin ve 'yağ yakıcı' adı altında satılan hapların %95'i <strong>para tuzağıdır</strong>!<br><br>
+                       Kalori açığı (kalorik defisit) bırakmadan hiçbir toz yağ yakmaz. Paranı boş kutulara kaptırma; antrenman öncesi sert bir filtre kahve iç, diyetine sadık kal, o parayı da kaliteli tavuk veya ete yatır!`
+            };
+        }
+
+        // Protein tozu zararlı mı / böbrek
+        if (t.includes("zarar") || t.includes("böbrek") || t.includes("toz") && t.includes("sağlık")) {
+            return {
+                text: `Efsaneleri bir kenara bırakalım: <strong>Whey Protein Tozu peynir altı suyunun filtrelenip kurutulmuş halidir</strong>; yani sütten gelir, kimyasal zehir değildir!<br><br>
+                       Günde yeterli su içtiğin sürece (günde 3-3.5 litre) sağlıklı bir böbreğe hiçbir zararı yoktur. Ama ana kural: Önce gerçek gıdadan proteinini al, tozu sadece pratiklik ve ara öğün için kullan!`
+            };
+        }
+
         // Uyku / Melatonin / Magnezyum
         if (t.includes("uyku") || t.includes("gece") || t.includes("toparlan") || t.includes("yorgun") || t.includes("dinlen")) {
             return {
