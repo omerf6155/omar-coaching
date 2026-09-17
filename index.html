@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=2.8.0">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
@@ -789,6 +789,9 @@
                             </div>
                         </div>
                         <div style="display:flex; align-items:center; gap:8px;">
+                            <button type="button" class="btn-chat-sync" onclick="forceSyncLiveChat()" title="Buluttan Canlı Eşitle">
+                                <i class="fa-solid fa-arrows-rotate"></i> Eşitle
+                            </button>
                             <button type="button" class="btn-chat-clear" onclick="clearCoachActiveChat()" title="Sohbeti Temizle">
                                 <i class="fa-solid fa-trash-can"></i> Temizle
                             </button>
@@ -800,7 +803,7 @@
 
                     <!-- Live Realtime Cloud Badge & Typing Indicator -->
                     <div class="chat-live-badge-bar">
-                        <div class="chat-live-status-pill">
+                        <div class="chat-live-status-pill" onclick="forceSyncLiveChat()" style="cursor:pointer;" title="Canlı Bulut Bağlantısını Yenile (Tıkla)">
                             <span class="chat-live-dot pulse" id="coach-live-dot"></span>
                             <span id="coach-live-status-text">Canlı Bulut Bağlantısı Aktif 🟢</span>
                         </div>
@@ -1616,6 +1619,9 @@
                     </div>
                 </div>
                 <div style="display:flex; align-items:center; gap:8px;">
+                    <button type="button" class="btn-chat-sync" onclick="forceSyncLiveChat()" title="Buluttan Canlı Eşitle">
+                        <i class="fa-solid fa-arrows-rotate"></i> Eşitle
+                    </button>
                     <button type="button" class="btn-chat-clear" onclick="clearAthleteChat()" title="Sohbeti Temizle">
                         <i class="fa-solid fa-trash-can"></i> Temizle
                     </button>
@@ -1625,7 +1631,7 @@
             
             <!-- Live Realtime Cloud Badge & Typing Indicator -->
             <div class="chat-live-badge-bar">
-                <div class="chat-live-status-pill">
+                <div class="chat-live-status-pill" onclick="forceSyncLiveChat()" style="cursor:pointer;" title="Canlı Bulut Bağlantısını Yenile (Tıkla)">
                     <span class="chat-live-dot pulse" id="athlete-live-dot"></span>
                     <span id="athlete-live-status-text">Canlı Bulut Bağlantısı Aktif 🟢</span>
                 </div>
@@ -2158,6 +2164,6 @@
     <!-- Notification Toast -->
     <div id="toast" class="toast">Kaydedildi</div>
 
-    <script src="app.js"></script>
+    <script src="app.js?v=2.8.0"></script>
 </body>
 </html>

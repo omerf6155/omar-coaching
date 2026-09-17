@@ -2885,19 +2885,24 @@ body.modal-open {
 
 /* ==================== CHAT MESSAGING SYSTEM ==================== */
 .chat-modal-dialog {
-    height: 85vh;
+    height: 90vh;
+    height: 90dvh;
+    max-height: 92dvh;
     display: flex;
     flex-direction: column;
     padding: 0 !important;
     overflow: hidden;
+    border-radius: var(--radius-lg);
 }
 
 .chat-card-container {
-    height: calc(100vh - 160px);
+    height: calc(100vh - 150px);
+    height: calc(100dvh - 150px);
     display: flex;
     flex-direction: column;
     padding: 0 !important;
     overflow: hidden;
+    border-radius: var(--radius-lg);
 }
 
 .chat-header {
@@ -2967,6 +2972,29 @@ body.modal-open {
     background: rgba(255, 69, 58, 0.3);
     color: #fff;
     border-color: #ff453a;
+}
+
+.btn-chat-sync {
+    background: rgba(52, 199, 89, 0.15);
+    color: var(--status-green);
+    border: 1px solid rgba(52, 199, 89, 0.35);
+    padding: 5px 10px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.2s ease;
+    z-index: 10;
+    position: relative;
+}
+
+.btn-chat-sync:hover {
+    background: rgba(52, 199, 89, 0.3);
+    color: #fff;
+    border-color: var(--status-green);
 }
 
 .quick-chip {
