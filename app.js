@@ -4939,7 +4939,7 @@ function renderWorkoutView(dayKey) {
 
         for (let i = 1; i <= totalSets; i++) {
             const prevSet = lastLog[i - 1] || { weight: "-", reps: "-", rir: "" };
-            const isTop = (i === 1 || ex.isTopSet);
+            const isTop = (i === 1 && ex.isTopSet);
             const savedW = prevSet.weight !== '-' ? prevSet.weight : '';
             const savedR = prevSet.reps !== '-' ? prevSet.reps : '';
             const savedRir = prevSet.rir || '';
@@ -8197,6 +8197,32 @@ function submitCoachPrescription() {
     });
     saveChatDB(chatDb);
 
+    // Broadcast live event via local bus and cloud
+    const dietPayload = {
+        type: "diet_revision",
+        id: `rev_diet_${Date.now()}`,
+        athleteUsername: username,
+        targets: {
+            calories, protein, carbs, fat, water, steps,
+            weeklyGainMin: gainMin,
+            weeklyGainMax: gainMax
+        },
+        coachNote: coachNote,
+        timestamp: Date.now()
+    };
+
+    if (realtimeChatState.localBus) {
+        try {
+            realtimeChatState.localBus.postMessage(dietPayload);
+        } catch (e) {}
+    }
+
+    const athleteTopic = `${OMAR_REALTIME_CONFIG.topicPrefix}${username}`;
+    fetch(`${OMAR_REALTIME_CONFIG.brokerBase}/${athleteTopic}`, {
+        method: "POST",
+        body: JSON.stringify(dietPayload)
+    }).catch(err => console.warn("Cloud diet revision send notice:", err));
+
     showToast("Diyet revizyonu başarıyla sporcuya iletildi! 🚀");
     renderCoachPrescriptions(username);
 }
@@ -8833,16 +8859,26 @@ function submitCoachWorkoutPrescription() {
     saveRevisionsDB(revDb);
 
     // Broadcast live event via local bus and cloud
+    const workoutPayload = {
+        type: "workout_revision",
+        id: `rev_wo_${Date.now()}`,
+        athleteUsername: username,
+        plan: planToSave,
+        coachNote: coachNote,
+        timestamp: Date.now()
+    };
+
     if (realtimeChatState.localBus) {
         try {
-            realtimeChatState.localBus.postMessage({
-                type: "workout_revision",
-                athleteUsername: username,
-                plan: planToSave,
-                coachNote: coachNote
-            });
+            realtimeChatState.localBus.postMessage(workoutPayload);
         } catch (e) {}
     }
+
+    const athleteTopic = `${OMAR_REALTIME_CONFIG.topicPrefix}${username}`;
+    fetch(`${OMAR_REALTIME_CONFIG.brokerBase}/${athleteTopic}`, {
+        method: "POST",
+        body: JSON.stringify(workoutPayload)
+    }).catch(err => console.warn("Cloud workout revision send notice:", err));
 
     showToast("Antrenman programı başarıyla sporcuya iletildi ve kaydedildi! 🏆");
     renderCoachWorkoutRevDaysBar();
@@ -9052,7 +9088,7 @@ function connectRealtimeChatCloud(targetAthleteUsername) {
     updateRealtimeConnectionUI("connecting");
 
     // Catch up any offline messages from past 24h
-    syncCloudHistory(cleanTarget, false);
+    syncCloudHistory(cleanTarget, true);
 
     try {
         const sseUrl = `${OMAR_REALTIME_CONFIG.brokerBase}/${topic}/sse`;
@@ -9122,42 +9158,18 @@ async function syncCloudHistory(targetAthleteUsername, force = false) {
             try {
                 const item = JSON.parse(line);
                 if (item.event === "message" && item.message) {
-                    const payload = JSON.parse(item.message);
-                    if (payload && payload.type === "chat_msg") {
-                        const msgId = payload.id;
-                        if (msgId) {
-                            if (realtimeChatState.processedMsgIds.has(msgId)) return;
-                            realtimeChatState.processedMsgIds.add(msgId);
-                        }
-                        const exists = chatDb[cleanTarget].some(m => (msgId && m.id === msgId) || (m.text === payload.text && m.time === payload.time && m.sender === payload.sender));
-                        if (!exists) {
-                            chatDb[cleanTarget].push({
-                                id: msgId || `msg_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-                                sender: payload.sender,
-                                text: payload.text,
-                                time: payload.time || getCurrentTimeStr(),
-                                date: payload.date || new Date().toISOString().split('T')[0],
-                                read: payload.read || false
-                            });
-                            hasNewMessages = true;
-                        }
+                    let payload = null;
+                    try {
+                        payload = JSON.parse(item.message);
+                    } catch (pe) {
+                        payload = { type: "chat_msg", text: item.message, sender: "coach" };
+                    }
+                    if (payload && payload.type) {
+                        handleIncomingLiveEvent(payload, "history");
                     }
                 }
             } catch (e) {}
         });
-
-        if (hasNewMessages) {
-            saveChatDB(chatDb);
-            if (currentPortalMode === "coach" && currentCoachSelectedAthlete === cleanTarget) {
-                renderCoachChat(cleanTarget);
-            } else if (currentPortalMode === "athlete") {
-                const activeUsername = (getActiveSessionUsername() || "omer").toLowerCase().trim();
-                if (activeUsername === cleanTarget || activeUsername === "omer") {
-                    renderAthleteChatMessages(activeUsername);
-                    checkAthleteUnreadMessages();
-                }
-            }
-        }
     } catch (e) {
         console.warn("Cloud history sync poll warning:", e);
     } finally {
@@ -9267,14 +9279,30 @@ function handleIncomingLiveEvent(payload, source) {
     } else if (payload.type === "workout_revision") {
         const athleteUsername = (payload.athleteUsername || "omer").toLowerCase().trim();
         const activeUsername = (getActiveSessionUsername() || "omer").toLowerCase().trim();
-        if (activeUsername === athleteUsername) {
+        if (activeUsername === athleteUsername || activeUsername === "omer") {
             if (payload.plan) {
                 appData.customWorkoutPlan = JSON.parse(JSON.stringify(payload.plan));
                 saveDataToStorage();
                 renderWorkoutDayTabs();
                 renderWorkoutView(currentActiveDay);
                 updateDateDisplay();
-                showToast("🏋️ Koçunuz antrenman programınızı güncelledi! 🏆");
+                if (source !== "history") {
+                    showToast("🏋️ Koçunuz antrenman programınızı güncelledi! 🏆");
+                }
+            }
+        }
+    } else if (payload.type === "diet_revision") {
+        const athleteUsername = (payload.athleteUsername || "omer").toLowerCase().trim();
+        const activeUsername = (getActiveSessionUsername() || "omer").toLowerCase().trim();
+        if (activeUsername === athleteUsername || activeUsername === "omer") {
+            if (payload.targets) {
+                appData.targets = { ...DEFAULT_TARGETS, ...payload.targets };
+                saveDataToStorage();
+                renderDashboard();
+                initSettingsForm();
+                if (source !== "history") {
+                    showToast("🥗 Koçunuz diyet ve hedef revizyonunuzu güncelledi! 🎯");
+                }
             }
         }
     }

@@ -25,6 +25,9 @@
                 </div>
             </div>
             <div class="top-actions">
+                <button class="icon-btn" onclick="forceSyncLiveChat()" title="Bulut ile Canlı Eşitle (Yenile)">
+                    <i class="fa-solid fa-arrows-rotate"></i>
+                </button>
                 <button class="icon-btn" onclick="openAthleteChatModal()" title="Koçumla İletişim / Chat" style="position:relative;">
                     <i class="fa-solid fa-comments"></i>
                     <span class="top-badge" id="athlete-unread-badge" style="display:none;">1</span>
@@ -295,6 +298,9 @@
                     </button>
                     <button class="btn btn-xs btn-outline" onclick="openAssistantModal('enes')" title="Enes Abi'ye Alternatif Sor">
                         <i class="fa-solid fa-robot"></i> 🦍 Enes Abi
+                    </button>
+                    <button class="btn btn-xs btn-outline" onclick="forceSyncLiveChat()" title="Koçtan Gelen Programı Çek">
+                        <i class="fa-solid fa-arrows-rotate"></i> Eşitle
                     </button>
                 </div>
 
