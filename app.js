@@ -8134,44 +8134,52 @@ async function testGeminiApiKeyInline() {
     resultBox.style.color = "#38bdf8";
     resultBox.innerHTML = "<i class=\"fa-solid fa-spinner fa-spin\"></i> Google Gemini sunucusu ile bağlantı test ediliyor...";
 
-    try {
-        const payload = {
-            contents: [{ parts: [{ text: "ping: sporcu koçu bağlantı testi" }] }]
-        };
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${testKey}`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
-        });
+    const testModels = ["gemini-1.5-flash", "gemini-2.5-flash"];
+    let success = false;
+    let lastErr = "";
 
-        if (res.ok) {
-            const data = await res.json();
-            resultBox.style.background = "rgba(16, 185, 129, 0.15)";
-            resultBox.style.border = "1px solid rgba(16, 185, 129, 0.4)";
-            resultBox.style.color = "#34d399";
-            resultBox.innerHTML = "<i class=\"fa-solid fa-circle-check\"></i> <strong>Bağlantı Başarılı!</strong> Google Gemini 2.5 Flash canlı ve aktif.";
-            localStorage.setItem("OMAR_GEMINI_API_KEY", testKey);
-            checkGeminiApiKeyStatus();
-        } else {
-            const errText = await res.text();
-            let parsedMsg = "API anahtarı hatalı veya yetersiz.";
-            try {
-                const j = JSON.parse(errText);
-                if (j.error && j.error.message) parsedMsg = j.error.message;
-            } catch (ex) {}
-            resultBox.style.background = "rgba(239, 68, 68, 0.15)";
-            resultBox.style.border = "1px solid rgba(239, 68, 68, 0.4)";
-            resultBox.style.color = "#f87171";
-            resultBox.innerHTML = `<i class="fa-solid fa-circle-xmark"></i> <strong>Hata (${res.status}):</strong> ${parsedMsg}`;
+    for (const m of testModels) {
+        try {
+            const payload = {
+                contents: [{ parts: [{ text: "ping: sporcu koçu bağlantı testi" }] }]
+            };
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${testKey}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                success = true;
+                resultBox.style.background = "rgba(16, 185, 129, 0.15)";
+                resultBox.style.border = "1px solid rgba(16, 185, 129, 0.4)";
+                resultBox.style.color = "#34d399";
+                resultBox.innerHTML = `<i class="fa-solid fa-circle-check"></i> <strong>Bağlantı Başarılı!</strong> Google Gemini (${m}) canlı ve aktif.`;
+                localStorage.setItem("OMAR_GEMINI_API_KEY", testKey);
+                checkGeminiApiKeyStatus();
+                break;
+            } else {
+                const errText = await res.text();
+                let parsedMsg = errText;
+                try {
+                    const j = JSON.parse(errText);
+                    if (j.error && j.error.message) parsedMsg = j.error.message;
+                } catch (ex) {}
+                lastErr = `${m} (${res.status}): ${parsedMsg}`;
+            }
+        } catch (e) {
+            lastErr = e.message;
         }
-    } catch (e) {
+    }
+
+    if (!success) {
         resultBox.style.background = "rgba(239, 68, 68, 0.15)";
         resultBox.style.border = "1px solid rgba(239, 68, 68, 0.4)";
         resultBox.style.color = "#f87171";
-        resultBox.innerHTML = `<i class="fa-solid fa-circle-xmark"></i> <strong>Ağ Hatası:</strong> ${e.message}`;
-    } finally {
-        if (btnTest) btnTest.disabled = false;
+        resultBox.innerHTML = `<i class="fa-solid fa-circle-xmark"></i> <strong>Hata:</strong> ${lastErr}`;
     }
+
+    if (btnTest) btnTest.disabled = false;
 }
 
 // ==================== ASSISTANT MODAL UI & CHAT CONTROLLER ====================
@@ -8482,6 +8490,12 @@ Biçimlendirme Kuralları:
     }
 
     const payloadWithSys = {
+        systemInstruction: { parts: [{ text: systemPrompt }] },
+        contents: recentContents,
+        generationConfig: { temperature: 0.85, maxOutputTokens: 1000 }
+    };
+
+    const payloadWithSysSnake = {
         system_instruction: { parts: [{ text: systemPrompt }] },
         contents: recentContents,
         generationConfig: { temperature: 0.85, maxOutputTokens: 1000 }
@@ -8491,13 +8505,13 @@ Biçimlendirme Kuralları:
         contents: [
             {
                 role: "user",
-                parts: [{ text: `[SİSTEM REHBERİ: ${systemPrompt}]\n\nKullanıcı: ${userText}` }]
+                parts: [{ text: `[SİSTEM REHBERİ: ${systemPrompt}]\n\nKullanıcı Sorusu: ${userText}` }]
             }
         ],
         generationConfig: { temperature: 0.85, maxOutputTokens: 1000 }
     };
 
-    const models = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-2.0-flash"];
+    const models = ["gemini-1.5-flash", "gemini-2.5-flash", "gemini-1.5-pro", "gemini-1.5-flash-8b"];
     let data = null;
     let lastError = null;
 
@@ -8522,6 +8536,18 @@ Biçimlendirme Kuralları:
         }
 
         try {
+            const resSnake = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payloadWithSysSnake)
+            });
+            if (resSnake.ok) {
+                data = await resSnake.json();
+                break;
+            }
+        } catch (e) {}
+
+        try {
             const res2 = await fetch(url, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -8530,6 +8556,9 @@ Biçimlendirme Kuralları:
             if (res2.ok) {
                 data = await res2.json();
                 break;
+            } else {
+                const err2 = await res2.text();
+                lastError = new Error(`${model} (${res2.status}): ${err2}`);
             }
         } catch (e) {
             lastError = e;

@@ -3547,6 +3547,14 @@ body.modal-open {
     z-index: 2500;
 }
 
+#modal-gemini-key {
+    z-index: 3500 !important;
+}
+
+#modal-confirm-quick-meal {
+    z-index: 3500 !important;
+}
+
 .ai-assistant-modal-card {
     max-height: 90vh;
     height: 700px;
