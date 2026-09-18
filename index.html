@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="style.css?v=3.10.0">
+    <link rel="stylesheet" href="style.css?v=3.11.0">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
@@ -641,32 +641,107 @@
                             </select>
                         </div>
 
+                        <!-- SMART FOOD & GRAM MACRO CALCULATOR WIZARD -->
+                        <div class="card" style="background:var(--bg-card-subtle); border:1px solid rgba(255,214,10,0.3); padding:12px; margin-bottom:14px; border-radius:var(--radius-md);">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; cursor:pointer;" onclick="toggleCoachFoodCalcCollapse()">
+                                <h4 style="font-size:0.82rem; color:#ffd60a; font-weight:800; display:flex; align-items:center; gap:6px;">
+                                    <i class="fa-solid fa-calculator"></i>
+                                    <span>AKILLI BESİN & GRAMAJ HESAPLAYICI</span>
+                                </h4>
+                                <div style="display:flex; align-items:center; gap:6px;">
+                                    <span class="badge-role" style="background:rgba(255,214,10,0.15); color:#ffd60a; font-size:0.62rem;">Otomatik Kalori Çevirici</span>
+                                    <button type="button" class="btn-collapse-toggle" id="coach-calc-toggle-btn">
+                                        <i class="fa-solid fa-chevron-up" id="coach-calc-toggle-icon"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <p class="text-secondary" style="font-size:0.72rem; line-height:1.35; margin-bottom:10px;">
+                                Kaloriyi tek tek hesaplamana gerek yok! Aşağıdan besinleri ve gramaj/adetlerini ekle; toplam protein, karb, yağ ve kalori otomatik hesaplanıp hedeflere aktarılsın.
+                            </p>
+
+                            <div id="coach-calc-body">
+                                <!-- Food Selector & Amount Quick Add Bar -->
+                                <div style="display:grid; grid-template-columns: 1fr 100px auto; gap:6px; align-items:center; margin-bottom:10px;">
+                                    <select id="coach-calc-food-select" onchange="onCoachCalcFoodChange(this.value)" class="form-select" style="font-size:0.75rem; padding:7px 10px;">
+                                        <!-- Populated dynamically from RAW_FOODS_DATABASE -->
+                                    </select>
+                                    <div style="position:relative;">
+                                        <input type="number" id="coach-calc-food-amount" placeholder="150" step="5" min="1" value="100" class="form-select" style="font-size:0.75rem; padding:7px 24px 7px 8px; text-align:center;">
+                                        <span style="position:absolute; right:6px; top:50%; transform:translateY(-50%); font-size:0.65rem; color:var(--text-muted); pointer-events:none;" id="coach-calc-unit-lbl">gr</span>
+                                    </div>
+                                    <button type="button" class="btn btn-xs btn-primary" onclick="addFoodToCoachCalc()" style="background:#ffd60a; color:#000; font-weight:700; padding:8px 12px; white-space:nowrap;">
+                                        <i class="fa-solid fa-plus"></i> Ekle
+                                    </button>
+                                </div>
+
+                                <!-- Quick Preset Templates Buttons -->
+                                <div style="display:flex; gap:6px; overflow-x:auto; padding-bottom:6px; margin-bottom:10px;">
+                                    <button type="button" class="btn btn-xs btn-outline" onclick="loadCoachCalcPreset('bulk_standard')" style="font-size:0.65rem; white-space:nowrap;">
+                                        ⚡ Standart Bulk Menüsü
+                                    </button>
+                                    <button type="button" class="btn btn-xs btn-outline" onclick="loadCoachCalcPreset('high_protein')" style="font-size:0.65rem; white-space:nowrap;">
+                                        🍗 Yüksek Protein
+                                    </button>
+                                    <button type="button" class="btn btn-xs btn-outline" onclick="loadCoachCalcPreset('clean_cut')" style="font-size:0.65rem; white-space:nowrap;">
+                                        ✂️ Temiz Cut Menüsü
+                                    </button>
+                                    <button type="button" class="btn btn-xs btn-outline" onclick="clearCoachCalcList()" style="font-size:0.65rem; color:#ff453a; border-color:rgba(255,69,58,0.4); white-space:nowrap;">
+                                        <i class="fa-solid fa-trash"></i> Temizle
+                                    </button>
+                                </div>
+
+                                <!-- List of Added Foods in Calculator -->
+                                <div id="coach-calc-items-container" style="display:flex; flex-direction:column; gap:6px; margin-bottom:12px; max-height:220px; overflow-y:auto;">
+                                    <!-- Populated dynamically -->
+                                </div>
+
+                                <!-- Live Auto-Calculated Totals Banner -->
+                                <div class="card" style="background:var(--bg-input); border:1px solid #ffd60a; padding:10px; margin-bottom:10px; border-radius:var(--radius-sm);">
+                                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                                        <span style="font-size:0.72rem; color:var(--text-secondary); font-weight:700;">HESAPLANAN GÜNLÜK TOPLAM:</span>
+                                        <span class="badge-role" style="background:#ffd60a; color:#000; font-size:0.75rem; font-weight:800;" id="coach-calc-tot-cals">0 kcal</span>
+                                    </div>
+                                    <div class="profile-macro-banner" style="margin-bottom:0; grid-template-columns:repeat(3, 1fr); gap:6px;">
+                                        <div class="prof-macro-col p-col" style="padding:6px 2px;"><span style="font-size:0.6rem;">Protein</span><strong id="coach-calc-tot-p" style="font-size:0.78rem;">0g</strong></div>
+                                        <div class="prof-macro-col c-col" style="padding:6px 2px;"><span style="font-size:0.6rem;">Karbonhidrat</span><strong id="coach-calc-tot-c" style="font-size:0.78rem;">0g</strong></div>
+                                        <div class="prof-macro-col f-col" style="padding:6px 2px;"><span style="font-size:0.6rem;">Yağ</span><strong id="coach-calc-tot-f" style="font-size:0.78rem;">0g</strong></div>
+                                    </div>
+                                </div>
+
+                                <!-- Transfer Button -->
+                                <button type="button" class="btn btn-sm btn-primary btn-block" onclick="applyCoachCalcToTargets()" style="background:linear-gradient(135deg, #ffd60a, #ff9f0a); color:#000; font-weight:800; font-size:0.78rem; padding:9px;">
+                                    <i class="fa-solid fa-arrow-down-long"></i> Bu Makroları & Kaloriyi Aşağıdaki Hedeflere Aktar
+                                </button>
+                            </div>
+                        </div>
+
                         <!-- Macro Target Editor Form -->
                         <div class="card" style="background:var(--bg-input); border:1px solid var(--border-subtle); padding:12px; margin-bottom:12px;">
-                            <h4 style="font-size:0.8rem; color:#ffffff; margin-bottom:10px; display:flex; justify-content:space-between;">
-                                <span>Yeni Günlük Hedefler</span>
+                            <h4 style="font-size:0.8rem; color:#ffffff; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+                                <span>Günlük Hedef Değerleri</span>
                                 <span class="badge-role" style="font-size:0.65rem;" id="rx-calculated-cals">0 kcal</span>
                             </h4>
 
                             <div class="form-row-2">
                                 <div class="form-group">
                                     <label>Kalori Hedefi (kcal)</label>
-                                    <input type="number" id="rx-calories" placeholder="2770">
+                                    <input type="number" id="rx-calories" placeholder="2770" oninput="updateRxCalculatedCals()">
                                 </div>
                                 <div class="form-group">
                                     <label>Protein Hedefi (g)</label>
-                                    <input type="number" id="rx-protein" placeholder="167">
+                                    <input type="number" id="rx-protein" placeholder="167" oninput="updateRxCalculatedCals()">
                                 </div>
                             </div>
 
                             <div class="form-row-2">
                                 <div class="form-group">
                                     <label>Karbonhidrat (g)</label>
-                                    <input type="number" id="rx-carbs" placeholder="344">
+                                    <input type="number" id="rx-carbs" placeholder="344" oninput="updateRxCalculatedCals()">
                                 </div>
                                 <div class="form-group">
                                     <label>Yağ (g)</label>
-                                    <input type="number" id="rx-fat" placeholder="77">
+                                    <input type="number" id="rx-fat" placeholder="77" oninput="updateRxCalculatedCals()">
                                 </div>
                             </div>
 
@@ -2493,6 +2568,6 @@
     <!-- Notification Toast -->
     <div id="toast" class="toast">Kaydedildi</div>
 
-    <script src="app.js?v=3.10.0"></script>
+    <script src="app.js?v=3.11.0"></script>
 </body>
 </html>

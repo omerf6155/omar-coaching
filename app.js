@@ -6809,6 +6809,9 @@ function renderCoachPrescriptions(username) {
     if (gainMinEl) gainMinEl.value = t.weeklyGainMin || 0.15;
     if (gainMaxEl) gainMaxEl.value = t.weeklyGainMax || 0.35;
 
+    updateRxCalculatedCals();
+    initCoachFoodCalc();
+
     // Render Past Revisions
     const revDb = getRevisionsDB();
     const athRev = revDb[username];
@@ -6835,6 +6838,289 @@ function renderCoachPrescriptions(username) {
                 </div>
             `;
         }
+    }
+}
+
+// ==================== COACH SMART FOOD MACRO CALCULATOR WIZARD ====================
+
+let coachCalcItems = [];
+let isCoachFoodCalcCollapsed = false;
+
+function initCoachFoodCalc() {
+    const selectEl = document.getElementById("coach-calc-food-select");
+    if (!selectEl) return;
+
+    if (selectEl.options.length === 0) {
+        const carbFoods = RAW_FOODS_DATABASE.filter(f => f.c > f.p && f.c > f.f);
+        const protFoods = RAW_FOODS_DATABASE.filter(f => f.p >= f.c && f.p >= f.f);
+        const fatFoods = RAW_FOODS_DATABASE.filter(f => f.f > f.p && f.f > f.c);
+        const otherFoods = RAW_FOODS_DATABASE.filter(f => !carbFoods.includes(f) && !protFoods.includes(f) && !fatFoods.includes(f));
+
+        let html = `
+            <optgroup label="🍚 Karbonhidrat Kaynakları">
+                ${carbFoods.map(f => `<option value="${f.id}">${f.name}</option>`).join('')}
+            </optgroup>
+            <optgroup label="🍗 Protein Kaynakları">
+                ${protFoods.map(f => `<option value="${f.id}">${f.name}</option>`).join('')}
+            </optgroup>
+            <optgroup label="🥑 Sağlıklı Yağlar">
+                ${fatFoods.map(f => `<option value="${f.id}">${f.name}</option>`).join('')}
+            </optgroup>
+        `;
+        if (otherFoods.length > 0) {
+            html += `
+                <optgroup label="🥗 Diğer Besinler">
+                    ${otherFoods.map(f => `<option value="${f.id}">${f.name}</option>`).join('')}
+                </optgroup>
+            `;
+        }
+        selectEl.innerHTML = html;
+    }
+
+    onCoachCalcFoodChange(selectEl.value);
+    renderCoachCalcItems();
+}
+
+function onCoachCalcFoodChange(foodId) {
+    const food = RAW_FOODS_DATABASE.find(f => f.id === foodId);
+    const unitLbl = document.getElementById("coach-calc-unit-lbl");
+    if (unitLbl && food) {
+        if (food.id.includes("yumurta_butun") || food.id.includes("muz") || food.id.includes("hurma")) {
+            unitLbl.innerText = "gr";
+        } else if (food.id.includes("whey")) {
+            unitLbl.innerText = "gr";
+        } else {
+            unitLbl.innerText = "gr";
+        }
+    }
+}
+
+function addFoodToCoachCalc() {
+    const selectEl = document.getElementById("coach-calc-food-select");
+    const amountEl = document.getElementById("coach-calc-food-amount");
+    if (!selectEl || !amountEl) return;
+
+    const foodId = selectEl.value;
+    const food = RAW_FOODS_DATABASE.find(f => f.id === foodId);
+    if (!food) return;
+
+    let amount = parseFloat(amountEl.value) || 100;
+    if (amount <= 0) amount = 100;
+
+    // Check if food already in list
+    const existing = coachCalcItems.find(i => i.foodId === foodId);
+    if (existing) {
+        existing.amount += amount;
+    } else {
+        coachCalcItems.push({
+            id: `calc_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+            foodId,
+            amount
+        });
+    }
+
+    renderCoachCalcItems();
+    showToast(`${food.name.split(' (')[0]} eklendi! 🥗`);
+}
+
+function updateCoachCalcItemAmount(idx, newAmount) {
+    if (!coachCalcItems[idx]) return;
+    const amt = parseFloat(newAmount) || 0;
+    coachCalcItems[idx].amount = Math.max(0, amt);
+    renderCoachCalcTotalsOnly();
+}
+
+function removeCoachCalcItem(idx) {
+    if (!coachCalcItems[idx]) return;
+    const removed = coachCalcItems.splice(idx, 1)[0];
+    renderCoachCalcItems();
+    showToast("Besin listeden çıkarıldı.");
+}
+
+function clearCoachCalcList() {
+    if (coachCalcItems.length === 0) return;
+    coachCalcItems = [];
+    renderCoachCalcItems();
+    showToast("Hesaplayıcı temizlendi.");
+}
+
+function loadCoachCalcPreset(presetKey) {
+    if (presetKey === "bulk_standard") {
+        coachCalcItems = [
+            { id: "i1", foodId: "cig_pirinc", amount: 200 },
+            { id: "i2", foodId: "tavuk_gogsu", amount: 250 },
+            { id: "i3", foodId: "yumurta_butun", amount: 150 }, // 3 yumurta
+            { id: "i4", foodId: "cig_yulaf", amount: 60 },
+            { id: "i5", foodId: "fistik_ezmesi", amount: 30 },
+            { id: "i6", foodId: "muz", amount: 100 },
+            { id: "i7", foodId: "zeytinyagi", amount: 15 }
+        ];
+    } else if (presetKey === "high_protein") {
+        coachCalcItems = [
+            { id: "i1", foodId: "tavuk_gogsu", amount: 300 },
+            { id: "i2", foodId: "whey_toz", amount: 30 },
+            { id: "i3", foodId: "yumurta_butun", amount: 200 }, // 4 yumurta
+            { id: "i4", foodId: "cig_yulaf", amount: 80 },
+            { id: "i5", foodId: "cig_pirinc", amount: 150 },
+            { id: "i6", foodId: "zeytinyagi", amount: 10 }
+        ];
+    } else if (presetKey === "clean_cut") {
+        coachCalcItems = [
+            { id: "i1", foodId: "tavuk_gogsu", amount: 250 },
+            { id: "i2", foodId: "lor_peyniri", amount: 100 },
+            { id: "i3", foodId: "yumurta_beyazi", amount: 150 },
+            { id: "i4", foodId: "cig_pirinc", amount: 100 },
+            { id: "i5", foodId: "cig_yulaf", amount: 40 },
+            { id: "i6", foodId: "cig_badem", amount: 20 }
+        ];
+    }
+    renderCoachCalcItems();
+    showToast("Şablon menü yüklendi! 📋");
+}
+
+function getCoachCalcTotals() {
+    let totP = 0, totC = 0, totF = 0, totCal = 0;
+    coachCalcItems.forEach(item => {
+        const food = RAW_FOODS_DATABASE.find(f => f.id === item.foodId);
+        if (food && item.amount > 0) {
+            const factor = item.amount / 100;
+            totP += food.p * factor;
+            totC += food.c * factor;
+            totF += food.f * factor;
+            totCal += food.cal * factor;
+        }
+    });
+    return {
+        p: Math.round(totP),
+        c: Math.round(totC),
+        f: Math.round(totF),
+        cal: Math.round(totCal)
+    };
+}
+
+function renderCoachCalcTotalsOnly() {
+    const totals = getCoachCalcTotals();
+    const totCalEl = document.getElementById("coach-calc-tot-cals");
+    const totPEl = document.getElementById("coach-calc-tot-p");
+    const totCEl = document.getElementById("coach-calc-tot-c");
+    const totFEl = document.getElementById("coach-calc-tot-f");
+
+    if (totCalEl) totCalEl.innerText = `${totals.cal.toLocaleString('tr-TR')} kcal`;
+    if (totPEl) totPEl.innerText = `${totals.p}g`;
+    if (totCEl) totCEl.innerText = `${totals.c}g`;
+    if (totFEl) totFEl.innerText = `${totals.f}g`;
+}
+
+function renderCoachCalcItems() {
+    const container = document.getElementById("coach-calc-items-container");
+    if (!container) return;
+
+    if (coachCalcItems.length === 0) {
+        container.innerHTML = `
+            <div style="text-align:center; padding:12px; color:var(--text-muted); font-size:0.75rem; background:var(--bg-input); border-radius:var(--radius-sm);">
+                Henüz besin eklenmedi. Yukarıdan malzeme seçip miktar girerek ekleyin.
+            </div>
+        `;
+        renderCoachCalcTotalsOnly();
+        return;
+    }
+
+    container.innerHTML = coachCalcItems.map((item, idx) => {
+        const food = RAW_FOODS_DATABASE.find(f => f.id === item.foodId) || { name: item.foodId, p:0, c:0, f:0, cal:0 };
+        const factor = (item.amount || 0) / 100;
+        const rowP = (food.p * factor).toFixed(1);
+        const rowC = (food.c * factor).toFixed(1);
+        const rowF = (food.f * factor).toFixed(1);
+        const rowCal = Math.round(food.cal * factor);
+
+        return `
+            <div class="deep-meal-item" style="display:flex; justify-content:space-between; align-items:center; padding:6px 8px; margin-bottom:2px;">
+                <div style="flex:1; min-width:0; padding-right:8px;">
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <strong style="color:#ffffff; font-size:0.75rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${food.name.split(' (')[0]}</strong>
+                        <span class="badge-role" style="font-size:0.6rem; padding:1px 4px;">${rowCal} kcal</span>
+                    </div>
+                    <div style="font-size:0.65rem; color:var(--text-secondary); margin-top:2px; display:flex; gap:6px;">
+                        <span style="color:#ef4444;">🍗 <strong>${rowP}P</strong></span>
+                        <span style="color:#3b82f6;">🍚 <strong>${rowC}C</strong></span>
+                        <span style="color:#eab308;">🥑 <strong>${rowF}F</strong></span>
+                    </div>
+                </div>
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <input type="number" value="${item.amount}" step="5" min="1" 
+                           oninput="updateCoachCalcItemAmount(${idx}, this.value)" 
+                           class="form-select" 
+                           style="width:65px; font-size:0.72rem; padding:4px 6px; text-align:center; height:28px;">
+                    <span style="font-size:0.65rem; color:var(--text-muted);">gr</span>
+                    <button type="button" class="btn-delete-item" onclick="removeCoachCalcItem(${idx})" title="Çıkar" style="padding:2px 6px; font-size:0.65rem;">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    renderCoachCalcTotalsOnly();
+}
+
+function applyCoachCalcToTargets() {
+    if (coachCalcItems.length === 0) {
+        showToast("Lütfen önce en az bir besin ekleyin! ⚠️");
+        return;
+    }
+
+    const totals = getCoachCalcTotals();
+
+    const calEl = document.getElementById("rx-calories");
+    const pEl = document.getElementById("rx-protein");
+    const cEl = document.getElementById("rx-carbs");
+    const fEl = document.getElementById("rx-fat");
+    const noteEl = document.getElementById("rx-coach-note");
+
+    if (calEl) calEl.value = totals.cal;
+    if (pEl) pEl.value = totals.p;
+    if (cEl) cEl.value = totals.c;
+    if (fEl) fEl.value = totals.f;
+
+    updateRxCalculatedCals();
+
+    // Generate descriptive food breakdown note
+    const foodBreakdownList = coachCalcItems.map(item => {
+        const food = RAW_FOODS_DATABASE.find(f => f.id === item.foodId);
+        return `${item.amount}g ${food ? food.name.split(' (')[0] : item.foodId}`;
+    }).join(', ');
+
+    if (noteEl) {
+        const dietPrefix = `🥗 Günlük Beslenme Planı: ${foodBreakdownList}.`;
+        const currentNote = noteEl.value.trim();
+        if (!currentNote || currentNote.startsWith("Kalori ve makro") || currentNote.startsWith("🥗 Günlük Beslenme Planı:")) {
+            noteEl.value = `${dietPrefix} Hedeflenen günlük kalori: ${totals.cal} kcal (${totals.p}P / ${totals.c}C / ${totals.f}F).`;
+        } else {
+            noteEl.value = `${currentNote}\n${dietPrefix}`;
+        }
+    }
+
+    showToast("Hesaplanan makrolar ve besin planı hedeflere aktarıldı! 🚀");
+}
+
+function toggleCoachFoodCalcCollapse() {
+    isCoachFoodCalcCollapsed = !isCoachFoodCalcCollapsed;
+    const body = document.getElementById("coach-calc-body");
+    const icon = document.getElementById("coach-calc-toggle-icon");
+    if (body) body.style.display = isCoachFoodCalcCollapsed ? "none" : "block";
+    if (icon) icon.className = isCoachFoodCalcCollapsed ? "fa-solid fa-chevron-down" : "fa-solid fa-chevron-up";
+}
+
+function updateRxCalculatedCals() {
+    const p = parseInt(document.getElementById("rx-protein")?.value) || 0;
+    const c = parseInt(document.getElementById("rx-carbs")?.value) || 0;
+    const f = parseInt(document.getElementById("rx-fat")?.value) || 0;
+    const directCal = parseInt(document.getElementById("rx-calories")?.value) || 0;
+
+    const macroCal = (p * 4) + (c * 4) + (f * 9);
+    const badge = document.getElementById("rx-calculated-cals");
+    if (badge) {
+        badge.innerText = `${macroCal > 0 ? macroCal : directCal} kcal`;
     }
 }
 
