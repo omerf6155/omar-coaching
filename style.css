@@ -5167,84 +5167,163 @@ body.modal-open {
     justify-content: space-between;
     gap: 8px;
     cursor: pointer;
-    transition: all 0.2s ease;
-    position: relative;
-    user-select: none;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+/* ==================== 4 QUICK ACTION SLOTS ==================== */
+.quick-actions-4slots-card {
+    padding: 14px;
 }
 
-.quick-action-carousel-card:hover {
-    transform: translateY(-2px);
-    border-color: rgba(255, 255, 255, 0.2);
-    background: linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03));
+.quick-actions-4grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-top: 6px;
 }
 
-.quick-action-carousel-card:active {
-    transform: scale(0.97);
+@media (max-width: 650px) {
+    .quick-actions-4grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+    }
 }
 
-.qa-card-top {
+.qa-4slot-btn {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
+    gap: 5px;
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    padding: 12px 8px 10px;
+    color: #ffffff;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    user-select: none;
+    position: relative;
+    overflow: hidden;
+    min-height: 82px;
 }
 
-.qa-card-icon {
-    font-size: 1.3rem;
+.qa-4slot-btn:hover {
+    transform: translateY(-3px);
+    border-color: rgba(255, 255, 255, 0.25);
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.04));
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+}
+
+.qa-4slot-btn:active {
+    transform: scale(0.96);
+}
+
+.qa-4slot-icon {
+    font-size: 1.4rem;
+    line-height: 1;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 34px;
-    height: 34px;
-    border-radius: 10px;
-    background: rgba(255, 255, 255, 0.06);
 }
 
-.qa-card-badge {
-    font-size: 0.62rem;
+.qa-4slot-title {
+    font-size: 0.74rem;
     font-weight: 700;
-    padding: 2px 6px;
-    border-radius: 6px;
-    background: rgba(255, 255, 255, 0.1);
-    color: var(--text-secondary);
-}
-
-.qa-card-title {
-    font-size: 0.8rem;
-    font-weight: 700;
+    text-align: center;
+    line-height: 1.2;
     color: #ffffff;
-    line-height: 1.25;
-    margin: 0;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
 
-.qa-card-sub {
-    font-size: 0.68rem;
-    color: var(--text-muted);
-    font-weight: 500;
+.qa-4slot-sub {
+    font-size: 0.62rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    opacity: 0.85;
 }
 
-.qa-card-btn {
-    background: rgba(255, 255, 255, 0.08);
-    border: none;
-    border-radius: 8px;
-    padding: 6px;
+.qa-4slot-btn.empty {
+    border: 1px dashed rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.02);
+    color: var(--text-muted);
+}
+
+.qa-4slot-btn.empty:hover {
+    border-color: var(--brand-primary);
     color: #ffffff;
-    font-size: 0.72rem;
-    font-weight: 700;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.qa-slot-num-badge {
+    position: absolute;
+    top: 4px;
+    left: 6px;
+    font-size: 0.55rem;
+    font-weight: 800;
+    color: var(--text-muted);
+    opacity: 0.6;
+}
+
+/* Slot Config Modal UI */
+.slots-config-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.slot-config-card {
+    background: var(--bg-card-subtle);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.slot-config-badge {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.08);
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 4px;
-    transition: background 0.2s;
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: #ffd60a;
+    flex-shrink: 0;
 }
 
-.quick-action-carousel-card:hover .qa-card-btn {
-    background: var(--brand-primary);
-    color: #000000;
+.slot-select {
+    flex: 1;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    padding: 8px 10px;
+    color: #ffffff;
+    font-size: 0.8rem;
+    outline: none;
+}
+
+/* 2D Retro Arcade Emblems */
+.retro-avatar-svg {
+    border-radius: 8px;
+    display: inline-block;
+    vertical-align: middle;
+    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.4));
+    transition: transform 0.2s ease;
+}
+
+.flyout-item:hover .retro-avatar-svg {
+    transform: scale(1.08) rotate(-2deg);
+}
+
+.flyout-retro-logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 /* ==================== FLOATING AI ASSISTANT CLOUD DOCK ==================== */
@@ -5650,16 +5729,20 @@ body.modal-open {
     50% { transform: scale(1.04); opacity: 1; }
 }
 
-.stretch-pose-badge {
+.stretch-posture-chip {
     position: absolute;
     top: 6px;
     right: 8px;
     font-size: 0.62rem;
     font-weight: 700;
-    padding: 2px 6px;
-    border-radius: 6px;
-    background: rgba(255, 255, 255, 0.1);
-    color: #fff;
+    padding: 2px 7px;
+    border-radius: 8px;
+    background: rgba(192, 132, 252, 0.15);
+    border: 1px solid rgba(192, 132, 252, 0.3);
+    color: #e9d5ff;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
 }
 
 

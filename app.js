@@ -1858,6 +1858,7 @@ function createDefaultRpgCharacter() {
 function createDefaultAppData() {
     return {
         targets: { ...DEFAULT_TARGETS },
+        quickActionSlots: ["steps_live", "water", "steps_1000", "pancake"],
         pinnedQuickActions: ["steps_live", "water", "steps_1000", "pancake"],
         customQuickActions: [],
         activeSplitKey: "ppl_standard",
@@ -1924,6 +1925,7 @@ document.addEventListener("DOMContentLoaded", () => {
         updateDateDisplay();
         updateTopBarUserHeader();
         renderDashboard();
+        renderWorkoutDayTabs();
         renderWorkoutView(currentActiveDay);
         renderNutritionView();
         renderSupplementsView();
@@ -1961,6 +1963,7 @@ function loadDataFromStorage() {
             customWorkoutPlan: parsed.customWorkoutPlan || JSON.parse(JSON.stringify(DEFAULT_WORKOUT_PLAN)),
             activeSplitKey: parsed.activeSplitKey || "ppl_standard",
             customQuickActions: parsed.customQuickActions || [],
+            quickActionSlots: parsed.quickActionSlots || (parsed.pinnedQuickActions ? parsed.pinnedQuickActions.slice(0, 4) : ["steps_live", "water", "steps_1000", "pancake"]),
             supplements: parsed.supplements && parsed.supplements.length > 0 ? parsed.supplements : appData.supplements,
             pinnedQuickActions: parsed.pinnedQuickActions || ["steps_live", "water", "steps_1000", "pancake"],
             todayNutrition: { ...createDefaultAppData().todayNutrition, ...(parsed.todayNutrition || {}) },
@@ -1990,6 +1993,7 @@ function loadDataFromStorage() {
                 customWorkoutPlan: parsed.customWorkoutPlan || JSON.parse(JSON.stringify(DEFAULT_WORKOUT_PLAN)),
                 activeSplitKey: parsed.activeSplitKey || "ppl_standard",
                 customQuickActions: parsed.customQuickActions || [],
+                quickActionSlots: parsed.quickActionSlots || (parsed.pinnedQuickActions ? parsed.pinnedQuickActions.slice(0, 4) : ["steps_live", "water", "steps_1000", "pancake"]),
                 supplements: parsed.supplements && parsed.supplements.length > 0 ? parsed.supplements : appData.supplements,
                 pinnedQuickActions: parsed.pinnedQuickActions || ["steps_live", "water", "steps_1000", "pancake"],
                 todayNutrition: { ...createDefaultAppData().todayNutrition, ...(parsed.todayNutrition || {}) },
@@ -2249,11 +2253,36 @@ function renderDashboard() {
     evaluateDailyStreak();
 }
 
-function scrollQuickActionsCarousel(dir) {
-    const container = document.getElementById("dashboard-quick-actions-container");
-    if (!container) return;
-    const scrollAmount = 240 * dir;
-    container.scrollBy({ left: scrollAmount, behavior: "smooth" });
+function getActionDetails(key) {
+    if (key === "steps_live") {
+        return { icon: "👟", title: "Canlı GPS Takip", sub: "Adım & Hız", action: () => openStepTrackerModal() };
+    }
+    if (key === "stretching") {
+        return { icon: "🧘", title: "Esneme & Mobilite", sub: "Rutinler", action: () => openStretchingModal() };
+    }
+    if (key === "water") {
+        return { icon: "💧", title: "+500ml Su", sub: "Hidrasyon", action: () => addWater(0.5) };
+    }
+    if (key === "steps_1000") {
+        return { icon: "👣", title: "+1.000 Adım", sub: "Kardiyo", action: () => addSteps(1000) };
+    }
+    if (key === "steps_manual") {
+        return { icon: "✍️", title: "Manuel Adım", sub: "Giriş Yap", action: () => promptCustomSteps() };
+    }
+    if (appData.customPresets && appData.customPresets[key]) {
+        const p = appData.customPresets[key];
+        return { icon: "🍽️", title: p.name, sub: `${p.cal} kcal`, action: () => logPresetMeal(key) };
+    }
+    const custom = (appData.customQuickActions || []).find(a => a.id === key);
+    if (custom) {
+        let subTxt = "";
+        if (custom.type === "macro") subTxt = `+${custom.cal} kcal`;
+        else if (custom.type === "water") subTxt = `+${custom.waterVal}L`;
+        else if (custom.type === "steps") subTxt = `+${custom.stepsVal}`;
+        else subTxt = "Kısayol";
+        return { icon: custom.icon || "⚡", title: custom.title, sub: subTxt, action: () => executeCustomAction(custom.id) };
+    }
+    return null;
 }
 
 function openNewCustomActionModal() {
@@ -2307,15 +2336,10 @@ function handleCustomActionSubmit(event) {
     if (!appData.customQuickActions) appData.customQuickActions = [];
     appData.customQuickActions.push(newAction);
 
-    if (!appData.pinnedQuickActions) appData.pinnedQuickActions = [];
-    if (!appData.pinnedQuickActions.includes(actionId)) {
-        appData.pinnedQuickActions.push(actionId);
-    }
-
     saveDataToStorage();
-    renderDashboard();
     closeModal("modal-custom-action-creator");
-    showToast(`✨ "${title}" hızlı butonu eklendi! 🚀`);
+    openQuickActionSlotsModal();
+    showToast(`✨ "${title}" özel butonu oluşturuldu! İstediğin slota atayabilirsin.`);
 }
 
 function deleteCustomAction(actionId) {
@@ -2324,14 +2348,14 @@ function deleteCustomAction(actionId) {
     if (appData.customQuickActions) {
         appData.customQuickActions = appData.customQuickActions.filter(a => a.id !== actionId);
     }
-    if (appData.pinnedQuickActions) {
-        appData.pinnedQuickActions = appData.pinnedQuickActions.filter(id => id !== actionId);
+    if (appData.quickActionSlots) {
+        appData.quickActionSlots = appData.quickActionSlots.map(s => s === actionId ? "" : s);
     }
 
     saveDataToStorage();
     renderDashboard();
     renderQuickActionsConfig();
-    showToast("Özel hızlı buton silindi 🗑️");
+    showToast("Özel buton silindi 🗑️");
 }
 
 function executeCustomAction(actionId) {
@@ -2374,139 +2398,129 @@ function renderDashboardQuickActions() {
     const container = document.getElementById("dashboard-quick-actions-container");
     if (!container) return;
 
-    const pinned = appData.pinnedQuickActions || ["steps_live", "water", "steps_1000", "pancake"];
-    const customList = appData.customQuickActions || [];
-    let buttonsHtml = "";
-
-    pinned.forEach(key => {
-        if (key === "steps_live") {
-            buttonsHtml += `
-                <button class="quick-action-btn-slide" onclick="openStepTrackerModal()" style="border-color:rgba(48,209,88,0.35);">
-                    <div class="qa-slide-icon" style="color:var(--status-green);"><i class="fa-solid fa-person-walking"></i></div>
-                    <div class="qa-slide-label">Canlı Adım Takip</div>
-                </button>`;
-        } else if (key === "stretching") {
-            buttonsHtml += `
-                <button class="quick-action-btn-slide" onclick="openStretchingModal()" style="border-color:rgba(192,132,252,0.35);">
-                    <div class="qa-slide-icon" style="color:#c084fc;"><i class="fa-solid fa-person-praying"></i></div>
-                    <div class="qa-slide-label">Esneme & Mobilite</div>
-                </button>`;
-        } else if (key === "water") {
-            buttonsHtml += `
-                <button class="quick-action-btn-slide" onclick="addWater(0.5)" style="border-color:rgba(56,189,248,0.35);">
-                    <div class="qa-slide-icon" style="color:#38bdf8;"><i class="fa-solid fa-glass-water"></i></div>
-                    <div class="qa-slide-label">+500ml Su</div>
-                </button>`;
-        } else if (key === "steps_1000") {
-            buttonsHtml += `
-                <button class="quick-action-btn-slide" onclick="addSteps(1000)">
-                    <div class="qa-slide-icon"><i class="fa-solid fa-shoe-prints"></i></div>
-                    <div class="qa-slide-label">+1.000 Adım</div>
-                </button>`;
-        } else if (key === "steps_manual") {
-            buttonsHtml += `
-                <button class="quick-action-btn-slide" onclick="promptCustomSteps()">
-                    <div class="qa-slide-icon"><i class="fa-solid fa-pen"></i></div>
-                    <div class="qa-slide-label">Manuel Adım</div>
-                </button>`;
-        } else if (appData.customPresets && appData.customPresets[key]) {
-            const preset = appData.customPresets[key];
-            buttonsHtml += `
-                <button class="quick-action-btn-slide" onclick="logPresetMeal('${key}')">
-                    <div class="qa-slide-icon"><i class="fa-solid fa-utensils"></i></div>
-                    <div class="qa-slide-label">${preset.name}</div>
-                </button>`;
-        } else {
-            const customAct = customList.find(a => a.id === key);
-            if (customAct) {
-                let iconHtml = customAct.icon;
-                if (!customAct.icon || customAct.icon.length === 0) iconHtml = "⚡";
-                buttonsHtml += `
-                    <button class="quick-action-btn-slide" onclick="executeCustomAction('${customAct.id}')">
-                        <div class="qa-slide-icon">${iconHtml}</div>
-                        <div class="qa-slide-label">${customAct.title}</div>
-                    </button>`;
-            }
-        }
-    });
-
-    if (buttonsHtml === "") {
-        buttonsHtml = `
-            <div style="padding:15px; text-align:center; width:100%; color:var(--text-muted); font-size:0.75rem;">
-                Hızlı işlem butonu seçilmedi. <strong>'+ Ekle'</strong> veya <strong>'Özelleştir'</strong> ile ekleyebilirsiniz.
-            </div>`;
+    if (!appData.quickActionSlots || appData.quickActionSlots.length !== 4) {
+        appData.quickActionSlots = ["steps_live", "water", "steps_1000", "pancake"];
     }
 
-    container.innerHTML = buttonsHtml;
+    let html = "";
+    for (let i = 0; i < 4; i++) {
+        const key = appData.quickActionSlots[i];
+        const details = getActionDetails(key);
+
+        if (details) {
+            html += `
+                <div class="qa-4slot-btn" onclick="executeSlotAction(${i})">
+                    <span class="qa-slot-num-badge">#${i + 1}</span>
+                    <div class="qa-4slot-icon">${details.icon}</div>
+                    <div class="qa-4slot-title">${details.title}</div>
+                    <div class="qa-4slot-sub">${details.sub}</div>
+                </div>
+            `;
+        } else {
+            html += `
+                <div class="qa-4slot-btn empty" onclick="openQuickActionSlotsModal()">
+                    <span class="qa-slot-num-badge">#${i + 1}</span>
+                    <div class="qa-4slot-icon"><i class="fa-solid fa-plus"></i></div>
+                    <div class="qa-4slot-title">Slot ${i + 1} Ata</div>
+                    <div class="qa-4slot-sub">Seçim Yap</div>
+                </div>
+            `;
+        }
+    }
+
+    container.innerHTML = html;
+}
+
+function executeSlotAction(slotIndex) {
+    if (!appData.quickActionSlots) return;
+    const key = appData.quickActionSlots[slotIndex];
+    const details = getActionDetails(key);
+    if (details && details.action) {
+        details.action();
+    } else {
+        openQuickActionSlotsModal();
+    }
+}
+
+function openQuickActionSlotsModal() {
+    renderQuickActionsConfig();
+    openModal("modal-quick-actions");
 }
 
 function renderQuickActionsConfig() {
-    const listContainer = document.getElementById("quick-actions-toggle-list");
-    if (!listContainer) return;
+    const container = document.getElementById("slots-config-container");
+    if (!container) return;
 
-    const pinned = appData.pinnedQuickActions || [];
-    const builtInActions = [
-        { key: "steps_live", label: "Canlı Adım & GPS Takip Merkezi", icon: "fa-person-walking" },
-        { key: "stretching", label: "Esneme & Mobilite Rutinleri", icon: "fa-person-praying" },
-        { key: "water", label: "+500ml Su Ekle", icon: "fa-glass-water" },
-        { key: "steps_1000", label: "+1.000 Adım Ekle", icon: "fa-shoe-prints" },
-        { key: "steps_manual", label: "Manuel Adım Girişi", icon: "fa-pen" }
-    ];
-
-    let html = `<div style="font-size:0.75rem; font-weight:700; color:var(--text-secondary); margin-bottom:6px; text-transform:uppercase;">📌 Temel Fonksiyonlar</div>`;
-    builtInActions.forEach(act => {
-        const checked = pinned.includes(act.key) ? "checked" : "";
-        html += `
-            <div class="toggle-item">
-                <span><i class="fa-solid ${act.icon}" style="margin-right:8px; color:var(--accent-orange);"></i> ${act.label}</span>
-                <input type="checkbox" value="${act.key}" class="qa-chk" ${checked}>
-            </div>
-        `;
-    });
-
-    html += `<div style="font-size:0.75rem; font-weight:700; color:var(--text-secondary); margin:12px 0 6px; text-transform:uppercase;">🍽️ Sabit Öğün Kısayolları</div>`;
-    Object.keys(appData.customPresets || {}).forEach(key => {
-        const p = appData.customPresets[key];
-        const checked = pinned.includes(key) ? "checked" : "";
-        html += `
-            <div class="toggle-item">
-                <span><i class="fa-solid fa-utensils" style="margin-right:8px; color:#38bdf8;"></i> ${p.name} (${p.cal} kcal)</span>
-                <input type="checkbox" value="${key}" class="qa-chk" ${checked}>
-            </div>
-        `;
-    });
-
-    const customList = appData.customQuickActions || [];
-    if (customList.length > 0) {
-        html += `<div style="font-size:0.75rem; font-weight:700; color:var(--text-secondary); margin:12px 0 6px; text-transform:uppercase;">✨ Sizin Oluşturduğunuz Özel Butonlar</div>`;
-        customList.forEach(c => {
-            const checked = pinned.includes(c.id) ? "checked" : "";
-            html += `
-                <div class="toggle-item" style="display:flex; justify-content:space-between; align-items:center;">
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        <span>${c.icon}</span>
-                        <span><strong>${c.title}</strong> <small style="opacity:0.7;">(${c.type})</small></span>
-                    </div>
-                    <div style="display:flex; align-items:center; gap:10px;">
-                        <input type="checkbox" value="${c.id}" class="qa-chk" ${checked}>
-                        <button type="button" class="btn-trash-action" onclick="deleteCustomAction('${c.id}')" title="Bu butonu sil" style="background:none; border:none; color:#f43f5e; cursor:pointer; font-size:0.85rem;"><i class="fa-solid fa-trash-can"></i></button>
-                    </div>
-                </div>
-            `;
-        });
+    if (!appData.quickActionSlots || appData.quickActionSlots.length !== 4) {
+        appData.quickActionSlots = ["steps_live", "water", "steps_1000", "pancake"];
     }
 
-    listContainer.innerHTML = html;
+    // Built-in actions list
+    const builtIn = [
+        { key: "steps_live", label: "👟 Canlı GPS & Adım Takip" },
+        { key: "stretching", label: "🧘 Esneme & Mobilite Rutinleri" },
+        { key: "water", label: "💧 +500ml Su Ekle" },
+        { key: "steps_1000", label: "👣 +1.000 Adım Ekle" },
+        { key: "steps_manual", label: "✍️ Manuel Adım Girişi" }
+    ];
+
+    const presets = Object.keys(appData.customPresets || {}).map(k => ({
+        key: k,
+        label: `🍽️ ${appData.customPresets[k].name} (${appData.customPresets[k].cal} kcal)`
+    }));
+
+    const customs = (appData.customQuickActions || []).map(c => ({
+        key: c.id,
+        label: `${c.icon} ${c.title} (${c.type})`
+    }));
+
+    const allOptions = [
+        { group: "Temel Fonksiyonlar", items: builtIn },
+        { group: "Hazır Öğünler", items: presets },
+        { group: "Özel Butonlarınız", items: customs }
+    ];
+
+    let html = "";
+    for (let slotIdx = 0; slotIdx < 4; slotIdx++) {
+        const currentVal = appData.quickActionSlots[slotIdx] || "";
+
+        let optHtml = `<option value="">-- Boş Bırak --</option>`;
+        allOptions.forEach(grp => {
+            if (grp.items.length > 0) {
+                optHtml += `<optgroup label="${grp.group}">`;
+                grp.items.forEach(item => {
+                    const sel = (item.key === currentVal) ? "selected" : "";
+                    optHtml += `<option value="${item.key}" ${sel}>${item.label}</option>`;
+                });
+                optHtml += `</optgroup>`;
+            }
+        });
+
+        html += `
+            <div class="slot-config-card">
+                <div class="slot-config-badge">#${slotIdx + 1}</div>
+                <select class="slot-select" id="slot-select-${slotIdx}">
+                    ${optHtml}
+                </select>
+            </div>
+        `;
+    }
+
+    container.innerHTML = html;
 }
 
-function saveQuickActionsConfig() {
-    const chks = document.querySelectorAll(".qa-chk:checked");
-    const selected = Array.from(chks).map(c => c.value);
-    appData.pinnedQuickActions = selected;
+function saveQuickActionSlots() {
+    const slots = [];
+    for (let i = 0; i < 4; i++) {
+        const val = document.getElementById(`slot-select-${i}`)?.value || "";
+        slots.push(val);
+    }
+    appData.quickActionSlots = slots;
+    appData.pinnedQuickActions = slots.filter(Boolean);
     saveDataToStorage();
     renderDashboard();
-    closeModal('modal-quick-actions');
-    showToast("Hızlı işlemler güncellendi! ⚡");
+    closeModal("modal-quick-actions");
+    showToast("4 Hızlı İşlem Slotu Başarıyla Güncellendi! ⚡");
 }
 
 // ==================== RPG SANAL KARAKTER & GAMIFICATION MOTORU ====================
@@ -2784,66 +2798,460 @@ function filterStretchingCategory(cat, btn) {
 }
 
 function getStretchingSvg(stretch) {
+    const id = stretch.id;
     const cat = stretch.category;
-    if (cat === "chest_shoulder") {
+
+    // 1. Doorway Pec
+    if (id === "stretch_door_pec") {
         return `
             <svg viewBox="0 0 160 70" width="100%" height="70" class="stretch-anim-svg" style="max-height:70px;">
-                <circle cx="80" cy="18" r="9" fill="#c084fc" opacity="0.9" />
-                <line x1="80" y1="27" x2="80" y2="52" stroke="#a855f7" stroke-width="4" stroke-linecap="round" />
-                <path d="M80 32 Q55 22 35 38" fill="none" stroke="#e879f9" stroke-width="3.5" stroke-linecap="round">
-                    <animate attributeName="d" values="M80 32 Q55 22 35 38; M80 32 Q48 18 26 44; M80 32 Q55 22 35 38" dur="3s" repeatCount="indefinite" />
-                </path>
-                <path d="M80 32 Q105 22 125 38" fill="none" stroke="#e879f9" stroke-width="3.5" stroke-linecap="round">
-                    <animate attributeName="d" values="M80 32 Q105 22 125 38; M80 32 Q112 18 134 44; M80 32 Q105 22 125 38" dur="3s" repeatCount="indefinite" />
-                </path>
-                <circle cx="64" cy="30" r="3" fill="#f43f5e"><animate attributeName="r" values="2;5;2" dur="2s" repeatCount="indefinite"/></circle>
-                <circle cx="96" cy="30" r="3" fill="#f43f5e"><animate attributeName="r" values="2;5;2" dur="2s" repeatCount="indefinite"/></circle>
-                <line x1="80" y1="52" x2="66" y2="66" stroke="#a855f7" stroke-width="3.5" stroke-linecap="round" />
-                <line x1="80" y1="52" x2="94" y2="66" stroke="#a855f7" stroke-width="3.5" stroke-linecap="round" />
-            </svg>`;
-    } else if (cat === "back_spine") {
-        return `
-            <svg viewBox="0 0 160 70" width="100%" height="70" class="stretch-anim-svg" style="max-height:70px;">
-                <circle cx="36" cy="28" r="8" fill="#c084fc" opacity="0.9" />
-                <path d="M42 32 Q80 18 120 38" fill="none" stroke="#a855f7" stroke-width="4" stroke-linecap="round">
-                    <animate attributeName="d" values="M42 32 Q80 16 120 38; M42 32 Q80 48 120 38; M42 32 Q80 16 120 38" dur="4s" repeatCount="indefinite" />
-                </path>
-                <line x1="48" y1="36" x2="48" y2="60" stroke="#e879f9" stroke-width="3.5" stroke-linecap="round" />
-                <line x1="115" y1="40" x2="115" y2="60" stroke="#e879f9" stroke-width="3.5" stroke-linecap="round" />
-                <circle cx="80" cy="28" r="4" fill="#38bdf8"><animate attributeName="opacity" values="0.3;1;0.3" dur="2s" repeatCount="indefinite"/></circle>
-            </svg>`;
-    } else if (cat === "hips_glutes") {
-        return `
-            <svg viewBox="0 0 160 70" width="100%" height="70" class="stretch-anim-svg" style="max-height:70px;">
-                <circle cx="55" cy="18" r="8" fill="#c084fc" />
-                <line x1="55" y1="26" x2="65" y2="44" stroke="#a855f7" stroke-width="4" stroke-linecap="round" />
-                <path d="M65 44 L95 48 L125 64" fill="none" stroke="#e879f9" stroke-width="3.5" stroke-linecap="round" />
-                <path d="M65 44 L40 56 L24 64" fill="none" stroke="#e879f9" stroke-width="3.5" stroke-linecap="round">
-                    <animate attributeName="d" values="M65 44 L40 56 L24 64; M65 46 L34 58 L18 64; M65 44 L40 56 L24 64" dur="3s" repeatCount="indefinite" />
-                </path>
-                <circle cx="65" cy="44" r="4" fill="#fbbf24"><animate attributeName="r" values="3;6;3" dur="2s" repeatCount="indefinite"/></circle>
-            </svg>`;
-    } else if (cat === "legs_hamstring") {
-        return `
-            <svg viewBox="0 0 160 70" width="100%" height="70" class="stretch-anim-svg" style="max-height:70px;">
-                <circle cx="45" cy="20" r="8" fill="#c084fc" />
-                <line x1="45" y1="28" x2="60" y2="50" stroke="#a855f7" stroke-width="4" stroke-linecap="round" />
-                <path d="M50 32 L88 46" fill="none" stroke="#38bdf8" stroke-width="3.5" stroke-linecap="round">
-                    <animate attributeName="d" values="M50 32 L82 44; M50 32 L112 56; M50 32 L82 44" dur="3.5s" repeatCount="indefinite" />
-                </path>
-                <line x1="60" y1="50" x2="116" y2="58" stroke="#e879f9" stroke-width="4" stroke-linecap="round" />
-                <circle cx="86" cy="54" r="3.5" fill="#f43f5e"><animate attributeName="r" values="2;5;2" dur="2s" repeatCount="indefinite"/></circle>
-            </svg>`;
-    } else {
-        return `
-            <svg viewBox="0 0 160 70" width="100%" height="70" class="stretch-anim-svg" style="max-height:70px;">
-                <circle cx="80" cy="22" r="10" fill="#c084fc">
-                    <animate attributeName="cx" values="74;86;74" dur="4s" repeatCount="indefinite" />
+                <!-- Door Frame -->
+                <line x1="38" y1="8" x2="38" y2="64" stroke="#475569" stroke-width="4" stroke-linecap="round"/>
+                <line x1="122" y1="8" x2="122" y2="64" stroke="#475569" stroke-width="4" stroke-linecap="round"/>
+                <line x1="34" y1="10" x2="126" y2="10" stroke="#334155" stroke-width="3"/>
+                <!-- Torso & Head leaning forward -->
+                <circle cx="80" cy="18" r="7.5" fill="#c084fc">
+                    <animate attributeName="cy" values="18;16;18" dur="3s" repeatCount="indefinite"/>
                 </circle>
-                <line x1="80" y1="32" x2="80" y2="58" stroke="#a855f7" stroke-width="4" stroke-linecap="round" />
-                <line x1="60" y1="42" x2="100" y2="42" stroke="#e879f9" stroke-width="3.5" stroke-linecap="round" />
+                <line x1="80" y1="26" x2="80" y2="48" stroke="#a855f7" stroke-width="4" stroke-linecap="round"/>
+                <!-- Arms 90 deg anchored to doorframe -->
+                <path d="M80 30 L52 24 L38 24" fill="none" stroke="#e879f9" stroke-width="3.5" stroke-linecap="round"/>
+                <path d="M80 30 L108 24 L122 24" fill="none" stroke="#e879f9" stroke-width="3.5" stroke-linecap="round"/>
+                <!-- Pec Tension Rings -->
+                <ellipse cx="70" cy="31" rx="5" ry="3" fill="#f43f5e" opacity="0.8">
+                    <animate attributeName="rx" values="3;7;3" dur="2s" repeatCount="indefinite"/>
+                </ellipse>
+                <ellipse cx="90" cy="31" rx="5" ry="3" fill="#f43f5e" opacity="0.8">
+                    <animate attributeName="rx" values="3;7;3" dur="2s" repeatCount="indefinite"/>
+                </ellipse>
+                <!-- Legs forward lunge stance -->
+                <line x1="80" y1="48" x2="70" y2="64" stroke="#a855f7" stroke-width="3.5" stroke-linecap="round"/>
+                <line x1="80" y1="48" x2="94" y2="64" stroke="#a855f7" stroke-width="3.5" stroke-linecap="round"/>
             </svg>`;
     }
+
+    // 2. Cross-Body Deltoid
+    if (id === "stretch_cross_shoulder") {
+        return `
+            <svg viewBox="0 0 160 70" width="100%" height="70" class="stretch-anim-svg" style="max-height:70px;">
+                <circle cx="80" cy="16" r="7.5" fill="#c084fc"/>
+                <line x1="80" y1="24" x2="80" y2="48" stroke="#a855f7" stroke-width="4" stroke-linecap="round"/>
+                <!-- Arm crossed over chest -->
+                <path d="M96 28 L50 32" fill="none" stroke="#e879f9" stroke-width="4" stroke-linecap="round">
+                    <animate attributeName="d" values="M96 28 L52 32; M96 28 L44 32; M96 28 L52 32" dur="2.5s" repeatCount="indefinite"/>
+                </path>
+                <!-- Opposing hand pulling elbow inward -->
+                <path d="M68 46 L68 28 L74 31" fill="none" stroke="#38bdf8" stroke-width="3" stroke-linecap="round"/>
+                <circle cx="94" cy="28" r="4" fill="#f43f5e"><animate attributeName="r" values="3;6;3" dur="2s" repeatCount="indefinite"/></circle>
+                <!-- Legs -->
+                <line x1="80" y1="48" x2="72" y2="64" stroke="#a855f7" stroke-width="3.5" stroke-linecap="round"/>
+                <line x1="80" y1="48" x2="88" y2="64" stroke="#a855f7" stroke-width="3.5" stroke-linecap="round"/>
+            </svg>`;
+    }
+
+    // 3. Overhead Triceps & Lat
+    if (id === "stretch_overhead_triceps") {
+        return `
+            <svg viewBox="0 0 160 70" width="100%" height="70" class="stretch-anim-svg" style="max-height:70px;">
+                <circle cx="80" cy="20" r="7.5" fill="#c084fc"/>
+                <line x1="80" y1="28" x2="80" y2="50" stroke="#a855f7" stroke-width="4" stroke-linecap="round"/>
+                <!-- Right Arm bent behind head -->
+                <path d="M86 30 L92 12 L78 14" fill="none" stroke="#e879f9" stroke-width="3.5" stroke-linecap="round"/>
+                <!-- Left Hand holding elbow -->
+                <path d="M72 32 L84 10 L92 12" fill="none" stroke="#38bdf8" stroke-width="3" stroke-linecap="round">
+                    <animate attributeName="d" values="M72 32 L84 10 L92 12; M72 32 L82 8 L90 10; M72 32 L84 10 L92 12" dur="3s" repeatCount="indefinite"/>
+                </path>
+                <!-- Triceps Tension Indicator -->
+                <circle cx="90" cy="18" r="4" fill="#f43f5e"><animate attributeName="r" values="2;5;2" dur="1.8s" repeatCount="indefinite"/></circle>
+                <!-- Legs -->
+                <line x1="80" y1="50" x2="72" y2="66" stroke="#a855f7" stroke-width="3.5" stroke-linecap="round"/>
+                <line x1="80" y1="50" x2="88" y2="66" stroke="#a855f7" stroke-width="3.5" stroke-linecap="round"/>
+            </svg>`;
+    }
+
+    // 4. Behind-The-Back Chest Expander
+    if (id === "stretch_chest_hands_behind") {
+        return `
+            <svg viewBox="0 0 160 70" width="100%" height="70" class="stretch-anim-svg" style="max-height:70px;">
+                <circle cx="70" cy="16" r="7.5" fill="#c084fc"/>
+                <!-- Arched Torso -->
+                <path d="M70 24 Q78 36 72 48" fill="none" stroke="#a855f7" stroke-width="4" stroke-linecap="round"/>
+                <!-- Arms clasped behind extending backwards -->
+                <path d="M74 30 L98 38 L104 42" fill="none" stroke="#e879f9" stroke-width="3.5" stroke-linecap="round">
+                    <animate attributeName="d" values="M74 30 L98 38 L104 42; M74 30 L106 32 L114 36; M74 30 L98 38 L104 42" dur="2.8s" repeatCount="indefinite"/>
+                </path>
+                <!-- Glowing Pectoral Extension -->
+                <circle cx="65" cy="30" r="4" fill="#38bdf8"><animate attributeName="opacity" values="0.4;1;0.4" dur="2s" repeatCount="indefinite"/></circle>
+                <!-- Legs -->
+                <line x1="72" y1="48" x2="62" y2="66" stroke="#a855f7" stroke-width="3.5" stroke-linecap="round"/>
+                <line x1="72" y1="48" x2="82" y2="66" stroke="#a855f7" stroke-width="3.5" stroke-linecap="round"/>
+            </svg>`;
+    }
+
+    // 5. Cat-Cow Spinal Wave
+    if (id === "stretch_cat_cow") {
+        return `
+            <svg viewBox="0 0 160 70" width="100%" height="70" class="stretch-anim-svg" style="max-height:70px;">
+                <!-- Ground line -->
+                <line x1="20" y1="62" x2="140" y2="62" stroke="#334155" stroke-width="2"/>
+                <circle cx="42" cy="32" r="7" fill="#c084fc">
+                    <animate attributeName="cy" values="26;38;26" dur="4s" repeatCount="indefinite"/>
+                </circle>
+                <!-- Undulating spine curve -->
+                <path d="M46 32 Q80 18 114 36" fill="none" stroke="#a855f7" stroke-width="4.5" stroke-linecap="round">
+                    <animate attributeName="d" values="M46 26 Q80 14 114 36; M46 38 Q80 50 114 36; M46 26 Q80 14 114 36" dur="4s" repeatCount="indefinite"/>
+                </path>
+                <!-- Front arms -->
+                <line x1="50" y1="36" x2="50" y2="62" stroke="#e879f9" stroke-width="3.5" stroke-linecap="round"/>
+                <!-- Rear thighs -->
+                <line x1="112" y1="38" x2="112" y2="62" stroke="#e879f9" stroke-width="3.5" stroke-linecap="round"/>
+                <circle cx="80" cy="32" r="4" fill="#38bdf8"><animate attributeName="cy" values="18;48;18" dur="4s" repeatCount="indefinite"/></circle>
+            </svg>`;
+    }
+
+    // 6. Child's Pose with Lat Reach
+    if (id === "stretch_lat_child_pose") {
+        return `
+            <svg viewBox="0 0 160 70" width="100%" height="70" class="stretch-anim-svg" style="max-height:70px;">
+                <line x1="15" y1="62" x2="145" y2="62" stroke="#334155" stroke-width="2"/>
+                <!-- Folded kneeling legs -->
+                <path d="M120 62 L105 48 L126 62" fill="none" stroke="#a855f7" stroke-width="4" stroke-linecap="round"/>
+                <!-- Head down -->
+                <circle cx="58" cy="52" r="7" fill="#c084fc"/>
+                <!-- Extended torso & spine -->
+                <path d="M105 48 Q82 44 60 52" fill="none" stroke="#a855f7" stroke-width="4" stroke-linecap="round"/>
+                <!-- Arms reaching out forward -->
+                <path d="M64 50 L28 58" fill="none" stroke="#e879f9" stroke-width="3.5" stroke-linecap="round">
+                    <animate attributeName="d" values="M64 50 L28 58; M64 50 L22 58; M64 50 L28 58" dur="3s" repeatCount="indefinite"/>
+                </path>
+                <!-- Lat Stretch Glow -->
+                <path d="M78 44 Q56 46 36 54" fill="none" stroke="#38bdf8" stroke-width="2" stroke-dasharray="3,3">
+                    <animate attributeName="opacity" values="0.3;1;0.3" dur="2s" repeatCount="indefinite"/>
+                </path>
+            </svg>`;
+    }
+
+    // 7. Thread the Needle
+    if (id === "stretch_t_spine_rotation") {
+        return `
+            <svg viewBox="0 0 160 70" width="100%" height="70" class="stretch-anim-svg" style="max-height:70px;">
+                <line x1="15" y1="62" x2="145" y2="62" stroke="#334155" stroke-width="2"/>
+                <circle cx="48" cy="46" r="7" fill="#c084fc"/>
+                <path d="M54 46 Q80 34 110 40" fill="none" stroke="#a855f7" stroke-width="4" stroke-linecap="round"/>
+                <line x1="110" y1="40" x2="110" y2="62" stroke="#a855f7" stroke-width="3.5" stroke-linecap="round"/>
+                <!-- Arm threaded through underneath -->
+                <path d="M56 46 L95 56 L120 58" fill="none" stroke="#e879f9" stroke-width="3.5" stroke-linecap="round">
+                    <animate attributeName="d" values="M56 46 L95 56 L120 58; M56 46 L90 56 L130 58; M56 46 L95 56 L120 58" dur="3s" repeatCount="indefinite"/>
+                </path>
+                <circle cx="78" cy="40" r="4" fill="#fbbf24"><animate attributeName="r" values="3;6;3" dur="2s" repeatCount="indefinite"/></circle>
+            </svg>`;
+    }
+
+    // 8. World's Greatest Stretch
+    if (id === "stretch_worlds_greatest") {
+        return `
+            <svg viewBox="0 0 160 70" width="100%" height="70" class="stretch-anim-svg" style="max-height:70px;">
+                <line x1="15" y1="62" x2="145" y2="62" stroke="#334155" stroke-width="2"/>
+                <!-- Head -->
+                <circle cx="68" cy="24" r="7" fill="#c084fc"/>
+                <!-- Torso twisted -->
+                <line x1="68" y1="31" x2="80" y2="48" stroke="#a855f7" stroke-width="4" stroke-linecap="round"/>
+                <!-- Rear leg stretched far back -->
+                <path d="M80 48 L115 54 L138 62" fill="none" stroke="#a855f7" stroke-width="3.5" stroke-linecap="round"/>
+                <!-- Front leg 90 deg lunge -->
+                <path d="M80 48 L56 46 L46 62" fill="none" stroke="#a855f7" stroke-width="3.5" stroke-linecap="round"/>
+                <!-- Ground arm supporting -->
+                <line x1="68" y1="36" x2="48" y2="62" stroke="#94a3b8" stroke-width="3" stroke-linecap="round"/>
+                <!-- Upper arm pointing to sky rotating -->
+                <path d="M68 34 L74 12" fill="none" stroke="#fbbf24" stroke-width="4" stroke-linecap="round">
+                    <animate attributeName="d" values="M68 34 L74 12; M68 34 L62 8; M68 34 L74 12" dur="2.5s" repeatCount="indefinite"/>
+                </path>
+                <polygon points="74,10 78,14 70,14" fill="#f59e0b"/>
+            </svg>`;
+    }
+
+    // 9. Prone Cobra
+    if (id === "stretch_cobra") {
+        return `
+            <svg viewBox="0 0 160 70" width="100%" height="70" class="stretch-anim-svg" style="max-height:70px;">
+                <line x1="15" y1="62" x2="145" y2="62" stroke="#334155" stroke-width="2"/>
+                <circle cx="38" cy="18" r="7.5" fill="#c084fc">
+                    <animate attributeName="cy" values="18;14;18" dur="3s" repeatCount="indefinite"/>
+                </circle>
+                <!-- Arching upper torso -->
+                <path d="M42 24 Q56 40 95 56" fill="none" stroke="#a855f7" stroke-width="4" stroke-linecap="round"/>
+                <!-- Straight arms pushing up -->
+                <line x1="50" y1="32" x2="52" y2="62" stroke="#e879f9" stroke-width="3.5" stroke-linecap="round"/>
+                <!-- Lower body flat on mat -->
+                <line x1="95" y1="56" x2="142" y2="62" stroke="#a855f7" stroke-width="4" stroke-linecap="round"/>
+                <!-- Abdominal expansion glow -->
+                <circle cx="62" cy="40" r="4" fill="#38bdf8"><animate attributeName="r" values="2;5;2" dur="2s" repeatCount="indefinite"/></circle>
+            </svg>`;
+    }
+
+    // 10. Pigeon Pose
+    if (id === "stretch_pigeon_pose") {
+        return `
+            <svg viewBox="0 0 160 70" width="100%" height="70" class="stretch-anim-svg" style="max-height:70px;">
+                <line x1="15" y1="62" x2="145" y2="62" stroke="#334155" stroke-width="2"/>
+                <circle cx="56" cy="22" r="7" fill="#c084fc"/>
+                <line x1="56" y1="29" x2="68" y2="48" stroke="#a855f7" stroke-width="4" stroke-linecap="round"/>
+                <!-- Front leg folded across -->
+                <path d="M68 48 L46 54 L34 62" fill="none" stroke="#e879f9" stroke-width="4" stroke-linecap="round"/>
+                <!-- Rear leg stretched straight back -->
+                <path d="M68 48 L108 56 L138 62" fill="none" stroke="#a855f7" stroke-width="3.5" stroke-linecap="round"/>
+                <!-- Hands bracing on floor -->
+                <line x1="52" y1="36" x2="42" y2="62" stroke="#94a3b8" stroke-width="3" stroke-linecap="round"/>
+                <circle cx="68" cy="48" r="5" fill="#f43f5e"><animate attributeName="r" values="3;7;3" dur="2.2s" repeatCount="indefinite"/></circle>
+            </svg>`;
+    }
+
+    // 11. 90/90 Hip Mobility
+    if (id === "stretch_90_90_hip") {
+        return `
+            <svg viewBox="0 0 160 70" width="100%" height="70" class="stretch-anim-svg" style="max-height:70px;">
+                <line x1="15" y1="62" x2="145" y2="62" stroke="#334155" stroke-width="2"/>
+                <circle cx="75" cy="18" r="7" fill="#c084fc"/>
+                <line x1="75" y1="25" x2="75" y2="46" stroke="#a855f7" stroke-width="4" stroke-linecap="round"/>
+                <!-- Front 90 leg -->
+                <path d="M75 46 L45 48 L42 62" fill="none" stroke="#e879f9" stroke-width="3.5" stroke-linecap="round"/>
+                <!-- Rear 90 leg -->
+                <path d="M75 46 L105 52 L120 62" fill="none" stroke="#38bdf8" stroke-width="3.5" stroke-linecap="round">
+                    <animate attributeName="d" values="M75 46 L105 52 L120 62; M75 46 L95 56 L110 62; M75 46 L105 52 L120 62" dur="3s" repeatCount="indefinite"/>
+                </path>
+                <circle cx="75" cy="46" r="4.5" fill="#fbbf24"/>
+            </svg>`;
+    }
+
+    // 12. Couch Stretch
+    if (id === "stretch_couch_stretch") {
+        return `
+            <svg viewBox="0 0 160 70" width="100%" height="70" class="stretch-anim-svg" style="max-height:70px;">
+                <!-- Wall -->
+                <line x1="130" y1="8" x2="130" y2="62" stroke="#64748b" stroke-width="5" stroke-linecap="round"/>
+                <line x1="15" y1="62" x2="145" y2="62" stroke="#334155" stroke-width="2"/>
+                <circle cx="76" cy="18" r="7" fill="#c084fc"/>
+                <line x1="76" y1="25" x2="82" y2="44" stroke="#a855f7" stroke-width="4" stroke-linecap="round"/>
+                <!-- Front Lunge Leg -->
+                <path d="M82 44 L56 46 L46 62" fill="none" stroke="#a855f7" stroke-width="3.5" stroke-linecap="round"/>
+                <!-- Rear Shin flush with wall -->
+                <path d="M82 44 L114 62 L128 32" fill="none" stroke="#e879f9" stroke-width="4" stroke-linecap="round"/>
+                <!-- Hip Flexor Tension Glow -->
+                <circle cx="94" cy="50" r="5" fill="#f43f5e"><animate attributeName="r" values="3;7;3" dur="2s" repeatCount="indefinite"/></circle>
+            </svg>`;
+    }
+
+    // 13. Standing Hamstring Sweep
+    if (id === "stretch_standing_hamstring") {
+        return `
+            <svg viewBox="0 0 160 70" width="100%" height="70" class="stretch-anim-svg" style="max-height:70px;">
+                <line x1="15" y1="62" x2="145" y2="62" stroke="#334155" stroke-width="2"/>
+                <circle cx="60" cy="22" r="7" fill="#c084fc"/>
+                <!-- Hips pushed back -->
+                <path d="M60 29 L82 42" stroke="#a855f7" stroke-width="4" stroke-linecap="round"/>
+                <!-- Rear leg bent -->
+                <path d="M82 42 L96 52 L90 62" fill="none" stroke="#a855f7" stroke-width="3.5" stroke-linecap="round"/>
+                <!-- Front leg straight, heel grounded toes up -->
+                <path d="M82 42 L42 60 L38 56" fill="none" stroke="#e879f9" stroke-width="4" stroke-linecap="round"/>
+                <!-- Hands sweeping ground -->
+                <path d="M64 34 L48 58" fill="none" stroke="#38bdf8" stroke-width="3.5" stroke-linecap="round">
+                    <animate attributeName="d" values="M64 34 L48 58; M64 34 L32 54; M64 34 L48 58" dur="2.5s" repeatCount="indefinite"/>
+                </path>
+                <circle cx="58" cy="52" r="4" fill="#f43f5e"><animate attributeName="r" values="2;5;2" dur="2s" repeatCount="indefinite"/></circle>
+            </svg>`;
+    }
+
+    // 14. Butterfly Stretch
+    if (id === "stretch_butterfly") {
+        return `
+            <svg viewBox="0 0 160 70" width="100%" height="70" class="stretch-anim-svg" style="max-height:70px;">
+                <line x1="15" y1="62" x2="145" y2="62" stroke="#334155" stroke-width="2"/>
+                <circle cx="80" cy="18" r="7.5" fill="#c084fc"/>
+                <line x1="80" y1="26" x2="80" y2="48" stroke="#a855f7" stroke-width="4" stroke-linecap="round"/>
+                <!-- Left Flapping Wing Knee -->
+                <path d="M80 48 Q52 46 76 60" fill="none" stroke="#e879f9" stroke-width="3.5" stroke-linecap="round">
+                    <animate attributeName="d" values="M80 48 Q52 46 76 60; M80 48 Q46 54 76 60; M80 48 Q52 46 76 60" dur="2.2s" repeatCount="indefinite"/>
+                </path>
+                <!-- Right Flapping Wing Knee -->
+                <path d="M80 48 Q108 46 84 60" fill="none" stroke="#e879f9" stroke-width="3.5" stroke-linecap="round">
+                    <animate attributeName="d" values="M80 48 Q108 46 84 60; M80 48 Q114 54 84 60; M80 48 Q108 46 84 60" dur="2.2s" repeatCount="indefinite"/>
+                </path>
+                <circle cx="80" cy="60" r="3" fill="#fbbf24"/>
+            </svg>`;
+    }
+
+    // 15. Frog Stretch
+    if (id === "stretch_frog_stretch") {
+        return `
+            <svg viewBox="0 0 160 70" width="100%" height="70" class="stretch-anim-svg" style="max-height:70px;">
+                <line x1="15" y1="62" x2="145" y2="62" stroke="#334155" stroke-width="2"/>
+                <circle cx="50" cy="40" r="7" fill="#c084fc"/>
+                <!-- Forearms on floor -->
+                <line x1="54" y1="44" x2="62" y2="62" stroke="#94a3b8" stroke-width="3" stroke-linecap="round"/>
+                <!-- Torso sinking back -->
+                <path d="M54 44 Q82 46 106 46" fill="none" stroke="#a855f7" stroke-width="4" stroke-linecap="round">
+                    <animate attributeName="d" values="M54 44 Q82 46 106 46; M54 44 Q88 48 114 48; M54 44 Q82 46 106 46" dur="3s" repeatCount="indefinite"/>
+                </path>
+                <!-- Wide Knees -->
+                <path d="M106 46 L85 62" stroke="#e879f9" stroke-width="4" stroke-linecap="round"/>
+                <path d="M106 46 L128 62" stroke="#e879f9" stroke-width="4" stroke-linecap="round"/>
+                <circle cx="106" cy="48" r="5" fill="#f43f5e"><animate attributeName="r" values="3;7;3" dur="2.5s" repeatCount="indefinite"/></circle>
+            </svg>`;
+    }
+
+    // 16. Flamingo Quad
+    if (id === "stretch_standing_quad") {
+        return `
+            <svg viewBox="0 0 160 70" width="100%" height="70" class="stretch-anim-svg" style="max-height:70px;">
+                <line x1="15" y1="62" x2="145" y2="62" stroke="#334155" stroke-width="2"/>
+                <circle cx="75" cy="16" r="7.5" fill="#c084fc"/>
+                <line x1="75" y1="24" x2="75" y2="44" stroke="#a855f7" stroke-width="4" stroke-linecap="round"/>
+                <!-- Standing Leg -->
+                <line x1="75" y1="44" x2="75" y2="62" stroke="#a855f7" stroke-width="4" stroke-linecap="round"/>
+                <!-- Bent Leg pulled to glute -->
+                <path d="M75 44 L88 52 L84 38" fill="none" stroke="#e879f9" stroke-width="3.5" stroke-linecap="round"/>
+                <!-- Hand holding foot -->
+                <path d="M75 28 L84 38" stroke="#38bdf8" stroke-width="3" stroke-linecap="round"/>
+                <circle cx="86" cy="46" r="4.5" fill="#f43f5e"><animate attributeName="r" values="2.5;6;2.5" dur="1.8s" repeatCount="indefinite"/></circle>
+            </svg>`;
+    }
+
+    // 17. Wall Calf
+    if (id === "stretch_wall_calf") {
+        return `
+            <svg viewBox="0 0 160 70" width="100%" height="70" class="stretch-anim-svg" style="max-height:70px;">
+                <!-- Wall -->
+                <line x1="30" y1="8" x2="30" y2="62" stroke="#64748b" stroke-width="4" stroke-linecap="round"/>
+                <line x1="15" y1="62" x2="145" y2="62" stroke="#334155" stroke-width="2"/>
+                <circle cx="68" cy="22" r="7" fill="#c084fc"/>
+                <!-- Torso leaning into wall -->
+                <line x1="68" y1="29" x2="80" y2="46" stroke="#a855f7" stroke-width="4" stroke-linecap="round"/>
+                <!-- Hands on wall -->
+                <line x1="68" y1="32" x2="32" y2="30" stroke="#94a3b8" stroke-width="3" stroke-linecap="round"/>
+                <!-- Front bent knee -->
+                <path d="M80 46 L58 52 L54 62" fill="none" stroke="#a855f7" stroke-width="3.5" stroke-linecap="round"/>
+                <!-- Rear straight leg, heel down -->
+                <line x1="80" y1="46" x2="118" y2="62" stroke="#e879f9" stroke-width="4" stroke-linecap="round"/>
+                <!-- Calf Pulse Indicator -->
+                <circle cx="102" cy="55" r="4" fill="#f43f5e"><animate attributeName="r" values="2;5.5;2" dur="2s" repeatCount="indefinite"/></circle>
+            </svg>`;
+    }
+
+    // 18. Ankle Knee-to-Wall
+    if (id === "stretch_ankle_dorsiflexion") {
+        return `
+            <svg viewBox="0 0 160 70" width="100%" height="70" class="stretch-anim-svg" style="max-height:70px;">
+                <!-- Wall -->
+                <line x1="35" y1="10" x2="35" y2="62" stroke="#64748b" stroke-width="4" stroke-linecap="round"/>
+                <line x1="15" y1="62" x2="145" y2="62" stroke="#334155" stroke-width="2"/>
+                <circle cx="70" cy="22" r="7" fill="#c084fc"/>
+                <line x1="70" y1="29" x2="80" y2="46" stroke="#a855f7" stroke-width="4" stroke-linecap="round"/>
+                <!-- Front knee driving into wall with grounded heel -->
+                <path d="M80 46 L48 50 L52 62" fill="none" stroke="#e879f9" stroke-width="4" stroke-linecap="round">
+                    <animate attributeName="d" values="M80 46 L54 50 L52 62; M80 46 L38 52 L52 62; M80 46 L54 50 L52 62" dur="2.8s" repeatCount="indefinite"/>
+                </path>
+                <!-- Rear kneeling leg -->
+                <path d="M80 46 L108 58 L120 62" fill="none" stroke="#a855f7" stroke-width="3.5" stroke-linecap="round"/>
+                <circle cx="52" cy="60" r="4" fill="#38bdf8"/>
+            </svg>`;
+    }
+
+    // 19. Deep Malasana Squat
+    if (id === "stretch_deep_squat_hold") {
+        return `
+            <svg viewBox="0 0 160 70" width="100%" height="70" class="stretch-anim-svg" style="max-height:70px;">
+                <line x1="15" y1="62" x2="145" y2="62" stroke="#334155" stroke-width="2"/>
+                <circle cx="80" cy="22" r="7.5" fill="#c084fc"/>
+                <line x1="80" y1="30" x2="80" y2="48" stroke="#a855f7" stroke-width="4" stroke-linecap="round"/>
+                <!-- Deep Squat Knees & Shins -->
+                <path d="M80 48 L56 46 L62 62" fill="none" stroke="#e879f9" stroke-width="3.5" stroke-linecap="round"/>
+                <path d="M80 48 L104 46 L98 62" fill="none" stroke="#e879f9" stroke-width="3.5" stroke-linecap="round"/>
+                <!-- Prayer Hands wedging knees out -->
+                <path d="M68 44 L80 42 L92 44" fill="none" stroke="#fbbf24" stroke-width="3" stroke-linecap="round"/>
+                <circle cx="80" cy="42" r="3.5" fill="#f59e0b"/>
+            </svg>`;
+    }
+
+    // 20. Upper Trap Lateral Tilt
+    if (id === "stretch_neck_trap_side") {
+        return `
+            <svg viewBox="0 0 160 70" width="100%" height="70" class="stretch-anim-svg" style="max-height:70px;">
+                <!-- Tilted Head -->
+                <circle cx="74" cy="18" r="8" fill="#c084fc">
+                    <animate attributeName="cx" values="76;70;76" dur="3s" repeatCount="indefinite"/>
+                </circle>
+                <!-- Neck & Shoulders -->
+                <line x1="80" y1="28" x2="80" y2="52" stroke="#a855f7" stroke-width="4" stroke-linecap="round"/>
+                <line x1="56" y1="32" x2="104" y2="32" stroke="#a855f7" stroke-width="4" stroke-linecap="round"/>
+                <!-- Hand gently pulling head -->
+                <path d="M60 32 L60 16 L72 16" fill="none" stroke="#38bdf8" stroke-width="2.5" stroke-linecap="round"/>
+                <!-- Tension line on opposite trap -->
+                <line x1="80" y1="26" x2="98" y2="32" stroke="#f43f5e" stroke-width="3" stroke-linecap="round">
+                    <animate attributeName="opacity" values="0.3;1;0.3" dur="2s" repeatCount="indefinite"/>
+                </line>
+                <!-- Torso base -->
+                <line x1="80" y1="52" x2="72" y2="66" stroke="#64748b" stroke-width="3" stroke-linecap="round"/>
+                <line x1="80" y1="52" x2="88" y2="66" stroke="#64748b" stroke-width="3" stroke-linecap="round"/>
+            </svg>`;
+    }
+
+    // 21. Levator Scapulae
+    if (id === "stretch_levator_scapulae") {
+        return `
+            <svg viewBox="0 0 160 70" width="100%" height="70" class="stretch-anim-svg" style="max-height:70px;">
+                <circle cx="72" cy="20" r="8" fill="#c084fc"/>
+                <line x1="80" y1="30" x2="80" y2="54" stroke="#a855f7" stroke-width="4" stroke-linecap="round"/>
+                <line x1="56" y1="34" x2="104" y2="34" stroke="#a855f7" stroke-width="4" stroke-linecap="round"/>
+                <!-- Hand pulling head down diagonally to armpit -->
+                <path d="M96 34 L96 14 L78 18" fill="none" stroke="#38bdf8" stroke-width="2.5" stroke-linecap="round"/>
+                <circle cx="86" cy="30" r="4" fill="#f43f5e"><animate attributeName="r" values="2;5;2" dur="2s" repeatCount="indefinite"/></circle>
+            </svg>`;
+    }
+
+    // 22. Chin Tucks
+    if (id === "stretch_chin_tucks") {
+        return `
+            <svg viewBox="0 0 160 70" width="100%" height="70" class="stretch-anim-svg" style="max-height:70px;">
+                <!-- Head gliding back and forth horizontally -->
+                <circle cx="86" cy="18" r="8" fill="#c084fc">
+                    <animate attributeName="cx" values="86;76;86" dur="3s" repeatCount="indefinite"/>
+                </circle>
+                <!-- Nose indicator pointing left -->
+                <polygon points="78,18 72,19 78,21" fill="#e9d5ff">
+                    <animate attributeName="points" values="78,18 72,19 78,21; 68,18 62,19 68,21; 78,18 72,19 78,21" dur="3s" repeatCount="indefinite"/>
+                </polygon>
+                <!-- Torso aligned -->
+                <line x1="80" y1="28" x2="80" y2="58" stroke="#a855f7" stroke-width="4" stroke-linecap="round"/>
+                <line x1="80" y1="34" x2="96" y2="50" stroke="#64748b" stroke-width="3" stroke-linecap="round"/>
+                <circle cx="80" cy="26" r="3.5" fill="#38bdf8"/>
+            </svg>`;
+    }
+
+    // 23. Prayer & Wrist Stretch
+    if (id === "stretch_wrist_flexor" || id === "stretch_quadruped_wrist") {
+        return `
+            <svg viewBox="0 0 160 70" width="100%" height="70" class="stretch-anim-svg" style="max-height:70px;">
+                <circle cx="80" cy="16" r="7" fill="#c084fc"/>
+                <line x1="80" y1="23" x2="80" y2="48" stroke="#a855f7" stroke-width="4" stroke-linecap="round"/>
+                <!-- Forearms & Palms joined rotating -->
+                <path d="M60 36 L76 34 L80 30 L84 34 L100 36" fill="none" stroke="#e879f9" stroke-width="3.5" stroke-linecap="round">
+                    <animate attributeName="d" values="M60 36 L76 34 L80 30 L84 34 L100 36; M60 36 L76 38 L80 44 L84 38 L100 36; M60 36 L76 34 L80 30 L84 34 L100 36" dur="3s" repeatCount="indefinite"/>
+                </path>
+                <circle cx="80" cy="36" r="4.5" fill="#fbbf24"><animate attributeName="r" values="3;6;3" dur="2s" repeatCount="indefinite"/></circle>
+            </svg>`;
+    }
+
+    // Default Fallback Visual
+    return `
+        <svg viewBox="0 0 160 70" width="100%" height="70" class="stretch-anim-svg" style="max-height:70px;">
+            <circle cx="80" cy="20" r="8" fill="#c084fc">
+                <animate attributeName="cx" values="76;84;76" dur="3.5s" repeatCount="indefinite" />
+            </circle>
+            <line x1="80" y1="28" x2="80" y2="52" stroke="#a855f7" stroke-width="4" stroke-linecap="round" />
+            <line x1="60" y1="38" x2="100" y2="38" stroke="#e879f9" stroke-width="3.5" stroke-linecap="round" />
+            <line x1="80" y1="52" x2="68" y2="66" stroke="#a855f7" stroke-width="3.5" stroke-linecap="round" />
+            <line x1="80" y1="52" x2="92" y2="66" stroke="#a855f7" stroke-width="3.5" stroke-linecap="round" />
+        </svg>`;
 }
 
 function renderStretchingList() {
@@ -2879,7 +3287,7 @@ function renderStretchingList() {
 
                 <!-- Animated Mobility & Posture Box -->
                 <div class="stretch-visual-box">
-                    <span class="stretch-pose-badge"><i class="fa-solid fa-person-praying"></i> Görsel Hareket Rehberi</span>
+                    <span class="stretch-posture-chip"><i class="fa-solid fa-person-walking-arrow-right"></i> Hedef Postür & Açı</span>
                     <div class="stretch-svg-anim-wrap">
                         ${svgVisual}
                     </div>
@@ -3900,11 +4308,44 @@ function displaySupplementInfoModal(s) {
 
 // ==================== WORKOUT PROGRAM & EXERCISE MANAGER ====================
 
+function renderWorkoutDayTabs() {
+    const container = document.getElementById("workout-day-tabs");
+    if (!container) return;
+
+    const days = [
+        { key: "pzt", name: "Pzt" },
+        { key: "sal", name: "Sal" },
+        { key: "car", name: "Çar" },
+        { key: "per", name: "Per" },
+        { key: "cum", name: "Cum" },
+        { key: "cmt", name: "Cmt" },
+        { key: "paz", name: "Paz" }
+    ];
+
+    const currentPlan = appData.customWorkoutPlan || DEFAULT_WORKOUT_PLAN;
+
+    container.innerHTML = days.map(d => {
+        const plan = currentPlan[d.key] || { title: "OFF (Dinlenme)" };
+        let tag = plan.title || "OFF";
+        if (tag.includes("(")) {
+            tag = tag.split("(")[0].trim();
+        }
+        if (tag.length > 14) {
+            tag = tag.substring(0, 12) + "...";
+        }
+        const isActive = (d.key === currentActiveDay) ? "active" : "";
+        return `
+            <button class="day-pill ${isActive}" onclick="selectWorkoutDay('${d.key}')" data-day="${d.key}">
+                <span class="day-name">${d.name}</span>
+                <span class="day-split-tag">${tag}</span>
+            </button>
+        `;
+    }).join("");
+}
+
 function selectWorkoutDay(dayKey) {
     currentActiveDay = dayKey;
-    document.querySelectorAll(".day-pill").forEach(btn => btn.classList.remove("active"));
-    const activeBtn = Array.from(document.querySelectorAll(".day-pill")).find(b => b.getAttribute("onclick").includes(dayKey));
-    if (activeBtn) activeBtn.classList.add("active");
+    renderWorkoutDayTabs();
     renderWorkoutView(dayKey);
 }
 
@@ -4008,6 +4449,7 @@ function applySplitTemplate(templateId) {
     appData.customWorkoutPlan = JSON.parse(JSON.stringify(tmpl.plan));
     appData.activeSplitKey = templateId;
     saveDataToStorage();
+    renderWorkoutDayTabs();
     renderWorkoutView(currentActiveDay);
     renderWorkoutSplitsModal();
     closeModal('modal-workout-splits');
@@ -4042,12 +4484,14 @@ function executeDaySwap(mode) {
         appData.customWorkoutPlan[src] = JSON.parse(JSON.stringify(appData.customWorkoutPlan[tgt]));
         appData.customWorkoutPlan[tgt] = temp;
         saveDataToStorage();
+        renderWorkoutDayTabs();
         renderWorkoutView(currentActiveDay);
         closeModal('modal-workout-splits');
         showToast(`🔀 ${dayNames[src]} ile ${dayNames[tgt]} programları takas edildi!`);
     } else if (mode === "copy") {
         appData.customWorkoutPlan[tgt] = JSON.parse(JSON.stringify(appData.customWorkoutPlan[src]));
         saveDataToStorage();
+        renderWorkoutDayTabs();
         renderWorkoutView(currentActiveDay);
         closeModal('modal-workout-splits');
         showToast(`📋 ${dayNames[src]} programı ${dayNames[tgt]} gününün üzerine kopyalandı!`);
@@ -7691,6 +8135,71 @@ function openAssistantModal(personaKey) {
     }, 300);
 }
 
+function getAssistantRetroLogoSvg(personaKey, width = 36, height = 36) {
+    if (personaKey === "enes") {
+        return `
+            <svg class="retro-avatar-svg enes" viewBox="0 0 40 40" width="${width}" height="${height}">
+                <defs>
+                    <linearGradient id="hdrEnesGrad" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%" stop-color="#a855f7"/>
+                        <stop offset="100%" stop-color="#6b21a8"/>
+                    </linearGradient>
+                </defs>
+                <rect x="2" y="2" width="36" height="36" rx="8" fill="#181824" stroke="#a855f7" stroke-width="2"/>
+                <rect x="14" y="8" width="12" height="10" rx="3" fill="url(#hdrEnesGrad)"/>
+                <rect x="11" y="11" width="3" height="4" fill="#c084fc"/>
+                <rect x="26" y="11" width="3" height="4" fill="#c084fc"/>
+                <rect x="16" y="12" width="2" height="2" fill="#fff"/>
+                <rect x="22" y="12" width="2" height="2" fill="#fff"/>
+                <rect x="17" y="15" width="6" height="2" fill="#e9d5ff"/>
+                <line x1="6" y1="26" x2="34" y2="26" stroke="#fbbf24" stroke-width="3" stroke-linecap="round"/>
+                <rect x="6" y="20" width="4" height="12" rx="1.5" fill="#f59e0b" stroke="#78350f" stroke-width="1"/>
+                <rect x="30" y="20" width="4" height="12" rx="1.5" fill="#f59e0b" stroke="#78350f" stroke-width="1"/>
+                <path d="M12 24 Q10 18 15 17" fill="none" stroke="url(#hdrEnesGrad)" stroke-width="3" stroke-linecap="round"/>
+                <path d="M28 24 Q30 18 25 17" fill="none" stroke="url(#hdrEnesGrad)" stroke-width="3" stroke-linecap="round"/>
+                <polygon points="34,7 35,9 37,10 35,11 34,13 33,11 31,10 33,9" fill="#ffd60a"/>
+            </svg>`;
+    } else if (personaKey === "vedat") {
+        return `
+            <svg class="retro-avatar-svg vedat" viewBox="0 0 40 40" width="${width}" height="${height}">
+                <defs>
+                    <linearGradient id="hdrVedatGrad" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%" stop-color="#f97316"/>
+                        <stop offset="100%" stop-color="#dc2626"/>
+                    </linearGradient>
+                </defs>
+                <rect x="2" y="2" width="36" height="36" rx="8" fill="#1c1917" stroke="#f97316" stroke-width="2"/>
+                <path d="M14 14 Q12 7 17 6 Q20 4 23 6 Q28 7 26 14 Z" fill="#ffffff"/>
+                <rect x="14" y="13" width="12" height="3" fill="#e2e8f0"/>
+                <ellipse cx="19" cy="24" rx="10" ry="4" fill="#292524" stroke="#78716c" stroke-width="1.5"/>
+                <rect x="28" y="22" width="8" height="3" rx="1" fill="#78716c" transform="rotate(15 28 22)"/>
+                <ellipse cx="18" cy="24" rx="6" ry="2.5" fill="url(#hdrVedatGrad)"/>
+                <polygon points="12,20 14,16 16,19" fill="#fbbf24"/>
+                <polygon points="18,19 20,15 22,19" fill="#ef4444"/>
+                <polygon points="23,20 25,17 26,20" fill="#f97316"/>
+                <polygon points="8,9 9,11 11,12 9,13 8,15 7,13 5,12 7,11" fill="#fbbf24"/>
+            </svg>`;
+    } else {
+        return `
+            <svg class="retro-avatar-svg kuray" viewBox="0 0 40 40" width="${width}" height="${height}">
+                <defs>
+                    <linearGradient id="hdrKurayGrad" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%" stop-color="#06b6d4"/>
+                        <stop offset="100%" stop-color="#3b82f6"/>
+                    </linearGradient>
+                </defs>
+                <rect x="2" y="2" width="36" height="36" rx="8" fill="#0f172a" stroke="#06b6d4" stroke-width="2"/>
+                <path d="M17 9 L23 9 L23 15 L28 26 Q29 29 26 31 L14 31 Q11 29 12 26 L17 15 Z" fill="#1e293b" stroke="#38bdf8" stroke-width="1.5"/>
+                <path d="M14 25 L26 25 L27 28 Q27 30 25 30 L15 30 Q13 30 13 28 Z" fill="url(#hdrKurayGrad)"/>
+                <rect x="17" y="18" width="6" height="3" rx="1.5" fill="#f43f5e" transform="rotate(-30 20 19)"/>
+                <circle cx="18" cy="27" r="1.5" fill="#e0f2fe"/>
+                <circle cx="22" cy="28" r="1" fill="#e0f2fe"/>
+                <circle cx="20" cy="22" r="1.5" fill="#38bdf8"/>
+                <polygon points="32,8 33,10 35,11 33,12 32,14 31,12 29,11 31,10" fill="#38bdf8"/>
+            </svg>`;
+    }
+}
+
 function updateAssistantModalHeader() {
     const persona = ASSISTANT_PERSONAS[activeAssistantPersona] || ASSISTANT_PERSONAS.enes;
     const avatarEl = document.getElementById("ai-active-avatar");
@@ -7701,7 +8210,7 @@ function updateAssistantModalHeader() {
     const modeText = document.getElementById("ai-mode-text");
     const modeDot = document.getElementById("ai-mode-dot");
 
-    if (avatarEl) avatarEl.innerText = persona.avatar;
+    if (avatarEl) avatarEl.innerHTML = getAssistantRetroLogoSvg(activeAssistantPersona, 36, 36);
     if (nameEl) nameEl.innerText = persona.name;
     if (roleEl) roleEl.innerText = persona.role;
     if (hintEl) hintEl.innerText = persona.tagline;
@@ -8112,20 +8621,55 @@ function processOfflineAssistantResponse(personaKey, userText) {
     const target = appData.targets || DEFAULT_TARGETS;
 
     // -------------------------------------------------------------
-    // GREETINGS & CASUAL TALK (ALL PERSONAS)
+    // GREETINGS & CASUAL TALK (ALL PERSONAS - DYNAMIC VARIATIONS)
     // -------------------------------------------------------------
-    if (/^(selam|merhaba|naber|nasılsın|ne haber|hey|günaydın|iyi akşamlar|sa|s.a|selamün|slm)/i.test(t.trim())) {
+    const isGreeting = /^(selam|merhaba|naber|nasılsın|ne haber|nabıyon|nabiyorsun|napıyorsun|hey|günaydın|iyi akşamlar|sa|s.a|selamün|slm|iyi misin|naber kral|naber abi|nasılsın abi)/i.test(t.trim());
+    if (isGreeting || t === "naber" || t === "nasılsın" || t === "nabıyon" || t === "ne haber" || t.includes("nasıl gidiyor") || t.includes("ne yapıyorsun")) {
+        const remainingCal = Math.max(0, (target.calories || 2800) - (consumed.calories || 0));
+        
+        if (personaKey === "enes") {
+            const replies = [
+                `Aleykümselam aslanım! Bomba gibiyim, demirler hazır seni bekliyor. Bugün planında <strong>${currentPlan.title}</strong> var. Salonda makine sırası mı var, omuzda batma mı var, neye ihtiyacın var söyle bakalım!`,
+                `Eyvallah kral, salon havasını soludukça canlanıyorum! Bugünkü antrenmanın: <strong>${currentPlan.title}</strong>. Bir aksilik, sakatlık riski ya da değiştirmek istediğin bir hareket var mı?`,
+                `İyiyim aslan parçası, hipertrofiye tam gaz devam! Sen nasılsın, enerjin yerinde mi? Bugün ağırlıkları parçalamaya hazır mıyız?`,
+                `Süperim şampiyon! Bir gözüm formunda, bir kulağım demirlerin şıkırtısında. Salonda mısın yoksa antrenmana mı hazırlanıyorsun?`
+            ];
+            const pick = replies[Math.floor(Math.random() * replies.length)];
+            return { text: pick };
+        } else if (personaKey === "vedat") {
+            const replies = [
+                `Selamlar kütle şampiyonu! Mutfağın başındayım, makrolar tıkırında. Bugün hedefine ulaşmak için daha <strong>${remainingCal} kcal</strong> açığın var. Pratik bir tarif mi lazım, tavuktan mı bıktın?`,
+                `Eyvallah paşam, ocak tütüyor! Kuru pilav tavuktan gına geldiyse doğru adrestesin. Dolapta ne var söyle, 5 dakikada bulk bombası patlatalım!`,
+                `İyidir kütle kralı! Sen nasılsın, iştahın nasıl? Bugün kalorileri eksiksiz alıyor muyuz, kaç kalori kaldı?`,
+                `Harikayım canavar! Mutfakta lezzet ve makro savaşı veriyorum. Tatlı krizi mi geldi yoksa akşam yemeği mi ayarlayacağız?`
+            ];
+            const pick = replies[Math.floor(Math.random() * replies.length)];
+            return { text: pick };
+        } else if (personaKey === "kuray") {
+            const replies = [
+                `Aleyküm eyvallah paşam! Biyokimya laboratuvarı hazır, formüller elimde. Gece uyku, gün içi odak veya antrenman pumpı... Hangi takviyeyi konuşalım?`,
+                `İyidir reis, kreatinimi içtim hücreleri sulandırıyorum! Sende durumlar nasıl, suplementlerin tam mı, preworkout dozu mu lazım?`,
+                `Bomba gibiyim paşam! Hangi tozu, hangi vitamini ne zaman alacağını şaşırdıysan dök içini, bilimsel rehberini çıkarayım.`,
+                `Eyvallah kral! Bugün su tüketimin nasıl? Takviyelerin maksimum emilmesi için bol su içmeyi unutma. Ne sormak istiyorsun?`
+            ];
+            const pick = replies[Math.floor(Math.random() * replies.length)];
+            return { text: pick };
+        }
+    }
+
+    // IDENTITY & ROLE
+    if (t.includes("kimsin") || t.includes("sen kim") || t.includes("ne işe yararsın") || t.includes("görevin ne")) {
         if (personaKey === "enes") {
             return {
-                text: `Aleykümselam aslanım! Demirler hazır, enerji yerinde mi? Bugün günlerden <strong>${currentPlan.title}</strong>. Salonda doluluk var mı, omzunda batma var mı, yoksa yeni bir hareket mi deneyeceğiz? Söyle bakalım derdin ne!`
+                text: `Ben <strong>Enes Abi 🦍</strong>! Omar Coaching'in salon kıdemlisi ve biyomekanik uzmanıyım. Görevim: Salonda alet dolu olduğunda aynı lif açısını vuran kusursuz alternatif hareketler üretmek, eklem ağrılarını önlemek ve RIR/RPE prensipleriyle sakatlanmadan büyümeni sağlamak!`
             };
         } else if (personaKey === "vedat") {
             return {
-                text: `Selamlar kütle şampiyonu! Hoş geldin mutfağa. Kuru tavuk kemirmekten bıktın mı, yoksa akşama açık kalan makroları mı kapatacağız? Dolapta ne var ne yok söyle, 5 dakikada bomba bir tarif çıkarayım!`
+                text: `Ben <strong>Vedat Dübür 🍳</strong>! Omar Coaching'in mutfak şefi ve makro gurmesiyim. Kuru tavuk-pilav döngüsünden kurtulup lezzetli, pratik ve hedef makrolarına tam oturan yüksek proteinli tariflerle bulk veya definasyon yapmanı sağlarım!`
             };
-        } else if (personaKey === "kuray") {
+        } else {
             return {
-                text: `Aleyküm eyvallah paşam! Toz-hap dünyasına hoş geldin. Gece uyku mu tutmuyor, bulkta miden davul gibi mi şişiyor yoksa damarları mı patlatacağız? Söyle derdini, nokta atışı takviyeyi yazayım.`
+                text: `Ben <strong>Küray 💊</strong>! Omar Coaching'in suplement ve biyokimya rehberiyim. Piyasada para tuzağı olan boş ürünleri eler, sana kreatinden magnezyuma, D3K2'den preworkout dozlamasına kadar kanıtlanmış takviyeleri en doğru zamanlama ve dozda anlatırım!`
             };
         }
     }
