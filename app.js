@@ -4726,6 +4726,21 @@ function renderWorkoutSplitsModal() {
 
     const currentSplitId = appData.activeSplitKey || "ppl_standard";
 
+    const swapContainer = document.getElementById("split-subtab-swap");
+    if (swapContainer) {
+        const swapBtns = swapContainer.querySelectorAll("button");
+        swapBtns.forEach(b => {
+            if (isControlled) {
+                b.disabled = true;
+                b.style.opacity = "0.5";
+                b.title = "Antrenman programınız koçunuz tarafından yönetilmektedir.";
+            } else {
+                b.disabled = false;
+                b.style.opacity = "1";
+            }
+        });
+    }
+
     listEl.innerHTML = MASTER_SPLIT_TEMPLATES.map(tmpl => {
         const isCurrent = (tmpl.id === currentSplitId);
         const daysHtml = tmpl.daysOverview.map(d => `<span class="split-day-chip">${d}</span>`).join("");
@@ -4785,6 +4800,11 @@ function applySplitTemplate(templateId) {
 }
 
 function executeDaySwap(mode) {
+    if (isAthleteUnderCoachControl()) {
+        showToast("⚠️ Antrenman splitiniz ve gün düzenlemeleriniz koçunuz tarafından yönetilmektedir.", "error");
+        return;
+    }
+
     const src = document.getElementById("swap-source-day").value;
     const tgt = document.getElementById("swap-target-day").value;
 
@@ -4831,8 +4851,24 @@ function renderWorkoutView(dayKey) {
     const plan = (appData.customWorkoutPlan && appData.customWorkoutPlan[dayKey]) || DEFAULT_WORKOUT_PLAN[dayKey];
     if (!container || !plan) return;
 
+    const isControlled = isAthleteUnderCoachControl();
+
     if (plan.exercises.length === 0) {
         container.innerHTML = `
+            ${isControlled ? `
+                <div class="coach-locked-banner" style="background:rgba(255, 214, 10, 0.08); border:1px solid rgba(255, 214, 10, 0.25); border-radius:var(--radius-md); padding:10px 14px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; gap:10px;">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <i class="fa-solid fa-lock" style="color:#ffd60a; font-size:1.2rem;"></i>
+                        <div>
+                            <strong style="color:#ffd60a; font-size:0.8rem; display:block;">Antrenman Programınız Koçunuz Tarafından Yönetilmektedir 🔒</strong>
+                            <span style="color:var(--text-secondary); font-size:0.72rem;">Split ve hareket değişiklikleri koçunuz tarafından belirlenir.</span>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-xs btn-outline" onclick="openCoachChangeRequestModal('workout', 'Antrenman programı değişikliği talebi')" style="border-color:#ffd60a; color:#ffd60a; font-weight:700; white-space:nowrap;">
+                        <i class="fa-solid fa-paper-plane"></i> Talep İlet
+                    </button>
+                </div>
+            ` : ''}
             <div class="card" style="text-align: center; padding: 40px 20px;">
                 <i class="fa-solid fa-bed" style="font-size: 2.5rem; color: #ffffff; margin-bottom: 12px;"></i>
                 <h2>OFF Günü (Tam Dinlenme)</h2>
@@ -4843,6 +4879,20 @@ function renderWorkoutView(dayKey) {
     }
 
     let html = `
+        ${isControlled ? `
+            <div class="coach-locked-banner" style="background:rgba(255, 214, 10, 0.08); border:1px solid rgba(255, 214, 10, 0.25); border-radius:var(--radius-md); padding:10px 14px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; gap:10px;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <i class="fa-solid fa-lock" style="color:#ffd60a; font-size:1.2rem;"></i>
+                    <div>
+                        <strong style="color:#ffd60a; font-size:0.8rem; display:block;">Antrenman Programınız Koçunuz Tarafından Yönetilmektedir 🔒</strong>
+                        <span style="color:var(--text-secondary); font-size:0.72rem;">Split ve hareket değişiklikleri koçunuz tarafından belirlenir.</span>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-xs btn-outline" onclick="openCoachChangeRequestModal('workout', '${(plan.title || '').replace(/'/g, '')} gününde hareket/split değişikliği')" style="border-color:#ffd60a; color:#ffd60a; font-weight:700; white-space:nowrap;">
+                    <i class="fa-solid fa-paper-plane"></i> Talep İlet
+                </button>
+            </div>
+        ` : ''}
         <div class="card" style="background: var(--bg-card-subtle); border-color: var(--border-active);">
             <div class="card-header">
                 <h2><i class="fa-solid fa-dumbbell"></i> ${plan.title}</h2>
@@ -5167,6 +5217,8 @@ function renderLibraryExercises() {
         return;
     }
 
+    const isControlled = isAthleteUnderCoachControl();
+
     container.innerHTML = filtered.map(ex => {
         const inPlan = currentExNames.includes(ex.name);
         return `
@@ -5189,7 +5241,9 @@ function renderLibraryExercises() {
                 <div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px; justify-content:center;">
                     ${inPlan 
                         ? `<button class="btn btn-xs btn-outline" style="color:var(--status-green); border-color:var(--status-green); cursor:default;" disabled><i class="fa-solid fa-check"></i> Ekli</button>`
-                        : `<button class="btn btn-xs btn-primary" onclick="addExerciseToDay('${ex.id}')"><i class="fa-solid fa-plus"></i> Ekle</button>`
+                        : isControlled
+                            ? `<button type="button" class="btn btn-xs btn-outline" onclick="closeModal('modal-exercise-manager'); openCoachChangeRequestModal('workout', '${ex.name} hareketinin programa eklenmesi');" style="border-color:#ffd60a; color:#ffd60a; font-size:0.68rem; font-weight:700;"><i class="fa-solid fa-paper-plane"></i> Koçtan İste</button>`
+                            : `<button class="btn btn-xs btn-primary" onclick="addExerciseToDay('${ex.id}')"><i class="fa-solid fa-plus"></i> Ekle</button>`
                     }
                 </div>
             </div>
@@ -7129,6 +7183,8 @@ function switchAppPortal(mode) {
         loadDataFromStorage();
         updateTopBarUserHeader();
         renderDashboard();
+        renderWorkoutDayTabs();
+        renderWorkoutView(currentActiveDay);
         checkAthletePendingRevision();
         checkAthleteUnreadMessages();
         refreshRealtimeChatConnection();
@@ -8741,11 +8797,13 @@ function submitCoachWorkoutPrescription() {
     }
 
     // If the active local app session is this athlete, sync appData as well
-    if (appData && appData.username === username) {
+    const activeUsername = getActiveSessionUsername();
+    if (activeUsername === username || (appData && appData.profile && appData.profile.username === username) || (!activeUsername && username === "omer")) {
         appData.customWorkoutPlan = JSON.parse(JSON.stringify(planToSave));
         saveDataToStorage();
         renderWorkoutDayTabs();
         renderWorkoutView(currentActiveDay);
+        updateDateDisplay();
     }
 
     // Send notification in Coach Chat
@@ -8762,6 +8820,29 @@ function submitCoachWorkoutPrescription() {
         read: false
     });
     saveChatDB(chatDb);
+
+    // Save revision record to revisionsDB
+    const revDb = getRevisionsDB();
+    if (!revDb[username]) revDb[username] = {};
+    revDb[username].workoutRevision = {
+        date: new Date().toISOString().split('T')[0],
+        time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
+        coachNote: coachNote,
+        unread: true
+    };
+    saveRevisionsDB(revDb);
+
+    // Broadcast live event via local bus and cloud
+    if (realtimeChatState.localBus) {
+        try {
+            realtimeChatState.localBus.postMessage({
+                type: "workout_revision",
+                athleteUsername: username,
+                plan: planToSave,
+                coachNote: coachNote
+            });
+        } catch (e) {}
+    }
 
     showToast("Antrenman programı başarıyla sporcuya iletildi ve kaydedildi! 🏆");
     renderCoachWorkoutRevDaysBar();
@@ -9182,6 +9263,19 @@ function handleIncomingLiveEvent(payload, source) {
             renderCoachChat(athleteUsername);
         } else if (currentPortalMode === "athlete") {
             renderAthleteChatMessages(athleteUsername);
+        }
+    } else if (payload.type === "workout_revision") {
+        const athleteUsername = (payload.athleteUsername || "omer").toLowerCase().trim();
+        const activeUsername = (getActiveSessionUsername() || "omer").toLowerCase().trim();
+        if (activeUsername === athleteUsername) {
+            if (payload.plan) {
+                appData.customWorkoutPlan = JSON.parse(JSON.stringify(payload.plan));
+                saveDataToStorage();
+                renderWorkoutDayTabs();
+                renderWorkoutView(currentActiveDay);
+                updateDateDisplay();
+                showToast("🏋️ Koçunuz antrenman programınızı güncelledi! 🏆");
+            }
         }
     }
 }
