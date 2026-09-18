@@ -8339,13 +8339,18 @@ function renderCoachWorkoutRevDay() {
 
             return `
                 <div class="card" style="background:var(--bg-input); border:1px solid var(--border-subtle); padding:10px; margin-bottom:8px; position:relative;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; flex-wrap:wrap; gap:4px;">
-                        <div style="display:flex; align-items:center; gap:6px;">
-                            <span class="badge-role" style="background:#ffd60a; color:#000; font-size:0.65rem; font-weight:800; padding:2px 6px;">#${idx + 1}</span>
-                            <span class="muscle-tag" style="font-size:0.68rem; color:#60a5fa; background:rgba(96,165,250,0.15); padding:2px 6px; border-radius:4px;">${ex.muscle || 'Genel'}</span>
-                            ${ex.isTopSet ? `<span class="top-set-badge" style="font-size:0.6rem; padding:1px 5px;"><i class="fa-solid fa-fire"></i> TOP SET</span>` : ''}
+                    <!-- Top Bar: Index + Prominent Movement Name + Top Set Badge + Actions -->
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:8px;">
+                        <div style="display:flex; align-items:center; gap:8px; min-width:0; flex:1;">
+                            <span class="badge-role" style="background:#ffd60a; color:#000; font-size:0.7rem; font-weight:900; padding:2px 7px; border-radius:4px; flex-shrink:0;">#${idx + 1}</span>
+                            <strong id="coach-rx-ex-name-disp-${idx}" style="color:#ffffff; font-size:0.85rem; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                                ${ex.name || 'İsimsiz Egzersiz'}
+                            </strong>
+                            <span id="coach-rx-ex-topset-badge-${idx}">
+                                ${ex.isTopSet ? `<span class="top-set-badge" style="font-size:0.6rem; padding:1px 5px;"><i class="fa-solid fa-fire"></i> TOP SET</span>` : ''}
+                            </span>
                         </div>
-                        <div style="display:flex; align-items:center; gap:4px;">
+                        <div style="display:flex; align-items:center; gap:4px; flex-shrink:0;">
                             <button type="button" class="btn-chat-sync" onclick="moveCoachRxExercise(${idx}, -1)" ${isFirst ? 'disabled style="opacity:0.3; cursor:default;"' : ''} title="Yukarı Taşı" style="padding:2px 7px; font-size:0.65rem;">
                                 <i class="fa-solid fa-arrow-up"></i>
                             </button>
@@ -8358,15 +8363,15 @@ function renderCoachWorkoutRevDay() {
                         </div>
                     </div>
 
-                    <!-- Row 1: Exercise Name & Top Set Toggle -->
+                    <!-- Row 1: Exercise Name & Target Reps/RIR -->
                     <div class="form-row-2" style="margin-bottom:6px;">
                         <div class="form-group" style="margin-bottom:0;">
                             <label style="font-size:0.65rem;">Hareket Adı</label>
-                            <input type="text" value="${ex.name || ''}" onchange="updateCoachRxExField(${idx}, 'name', this.value)" placeholder="Egzersiz Adı" style="font-size:0.75rem; padding:5px 8px; font-weight:700;">
+                            <input type="text" value="${ex.name || ''}" oninput="updateCoachRxExField(${idx}, 'name', this.value)" placeholder="Egzersiz Adı" style="font-size:0.75rem; padding:5px 8px; font-weight:700;">
                         </div>
                         <div class="form-group" style="margin-bottom:0;">
                             <label style="font-size:0.65rem;">Hedef Tekrar & RIR</label>
-                            <input type="text" value="${ex.target || ''}" onchange="updateCoachRxExField(${idx}, 'target', this.value)" placeholder="Örn: 2-3 Set (6-9 Tekrar)" style="font-size:0.75rem; padding:5px 8px;">
+                            <input type="text" value="${ex.target || ''}" oninput="updateCoachRxExField(${idx}, 'target', this.value)" placeholder="Örn: 2-3 Set (6-9 Tekrar)" style="font-size:0.75rem; padding:5px 8px;">
                         </div>
                     </div>
 
@@ -8378,7 +8383,7 @@ function renderCoachWorkoutRevDay() {
                         </div>
                         <div class="form-group" style="margin-bottom:0;">
                             <label style="font-size:0.65rem;">Sehpa / Koltuk / Ekipman Ayarı</label>
-                            <input type="text" value="${ex.defaultSeat || ''}" onchange="updateCoachRxExField(${idx}, 'defaultSeat', this.value)" placeholder="Örn: Koltuk: 4, Açı: 30°" style="font-size:0.75rem; padding:5px 8px;">
+                            <input type="text" value="${ex.defaultSeat || ''}" oninput="updateCoachRxExField(${idx}, 'defaultSeat', this.value)" placeholder="Örn: Koltuk: 4, Açı: 30°" style="font-size:0.75rem; padding:5px 8px;">
                         </div>
                         <div style="padding-bottom:6px;">
                             <label style="display:flex; align-items:center; gap:4px; font-size:0.68rem; color:#ffd60a; cursor:pointer; white-space:nowrap;">
@@ -8441,6 +8446,16 @@ function updateCoachRxExField(index, field, value) {
     if (!dayPlan || !dayPlan.exercises[index]) return;
 
     dayPlan.exercises[index][field] = value;
+
+    if (field === 'name') {
+        const nameDisp = document.getElementById(`coach-rx-ex-name-disp-${index}`);
+        if (nameDisp) nameDisp.innerText = value.trim() || 'İsimsiz Egzersiz';
+    } else if (field === 'isTopSet') {
+        const badgeDisp = document.getElementById(`coach-rx-ex-topset-badge-${index}`);
+        if (badgeDisp) {
+            badgeDisp.innerHTML = value ? `<span class="top-set-badge" style="font-size:0.6rem; padding:1px 5px;"><i class="fa-solid fa-fire"></i> TOP SET</span>` : '';
+        }
+    }
 }
 
 function moveCoachRxExercise(index, direction) {
