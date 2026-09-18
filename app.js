@@ -1148,6 +1148,367 @@ const DEFAULT_WORKOUT_PLAN = {
     }
 };
 
+// ==================== MASTER WORKOUT SPLIT TEMPLATES DATABASE ====================
+const MASTER_SPLIT_TEMPLATES = [
+    {
+        id: "ppl_standard",
+        name: "PPL Hipertrofi Standart (6 Gün)",
+        badge: "Hipertrofi • 6 Gün",
+        desc: "İtiş, Çekiş ve Bacak kaslarını haftada ikişer kez uyararak maksimum kas protein sentezi ve toparlanma sağlayan bilimsel altın standart.",
+        daysOverview: ["Pzt: Push 1", "Sal: Pull 1", "Çar: Bacak", "Per: OFF", "Cum: Push 2", "Cmt: Pull 2", "Paz: OFF"],
+        plan: JSON.parse(JSON.stringify(DEFAULT_WORKOUT_PLAN))
+    },
+    {
+        id: "ppl_arms_rotation",
+        name: "PPL + Kol & Omuz Öncelikli Rotasyon (6 Gün)",
+        badge: "Kol Odaklı • 6 Gün",
+        desc: "Kolları ve omuzları geride kalan sporcular için haftanın ortasına taze sinir sistemiyle direkt Kol/Omuz izolasyon günü yerleştiren özel hipertrofi rotasyonu.",
+        daysOverview: ["Pzt: İtiş (Göğüs/Omuz)", "Sal: Çekiş (Sırt)", "Çar: Kol & Yan Omuz", "Per: OFF", "Cum: Bacak & Core", "Cmt: Üst Gövde Pump", "Paz: OFF"],
+        plan: {
+            pzt: {
+                title: "Push (Göğüs & Ön Omuz)",
+                desc: "Ağır Göğüs İtiş + Yan Omuz",
+                exercises: [
+                    { id: "ar_pzt_1", name: "Incline Dumbbell Press", muscle: "Üst Göğüs", target: "3 Set (6-9 Rep)", defaultSets: 3, defaultSeat: "30 Derece", isTopSet: true },
+                    { id: "ar_pzt_2", name: "Flat Plate Loaded Chest Press", muscle: "Orta Göğüs", target: "2 Sert Set (8-10 Rep)", defaultSets: 2, defaultSeat: "Koltuk: 4", isTopSet: true },
+                    { id: "ar_pzt_3", name: "Pec Deck Fly", muscle: "İç Göğüs", target: "2 Bitirici Set (10-12 Rep)", defaultSets: 2, defaultSeat: "Koltuk: 3", isTopSet: false },
+                    { id: "ar_pzt_4", name: "Tek Kol Kablo Lateral", muscle: "Yan Omuz", target: "3 Set (12-15 Rep)", defaultSets: 3, defaultSeat: "Bilek Hizası", isTopSet: false }
+                ]
+            },
+            sal: {
+                title: "Pull (Sırt Kalınlık & Genişlik)",
+                desc: "Dikey & Yatay Çekiş + Arka Omuz",
+                exercises: [
+                    { id: "ar_sal_1", name: "Reverse Pec Deck Fly", muscle: "Arka Omuz", target: "3 Set (10-12 Rep)", defaultSets: 3, defaultSeat: "Göğüs Pedi", isTopSet: true },
+                    { id: "ar_sal_2", name: "Chest-Supported T-Bar Row", muscle: "Orta Sırt", target: "2 Ağır Set (8-10 Rep)", defaultSets: 2, defaultSeat: "Geniş Açı", isTopSet: true },
+                    { id: "ar_sal_3", name: "Geniş Tutuş Lat Pulldown", muscle: "Üst Lat", target: "2 Set (8-10 Rep)", defaultSets: 2, defaultSeat: "Bacak Pedi: 4", isTopSet: true },
+                    { id: "ar_sal_4", name: "Seated Cable Row (Dar Tutuş)", muscle: "Alt Lat", target: "2 Set (10-12 Rep)", defaultSets: 2, defaultSeat: "V-Bar", isTopSet: false }
+                ]
+            },
+            car: {
+                title: "Arms & Shoulders (Kollar & Yan Omuz Günü)",
+                desc: "Öncelikli Biceps, Triceps & Lateral Bombardımanı",
+                exercises: [
+                    { id: "ar_car_1", name: "Barbell Biceps Curl", muscle: "Genel Biceps", target: "3 Sert Set (6-8 Rep)", defaultSets: 3, defaultSeat: "Düz Bar", isTopSet: true },
+                    { id: "ar_car_2", name: "Düz Bar Triceps Pushdown", muscle: "Triceps Lateral", target: "3 Sert Set (8-10 Rep)", defaultSets: 3, defaultSeat: "Kablo Üst", isTopSet: true },
+                    { id: "ar_car_3", name: "Incline DB Biceps Curl", muscle: "Biceps Uzun Baş", target: "2 Set (Derin Esneme)", defaultSets: 2, defaultSeat: "Eğim: 45°", isTopSet: false },
+                    { id: "ar_car_4", name: "Overhead Dual Cable Triceps Ext", muscle: "Triceps Uzun Baş", target: "3 Set (10-12 Rep)", defaultSets: 3, defaultSeat: "Kablo Omuz", isTopSet: true },
+                    { id: "ar_car_5", name: "Tek Kol Makine Lateral", muscle: "Yan Omuz 3D", target: "4 Set (12-15 Rep)", defaultSets: 4, defaultSeat: "Koltuk: 5", isTopSet: false },
+                    { id: "ar_car_6", name: "Dumbbell Hammer Curl", muscle: "Brachialis & Ön Kol", target: "2 Set (Maks Rep)", defaultSets: 2, defaultSeat: "Ayakta", isTopSet: false }
+                ]
+            },
+            per: {
+                title: "OFF (Dinlenme & Beslenme)",
+                desc: "Kas Onarımı ve Glikojen Depolama",
+                exercises: []
+            },
+            cum: {
+                title: "Legs & Core (Bacak ve Karın)",
+                desc: "Quad, Hamstring & Kalf",
+                exercises: [
+                    { id: "ar_cum_1", name: "Hack Squat", muscle: "Ön Bacak Quad", target: "2 Ağır Set (3sn iniş)", defaultSets: 2, defaultSeat: "Dar Basış", isTopSet: true },
+                    { id: "ar_cum_2", name: "Leg Press", muscle: "Genel Bacak", target: "2 Set (8-10 Rep)", defaultSets: 2, defaultSeat: "Platform Alt", isTopSet: true },
+                    { id: "ar_cum_3", name: "Dumbbell RDL", muscle: "Arka Bacak", target: "2 Set (8-10 Rep)", defaultSets: 2, defaultSeat: "Düz Zemin", isTopSet: true },
+                    { id: "ar_cum_4", name: "Adductor Machine", muscle: "Bacak İçi", target: "2 Set (12-15 Rep)", defaultSets: 2, defaultSeat: "Açı: 4", isTopSet: false },
+                    { id: "ar_cum_5", name: "Standing Calf Raise", muscle: "Kalf", target: "3 Set (15 Rep)", defaultSets: 3, defaultSeat: "Platform", isTopSet: false }
+                ]
+            },
+            cmt: {
+                title: "Upper Body Hypertrophy (Üst Gövde Pump)",
+                desc: "Göğüs, Sırt ve Omuz Hacim Bitiricisi",
+                exercises: [
+                    { id: "ar_cmt_1", name: "Machine Chest Press", muscle: "Göğüs", target: "2 Set (8-10 Rep)", defaultSets: 2, defaultSeat: "Koltuk: 4", isTopSet: true },
+                    { id: "ar_cmt_2", name: "High Row Tek Kol", muscle: "Lat", target: "2 Set (8-10 Rep)", defaultSets: 2, defaultSeat: "Koltuk: 3", isTopSet: true },
+                    { id: "ar_cmt_3", name: "Pec Deck Fly", muscle: "Göğüs İzolasyon", target: "2 Set (10-12 Rep)", defaultSets: 2, defaultSeat: "Koltuk: 3", isTopSet: false },
+                    { id: "ar_cmt_4", name: "Cable Lateral Raise", muscle: "Yan Omuz", target: "3 Set (12-15 Rep)", defaultSets: 3, defaultSeat: "Kablo Alt", isTopSet: false },
+                    { id: "ar_cmt_5", name: "Halat Triceps + EZ Biceps Superset", muscle: "Kollar", target: "2'şer Bitirici Set", defaultSets: 2, defaultSeat: "Kablo", isTopSet: false }
+                ]
+            },
+            paz: {
+                title: "OFF (Haftalık Değerlendirme)",
+                desc: "Kilo ve Makro Kontrolü",
+                exercises: []
+            }
+        }
+    },
+    {
+        id: "upper_lower_4day",
+        name: "Upper / Lower (Üst & Alt Gövde - 4 Gün Bilimsel)",
+        badge: "Güç & Kütle • 4 Gün",
+        desc: "Haftada 4 gün ağır çalışma ve 3 gün tam dinlenme sunan; toparlanma kapasitesini maksimize eden modern bilimsel split.",
+        daysOverview: ["Pzt: Upper A", "Sal: Lower A", "Çar: OFF", "Per: Upper B", "Cum: Lower B", "Cmt: OFF", "Paz: OFF"],
+        plan: {
+            pzt: {
+                title: "Upper A (Üst Gövde Ağır Güç)",
+                desc: "Ağır Bench Press, Row, Overhead Press & Kollar",
+                exercises: [
+                    { id: "ul_pzt_1", name: "Flat Barbell Bench Press", muscle: "Göğüs Gücü", target: "3 Set (5-8 Rep)", defaultSets: 3, defaultSeat: "Düz Sehpa", isTopSet: true },
+                    { id: "ul_pzt_2", name: "Bent-Over Barbell Row", muscle: "Tüm Sırt", target: "3 Set (6-8 Rep)", defaultSets: 3, defaultSeat: "Serbest Bar", isTopSet: true },
+                    { id: "ul_pzt_3", name: "Overhead Barbell / DB Press", muscle: "Ön/Yan Omuz", target: "2 Set (6-8 Rep)", defaultSets: 2, defaultSeat: "Dik Sehpa", isTopSet: true },
+                    { id: "ul_pzt_4", name: "Geniş Tutuş Lat Pulldown", muscle: "Üst Lat", target: "2 Set (8-10 Rep)", defaultSets: 2, defaultSeat: "Bacak Pedi: 4", isTopSet: false },
+                    { id: "ul_pzt_5", name: "Barbell Biceps Curl", muscle: "Biceps", target: "2 Set (8-10 Rep)", defaultSets: 2, defaultSeat: "Düz Bar", isTopSet: false },
+                    { id: "ul_pzt_6", name: "Düz Bar Triceps Pushdown", muscle: "Triceps", target: "2 Set (8-10 Rep)", defaultSets: 2, defaultSeat: "Kablo Üst", isTopSet: false }
+                ]
+            },
+            sal: {
+                title: "Lower A (Alt Gövde Quad & Güç)",
+                desc: "Ağır Squat, RDL, Leg Press & Kalf",
+                exercises: [
+                    { id: "ul_sal_1", name: "Barbell Back Squat", muscle: "Quad & Glute", target: "3 Set (5-8 Rep)", defaultSets: 3, defaultSeat: "Rack", isTopSet: true },
+                    { id: "ul_sal_2", name: "Romanian Deadlift (RDL)", muscle: "Hamstring & Bel", target: "3 Set (6-8 Rep)", defaultSets: 3, defaultSeat: "Düz Zemin", isTopSet: true },
+                    { id: "ul_sal_3", name: "Leg Press", muscle: "Quad Gücü", target: "2 Set (8-10 Rep)", defaultSets: 2, defaultSeat: "Platform", isTopSet: false },
+                    { id: "ul_sal_4", name: "Seated Leg Curl", muscle: "Hamstring İzolasyon", target: "2 Set (10-12 Rep)", defaultSets: 2, defaultSeat: "Pedi Ayarla", isTopSet: false },
+                    { id: "ul_sal_5", name: "Standing Calf Raise", muscle: "Kalf", target: "3 Set (12-15 Rep)", defaultSets: 3, defaultSeat: "Platform", isTopSet: false }
+                ]
+            },
+            car: {
+                title: "OFF (Aktif Dinlenme & Mobilite)",
+                desc: "Hafif yürüyüş, esneme ve toparlanma",
+                exercises: []
+            },
+            per: {
+                title: "Upper B (Üst Gövde Hipertrofi & Hacim)",
+                desc: "Incline DB, T-Bar Row, Yan Omuz & Kollar",
+                exercises: [
+                    { id: "ul_per_1", name: "Incline Dumbbell Press", muscle: "Üst Göğüs", target: "3 Set (8-10 Rep)", defaultSets: 3, defaultSeat: "30 Derece", isTopSet: true },
+                    { id: "ul_per_2", name: "T-Bar Row", muscle: "Orta Sırt", target: "3 Set (8-10 Rep)", defaultSets: 3, defaultSeat: "Göğüs Destekli", isTopSet: true },
+                    { id: "ul_per_3", name: "Tek Kol Makine Lateral", muscle: "Yan Omuz 3D", target: "3 Set (12-15 Rep)", defaultSets: 3, defaultSeat: "Koltuk: 5", isTopSet: false },
+                    { id: "ul_per_4", name: "Reverse Pec Deck Fly", muscle: "Arka Omuz", target: "3 Set (10-12 Rep)", defaultSets: 3, defaultSeat: "Pede Göğüs Dayalı", isTopSet: false },
+                    { id: "ul_per_5", name: "Incline DB Curl", muscle: "Biceps", target: "2 Set (10-12 Rep)", defaultSets: 2, defaultSeat: "45 Derece", isTopSet: false },
+                    { id: "ul_per_6", name: "Overhead Cable Triceps Extension", muscle: "Triceps", target: "2 Set (10-12 Rep)", defaultSets: 2, defaultSeat: "Kablo Omuz", isTopSet: false }
+                ]
+            },
+            cum: {
+                title: "Lower B (Alt Gövde Hamstring & Unilateral)",
+                desc: "Deadlift, Hack Squat, Split Squat & Core",
+                exercises: [
+                    { id: "ul_cum_1", name: "Conventional / Trap Bar Deadlift", muscle: "Arka Zincir", target: "2-3 Set (5-6 Rep)", defaultSets: 2, defaultSeat: "Zemin", isTopSet: true },
+                    { id: "ul_cum_2", name: "Hack Squat", muscle: "Quad", target: "2 Set (8-10 Rep)", defaultSets: 2, defaultSeat: "Dar Basış", isTopSet: true },
+                    { id: "ul_cum_3", name: "Bulgarian Split Squat", muscle: "Glute & Quad", target: "2'şer Set (8-10 Rep)", defaultSets: 2, defaultSeat: "Sehpa", isTopSet: false },
+                    { id: "ul_cum_4", name: "Lying Leg Curl", muscle: "Hamstring", target: "2 Set (10-12 Rep)", defaultSets: 2, defaultSeat: "Yüzüstü", isTopSet: false },
+                    { id: "ul_cum_5", name: "Seated Calf Raise", muscle: "Kalf Soleus", target: "3 Set (15 Rep)", defaultSets: 3, defaultSeat: "Makine", isTopSet: false }
+                ]
+            },
+            cmt: {
+                title: "OFF (Tam Dinlenme)",
+                desc: "Beslenme ve Hidrasyon Odaklı",
+                exercises: []
+            },
+            paz: {
+                title: "OFF (Haftalık Değerlendirme)",
+                desc: "Haftalık Tartı Ortalaması & Yenilenme",
+                exercises: []
+            }
+        }
+    },
+    {
+        id: "fullbody_3day",
+        name: "Full Body 3x (Tüm Vücut Bileşik - 3 Gün)",
+        badge: "Yüksek Frekans • 3 Gün",
+        desc: "Haftada 3 gün tüm büyük kas gruplarını uyararak antrenman başına maksimum kalori yakımı ve anabolik sinyal üreten kompakt sistem.",
+        daysOverview: ["Pzt: Full Body A", "Sal: OFF", "Çar: Full Body B", "Per: OFF", "Cum: Full Body C", "Cmt: OFF", "Paz: OFF"],
+        plan: {
+            pzt: {
+                title: "Full Body A (Squat + Bench + Row)",
+                desc: "Temel Compound Güç Günü",
+                exercises: [
+                    { id: "fb_pzt_1", name: "Barbell Back Squat", muscle: "Quad & Glute", target: "3 Set (6-8 Rep)", defaultSets: 3, defaultSeat: "Rack", isTopSet: true },
+                    { id: "fb_pzt_2", name: "Flat Barbell Bench Press", muscle: "Göğüs", target: "3 Set (6-8 Rep)", defaultSets: 3, defaultSeat: "Düz Sehpa", isTopSet: true },
+                    { id: "fb_pzt_3", name: "Chest Supported Row", muscle: "Sırt", target: "3 Set (8-10 Rep)", defaultSets: 3, defaultSeat: "Sehpa", isTopSet: true },
+                    { id: "fb_pzt_4", name: "Overhead Dumbbell Press", muscle: "Omuz", target: "2 Set (8-10 Rep)", defaultSets: 2, defaultSeat: "Dik Sehpa", isTopSet: false },
+                    { id: "fb_pzt_5", name: "Barbell Biceps Curl", muscle: "Biceps", target: "2 Set (10-12 Rep)", defaultSets: 2, defaultSeat: "Düz Bar", isTopSet: false }
+                ]
+            },
+            sal: { title: "OFF (Dinlenme & Yürüyüş)", desc: "10.000 Adım & Su Takibi", exercises: [] },
+            car: {
+                title: "Full Body B (Deadlift + Incline + Pulldown)",
+                desc: "Arka Zincir & Üst Gövde Odaklı",
+                exercises: [
+                    { id: "fb_car_1", name: "Romanian Deadlift (RDL)", muscle: "Hamstring & Bel", target: "3 Set (6-8 Rep)", defaultSets: 3, defaultSeat: "Serbest Bar", isTopSet: true },
+                    { id: "fb_car_2", name: "Incline Dumbbell Press", muscle: "Üst Göğüs", target: "3 Set (8-10 Rep)", defaultSets: 3, defaultSeat: "30 Derece", isTopSet: true },
+                    { id: "fb_car_3", name: "Geniş Tutuş Lat Pulldown", muscle: "Kanat", target: "3 Set (8-10 Rep)", defaultSets: 3, defaultSeat: "Bacak Pedi: 4", isTopSet: true },
+                    { id: "fb_car_4", name: "Tek Kol Lateral Raise", muscle: "Yan Omuz", target: "3 Set (12-15 Rep)", defaultSets: 3, defaultSeat: "Kablo Alt", isTopSet: false },
+                    { id: "fb_car_5", name: "Düz Bar Triceps Pushdown", muscle: "Triceps", target: "2 Set (10-12 Rep)", defaultSets: 2, defaultSeat: "Kablo Üst", isTopSet: false }
+                ]
+            },
+            per: { title: "OFF (Dinlenme & Mobilite)", desc: "Esneme & Kas Toparlanması", exercises: [] },
+            cum: {
+                title: "Full Body C (Leg Press + Dips + Cable Row)",
+                desc: "Hacim ve Şişirme (Pump) Günü",
+                exercises: [
+                    { id: "fb_cum_1", name: "Leg Press (Quad Odaklı)", muscle: "Bacak", target: "3 Set (10-12 Rep)", defaultSets: 3, defaultSeat: "Platform", isTopSet: true },
+                    { id: "fb_cum_2", name: "Dips / Ağırlıklı Chest Dips", muscle: "Alt Göğüs & Triceps", target: "3 Set (8-10 Rep)", defaultSets: 3, defaultSeat: "Paralel Bar", isTopSet: true },
+                    { id: "fb_cum_3", name: "Seated Cable Row (Dar Tutuş)", muscle: "Orta Sırt", target: "3 Set (10-12 Rep)", defaultSets: 3, defaultSeat: "V-Bar", isTopSet: true },
+                    { id: "fb_cum_4", name: "Bulgarian Split Squat", muscle: "Glute & Quad", target: "2'şer Set (10-12 Rep)", defaultSets: 2, defaultSeat: "Sehpa", isTopSet: false },
+                    { id: "fb_cum_5", name: "Incline DB Curl + Overhead Ext", muscle: "Kollar Superset", target: "2'şer Set (Maks Pump)", defaultSets: 2, defaultSeat: "Sehpa", isTopSet: false }
+                ]
+            },
+            cmt: { title: "OFF (Tam Dinlenme)", desc: "Serbest Gün & Onarım", exercises: [] },
+            paz: { title: "OFF (Check-in)", desc: "Haftalık Kilo & Hedef Kontrolü", exercises: [] }
+        }
+    },
+    {
+        id: "strength_5x5",
+        name: "5x5 Güç & Kuvvet (Stronglifts Compound - 3 Gün)",
+        badge: "Ham Güç • 3 Gün",
+        desc: "5x5 ağır temel hareketlerle sinir sistemini güçlendiren, omurga stabilitesini artıran ve yüksek ağırlıklara hükmetmenizi sağlayan güç programı.",
+        daysOverview: ["Pzt: Workout A (Squat/Bench/Row)", "Sal: OFF", "Çar: Workout B (Squat/OHP/Deadlift)", "Per: OFF", "Cum: Workout A (Squat/Bench/Row)", "Cmt: OFF", "Paz: OFF"],
+        plan: {
+            pzt: {
+                title: "Workout A (Squat + Bench + Row 5x5)",
+                desc: "Ağır Temel 5x5 Güç Yüklemesi",
+                exercises: [
+                    { id: "s5_pzt_1", name: "Barbell Back Squat", muscle: "Bacak & Glute", target: "5 Set x 5 Tekrar (Ağır & Net)", defaultSets: 5, defaultSeat: "Rack", isTopSet: true },
+                    { id: "s5_pzt_2", name: "Flat Barbell Bench Press", muscle: "Göğüs", target: "5 Set x 5 Tekrar (Ağır & Net)", defaultSets: 5, defaultSeat: "Düz Sehpa", isTopSet: true },
+                    { id: "s5_pzt_3", name: "Barbell Pendlay Row", muscle: "Sırt Gücü", target: "5 Set x 5 Tekrar (Yerden Patlayıcı)", defaultSets: 5, defaultSeat: "Zemin", isTopSet: true }
+                ]
+            },
+            sal: { title: "OFF (Sinir Sistemi Dinlenmesi)", desc: "Yüksek Protein ve Derin Uyku", exercises: [] },
+            car: {
+                title: "Workout B (Squat + OHP + Deadlift)",
+                desc: "Omuz Pres & Ağır Deadlift Günü",
+                exercises: [
+                    { id: "s5_car_1", name: "Barbell Back Squat", muscle: "Bacak", target: "5 Set x 5 Tekrar (Ağır)", defaultSets: 5, defaultSeat: "Rack", isTopSet: true },
+                    { id: "s5_car_2", name: "Overhead Military Press", muscle: "Tüm Omuz", target: "5 Set x 5 Tekrar (Ayakta)", defaultSets: 5, defaultSeat: "Ayakta", isTopSet: true },
+                    { id: "s5_car_3", name: "Conventional Deadlift", muscle: "Tüm Vücut Gücü", target: "1 Ağır Çalışma Seti x 5 Tekrar", defaultSets: 1, defaultSeat: "Zemin", isTopSet: true }
+                ]
+            },
+            per: { title: "OFF (Aktif Onarım)", desc: "Esneme & Su Alımı", exercises: [] },
+            cum: {
+                title: "Workout A (Squat + Bench + Row 5x5)",
+                desc: "Haftalık Progresif Yükleme",
+                exercises: [
+                    { id: "s5_cum_1", name: "Barbell Back Squat", muscle: "Bacak", target: "5 Set x 5 Tekrar (+2.5kg)", defaultSets: 5, defaultSeat: "Rack", isTopSet: true },
+                    { id: "s5_cum_2", name: "Flat Barbell Bench Press", muscle: "Göğüs", target: "5 Set x 5 Tekrar (+2.5kg)", defaultSets: 5, defaultSeat: "Düz Sehpa", isTopSet: true },
+                    { id: "s5_cum_3", name: "Barbell Pendlay Row", muscle: "Sırt", target: "5 Set x 5 Tekrar (+2.5kg)", defaultSets: 5, defaultSeat: "Zemin", isTopSet: true }
+                ]
+            },
+            cmt: { title: "OFF (Tam Dinlenme)", desc: "Karbonhidrat Yüklemesi", exercises: [] },
+            paz: { title: "OFF (Haftalık Tartı)", desc: "Yeni Hafta Ağırlık Planı", exercises: [] }
+        }
+    },
+    {
+        id: "torso_limbs_4day",
+        name: "Torso / Limbs (Gövde & Kollar/Bacaklar - 4 Gün)",
+        badge: "Antagonistik • 4 Gün",
+        desc: "Göğüs-Sırt (Gövde) ve Kol-Bacak-Omuz (Ekstremiteler) ayrımıyla mükemmel süperset ve pompa imkanı sağlayan etkili split.",
+        daysOverview: ["Pzt: Torso 1 (Göğüs+Sırt)", "Sal: Limbs 1 (Bacak+Kol+Omuz)", "Çar: OFF", "Per: Torso 2 (Göğüs+Sırt)", "Cum: Limbs 2 (Bacak+Kol+Omuz)", "Cmt: OFF", "Paz: OFF"],
+        plan: {
+            pzt: {
+                title: "Torso 1 (Göğüs & Sırt Ağır)",
+                desc: "Antagonistik Gövde İnşası",
+                exercises: [
+                    { id: "tl_pzt_1", name: "Incline Barbell Press", muscle: "Üst Göğüs", target: "3 Set (6-8 Rep)", defaultSets: 3, defaultSeat: "30 Derece", isTopSet: true },
+                    { id: "tl_pzt_2", name: "Chest Supported T-Bar Row", muscle: "Orta Sırt", target: "3 Set (6-8 Rep)", defaultSets: 3, defaultSeat: "Göğüs Destekli", isTopSet: true },
+                    { id: "tl_pzt_3", name: "Flat Dumbbell Press", muscle: "Orta Göğüs", target: "2 Set (8-10 Rep)", defaultSets: 2, defaultSeat: "Düz Sehpa", isTopSet: true },
+                    { id: "tl_pzt_4", name: "Geniş Tutuş Lat Pulldown", muscle: "Kanat", target: "2 Set (8-10 Rep)", defaultSets: 2, defaultSeat: "Bacak Pedi: 4", isTopSet: false },
+                    { id: "tl_pzt_5", name: "Pec Deck Fly", muscle: "Göğüs İzolasyon", target: "2 Set (10-12 Rep)", defaultSets: 2, defaultSeat: "Koltuk: 3", isTopSet: false }
+                ]
+            },
+            sal: {
+                title: "Limbs 1 (Bacak + Omuz + Kollar)",
+                desc: "Ekstremite Güç & Hacim Günü",
+                exercises: [
+                    { id: "tl_sal_1", name: "Barbell Back Squat", muscle: "Quad & Glute", target: "3 Set (6-8 Rep)", defaultSets: 3, defaultSeat: "Rack", isTopSet: true },
+                    { id: "tl_sal_2", name: "Romanian Deadlift", muscle: "Hamstring", target: "2 Set (8-10 Rep)", defaultSets: 2, defaultSeat: "Düz Zemin", isTopSet: true },
+                    { id: "tl_sal_3", name: "Tek Kol Makine Lateral", muscle: "Yan Omuz", target: "3 Set (12-15 Rep)", defaultSets: 3, defaultSeat: "Koltuk: 5", isTopSet: false },
+                    { id: "tl_sal_4", name: "Barbell Biceps Curl", muscle: "Biceps", target: "3 Set (8-10 Rep)", defaultSets: 3, defaultSeat: "Düz Bar", isTopSet: false },
+                    { id: "tl_sal_5", name: "Düz Bar Triceps Pushdown", muscle: "Triceps", target: "3 Set (8-10 Rep)", defaultSets: 3, defaultSeat: "Kablo Üst", isTopSet: false }
+                ]
+            },
+            car: { title: "OFF (Dinlenme & Mobilite)", desc: "Toparlanma ve Esneme", exercises: [] },
+            per: {
+                title: "Torso 2 (Göğüs & Sırt Hipertrofi)",
+                desc: "Yüksek Pompa ve Açı Çeşitliliği",
+                exercises: [
+                    { id: "tl_per_1", name: "Plate Loaded Chest Press", muscle: "Göğüs", target: "3 Set (8-10 Rep)", defaultSets: 3, defaultSeat: "Koltuk: 4", isTopSet: true },
+                    { id: "tl_per_2", name: "High Row Tek Kol", muscle: "Lat", target: "3 Set (8-10 Rep)", defaultSets: 3, defaultSeat: "Koltuk: 3", isTopSet: true },
+                    { id: "tl_per_3", name: "Incline DB Fly", muscle: "Göğüs", target: "2 Set (10-12 Rep)", defaultSets: 2, defaultSeat: "30 Derece", isTopSet: false },
+                    { id: "tl_per_4", name: "Seated Cable Row (Dar Tutuş)", muscle: "Sırt", target: "2 Set (10-12 Rep)", defaultSets: 2, defaultSeat: "V-Bar", isTopSet: false },
+                    { id: "tl_per_5", name: "Reverse Pec Deck Fly", muscle: "Arka Omuz", target: "3 Set (10-12 Rep)", defaultSets: 3, defaultSeat: "Pede Göğüs", isTopSet: false }
+                ]
+            },
+            cum: {
+                title: "Limbs 2 (Bacak + Omuz + Kollar)",
+                desc: "İzolasyon & Damar Açıcı Pump",
+                exercises: [
+                    { id: "tl_cum_1", name: "Hack Squat", muscle: "Quad", target: "3 Set (8-10 Rep)", defaultSets: 3, defaultSeat: "Dar Basış", isTopSet: true },
+                    { id: "tl_cum_2", name: "Lying Leg Curl", muscle: "Hamstring", target: "3 Set (10-12 Rep)", defaultSets: 3, defaultSeat: "Yüzüstü", isTopSet: false },
+                    { id: "tl_cum_3", name: "Cable Lateral Raise", muscle: "Yan Omuz", target: "3 Set (12-15 Rep)", defaultSets: 3, defaultSeat: "Kablo Alt", isTopSet: false },
+                    { id: "tl_cum_4", name: "Incline DB Biceps Curl", muscle: "Biceps", target: "3 Set (10-12 Rep)", defaultSets: 3, defaultSeat: "45 Derece", isTopSet: false },
+                    { id: "tl_cum_5", name: "Overhead Dual Cable Triceps Ext", muscle: "Triceps", target: "3 Set (10-12 Rep)", defaultSets: 3, defaultSeat: "Kablo Omuz", isTopSet: false }
+                ]
+            },
+            cmt: { title: "OFF (Dinlenme)", desc: "Yenilenme", exercises: [] },
+            paz: { title: "OFF (Check-in)", desc: "Haftalık Rapor", exercises: [] }
+        }
+    },
+    {
+        id: "bro_split_5day",
+        name: "Bro Split (Klasik 5 Gün Tek Bölge Bodybuilding)",
+        badge: "İzole Pump • 5 Gün",
+        desc: "Her gün tek bir kas grubunu hedef alarak maksimum konsantrasyon, pump ve kas tahribatı sağlayan klasik vücut geliştirme bölünmesi.",
+        daysOverview: ["Pzt: Göğüs", "Sal: Sırt", "Çar: Omuz & Trapez", "Per: Bacak & Kalf", "Cum: Kol Günü (Biceps & Triceps)", "Cmt: OFF", "Paz: OFF"],
+        plan: {
+            pzt: {
+                title: "Chest Day (Göğüs Günü)",
+                desc: "Tüm Göğüs Lifleri ve Üst Göğüs Bombardımanı",
+                exercises: [
+                    { id: "bro_pzt_1", name: "Incline Dumbbell Press", muscle: "Üst Göğüs", target: "3 Set (6-9 Rep)", defaultSets: 3, defaultSeat: "30 Derece", isTopSet: true },
+                    { id: "bro_pzt_2", name: "Flat Barbell Bench Press", muscle: "Orta Göğüs", target: "3 Set (8-10 Rep)", defaultSets: 3, defaultSeat: "Düz Sehpa", isTopSet: true },
+                    { id: "bro_pzt_3", name: "Pec Deck Fly", muscle: "İç Göğüs", target: "3 Set (10-12 Rep)", defaultSets: 3, defaultSeat: "Koltuk: 3", isTopSet: false },
+                    { id: "bro_pzt_4", name: "Chest Dips / Cable Crossover", muscle: "Alt Göğüs", target: "3 Set (10-12 Rep)", defaultSets: 3, defaultSeat: "Paralel Bar", isTopSet: false }
+                ]
+            },
+            sal: {
+                title: "Back Day (Sırt & Kanat Günü)",
+                desc: "V-Taper Kanat Genişliği & Sırt Kalınlığı",
+                exercises: [
+                    { id: "bro_sal_1", name: "Deadlift", muscle: "Tüm Sırt & Güç", target: "2 Sert Set (5-6 Rep)", defaultSets: 2, defaultSeat: "Zemin", isTopSet: true },
+                    { id: "bro_sal_2", name: "Geniş Tutuş Lat Pulldown", muscle: "Üst Lat", target: "3 Set (8-10 Rep)", defaultSets: 3, defaultSeat: "Bacak Pedi: 4", isTopSet: true },
+                    { id: "bro_sal_3", name: "T-Bar Row", muscle: "Orta Sırt", target: "3 Set (8-10 Rep)", defaultSets: 3, defaultSeat: "Göğüs Destekli", isTopSet: true },
+                    { id: "bro_sal_4", name: "Seated Cable Row", muscle: "Alt Lat", target: "2 Set (10-12 Rep)", defaultSets: 2, defaultSeat: "V-Bar", isTopSet: false },
+                    { id: "bro_sal_5", name: "Dumbbell Shrug", muscle: "Trapez", target: "3 Set (12-15 Rep)", defaultSets: 3, defaultSeat: "Ayakta", isTopSet: false }
+                ]
+            },
+            car: {
+                title: "Shoulder Day (3D Omuz & Trapez)",
+                desc: "Ön, Yan ve Arka Omuz İzolasyonu",
+                exercises: [
+                    { id: "bro_car_1", name: "Overhead Dumbbell Press", muscle: "Ön/Genel Omuz", target: "3 Set (6-8 Rep)", defaultSets: 3, defaultSeat: "Dik Sehpa", isTopSet: true },
+                    { id: "bro_car_2", name: "Tek Kol Makine Lateral", muscle: "Yan Omuz 3D", target: "4 Set (12-15 Rep)", defaultSets: 4, defaultSeat: "Koltuk: 5", isTopSet: true },
+                    { id: "bro_car_3", name: "Reverse Pec Deck Fly", muscle: "Arka Omuz", target: "3 Set (10-12 Rep)", defaultSets: 3, defaultSeat: "Pede Göğüs", isTopSet: true },
+                    { id: "bro_car_4", name: "Face Pull (Halat)", muscle: "Arka Omuz & Rotatör", target: "3 Set (12-15 Rep)", defaultSets: 3, defaultSeat: "Kablo Göz Hizası", isTopSet: false }
+                ]
+            },
+            per: {
+                title: "Leg Day (Bacak & Kalf)",
+                desc: "Ağır Bacak Kütle İnşası",
+                exercises: [
+                    { id: "bro_per_1", name: "Barbell Squat / Hack Squat", muscle: "Quad", target: "3 Set (6-8 Rep)", defaultSets: 3, defaultSeat: "Rack", isTopSet: true },
+                    { id: "bro_per_2", name: "Leg Press", muscle: "Quad Gücü", target: "3 Set (8-10 Rep)", defaultSets: 3, defaultSeat: "Platform", isTopSet: true },
+                    { id: "bro_per_3", name: "Romanian Deadlift", muscle: "Hamstring", target: "3 Set (8-10 Rep)", defaultSets: 3, defaultSeat: "Serbest Bar", isTopSet: true },
+                    { id: "bro_per_4", name: "Lying Leg Curl", muscle: "Hamstring İzolasyon", target: "2 Set (10-12 Rep)", defaultSets: 2, defaultSeat: "Yüzüstü", isTopSet: false },
+                    { id: "bro_per_5", name: "Standing Calf Raise", muscle: "Kalf", target: "4 Set (15 Rep)", defaultSets: 4, defaultSeat: "Platform", isTopSet: false }
+                ]
+            },
+            cum: {
+                title: "Arm Day (Biceps & Triceps Kol Günü)",
+                desc: "Kol Çevre Ölçüsünü Artıran Süperset Bombardımanı",
+                exercises: [
+                    { id: "bro_cum_1", name: "Barbell Biceps Curl", muscle: "Biceps", target: "3 Set (6-8 Rep)", defaultSets: 3, defaultSeat: "Düz Bar", isTopSet: true },
+                    { id: "bro_cum_2", name: "Düz Bar Triceps Pushdown", muscle: "Triceps Lateral", target: "3 Set (8-10 Rep)", defaultSets: 3, defaultSeat: "Kablo Üst", isTopSet: true },
+                    { id: "bro_cum_3", name: "Incline DB Curl", muscle: "Biceps Uzun Baş", target: "3 Set (10-12 Rep)", defaultSets: 3, defaultSeat: "45 Derece", isTopSet: false },
+                    { id: "bro_cum_4", name: "Overhead Cable Extension", muscle: "Triceps Uzun Baş", target: "3 Set (10-12 Rep)", defaultSets: 3, defaultSeat: "Kablo Omuz", isTopSet: false },
+                    { id: "bro_cum_5", name: "Dumbbell Hammer Curl", muscle: "Brachialis", target: "2 Set (10-12 Rep)", defaultSets: 2, defaultSeat: "Ayakta", isTopSet: false }
+                ]
+            },
+            cmt: { title: "OFF (Dinlenme & Onarım)", desc: "Beslenme ve Dinlenme", exercises: [] },
+            paz: { title: "OFF (Check-in)", desc: "Tartı Ortalaması & Yenilenme", exercises: [] }
+        }
+    }
+];
+
 // ==================== MASTER STRETCHING & MOBILITY DATABASE ====================
 const MASTER_STRETCHING_DATABASE = [
     // GÖĞÜS & OMUZ
@@ -1498,6 +1859,8 @@ function createDefaultAppData() {
     return {
         targets: { ...DEFAULT_TARGETS },
         pinnedQuickActions: ["steps_live", "water", "steps_1000", "pancake"],
+        customQuickActions: [],
+        activeSplitKey: "ppl_standard",
         customPresets: { ...DEFAULT_PRESET_MEALS },
         customWorkoutPlan: JSON.parse(JSON.stringify(DEFAULT_WORKOUT_PLAN)),
         supplements: [
@@ -1596,6 +1959,8 @@ function loadDataFromStorage() {
             targets: { ...DEFAULT_TARGETS, ...(parsed.targets || {}) },
             customPresets: { ...DEFAULT_PRESET_MEALS, ...(parsed.customPresets || {}) },
             customWorkoutPlan: parsed.customWorkoutPlan || JSON.parse(JSON.stringify(DEFAULT_WORKOUT_PLAN)),
+            activeSplitKey: parsed.activeSplitKey || "ppl_standard",
+            customQuickActions: parsed.customQuickActions || [],
             supplements: parsed.supplements && parsed.supplements.length > 0 ? parsed.supplements : appData.supplements,
             pinnedQuickActions: parsed.pinnedQuickActions || ["steps_live", "water", "steps_1000", "pancake"],
             todayNutrition: { ...createDefaultAppData().todayNutrition, ...(parsed.todayNutrition || {}) },
@@ -1623,6 +1988,8 @@ function loadDataFromStorage() {
                 targets: { ...DEFAULT_TARGETS, ...(parsed.targets || {}) },
                 customPresets: { ...DEFAULT_PRESET_MEALS, ...(parsed.customPresets || {}) },
                 customWorkoutPlan: parsed.customWorkoutPlan || JSON.parse(JSON.stringify(DEFAULT_WORKOUT_PLAN)),
+                activeSplitKey: parsed.activeSplitKey || "ppl_standard",
+                customQuickActions: parsed.customQuickActions || [],
                 supplements: parsed.supplements && parsed.supplements.length > 0 ? parsed.supplements : appData.supplements,
                 pinnedQuickActions: parsed.pinnedQuickActions || ["steps_live", "water", "steps_1000", "pancake"],
                 todayNutrition: { ...createDefaultAppData().todayNutrition, ...(parsed.todayNutrition || {}) },
@@ -1882,32 +2249,192 @@ function renderDashboard() {
     evaluateDailyStreak();
 }
 
+function scrollQuickActionsCarousel(dir) {
+    const container = document.getElementById("dashboard-quick-actions-container");
+    if (!container) return;
+    const scrollAmount = 240 * dir;
+    container.scrollBy({ left: scrollAmount, behavior: "smooth" });
+}
+
+function openNewCustomActionModal() {
+    document.getElementById("c-action-title").value = "";
+    document.getElementById("c-action-icon").value = "⚡";
+    document.getElementById("c-action-type").value = "macro";
+    toggleCustomActionTypeFields();
+    openModal("modal-custom-action-creator");
+}
+
+function toggleCustomActionTypeFields() {
+    const type = document.getElementById("c-action-type").value;
+    const macroFields = document.getElementById("c-action-macro-fields");
+    const waterFields = document.getElementById("c-action-water-fields");
+    const stepsFields = document.getElementById("c-action-steps-fields");
+    const modalFields = document.getElementById("c-action-modal-fields");
+
+    if (macroFields) macroFields.style.display = (type === "macro") ? "grid" : "none";
+    if (waterFields) waterFields.style.display = (type === "water") ? "block" : "none";
+    if (stepsFields) stepsFields.style.display = (type === "steps") ? "block" : "none";
+    if (modalFields) modalFields.style.display = (type === "modal") ? "block" : "none";
+}
+
+function handleCustomActionSubmit(event) {
+    if (event) event.preventDefault();
+
+    const title = document.getElementById("c-action-title").value.trim();
+    if (!title) {
+        showToast("⚠️ Lütfen bir buton başlığı girin!");
+        return;
+    }
+
+    const icon = document.getElementById("c-action-icon").value.trim() || "⚡";
+    const type = document.getElementById("c-action-type").value;
+
+    const actionId = "cact_" + Date.now();
+    const newAction = {
+        id: actionId,
+        title: title,
+        icon: icon,
+        type: type,
+        cal: parseFloat(document.getElementById("c-action-cal")?.value) || 0,
+        p: parseFloat(document.getElementById("c-action-p")?.value) || 0,
+        c: parseFloat(document.getElementById("c-action-c")?.value) || 0,
+        f: parseFloat(document.getElementById("c-action-f")?.value) || 0,
+        waterVal: parseFloat(document.getElementById("c-action-water-val")?.value) || 0.5,
+        stepsVal: parseInt(document.getElementById("c-action-steps-val")?.value, 10) || 1000,
+        modalTarget: document.getElementById("c-action-modal-target")?.value || "modal-stretching-hub"
+    };
+
+    if (!appData.customQuickActions) appData.customQuickActions = [];
+    appData.customQuickActions.push(newAction);
+
+    if (!appData.pinnedQuickActions) appData.pinnedQuickActions = [];
+    if (!appData.pinnedQuickActions.includes(actionId)) {
+        appData.pinnedQuickActions.push(actionId);
+    }
+
+    saveDataToStorage();
+    renderDashboard();
+    closeModal("modal-custom-action-creator");
+    showToast(`✨ "${title}" hızlı butonu eklendi! 🚀`);
+}
+
+function deleteCustomAction(actionId) {
+    if (!confirm("Bu özel hızlı butonu silmek istediğinizden emin misiniz?")) return;
+
+    if (appData.customQuickActions) {
+        appData.customQuickActions = appData.customQuickActions.filter(a => a.id !== actionId);
+    }
+    if (appData.pinnedQuickActions) {
+        appData.pinnedQuickActions = appData.pinnedQuickActions.filter(id => id !== actionId);
+    }
+
+    saveDataToStorage();
+    renderDashboard();
+    renderQuickActionsConfig();
+    showToast("Özel hızlı buton silindi 🗑️");
+}
+
+function executeCustomAction(actionId) {
+    const action = (appData.customQuickActions || []).find(a => a.id === actionId);
+    if (!action) return;
+
+    if (action.type === "macro") {
+        if (!appData.todayNutrition.meals) appData.todayNutrition.meals = [];
+        const newMeal = {
+            id: `cact_log_${Date.now()}`,
+            presetId: action.id,
+            name: action.title,
+            desc: `${action.p}g P • ${action.c}g C • ${action.f}g F • ${action.cal} kcal`,
+            cal: action.cal,
+            p: action.p,
+            c: action.c,
+            f: action.f,
+            time: getCurrentTimeStr()
+        };
+        appData.todayNutrition.meals.push(newMeal);
+        recalculateDailyTotals();
+        addRpgStatGain('recovery', 2, 25, action.title);
+        evaluateDailyStreak();
+        saveDataToStorage();
+        renderNutritionView();
+        renderDashboard();
+        showToast(`✅ ${action.icon} ${action.title} (+${action.cal} kcal) eklendi!`);
+    } else if (action.type === "water") {
+        addWater(action.waterVal || 0.5);
+    } else if (action.type === "steps") {
+        addSteps(action.stepsVal || 1000);
+    } else if (action.type === "modal") {
+        if (action.modalTarget) {
+            openModal(action.modalTarget);
+        }
+    }
+}
+
 function renderDashboardQuickActions() {
     const container = document.getElementById("dashboard-quick-actions-container");
     if (!container) return;
 
     const pinned = appData.pinnedQuickActions || ["steps_live", "water", "steps_1000", "pancake"];
+    const customList = appData.customQuickActions || [];
     let buttonsHtml = "";
 
     pinned.forEach(key => {
         if (key === "steps_live") {
-            buttonsHtml += `<button class="quick-action-btn" onclick="openStepTrackerModal()" style="border-color:rgba(48,209,88,0.4);"><i class="fa-solid fa-person-walking" style="color:var(--status-green);"></i> Canlı Adım Takip</button>`;
+            buttonsHtml += `
+                <button class="quick-action-btn-slide" onclick="openStepTrackerModal()" style="border-color:rgba(48,209,88,0.35);">
+                    <div class="qa-slide-icon" style="color:var(--status-green);"><i class="fa-solid fa-person-walking"></i></div>
+                    <div class="qa-slide-label">Canlı Adım Takip</div>
+                </button>`;
         } else if (key === "stretching") {
-            buttonsHtml += `<button class="quick-action-btn" onclick="openStretchingModal()" style="border-color:rgba(192,132,252,0.4);"><i class="fa-solid fa-person-praying" style="color:#c084fc;"></i> Esneme & Mobilite</button>`;
+            buttonsHtml += `
+                <button class="quick-action-btn-slide" onclick="openStretchingModal()" style="border-color:rgba(192,132,252,0.35);">
+                    <div class="qa-slide-icon" style="color:#c084fc;"><i class="fa-solid fa-person-praying"></i></div>
+                    <div class="qa-slide-label">Esneme & Mobilite</div>
+                </button>`;
         } else if (key === "water") {
-            buttonsHtml += `<button class="quick-action-btn" onclick="addWater(0.5)"><i class="fa-solid fa-glass-water"></i> +500ml Su</button>`;
+            buttonsHtml += `
+                <button class="quick-action-btn-slide" onclick="addWater(0.5)" style="border-color:rgba(56,189,248,0.35);">
+                    <div class="qa-slide-icon" style="color:#38bdf8;"><i class="fa-solid fa-glass-water"></i></div>
+                    <div class="qa-slide-label">+500ml Su</div>
+                </button>`;
         } else if (key === "steps_1000") {
-            buttonsHtml += `<button class="quick-action-btn" onclick="addSteps(1000)"><i class="fa-solid fa-shoe-prints"></i> +1.000 Adım</button>`;
+            buttonsHtml += `
+                <button class="quick-action-btn-slide" onclick="addSteps(1000)">
+                    <div class="qa-slide-icon"><i class="fa-solid fa-shoe-prints"></i></div>
+                    <div class="qa-slide-label">+1.000 Adım</div>
+                </button>`;
         } else if (key === "steps_manual") {
-            buttonsHtml += `<button class="quick-action-btn" onclick="promptCustomSteps()"><i class="fa-solid fa-pen"></i> Manuel Adım</button>`;
+            buttonsHtml += `
+                <button class="quick-action-btn-slide" onclick="promptCustomSteps()">
+                    <div class="qa-slide-icon"><i class="fa-solid fa-pen"></i></div>
+                    <div class="qa-slide-label">Manuel Adım</div>
+                </button>`;
         } else if (appData.customPresets && appData.customPresets[key]) {
             const preset = appData.customPresets[key];
-            buttonsHtml += `<button class="quick-action-btn" onclick="logPresetMeal('${key}')"><i class="fa-solid fa-plus"></i> ${preset.name}</button>`;
+            buttonsHtml += `
+                <button class="quick-action-btn-slide" onclick="logPresetMeal('${key}')">
+                    <div class="qa-slide-icon"><i class="fa-solid fa-utensils"></i></div>
+                    <div class="qa-slide-label">${preset.name}</div>
+                </button>`;
+        } else {
+            const customAct = customList.find(a => a.id === key);
+            if (customAct) {
+                let iconHtml = customAct.icon;
+                if (!customAct.icon || customAct.icon.length === 0) iconHtml = "⚡";
+                buttonsHtml += `
+                    <button class="quick-action-btn-slide" onclick="executeCustomAction('${customAct.id}')">
+                        <div class="qa-slide-icon">${iconHtml}</div>
+                        <div class="qa-slide-label">${customAct.title}</div>
+                    </button>`;
+            }
         }
     });
 
     if (buttonsHtml === "") {
-        buttonsHtml = `<p class="text-muted" style="grid-column: span 2; font-size:0.75rem; text-align:center;">Hızlı buton seçilmedi. 'Özelleştir' butonundan ekleyebilirsin.</p>`;
+        buttonsHtml = `
+            <div style="padding:15px; text-align:center; width:100%; color:var(--text-muted); font-size:0.75rem;">
+                Hızlı işlem butonu seçilmedi. <strong>'+ Ekle'</strong> veya <strong>'Özelleştir'</strong> ile ekleyebilirsiniz.
+            </div>`;
     }
 
     container.innerHTML = buttonsHtml;
@@ -1926,27 +2453,48 @@ function renderQuickActionsConfig() {
         { key: "steps_manual", label: "Manuel Adım Girişi", icon: "fa-pen" }
     ];
 
-    let html = "";
+    let html = `<div style="font-size:0.75rem; font-weight:700; color:var(--text-secondary); margin-bottom:6px; text-transform:uppercase;">📌 Temel Fonksiyonlar</div>`;
     builtInActions.forEach(act => {
         const checked = pinned.includes(act.key) ? "checked" : "";
         html += `
             <div class="toggle-item">
-                <span><i class="fa-solid ${act.icon}" style="margin-right:8px;"></i> ${act.label}</span>
+                <span><i class="fa-solid ${act.icon}" style="margin-right:8px; color:var(--accent-orange);"></i> ${act.label}</span>
                 <input type="checkbox" value="${act.key}" class="qa-chk" ${checked}>
             </div>
         `;
     });
 
+    html += `<div style="font-size:0.75rem; font-weight:700; color:var(--text-secondary); margin:12px 0 6px; text-transform:uppercase;">🍽️ Sabit Öğün Kısayolları</div>`;
     Object.keys(appData.customPresets || {}).forEach(key => {
         const p = appData.customPresets[key];
         const checked = pinned.includes(key) ? "checked" : "";
         html += `
             <div class="toggle-item">
-                <span><i class="fa-solid fa-utensils" style="margin-right:8px;"></i> ${p.name} (${p.cal} kcal)</span>
+                <span><i class="fa-solid fa-utensils" style="margin-right:8px; color:#38bdf8;"></i> ${p.name} (${p.cal} kcal)</span>
                 <input type="checkbox" value="${key}" class="qa-chk" ${checked}>
             </div>
         `;
     });
+
+    const customList = appData.customQuickActions || [];
+    if (customList.length > 0) {
+        html += `<div style="font-size:0.75rem; font-weight:700; color:var(--text-secondary); margin:12px 0 6px; text-transform:uppercase;">✨ Sizin Oluşturduğunuz Özel Butonlar</div>`;
+        customList.forEach(c => {
+            const checked = pinned.includes(c.id) ? "checked" : "";
+            html += `
+                <div class="toggle-item" style="display:flex; justify-content:space-between; align-items:center;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span>${c.icon}</span>
+                        <span><strong>${c.title}</strong> <small style="opacity:0.7;">(${c.type})</small></span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <input type="checkbox" value="${c.id}" class="qa-chk" ${checked}>
+                        <button type="button" class="btn-trash-action" onclick="deleteCustomAction('${c.id}')" title="Bu butonu sil" style="background:none; border:none; color:#f43f5e; cursor:pointer; font-size:0.85rem;"><i class="fa-solid fa-trash-can"></i></button>
+                    </div>
+                </div>
+            `;
+        });
+    }
 
     listContainer.innerHTML = html;
 }
@@ -2235,6 +2783,69 @@ function filterStretchingCategory(cat, btn) {
     renderStretchingList();
 }
 
+function getStretchingSvg(stretch) {
+    const cat = stretch.category;
+    if (cat === "chest_shoulder") {
+        return `
+            <svg viewBox="0 0 160 70" width="100%" height="70" class="stretch-anim-svg" style="max-height:70px;">
+                <circle cx="80" cy="18" r="9" fill="#c084fc" opacity="0.9" />
+                <line x1="80" y1="27" x2="80" y2="52" stroke="#a855f7" stroke-width="4" stroke-linecap="round" />
+                <path d="M80 32 Q55 22 35 38" fill="none" stroke="#e879f9" stroke-width="3.5" stroke-linecap="round">
+                    <animate attributeName="d" values="M80 32 Q55 22 35 38; M80 32 Q48 18 26 44; M80 32 Q55 22 35 38" dur="3s" repeatCount="indefinite" />
+                </path>
+                <path d="M80 32 Q105 22 125 38" fill="none" stroke="#e879f9" stroke-width="3.5" stroke-linecap="round">
+                    <animate attributeName="d" values="M80 32 Q105 22 125 38; M80 32 Q112 18 134 44; M80 32 Q105 22 125 38" dur="3s" repeatCount="indefinite" />
+                </path>
+                <circle cx="64" cy="30" r="3" fill="#f43f5e"><animate attributeName="r" values="2;5;2" dur="2s" repeatCount="indefinite"/></circle>
+                <circle cx="96" cy="30" r="3" fill="#f43f5e"><animate attributeName="r" values="2;5;2" dur="2s" repeatCount="indefinite"/></circle>
+                <line x1="80" y1="52" x2="66" y2="66" stroke="#a855f7" stroke-width="3.5" stroke-linecap="round" />
+                <line x1="80" y1="52" x2="94" y2="66" stroke="#a855f7" stroke-width="3.5" stroke-linecap="round" />
+            </svg>`;
+    } else if (cat === "back_spine") {
+        return `
+            <svg viewBox="0 0 160 70" width="100%" height="70" class="stretch-anim-svg" style="max-height:70px;">
+                <circle cx="36" cy="28" r="8" fill="#c084fc" opacity="0.9" />
+                <path d="M42 32 Q80 18 120 38" fill="none" stroke="#a855f7" stroke-width="4" stroke-linecap="round">
+                    <animate attributeName="d" values="M42 32 Q80 16 120 38; M42 32 Q80 48 120 38; M42 32 Q80 16 120 38" dur="4s" repeatCount="indefinite" />
+                </path>
+                <line x1="48" y1="36" x2="48" y2="60" stroke="#e879f9" stroke-width="3.5" stroke-linecap="round" />
+                <line x1="115" y1="40" x2="115" y2="60" stroke="#e879f9" stroke-width="3.5" stroke-linecap="round" />
+                <circle cx="80" cy="28" r="4" fill="#38bdf8"><animate attributeName="opacity" values="0.3;1;0.3" dur="2s" repeatCount="indefinite"/></circle>
+            </svg>`;
+    } else if (cat === "hips_glutes") {
+        return `
+            <svg viewBox="0 0 160 70" width="100%" height="70" class="stretch-anim-svg" style="max-height:70px;">
+                <circle cx="55" cy="18" r="8" fill="#c084fc" />
+                <line x1="55" y1="26" x2="65" y2="44" stroke="#a855f7" stroke-width="4" stroke-linecap="round" />
+                <path d="M65 44 L95 48 L125 64" fill="none" stroke="#e879f9" stroke-width="3.5" stroke-linecap="round" />
+                <path d="M65 44 L40 56 L24 64" fill="none" stroke="#e879f9" stroke-width="3.5" stroke-linecap="round">
+                    <animate attributeName="d" values="M65 44 L40 56 L24 64; M65 46 L34 58 L18 64; M65 44 L40 56 L24 64" dur="3s" repeatCount="indefinite" />
+                </path>
+                <circle cx="65" cy="44" r="4" fill="#fbbf24"><animate attributeName="r" values="3;6;3" dur="2s" repeatCount="indefinite"/></circle>
+            </svg>`;
+    } else if (cat === "legs_hamstring") {
+        return `
+            <svg viewBox="0 0 160 70" width="100%" height="70" class="stretch-anim-svg" style="max-height:70px;">
+                <circle cx="45" cy="20" r="8" fill="#c084fc" />
+                <line x1="45" y1="28" x2="60" y2="50" stroke="#a855f7" stroke-width="4" stroke-linecap="round" />
+                <path d="M50 32 L88 46" fill="none" stroke="#38bdf8" stroke-width="3.5" stroke-linecap="round">
+                    <animate attributeName="d" values="M50 32 L82 44; M50 32 L112 56; M50 32 L82 44" dur="3.5s" repeatCount="indefinite" />
+                </path>
+                <line x1="60" y1="50" x2="116" y2="58" stroke="#e879f9" stroke-width="4" stroke-linecap="round" />
+                <circle cx="86" cy="54" r="3.5" fill="#f43f5e"><animate attributeName="r" values="2;5;2" dur="2s" repeatCount="indefinite"/></circle>
+            </svg>`;
+    } else {
+        return `
+            <svg viewBox="0 0 160 70" width="100%" height="70" class="stretch-anim-svg" style="max-height:70px;">
+                <circle cx="80" cy="22" r="10" fill="#c084fc">
+                    <animate attributeName="cx" values="74;86;74" dur="4s" repeatCount="indefinite" />
+                </circle>
+                <line x1="80" y1="32" x2="80" y2="58" stroke="#a855f7" stroke-width="4" stroke-linecap="round" />
+                <line x1="60" y1="42" x2="100" y2="42" stroke="#e879f9" stroke-width="3.5" stroke-linecap="round" />
+            </svg>`;
+    }
+}
+
 function renderStretchingList() {
     const listContainer = document.getElementById("stretching-exercises-list");
     if (!listContainer) return;
@@ -2253,6 +2864,7 @@ function renderStretchingList() {
 
     listContainer.innerHTML = list.map(e => {
         const isDone = completedMap[e.id] === todayStr;
+        const svgVisual = getStretchingSvg(e);
         return `
             <div class="stretch-card ${isDone ? 'completed-today' : ''}">
                 <div class="stretch-card-header">
@@ -2264,6 +2876,18 @@ function renderStretchingList() {
                         <i class="fa-solid fa-play"></i> ${isDone ? 'Tekrar Yap' : 'Başlat'}
                     </button>
                 </div>
+
+                <!-- Animated Mobility & Posture Box -->
+                <div class="stretch-visual-box">
+                    <span class="stretch-pose-badge"><i class="fa-solid fa-person-praying"></i> Görsel Hareket Rehberi</span>
+                    <div class="stretch-svg-anim-wrap">
+                        ${svgVisual}
+                    </div>
+                    <div class="stretch-breath-guide">
+                        <span>🫁</span> Nefes Al (4sn) • Tut (2sn) • Ver (4sn)
+                    </div>
+                </div>
+
                 <p class="stretch-card-desc">${e.desc}</p>
                 <div class="stretch-meta-row">
                     <span class="stretch-time-badge"><i class="fa-solid fa-stopwatch"></i> ${e.duration} sn • ${e.tips}</span>
@@ -2773,21 +3397,17 @@ function renderDashboardSupplementsSummary() {
     const supps = appData.supplements || [];
 
     if (supps.length === 0) {
-        container.innerHTML = `<p class="text-muted" style="font-size:0.75rem;">Henüz suplament eklenmedi.</p>`;
+        container.innerHTML = `<p class="text-muted" style="font-size:0.75rem;">Henüz suplement eklenmedi.</p>`;
         return;
     }
 
-    container.innerHTML = supps.slice(0, 4).map(s => {
+    container.innerHTML = supps.map(s => {
         const isTaken = !!dailyLog[s.id];
         return `
-            <div class="supplement-card ${isTaken ? 'taken' : ''}" onclick="toggleSupplement('${s.id}')">
-                <div class="supp-left">
-                    <button class="supp-chk-btn"><i class="fa-solid fa-check"></i></button>
-                    <div class="supp-info">
-                        <strong>${s.name}</strong>
-                        <span>${s.dosage} • <small>${s.timing}</small></span>
-                    </div>
-                </div>
+            <div class="supp-chip-badge ${isTaken ? 'taken' : ''}" onclick="toggleSupplement('${s.id}')" title="${s.benefit || s.name}">
+                <span class="supp-chip-check"><i class="fa-solid ${isTaken ? 'fa-check' : 'fa-plus'}"></i></span>
+                <span class="supp-chip-name">${s.name}</span>
+                <span class="supp-chip-dosage" style="opacity:0.75; font-size:0.68rem;">${s.dosage}</span>
             </div>
         `;
     }).join("");
@@ -2798,7 +3418,7 @@ function renderDashboardSupplementsSummary() {
 function openNewRecipeBuilderModal() {
     document.getElementById("recipe-edit-preset-id").value = "";
     document.getElementById("recipe-meal-name").value = "";
-    document.getElementById("recipe-builder-title").innerHTML = `<i class="fa-solid fa-utensils"></i> Çiğ Gramajlı Öğün Oluşturucu`;
+    document.getElementById("recipe-builder-title").innerHTML = `<i class="fa-solid fa-utensils"></i> 🍽️ Özel Öğün & Beslenme Mimarisi`;
     document.getElementById("recipe-add-today-row").style.display = "block";
     document.getElementById("recipe-add-today-chk").checked = true;
     document.getElementById("recipe-save-preset-chk").checked = true;
@@ -3319,6 +3939,119 @@ function calculateOverloadTarget(prevLogs) {
     const targetHeavierReps = Math.max(5, r - 2);
 
     return `Geçen Hafta: ${w}kg × ${r} Rep ➔ <strong>Bugün Hedef: ${w}kg × ${targetSameWeightReps} Rep</strong> veya <strong>${targetHeavierWeight}kg × ${targetHeavierReps}+ Rep</strong>`;
+}
+
+function openWorkoutSplitsModal() {
+    renderWorkoutSplitsModal();
+    openModal('modal-workout-splits');
+}
+
+function switchSplitSubtab(tabName, btnEl) {
+    document.querySelectorAll('.split-nav-pill').forEach(b => b.classList.remove('active'));
+    if (btnEl) btnEl.classList.add('active');
+    
+    document.querySelectorAll('.split-subtab-content').forEach(c => {
+        c.classList.remove('active');
+        c.style.display = 'none';
+    });
+    
+    const target = document.getElementById(`split-subtab-${tabName}`);
+    if (target) {
+        target.classList.add('active');
+        target.style.display = 'block';
+    }
+}
+
+function renderWorkoutSplitsModal() {
+    const listEl = document.getElementById("split-templates-list");
+    if (!listEl) return;
+
+    const currentSplitId = appData.activeSplitKey || "ppl_standard";
+
+    listEl.innerHTML = MASTER_SPLIT_TEMPLATES.map(tmpl => {
+        const isCurrent = (tmpl.id === currentSplitId);
+        const daysHtml = tmpl.daysOverview.map(d => `<span class="split-day-chip">${d}</span>`).join("");
+        
+        return `
+            <div class="split-template-card ${isCurrent ? 'active' : ''}">
+                <div class="split-card-top">
+                    <div>
+                        <div class="split-title-row">
+                            <h4 class="split-name">${tmpl.name}</h4>
+                            <span class="split-badge">${tmpl.badge}</span>
+                        </div>
+                        <p class="split-desc">${tmpl.desc}</p>
+                    </div>
+                </div>
+                <div class="split-days-flow">
+                    ${daysHtml}
+                </div>
+                <div class="split-action-row">
+                    ${isCurrent ? 
+                        `<button type="button" class="btn btn-xs btn-outline active-plan-btn" disabled><i class="fa-solid fa-check"></i> Aktif Planın</button>` :
+                        `<button type="button" class="btn btn-xs btn-primary" onclick="applySplitTemplate('${tmpl.id}')"><i class="fa-solid fa-bolt"></i> Bu Spliti Uygula</button>`
+                    }
+                </div>
+            </div>
+        `;
+    }).join("");
+}
+
+function applySplitTemplate(templateId) {
+    const tmpl = MASTER_SPLIT_TEMPLATES.find(t => t.id === templateId);
+    if (!tmpl) return;
+
+    if (!confirm(`"${tmpl.name}" programını mevcut haftalık antrenman planınıza uygulamak istiyor musunuz? (Önceki özel düzenlemeleriniz güncellenecektir)`)) {
+        return;
+    }
+
+    appData.customWorkoutPlan = JSON.parse(JSON.stringify(tmpl.plan));
+    appData.activeSplitKey = templateId;
+    saveDataToStorage();
+    renderWorkoutView(currentActiveDay);
+    renderWorkoutSplitsModal();
+    closeModal('modal-workout-splits');
+    showToast(`🔥 "${tmpl.name}" programına başarıyla geçildi!`);
+}
+
+function executeDaySwap(mode) {
+    const src = document.getElementById("swap-source-day").value;
+    const tgt = document.getElementById("swap-target-day").value;
+
+    if (src === tgt) {
+        showToast("⚠️ Lütfen iki farklı gün seçin!");
+        return;
+    }
+
+    if (!appData.customWorkoutPlan) {
+        appData.customWorkoutPlan = JSON.parse(JSON.stringify(DEFAULT_WORKOUT_PLAN));
+    }
+
+    const dayNames = {
+        pzt: "Pazartesi",
+        sal: "Salı",
+        car: "Çarşamba",
+        per: "Perşembe",
+        cum: "Cuma",
+        cmt: "Cumartesi",
+        paz: "Pazar"
+    };
+
+    if (mode === "swap") {
+        const temp = JSON.parse(JSON.stringify(appData.customWorkoutPlan[src]));
+        appData.customWorkoutPlan[src] = JSON.parse(JSON.stringify(appData.customWorkoutPlan[tgt]));
+        appData.customWorkoutPlan[tgt] = temp;
+        saveDataToStorage();
+        renderWorkoutView(currentActiveDay);
+        closeModal('modal-workout-splits');
+        showToast(`🔀 ${dayNames[src]} ile ${dayNames[tgt]} programları takas edildi!`);
+    } else if (mode === "copy") {
+        appData.customWorkoutPlan[tgt] = JSON.parse(JSON.stringify(appData.customWorkoutPlan[src]));
+        saveDataToStorage();
+        renderWorkoutView(currentActiveDay);
+        closeModal('modal-workout-splits');
+        showToast(`📋 ${dayNames[src]} programı ${dayNames[tgt]} gününün üzerine kopyalandı!`);
+    }
 }
 
 function renderWorkoutView(dayKey) {
@@ -7951,4 +8684,29 @@ function initModalBackdropHandlers() {
         }, { passive: false });
     });
 }
+
+// Floating AI Cloud Dock Controller
+function toggleFloatingAiCloud(event) {
+    if (event) event.stopPropagation();
+    const flyout = document.getElementById("ai-cloud-flyout");
+    if (!flyout) return;
+    
+    if (flyout.style.display === "none" || !flyout.classList.contains("open")) {
+        flyout.style.display = "block";
+        setTimeout(() => flyout.classList.add("open"), 10);
+    } else {
+        flyout.classList.remove("open");
+        setTimeout(() => { flyout.style.display = "none"; }, 200);
+    }
+}
+
+document.addEventListener("click", (e) => {
+    const dock = document.getElementById("floating-ai-cloud-dock");
+    const flyout = document.getElementById("ai-cloud-flyout");
+    if (dock && flyout && flyout.classList.contains("open") && !dock.contains(e.target)) {
+        flyout.classList.remove("open");
+        setTimeout(() => { flyout.style.display = "none"; }, 200);
+    }
+});
+
 

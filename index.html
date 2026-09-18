@@ -198,16 +198,25 @@
                     </div>
                 </div>
 
-                <!-- Quick Actions Grid (Customizable) -->
-                <div class="card">
+                <!-- Quick Actions Carousel Slider (Fully Customizable) -->
+                <div class="card quick-actions-card">
                     <div class="card-header">
-                        <h2>HIZLI İŞLEMLER</h2>
-                        <button class="btn btn-xs btn-outline" onclick="openModal('modal-quick-actions')" title="Hızlı butonları düzenle">
-                            <i class="fa-solid fa-pen"></i> Özelleştir
-                        </button>
+                        <h2>⚡ HIZLI İŞLEMLER</h2>
+                        <div class="header-action-group">
+                            <button class="btn btn-xs btn-outline" onclick="openModal('modal-quick-actions')" title="Hızlı butonları düzenle">
+                                <i class="fa-solid fa-sliders"></i> Özelleştir
+                            </button>
+                            <button class="btn btn-xs btn-primary" onclick="openNewCustomActionModal()" title="Yeni Hızlı İşlem Butonu Ekle">
+                                <i class="fa-solid fa-plus"></i> Ekle
+                            </button>
+                        </div>
                     </div>
-                    <div class="quick-actions-grid" id="dashboard-quick-actions-container">
-                        <!-- Populated dynamically -->
+                    <div class="quick-actions-carousel-wrapper">
+                        <button type="button" class="carousel-nav-btn prev" onclick="scrollQuickActionsCarousel(-1)" aria-label="Önceki"><i class="fa-solid fa-chevron-left"></i></button>
+                        <div class="quick-actions-carousel" id="dashboard-quick-actions-container">
+                            <!-- Populated dynamically -->
+                        </div>
+                        <button type="button" class="carousel-nav-btn next" onclick="scrollQuickActionsCarousel(1)" aria-label="Sonraki"><i class="fa-solid fa-chevron-right"></i></button>
                     </div>
                 </div>
 
@@ -226,14 +235,14 @@
                     </button>
                 </div>
 
-                <!-- Supplements Summary Mini-Checklist -->
-                <div class="card">
+                <!-- Compact Supplements Summary Mini-Chips -->
+                <div class="card compact-supp-card">
                     <div class="card-header">
-                        <h2>GÜNLÜK SUPLEMENTLER</h2>
+                        <h2>💊 GÜNLÜK SUPLEMENTLER</h2>
                         <button class="btn btn-xs btn-outline" onclick="navigateToTab('supplements')">Tümünü Gör</button>
                     </div>
-                    <div id="dashboard-supplements-summary" class="supplements-mini-list">
-                        <!-- Mini checklist -->
+                    <div id="dashboard-supplements-summary" class="supplements-mini-chips">
+                        <!-- Mini chips checklist -->
                     </div>
                 </div>
             </section>
@@ -279,43 +288,18 @@
                 </div>
 
                 <div class="workout-action-bar">
+                    <button class="btn btn-xs btn-primary btn-split-selector" onclick="openWorkoutSplitsModal()" title="Haftalık Split / Programını Değiştir">
+                        <i class="fa-solid fa-shuffle"></i> 🔄 Split Seç
+                    </button>
                     <button class="btn btn-xs btn-outline" onclick="openStretchingModal()" style="border-color:rgba(192,132,252,0.4); color:#c084fc;">
-                        <i class="fa-solid fa-person-praying"></i> 🧘 Esneme & Mobilite
+                        <i class="fa-solid fa-person-praying"></i> 🧘 Esneme
                     </button>
-                    <button class="btn btn-xs btn-outline" onclick="openModal('modal-rir-guide')">
-                        <i class="fa-solid fa-circle-question"></i> RIR Rehberi
+                    <button class="btn btn-xs btn-outline" onclick="openExerciseManagerModal()">
+                        <i class="fa-solid fa-pen-to-square"></i> Düzenle
                     </button>
-                    <button class="btn btn-xs btn-primary" onclick="openExerciseManagerModal()">
-                        <i class="fa-solid fa-pen-to-square"></i> Bu Günü Düzenle
+                    <button class="btn btn-xs btn-outline" onclick="openAssistantModal('enes')" title="Enes Abi'ye Alternatif Sor">
+                        🦍 Enes
                     </button>
-                </div>
-
-                <!-- ENES ABİ AI ASSISTANT BANNER CARD -->
-                <div class="card assistant-hero-card assistant-enes" onclick="openAssistantModal('enes')">
-                    <div class="assistant-hero-header">
-                        <div class="assistant-avatar-badge avatar-enes">🦍</div>
-                        <div class="assistant-hero-info">
-                            <div class="assistant-name-row">
-                                <h4>Enes Abi</h4>
-                                <span class="assistant-role-pill role-enes"><i class="fa-solid fa-bolt"></i> Salon Kıdemlisi & Biyomekanik</span>
-                            </div>
-                            <p class="assistant-tagline">"Makine doluysa ya da omzun batıyorsa söyle; 1'e 1 anatomik alternatifini çakıp programa işleyelim."</p>
-                        </div>
-                        <button class="btn-assistant-action" onclick="event.stopPropagation(); openAssistantModal('enes')">
-                            <i class="fa-solid fa-comments"></i> Danış
-                        </button>
-                    </div>
-                    <div class="assistant-quick-triggers">
-                        <button type="button" class="quick-trigger-chip" onclick="event.stopPropagation(); triggerAssistantPrompt('enes', 'crowded')">
-                            ⚡ Makine Dolu!
-                        </button>
-                        <button type="button" class="quick-trigger-chip" onclick="event.stopPropagation(); triggerAssistantPrompt('enes', 'pain')">
-                            🩹 Eklem / Omuz Batması
-                        </button>
-                        <button type="button" class="quick-trigger-chip" onclick="event.stopPropagation(); triggerAssistantPrompt('enes', 'overload')">
-                            🔥 Bugün Bomba Gibiyim
-                        </button>
-                    </div>
                 </div>
 
                 <div class="day-selector-scroll" id="workout-day-tabs">
@@ -335,42 +319,19 @@
 
             <!-- VIEW 3: BESLENME & ÖĞÜNLER (SMART GRAM RECIPE ENGINE) -->
             <section id="view-nutrition" class="tab-view">
-                <!-- VEDAT DÜBÜR AI ASSISTANT BANNER CARD -->
-                <div class="card assistant-hero-card assistant-vedat" onclick="openAssistantModal('vedat')">
-                    <div class="assistant-hero-header">
-                        <div class="assistant-avatar-badge avatar-vedat">🍳</div>
-                        <div class="assistant-hero-info">
-                            <div class="assistant-name-row">
-                                <h4>Vedat Dübür</h4>
-                                <span class="assistant-role-pill role-vedat"><i class="fa-solid fa-utensils"></i> Makro Gurmesi & Sokak Şefi</span>
-                            </div>
-                            <p class="assistant-tagline">"Dolapta ne varsa söyle; 5 dakikada kuru tavuk-lapa illetinden kurtarıp kütle bombası tarif patlatayım."</p>
-                        </div>
-                        <button class="btn-assistant-action" onclick="event.stopPropagation(); openAssistantModal('vedat')">
-                            <i class="fa-solid fa-comments"></i> Danış
-                        </button>
-                    </div>
-                    <div class="assistant-quick-triggers">
-                        <button type="button" class="quick-trigger-chip" onclick="event.stopPropagation(); triggerAssistantPrompt('vedat', 'pantry')">
-                            🍗 Dolaptakilerle Tarif Yap
-                        </button>
-                        <button type="button" class="quick-trigger-chip" onclick="event.stopPropagation(); triggerAssistantPrompt('vedat', 'macros')">
-                            📊 Kalan Makroları Doldur
-                        </button>
-                        <button type="button" class="quick-trigger-chip" onclick="event.stopPropagation(); triggerAssistantPrompt('vedat', 'rescue')">
-                            🤢 Tavuk-Pirinçten Kurtar
-                        </button>
-                    </div>
-                </div>
-
                 <!-- Action Bar: Add custom meal -->
                 <div class="nutrition-top-actions">
                     <button class="btn btn-primary btn-block" onclick="openNewRecipeBuilderModal()">
-                        <i class="fa-solid fa-plus"></i> Çiğ Gramajlı Öğün / Şablon Oluştur
+                        <i class="fa-solid fa-plus"></i> 🍽️ Akıllı Beslenme & Öğün Planlayıcı
                     </button>
-                    <button class="btn btn-outline btn-block" style="margin-top:8px;" onclick="openOnboardingWizard()">
-                        <i class="fa-solid fa-wand-magic-sparkles"></i> Sihirbaz ile Otomatik Diyet Oluştur
-                    </button>
+                    <div style="display:flex; gap:8px; margin-top:8px;">
+                        <button class="btn btn-outline btn-block" onclick="openOnboardingWizard()">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> Diyet Sihirbazı
+                        </button>
+                        <button class="btn btn-outline" onclick="openAssistantModal('vedat')" title="Vedat Şef'e Sor" style="white-space:nowrap;">
+                            🍳 Vedat Şef
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Custom / Preset Meals Library with Gram Ingredients -->
@@ -380,7 +341,7 @@
                         <button class="btn btn-sm btn-outline" onclick="logAllDailyPresets()">Tümünü Ekle</button>
                     </div>
                     <p class="text-secondary" style="font-size:0.75rem; line-height:1.4;">
-                        Kalem simgesine (✏️) basarak öğünün çiğ pirinç, tavuk, un vb. gramajlarını dilediğin gibi değiştirebilirsin.
+                        Kalem simgesine (✏️) basarak öğünün pirinç, tavuk, un vb. gramajlarını dilediğin gibi güncelleyebilirsin.
                     </p>
                     <div class="preset-meals-list" id="preset-meals-container">
                         <!-- Populated dynamically -->
@@ -401,43 +362,15 @@
 
             <!-- VIEW 4: SUPLEMENTLER (SUPPLEMENT TRACKER & 50+ CATALOG) -->
             <section id="view-supplements" class="tab-view">
-                <!-- KÜRAY AI ASSISTANT BANNER CARD -->
-                <div class="card assistant-hero-card assistant-kuray" onclick="openAssistantModal('kuray')">
-                    <div class="assistant-hero-header">
-                        <div class="assistant-avatar-badge avatar-kuray">💊</div>
-                        <div class="assistant-hero-info">
-                            <div class="assistant-name-row">
-                                <h4>Küray</h4>
-                                <span class="assistant-role-pill role-kuray"><i class="fa-solid fa-flask-vial"></i> Suplement Çakalı & Biyokimya</span>
-                            </div>
-                            <p class="assistant-tagline">"Fuzuli tozlara para bayılma! Derdin neyse (uyku, gaz, pump, toparlanma) nokta atışı suplementi yazayım."</p>
-                        </div>
-                        <button class="btn-assistant-action" onclick="event.stopPropagation(); openAssistantModal('kuray')">
-                            <i class="fa-solid fa-comments"></i> Danış
-                        </button>
-                    </div>
-                    <div class="assistant-quick-triggers">
-                        <button type="button" class="quick-trigger-chip" onclick="event.stopPropagation(); triggerAssistantPrompt('kuray', 'sleep')">
-                            💤 Uyku & Toparlanma
-                        </button>
-                        <button type="button" class="quick-trigger-chip" onclick="event.stopPropagation(); triggerAssistantPrompt('kuray', 'bloat')">
-                            🤢 Şişkinlik & Sindirim
-                        </button>
-                        <button type="button" class="quick-trigger-chip" onclick="event.stopPropagation(); triggerAssistantPrompt('kuray', 'pump')">
-                            ⚡ Damar Açıcı Pump & Güç
-                        </button>
-                        <button type="button" class="quick-trigger-chip" onclick="event.stopPropagation(); triggerAssistantPrompt('kuray', 'stack')">
-                            🎯 Bana Ne Lazım?
-                        </button>
-                    </div>
-                </div>
-
                 <div class="card">
                     <div class="card-header">
-                        <h2>SUPLEMENT PROTOKOLÜ</h2>
-                        <button class="btn btn-sm btn-primary" onclick="openModal('modal-supplement-catalog')">
-                            <i class="fa-solid fa-layer-group"></i> 50+ Katalogdan Seç
-                        </button>
+                        <h2>💊 SUPLEMENT PROTOKOLÜ</h2>
+                        <div style="display:flex; gap:6px;">
+                            <button class="btn btn-xs btn-outline" onclick="openAssistantModal('kuray')">💊 Küray'a Danış</button>
+                            <button class="btn btn-xs btn-primary" onclick="openModal('modal-supplement-catalog')">
+                                <i class="fa-solid fa-layer-group"></i> 50+ Katalog
+                            </button>
+                        </div>
                     </div>
                     <p class="text-secondary" style="font-size:0.8rem; line-height:1.4;">
                         Kullandığın takviyeleri işaretle, ne işe yaradığını incele ve günlük rutinine göre düzenle.
@@ -983,13 +916,18 @@
     <div id="modal-quick-actions" class="modal-overlay">
         <div class="modal-card">
             <div class="modal-header">
-                <h3><i class="fa-solid fa-wand-magic-sparkles"></i> Hızlı Butonları Seç</h3>
+                <h3><i class="fa-solid fa-sliders"></i> Hızlı İşlemleri Özelleştir</h3>
                 <button class="modal-close-btn" onclick="closeModal('modal-quick-actions')">&times;</button>
             </div>
             <div class="modal-body">
-                <p class="text-secondary" style="font-size:0.8rem; margin-bottom:12px;">
-                    Ana ekranda (Dashboard) görmek istediğin hızlı işlem butonlarını işaretle:
-                </p>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <p class="text-secondary" style="font-size:0.78rem; margin:0;">
+                        Ana ekranda görmek istediğin butonları seç veya yeni özel buton ekle:
+                    </p>
+                    <button class="btn btn-xs btn-primary" onclick="openNewCustomActionModal()">
+                        <i class="fa-solid fa-plus"></i> Yeni Buton
+                    </button>
+                </div>
                 <div id="quick-actions-toggle-list" class="toggle-list">
                     <!-- Populated dynamically -->
                 </div>
@@ -1000,12 +938,166 @@
         </div>
     </div>
 
+    <!-- 2.1 CUSTOM ACTION CREATOR MODAL -->
+    <div id="modal-custom-action-creator" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-wand-magic-sparkles"></i> Yeni Hızlı Buton Oluştur</h3>
+                <button class="modal-close-btn" onclick="closeModal('modal-custom-action-creator')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="custom-action-form" onsubmit="handleCustomActionSubmit(event)">
+                    <div class="form-group">
+                        <label>Buton Başlığı / Adı</label>
+                        <input type="text" id="c-action-title" required placeholder="Örn: +300 kcal Gece Öğünü, +750ml Su, +2500 Adım">
+                    </div>
+                    <div class="form-group">
+                        <label>Simge / İkon (Emoji veya Metin)</label>
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <input type="text" id="c-action-icon" value="⚡" style="width:65px; text-align:center; font-size:1.2rem;">
+                            <div class="emoji-quick-picks">
+                                <span class="emoji-pick-btn" onclick="document.getElementById('c-action-icon').value='⚡'">⚡</span>
+                                <span class="emoji-pick-btn" onclick="document.getElementById('c-action-icon').value='💧'">💧</span>
+                                <span class="emoji-pick-btn" onclick="document.getElementById('c-action-icon').value='🍗'">🍗</span>
+                                <span class="emoji-pick-btn" onclick="document.getElementById('c-action-icon').value='👟'">👟</span>
+                                <span class="emoji-pick-btn" onclick="document.getElementById('c-action-icon').value='🥪'">🥪</span>
+                                <span class="emoji-pick-btn" onclick="document.getElementById('c-action-icon').value='🧘'">🧘</span>
+                                <span class="emoji-pick-btn" onclick="document.getElementById('c-action-icon').value='💊'">💊</span>
+                                <span class="emoji-pick-btn" onclick="document.getElementById('c-action-icon').value='🔥'">🔥</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>İşlem Türü</label>
+                        <select id="c-action-type" onchange="toggleCustomActionTypeFields()">
+                            <option value="macro">Kalori & Makro Girişi (+Kcal/Protein/Karb/Yağ)</option>
+                            <option value="water">Su Ekleme (+Litre)</option>
+                            <option value="steps">Adım Ekleme (+Adım)</option>
+                            <option value="modal">Hızlı Kısayol / Pencere Aç (Mobilite, RPG, Sohbet)</option>
+                        </select>
+                    </div>
+
+                    <!-- Macro Fields -->
+                    <div id="c-action-macro-fields" class="form-row-macros">
+                        <div class="form-group">
+                            <label>Kalori (kcal)</label>
+                            <input type="number" id="c-action-cal" value="250">
+                        </div>
+                        <div class="form-group">
+                            <label>Protein (g)</label>
+                            <input type="number" id="c-action-p" value="25">
+                        </div>
+                        <div class="form-group">
+                            <label>Karb (g)</label>
+                            <input type="number" id="c-action-c" value="30">
+                        </div>
+                        <div class="form-group">
+                            <label>Yağ (g)</label>
+                            <input type="number" id="c-action-f" value="5">
+                        </div>
+                    </div>
+
+                    <!-- Water Fields -->
+                    <div id="c-action-water-fields" style="display:none;" class="form-group">
+                        <label>Eklenecek Su Miktarı (Litre)</label>
+                        <input type="number" step="0.1" id="c-action-water-val" value="0.5" placeholder="Örn: 0.5 veya 0.75">
+                    </div>
+
+                    <!-- Steps Fields -->
+                    <div id="c-action-steps-fields" style="display:none;" class="form-group">
+                        <label>Eklenecek Adım Sayısı</label>
+                        <input type="number" id="c-action-steps-val" value="1500" placeholder="Örn: 1500 veya 2500">
+                    </div>
+
+                    <!-- Modal Target Fields -->
+                    <div id="c-action-modal-fields" style="display:none;" class="form-group">
+                        <label>Açılacak Pencere</label>
+                        <select id="c-action-modal-target">
+                            <option value="modal-stretching-hub">🧘 Esneme & Mobilite Kütüphanesi</option>
+                            <option value="modal-character-hub">🛡️ RPG Karakter Merkezi</option>
+                            <option value="modal-athlete-chat">💬 Koç Ömer ile Canlı Sohbet</option>
+                            <option value="modal-step-tracker">👟 Canlı GPS & Adım Sayar</option>
+                            <option value="modal-supplement-catalog">💊 50+ Suplement Kataloğu</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block" style="margin-top:14px;">
+                        <i class="fa-solid fa-check"></i> Butonu Kaydet ve Ekle
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- WORKOUT SPLITS & PROGRAM MANAGER MODAL -->
+    <div id="modal-workout-splits" class="modal-overlay">
+        <div class="modal-card split-modal-card">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-shuffle"></i> Haftalık Antrenman Spliti Seç</h3>
+                <button class="modal-close-btn" onclick="closeModal('modal-workout-splits')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="split-tab-pills">
+                    <button type="button" class="split-nav-pill active" onclick="switchSplitSubtab('templates', this)">🏆 Popüler Şablonlar</button>
+                    <button type="button" class="split-nav-pill" onclick="switchSplitSubtab('swap', this)">🔀 Gün Takası & Rotasyon</button>
+                </div>
+
+                <div id="split-subtab-templates" class="split-subtab-content active">
+                    <p class="text-secondary" style="font-size:0.78rem; margin-bottom:12px;">
+                        Bilimsel hipertrofi ve güç prensiplerine göre hazırlanan hazır programlardan birini seçerek haftalık antrenman planına tek tıkla uygulayabilirsin:
+                    </p>
+                    <div class="split-templates-grid" id="split-templates-list">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+
+                <div id="split-subtab-swap" class="split-subtab-content" style="display:none;">
+                    <div class="card" style="background:var(--bg-card-subtle); padding:12px; margin-bottom:12px;">
+                        <h4 style="font-size:0.85rem; color:#fff; margin-bottom:6px;"><i class="fa-solid fa-arrows-rotate"></i> Haftalık Gün Takası / Rotasyon</h4>
+                        <p class="text-secondary" style="font-size:0.75rem; margin-bottom:12px;">
+                            Örneğin <em>"Bu hafta Çarşamba Leg yerine Kol antrenmanı yapacağım"</em> diyorsan, gün içeriklerini tek tıkla değiştirebilir veya başka güne aktarabilirsin.
+                        </p>
+                        <div class="form-row-2">
+                            <div class="form-group">
+                                <label>Hangi Günün Programı:</label>
+                                <select id="swap-source-day">
+                                    <option value="pzt">Pazartesi</option>
+                                    <option value="sal">Salı</option>
+                                    <option value="car">Çarşamba</option>
+                                    <option value="per">Perşembe</option>
+                                    <option value="cum">Cuma</option>
+                                    <option value="cmt">Cumartesi</option>
+                                    <option value="paz">Pazar</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Nereye Taşınsın / Takas Edilsin:</label>
+                                <select id="swap-target-day">
+                                    <option value="car" selected>Çarşamba</option>
+                                    <option value="pzt">Pazartesi</option>
+                                    <option value="sal">Salı</option>
+                                    <option value="per">Perşembe</option>
+                                    <option value="cum">Cuma</option>
+                                    <option value="cmt">Cumartesi</option>
+                                    <option value="paz">Pazar</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div style="display:flex; gap:8px;">
+                            <button type="button" class="btn btn-primary btn-block" onclick="executeDaySwap('swap')"><i class="fa-solid fa-right-left"></i> İki Günü Takas Et</button>
+                            <button type="button" class="btn btn-outline btn-block" onclick="executeDaySwap('copy')"><i class="fa-solid fa-copy"></i> Üzerine Kopyala</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- 3. SMART RECIPE & RAW INGREDIENT BUILDER MODAL -->
     <div id="modal-recipe-builder" class="modal-overlay">
         <div class="modal-card" style="max-height:92vh;">
             <div class="modal-header">
-                <h3 id="recipe-builder-title"><i class="fa-solid fa-utensils"></i> Çiğ Gramajlı Öğün Oluşturucu</h3>
+                <h3 id="recipe-builder-title"><i class="fa-solid fa-utensils"></i> 🍽️ Özel Öğün & Beslenme Mimarisi</h3>
                 <button class="modal-close-btn" onclick="closeModal('modal-recipe-builder')">&times;</button>
             </div>
             <div class="modal-body">
@@ -1019,7 +1111,7 @@
                 <!-- Ingredients Table -->
                 <div class="card" style="background:var(--bg-card-subtle); padding:10px;">
                     <div class="card-header" style="margin-bottom:6px;">
-                        <h2>MALZEMELER & ÇİĞ GRAMAJLAR</h2>
+                        <h2>MALZEMELER & GRAMAJLAR</h2>
                         <button class="btn btn-xs btn-primary" onclick="addIngredientRow()"><i class="fa-solid fa-plus"></i> Malzeme Ekle</button>
                     </div>
                     
@@ -2158,6 +2250,49 @@
                     <a href="javascript:void(0)" onclick="switchAuthTab('login')">Giriş Yap</a>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- FLOATING AI ASSISTANT CLOUD DOCK -->
+    <div class="floating-ai-cloud-dock" id="floating-ai-cloud-dock">
+        <button type="button" class="ai-cloud-main-btn" id="ai-cloud-main-btn" onclick="toggleFloatingAiCloud(event)" title="AI Koçluk & Asistan Bulutu">
+            <div class="ai-cloud-anim-wrap">
+                <span class="cloud-icon">☁️</span>
+                <span class="sparkle-icon">✨</span>
+            </div>
+            <span class="ai-cloud-label">AI Asistan</span>
+        </button>
+        <div class="ai-cloud-flyout" id="ai-cloud-flyout" style="display:none;">
+            <div class="ai-cloud-flyout-header">
+                <div class="flyout-title"><i class="fa-solid fa-cloud"></i> AI Asistan Ekibi</div>
+                <button type="button" class="flyout-close-btn" onclick="toggleFloatingAiCloud(event)">&times;</button>
+            </div>
+            <div class="ai-cloud-flyout-list">
+                <div class="flyout-item enes" onclick="openAssistantModal('enes'); toggleFloatingAiCloud(event);">
+                    <span class="flyout-avatar">🦍</span>
+                    <div class="flyout-info">
+                        <strong>Enes Abi</strong>
+                        <small>Biyomekanik & Alternatif Hareket</small>
+                    </div>
+                    <i class="fa-solid fa-chevron-right flyout-arrow"></i>
+                </div>
+                <div class="flyout-item vedat" onclick="openAssistantModal('vedat'); toggleFloatingAiCloud(event);">
+                    <span class="flyout-avatar">🍳</span>
+                    <div class="flyout-info">
+                        <strong>Vedat Dübür</strong>
+                        <small>Makro Gurmesi & Kütle Tarifleri</small>
+                    </div>
+                    <i class="fa-solid fa-chevron-right flyout-arrow"></i>
+                </div>
+                <div class="flyout-item kuray" onclick="openAssistantModal('kuray'); toggleFloatingAiCloud(event);">
+                    <span class="flyout-avatar">💊</span>
+                    <div class="flyout-info">
+                        <strong>Küray</strong>
+                        <small>Suplement Rehberi & Biyokimya</small>
+                    </div>
+                    <i class="fa-solid fa-chevron-right flyout-arrow"></i>
+                </div>
+            </div>
         </div>
     </div>
 
