@@ -4663,10 +4663,13 @@ function selectWorkoutDay(dayKey) {
 }
 
 function getExerciseSetCount(ex) {
+    if (ex && ex.setDirectives && Array.isArray(ex.setDirectives) && ex.setDirectives.length > 0) {
+        return ex.setDirectives.length;
+    }
     if (appData.exerciseSetsCount && appData.exerciseSetsCount[ex.id]) {
         return appData.exerciseSetsCount[ex.id];
     }
-    return ex.defaultSets || 2;
+    return ex.defaultSets || ex.sets || 2;
 }
 
 function changeExerciseSets(exId, delta) {
@@ -4939,12 +4942,15 @@ function renderWorkoutView(dayKey) {
 
         for (let i = 1; i <= totalSets; i++) {
             const prevSet = lastLog[i - 1] || { weight: "-", reps: "-", rir: "", setType: "" };
-            const defaultTag = (i === 1 && ex.isTopSet) ? "TOP" : (i > 1 && ex.isTopSet) ? "BACK" : "S" + i;
+            const coachDir = (ex.setDirectives && ex.setDirectives[i - 1]) || null;
+            const defaultTag = (coachDir && coachDir.type) ? coachDir.type : ((i === 1 && ex.isTopSet) ? "TOP" : (i > 1 && ex.isTopSet) ? "BACK" : "S" + i);
             const currentSetType = prevSet.setType || defaultTag;
             const savedW = prevSet.weight !== '-' ? prevSet.weight : '';
             const savedR = prevSet.reps !== '-' ? prevSet.reps : '';
             const savedRir = prevSet.rir || '';
             const tagClass = currentSetType === 'TOP' ? 'tag-top' : currentSetType === 'BACK' ? 'tag-back' : currentSetType === 'ISINMA' ? 'tag-warm' : currentSetType === 'DROP' ? 'tag-drop' : 'tag-normal';
+
+            const coachTargetText = coachDir ? `${coachDir.type && coachDir.type !== 'S' + i ? coachDir.type + ' • ' : ''}${coachDir.reps || ''}${coachDir.rir ? ' • ' + coachDir.rir.replace(/\(.*\)/, '').trim() : ''}`.trim() : '';
 
             html += `
                 <tr class="set-row">
@@ -4957,7 +4963,10 @@ function renderWorkoutView(dayKey) {
                             <option value="DROP" ${currentSetType === 'DROP' ? 'selected' : ''}>💥 DROP</option>
                         </select>
                     </td>
-                    <td style="font-size: 0.75rem; color: var(--text-muted);">${prevSet.weight}kg × ${prevSet.reps}</td>
+                    <td style="font-size: 0.75rem; color: var(--text-muted); line-height:1.25;">
+                        <div>${prevSet.weight !== '-' ? `<span style="color:#ffffff; font-weight:700;">${prevSet.weight}kg</span> × ${prevSet.reps}` : '<span style="opacity:0.35;">-</span>'}</div>
+                        ${coachTargetText ? `<div style="font-size:0.62rem; color:#ffd60a; font-weight:700; margin-top:2px;" title="Koç Direktifi"><i class="fa-solid fa-bullseye"></i> ${coachTargetText}</div>` : ''}
+                    </td>
                     <td>
                         <div style="display: flex; gap: 3px;">
                             <input type="number" step="0.5" class="set-input" placeholder="Kg" id="w_${ex.id}_${i}" 
@@ -8433,33 +8442,11 @@ function renderCoachWorkoutRevDay() {
             const isFirst = idx === 0;
             const isLast = idx === dayPlan.exercises.length - 1;
 
-            // Extract or infer reps and rir
-            let repsVal = ex.reps;
-            let rirVal = ex.rir;
-            if (!repsVal) {
-                if (ex.target) {
-                    const match = ex.target.match(/(\d+[\s-]*\d*\s*rep|\d+[\s-]+\d+|\d+\s*tekrar)/i);
-                    repsVal = match ? match[0].replace(/rep|tekrar/gi, '').trim() + " rep" : ex.target;
-                } else {
-                    repsVal = "6-9 rep";
-                }
-                ex.reps = repsVal;
-            }
-            if (!rirVal) {
-                if (ex.isTopSet) {
-                    rirVal = "RIR 0 (Tükeniş)";
-                } else if (ex.target && ex.target.toLowerCase().includes("rir")) {
-                    const rirMatch = ex.target.match(/rir\s*\d+/i);
-                    rirVal = rirMatch ? rirMatch[0].toUpperCase() : "RIR 1 (1 Kala)";
-                } else {
-                    rirVal = ex.isTopSet ? "RIR 0 (Tükeniş)" : "RIR 1 (1 Kala)";
-                }
-                ex.rir = rirVal;
-            }
+            const setDirectives = ensureExerciseSetDirectives(ex);
 
             return `
-                <div class="card" style="background:var(--bg-input); border:1px solid rgba(255,255,255,0.09); padding:10px 12px; margin-bottom:10px; border-radius:10px; position:relative;">
-                    <!-- Top Bar: Index + Direct Title Input + TopSet Toggle + Action Buttons -->
+                <div class="card" style="background:var(--bg-input); border:1px solid rgba(255,255,255,0.09); padding:12px; margin-bottom:12px; border-radius:10px; position:relative;">
+                    <!-- Top Bar: Index + Direct Title Input + Action Buttons -->
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; gap:8px; flex-wrap:wrap;">
                         <div style="display:flex; align-items:center; gap:8px; min-width:0; flex:1;">
                             <span class="badge-role" style="background:#ffd60a; color:#000; font-size:0.72rem; font-weight:900; padding:3px 8px; border-radius:4px; flex-shrink:0;">#${idx + 1}</span>
@@ -8470,10 +8457,9 @@ function renderCoachWorkoutRevDay() {
                                    title="Hareket adını doğrudan buradan değiştirebilirsiniz">
                         </div>
                         <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
-                            <label style="display:flex; align-items:center; gap:5px; font-size:0.68rem; color:#ffd60a; cursor:pointer; background:rgba(255,214,10,0.08); padding:3px 8px; border-radius:4px; border:1px solid rgba(255,214,10,0.22); white-space:nowrap;">
-                                <input type="checkbox" ${ex.isTopSet ? 'checked' : ''} onchange="updateCoachRxExField(${idx}, 'isTopSet', this.checked)" style="accent-color:#ffd60a; cursor:pointer;">
-                                <span style="font-weight:700;"><i class="fa-solid fa-fire"></i> Top Set</span>
-                            </label>
+                            <button type="button" class="btn btn-xs btn-outline" onclick="addCoachRxSet(${idx})" title="Yeni Set Ekle" style="border-color:#ffd60a; color:#ffd60a; font-size:0.68rem; padding:3px 8px; font-weight:700;">
+                                <i class="fa-solid fa-plus"></i> Set Ekle
+                            </button>
                             <button type="button" class="btn-chat-sync" onclick="moveCoachRxExercise(${idx}, -1)" ${isFirst ? 'disabled style="opacity:0.3; cursor:default;"' : ''} title="Yukarı Taşı" style="padding:3px 7px; font-size:0.65rem;">
                                 <i class="fa-solid fa-arrow-up"></i>
                             </button>
@@ -8486,39 +8472,82 @@ function renderCoachWorkoutRevDay() {
                         </div>
                     </div>
 
-                    <!-- Row 1: Set Sayısı | Hedef Tekrar (Ayrı) | Hedef RIR (Ayrı) -->
-                    <div style="display:grid; grid-template-columns: 80px 1fr 1fr; gap:6px; margin-bottom:8px;">
-                        <div class="form-group" style="margin-bottom:0;">
-                            <label style="font-size:0.62rem; color:var(--text-secondary); text-transform:uppercase; font-weight:700;"><i class="fa-solid fa-layer-group" style="color:#ffd60a;"></i> Set</label>
-                            <input type="number" min="1" max="10" value="${ex.defaultSets || 2}" 
-                                   onchange="updateCoachRxExField(${idx}, 'defaultSets', parseInt(this.value)||2)" 
-                                   style="font-size:0.75rem; padding:6px 8px; text-align:center; font-weight:800;">
-                        </div>
-                        <div class="form-group" style="margin-bottom:0;">
-                            <label style="font-size:0.62rem; color:var(--text-secondary); text-transform:uppercase; font-weight:700;"><i class="fa-solid fa-repeat" style="color:#60a5fa;"></i> Hedef Tekrar</label>
-                            <input type="text" value="${repsVal}" 
-                                   oninput="updateCoachRxExRepsAndRir(${idx}, 'reps', this.value)" 
-                                   placeholder="Örn: 6-8 veya 8-10" 
-                                   style="font-size:0.75rem; padding:6px 8px; font-weight:800; color:#60a5fa;">
-                        </div>
-                        <div class="form-group" style="margin-bottom:0;">
-                            <label style="font-size:0.62rem; color:var(--text-secondary); text-transform:uppercase; font-weight:700;"><i class="fa-solid fa-gauge-high" style="color:#ff453a;"></i> Hedef RIR</label>
-                            <select onchange="updateCoachRxExRepsAndRir(${idx}, 'rir', this.value)" class="form-select" style="font-size:0.72rem; padding:6px 6px; font-weight:800; color:#ff453a;">
-                                <option value="RIR 0 (Tükeniş)" ${rirVal.includes("0") && !rirVal.includes("0-1") ? 'selected' : ''}>RIR 0 (Tükeniş 🔥)</option>
-                                <option value="RIR 1 (1 Kala)" ${rirVal.includes("1") && !rirVal.includes("0") ? 'selected' : ''}>RIR 1 (1 Kala)</option>
-                                <option value="RIR 2 (2 Kala)" ${rirVal.includes("2") ? 'selected' : ''}>RIR 2 (2 Kala)</option>
-                                <option value="RIR 0-1 (Sınır)" ${rirVal.includes("0-1") ? 'selected' : ''}>RIR 0-1 (Sınır)</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- Row 2: Sehpa / Koltuk / Ekipman Ayarı -->
-                    <div class="form-group" style="margin-bottom:0;">
-                        <label style="font-size:0.62rem; color:var(--text-secondary); text-transform:uppercase; font-weight:700;"><i class="fa-solid fa-sliders" style="color:#eab308;"></i> Sehpa Açısı / Koltuk / Ekipman Notu</label>
+                    <!-- Sehpa / Koltuk / Ekipman Ayarı -->
+                    <div style="margin-bottom:10px;">
                         <input type="text" value="${ex.defaultSeat || ''}" 
                                oninput="updateCoachRxExField(${idx}, 'defaultSeat', this.value)" 
-                               placeholder="Örn: 30 Derece, Koltuk: 4, Geniş Tutuş..." 
-                               style="font-size:0.75rem; padding:6px 8px;">
+                               placeholder="📐 Sehpa Açısı / Koltuk / Ekipman Notu (Örn: 30° Incline, Koltuk: 4)..." 
+                               style="width:100%; font-size:0.75rem; padding:6px 10px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:6px; color:#ffffff;">
+                    </div>
+
+                    <!-- SET BAZLI KOÇ DİREKTİFLERİ KUTUSU -->
+                    <div style="background:rgba(0,0,0,0.3); border:1px solid rgba(255,214,10,0.18); border-radius:8px; padding:8px 10px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                            <span style="font-size:0.72rem; font-weight:800; color:#ffd60a;">
+                                <i class="fa-solid fa-list-check"></i> Set Direktifleri (${setDirectives.length} Set)
+                            </span>
+                            <span style="font-size:0.65rem; color:var(--text-muted);">Her setin tipini ve zorluğunu belirleyin</span>
+                        </div>
+
+                        <!-- SET BAŞLIKLARI -->
+                        <div style="display:grid; grid-template-columns: 100px 1fr 1.3fr 26px; gap:6px; margin-bottom:4px; padding:0 4px;">
+                            <span style="font-size:0.6rem; color:var(--text-secondary); font-weight:700; text-transform:uppercase;">SET TİPİ</span>
+                            <span style="font-size:0.6rem; color:var(--text-secondary); font-weight:700; text-transform:uppercase; text-align:center;">HEDEF TEKRAR</span>
+                            <span style="font-size:0.6rem; color:var(--text-secondary); font-weight:700; text-transform:uppercase;">HEDEF ZORLUK (RIR)</span>
+                            <span></span>
+                        </div>
+
+                        <!-- SET DİREKTİFLERİ LİSTESİ -->
+                        ${setDirectives.map((sd, sIdx) => {
+                            const currentType = sd.type || (sIdx === 0 && ex.isTopSet ? "TOP" : sIdx > 0 && ex.isTopSet ? "BACK" : `S${sIdx + 1}`);
+                            const tagClass = currentType === 'TOP' ? 'tag-top' : currentType === 'BACK' ? 'tag-back' : currentType === 'ISINMA' ? 'tag-warm' : currentType === 'DROP' ? 'tag-drop' : 'tag-normal';
+                            return `
+                                <div style="display:grid; grid-template-columns: 100px 1fr 1.3fr 26px; gap:6px; align-items:center; margin-bottom:5px; background:rgba(255,255,255,0.02); padding:4px 6px; border-radius:6px; border:1px solid rgba(255,255,255,0.06);">
+                                    <!-- Set Tipi -->
+                                    <div>
+                                        <select class="set-type-select ${tagClass}" 
+                                                onchange="updateCoachRxSetDirective(${idx}, ${sIdx}, 'type', this.value)" 
+                                                style="font-size:0.68rem; padding:4px 2px; font-weight:800;">
+                                            <option value="TOP" ${currentType === 'TOP' ? 'selected' : ''}>🔥 TOP</option>
+                                            <option value="BACK" ${currentType === 'BACK' ? 'selected' : ''}>⚡ BACK</option>
+                                            <option value="S${sIdx + 1}" ${currentType === `S${sIdx + 1}` || currentType === `S1` || currentType === `S2` || currentType === `S3` ? 'selected' : ''}>S${sIdx + 1}</option>
+                                            <option value="ISINMA" ${currentType === 'ISINMA' ? 'selected' : ''}>🟡 ISINMA</option>
+                                            <option value="DROP" ${currentType === 'DROP' ? 'selected' : ''}>💥 DROP</option>
+                                        </select>
+                                    </div>
+
+                                    <!-- Hedef Tekrar -->
+                                    <div>
+                                        <input type="text" value="${sd.reps || '6-8 rep'}" 
+                                               oninput="updateCoachRxSetDirective(${idx}, ${sIdx}, 'reps', this.value)" 
+                                               placeholder="Örn: 6-8" 
+                                               style="width:100%; font-size:0.72rem; padding:5px 6px; font-weight:800; color:#60a5fa; text-align:center; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:4px;">
+                                    </div>
+
+                                    <!-- Hedef Zorluk / RIR -->
+                                    <div>
+                                        <select onchange="updateCoachRxSetDirective(${idx}, ${sIdx}, 'rir', this.value)" 
+                                                class="form-select" 
+                                                style="width:100%; font-size:0.68rem; padding:5px 4px; font-weight:800; color:#ff453a; background:#181920; border:1px solid rgba(255,255,255,0.15); border-radius:4px;">
+                                            <option value="RIR 0 (Tükeniş)" ${sd.rir && sd.rir.includes('0') && !sd.rir.includes('0-1') ? 'selected' : ''}>🔴 RIR 0 (Tükeniş)</option>
+                                            <option value="RIR 1 (1 Kala)" ${sd.rir && sd.rir.includes('1') && !sd.rir.includes('0') ? 'selected' : ''}>🟢 RIR 1 (1 Kala)</option>
+                                            <option value="RIR 2 (2 Kala)" ${sd.rir && sd.rir.includes('2') ? 'selected' : ''}>🟡 RIR 2 (2 Kala)</option>
+                                            <option value="RIR 0-1 (Sınır)" ${sd.rir && sd.rir.includes('0-1') ? 'selected' : ''}>🟠 RIR 0-1 (Sınır)</option>
+                                        </select>
+                                    </div>
+
+                                    <!-- Set Sil Butonu -->
+                                    <div style="text-align:center;">
+                                        <button type="button" onclick="removeCoachRxSpecificSet(${idx}, ${sIdx})" 
+                                                ${setDirectives.length <= 1 ? 'disabled style="opacity:0.2; cursor:default;"' : ''} 
+                                                title="Bu Seti Sil" 
+                                                style="background:transparent; border:none; color:#ef4444; cursor:pointer; font-size:0.75rem; padding:2px;">
+                                            <i class="fa-solid fa-circle-xmark"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
                     </div>
                 </div>
             `;
@@ -8528,6 +8557,99 @@ function renderCoachWorkoutRevDay() {
     if (isCoachRxAddDrawerOpen) {
         renderCoachRxLibExercises();
     }
+}
+
+function ensureExerciseSetDirectives(ex) {
+    const totalSets = ex.defaultSets || ex.sets || 2;
+    if (!ex.setDirectives || !Array.isArray(ex.setDirectives) || ex.setDirectives.length === 0) {
+        ex.setDirectives = [];
+        for (let s = 1; s <= totalSets; s++) {
+            const isTop = (s === 1 && ex.isTopSet);
+            const isBack = (s > 1 && ex.isTopSet);
+            ex.setDirectives.push({
+                type: isTop ? "TOP" : isBack ? "BACK" : `S${s}`,
+                reps: ex.reps || (isTop ? "6-8 rep" : "8-10 rep"),
+                rir: isTop ? "RIR 0 (Tükeniş)" : (ex.rir || "RIR 1 (1 Kala)")
+            });
+        }
+    }
+    while (ex.setDirectives.length < totalSets) {
+        const s = ex.setDirectives.length + 1;
+        ex.setDirectives.push({
+            type: `S${s}`,
+            reps: "8-10 rep",
+            rir: "RIR 1 (1 Kala)"
+        });
+    }
+    if (ex.setDirectives.length > totalSets) {
+        ex.setDirectives = ex.setDirectives.slice(0, totalSets);
+    }
+    return ex.setDirectives;
+}
+
+function updateCoachRxSetDirective(exIndex, setIndex, field, value) {
+    const username = currentCoachSelectedAthlete;
+    if (!username || !currentCoachWorkoutDrafts[username]) return;
+
+    const dayPlan = currentCoachWorkoutDrafts[username][currentCoachWorkoutRevDay];
+    if (!dayPlan || !dayPlan.exercises[exIndex]) return;
+
+    const ex = dayPlan.exercises[exIndex];
+    ensureExerciseSetDirectives(ex);
+
+    if (ex.setDirectives[setIndex]) {
+        ex.setDirectives[setIndex][field] = value;
+    }
+
+    // Auto-update general target text based on directives
+    const firstDir = ex.setDirectives[0] || {};
+    ex.target = `${ex.setDirectives.length} Set (${firstDir.type || 'S1'} • ${firstDir.reps || '6-10'} • ${firstDir.rir || 'RIR 0'})`;
+}
+
+function addCoachRxSet(exIndex) {
+    const username = currentCoachSelectedAthlete;
+    if (!username || !currentCoachWorkoutDrafts[username]) return;
+
+    const dayPlan = currentCoachWorkoutDrafts[username][currentCoachWorkoutRevDay];
+    if (!dayPlan || !dayPlan.exercises[exIndex]) return;
+
+    const ex = dayPlan.exercises[exIndex];
+    ensureExerciseSetDirectives(ex);
+
+    const nextSetNum = ex.setDirectives.length + 1;
+    ex.setDirectives.push({
+        type: `S${nextSetNum}`,
+        reps: "8-10 rep",
+        rir: "RIR 1 (1 Kala)"
+    });
+    ex.defaultSets = ex.setDirectives.length;
+    ex.sets = ex.setDirectives.length;
+
+    renderCoachWorkoutRevDay();
+    showToast(`Set ${nextSetNum} eklendi.`);
+}
+
+function removeCoachRxSpecificSet(exIndex, setIndex) {
+    const username = currentCoachSelectedAthlete;
+    if (!username || !currentCoachWorkoutDrafts[username]) return;
+
+    const dayPlan = currentCoachWorkoutDrafts[username][currentCoachWorkoutRevDay];
+    if (!dayPlan || !dayPlan.exercises[exIndex]) return;
+
+    const ex = dayPlan.exercises[exIndex];
+    ensureExerciseSetDirectives(ex);
+
+    if (ex.setDirectives.length <= 1) {
+        showToast("En az 1 set olmalıdır.", "warning");
+        return;
+    }
+
+    ex.setDirectives.splice(setIndex, 1);
+    ex.defaultSets = ex.setDirectives.length;
+    ex.sets = ex.setDirectives.length;
+
+    renderCoachWorkoutRevDay();
+    showToast("Set silindi.");
 }
 
 function updateCoachRxExRepsAndRir(index, field, value) {
@@ -8823,23 +8945,34 @@ function resetCoachWorkoutRevToOriginal() {
 function getCleanCompactWorkoutPlan(rawPlan) {
     if (!rawPlan) return {};
     const clean = {};
-    const validDays = ["day1", "day2", "day3", "day4", "day5", "day6", "day7"];
+    const validDays = ["pzt", "sal", "car", "per", "cum", "cmt", "paz", "day1", "day2", "day3", "day4", "day5", "day6", "day7"];
     validDays.forEach(d => {
         if (rawPlan[d]) {
             clean[d] = {
                 title: rawPlan[d].title || "",
                 desc: rawPlan[d].desc || "",
-                exercises: (rawPlan[d].exercises || []).map(ex => ({
-                    id: ex.id,
-                    name: ex.name,
-                    muscle: ex.muscle || "",
-                    sets: ex.sets || 3,
-                    repRange: ex.repRange || "8-12",
-                    rir: ex.rir || "RIR 1-2",
-                    target: ex.target || "",
-                    defaultSeat: ex.defaultSeat || "",
-                    isTopSet: !!ex.isTopSet
-                }))
+                isRest: Boolean(rawPlan[d].isRest),
+                exercises: (rawPlan[d].exercises || []).map(ex => {
+                    const directives = (ex.setDirectives && Array.isArray(ex.setDirectives)) ? ex.setDirectives : [];
+                    return {
+                        id: ex.id,
+                        name: ex.name,
+                        muscle: ex.muscle || "",
+                        sets: ex.defaultSets || ex.sets || (directives.length > 0 ? directives.length : 2),
+                        defaultSets: ex.defaultSets || ex.sets || (directives.length > 0 ? directives.length : 2),
+                        repRange: ex.repRange || ex.reps || "6-10",
+                        reps: ex.reps || ex.repRange || "6-10",
+                        rir: ex.rir || "RIR 1",
+                        target: ex.target || "",
+                        defaultSeat: ex.defaultSeat || "",
+                        isTopSet: !!ex.isTopSet,
+                        setDirectives: directives.map(sd => ({
+                            type: sd.type || "S1",
+                            reps: sd.reps || "8-10",
+                            rir: sd.rir || "RIR 1"
+                        }))
+                    };
+                })
             };
         }
     });
