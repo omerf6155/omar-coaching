@@ -8031,7 +8031,10 @@ const ASSISTANT_PERSONAS = {
 
 function sanitizeGeminiApiKey(key) {
     if (!key) return "";
-    return key.toString().trim().replace(/^["'`]|["'`]$/g, '').trim();
+    return key.toString().trim()
+        .replace(/^["'`‘“]|["'`’”]$/g, '')
+        .replace(/\s+/g, '')
+        .trim();
 }
 
 function checkGeminiApiKeyStatus() {
@@ -8159,16 +8162,16 @@ function translateGeminiErrorToTurkish(status, rawErrorMsg) {
     const lower = err.toLowerCase();
 
     if (lower.includes("api key not valid") || lower.includes("api_key_invalid") || lower.includes("invalid api key") || status === 400) {
-        return `❌ <strong>Geçersiz API Anahtarı (Hata 400):</strong><br>Girdiğiniz anahtar Google Gemini API formatına uymuyor.<br><br>📌 <strong>Önemli Bilgi:</strong> Google AI Studio anahtarları <strong>her zaman <code>AIzaSy...</code></strong> ile başlar ve 39 karakterdir (Örn: <code>AIzaSyD5x...</code>).<br><br>👉 <strong>Nasıl Alınır?</strong> <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#ffd60a; text-decoration:underline; font-weight:700;">Google AI Studio API Key Sayfası</a>'na girip <em>'Create API key'</em> butonuna tıklayın ve <code>AIzaSy</code> ile başlayan anahtarı kopyalayıp buraya yapıştırın.`;
+        return `❌ <strong>Geçersiz veya Eksik API Anahtarı (Hata 400):</strong><br>Girdiğiniz anahtar Google Gemini API tarafından doğrulanamadı.<br><br>💡 <strong>Nasıl Çözülür?</strong><br>1. <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#ffd60a; text-decoration:underline; font-weight:700;">Google AI Studio API Key Sayfası</a>'na gidin.<br>2. Anahtarınızın yanındaki <strong>kopyalama simgesine (📋)</strong> dokunun (elle parmakla seçmeyin, eksik kopyalanabilir).<br>3. Kopyalanan tam anahtarı buraya yapıştırıp kaydedin.`;
     }
     if (lower.includes("permission_denied") || status === 403) {
-        return "❌ <strong>Erişim İzni / Yetki Hatası (Hata 403):</strong><br>Bu API anahtarının Gemini modelini çağırma yetkisi yok veya hesabınız kısıtlanmış.<br><br>💡 <strong>Çözüm:</strong> Google AI Studio'da yeni bir API anahtarı oluşturun.";
+        return "❌ <strong>Erişim İzni / Yetki Hatası (Hata 403):</strong><br>Bu API anahtarının Gemini modelini çağırma yetkisi aktif değil veya hesabınız kısıtlanmış.<br><br>💡 <strong>Çözüm:</strong> Google AI Studio'da yeni bir API anahtarı oluşturun.";
     }
     if (lower.includes("not found") || lower.includes("no longer available") || status === 404) {
         return "❌ <strong>Model Bulunamadı (Hata 404):</strong><br>İstenen model Google tarafından güncellenmiş veya erişilemiyor. Sistem en stabil <code>gemini-1.5-flash</code> modelini kullanmaktadır.";
     }
     if (lower.includes("quota") || lower.includes("resource_exhausted") || status === 429) {
-        return "❌ <strong>Kullanım Kotası / Hız Sınırı Aşıldı (Hata 429):</strong><br>Kısa sürede çok fazla istek gönderildi veya ücretsiz API kotası doldu.<br><br>💡 <strong>Çözüm:</strong> 1 dakika bekleyip tekrar deneyin veya yeni bir ücretsiz anahtar oluşturun.";
+        return "❌ <strong>Kullanım Kotası / Hız Sınırı Aşıldı (Hata 429):</strong><br>Kısa sürede çok fazla istek gönderildi veya ücretsiz API kotası doldu.<br><br>💡 <strong>Çözüm:</strong> 1 dakika bekleyip tekrar deneyin.";
     }
     if (lower.includes("failed to fetch") || lower.includes("networkerror")) {
         return "❌ <strong>İnternet Bağlantı Hatası:</strong><br>Google Gemini sunucularına ulaşılamadı. Lütfen internet bağlantınızı kontrol edip tekrar deneyin.";
@@ -8185,21 +8188,12 @@ async function testGeminiApiKeyInline() {
     const testKey = sanitizeGeminiApiKey(keyInput.value);
     keyInput.value = testKey; // Clean up input box for user immediately
 
-    if (!testKey || testKey.length < 10) {
+    if (!testKey || testKey.length < 15) {
         resultBox.style.display = "block";
         resultBox.style.background = "rgba(239, 68, 68, 0.15)";
         resultBox.style.border = "1px solid rgba(239, 68, 68, 0.4)";
         resultBox.style.color = "#f87171";
-        resultBox.innerHTML = "<i class=\"fa-solid fa-circle-exclamation\"></i> Lütfen geçerli bir Gemini API anahtarı yapıştırın (Örn: <code>AIzaSy...</code>).";
-        return;
-    }
-
-    if (!testKey.startsWith("AIzaSy")) {
-        resultBox.style.display = "block";
-        resultBox.style.background = "rgba(239, 68, 68, 0.15)";
-        resultBox.style.border = "1px solid rgba(239, 68, 68, 0.4)";
-        resultBox.style.color = "#f87171";
-        resultBox.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> <strong>Geçersiz Anahtar Formatı:</strong><br>Girdiğiniz anahtar <code>AIzaSy</code> ile başlamıyor (<code>${testKey.substring(0, 10)}...</code>).<br><br>Google AI Studio'dan alınan Gemini anahtarları istisnasız <strong><code>AIzaSy</code></strong> ile başlar ve 39 karakterdir.<br><br>👉 <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#ffd60a; text-decoration:underline; font-weight:bold;">Google AI Studio API Key Sayfası</a>'na gidip <em>'Create API Key'</em> butonuna tıklayarak yeni anahtarınızı alabilirsiniz.`;
+        resultBox.innerHTML = "<i class=\"fa-solid fa-circle-exclamation\"></i> Lütfen Google AI Studio'dan aldığınız tam API anahtarını yapıştırın.";
         return;
     }
 
