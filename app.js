@@ -1151,6 +1151,85 @@ const DEFAULT_WORKOUT_PLAN = {
 
 const MASTER_SPLIT_TEMPLATES = [
     {
+        id: "ppl_off_pp_5day",
+        aliases: ["ppl_off_pp", "ppl_off_pp_5day", "ppl_pp_5day", "push_pull_legs_off_push_pull"],
+        name: "PPL - OFF - PP (5 Günlük Klasik İtiş/Çekiş/Bacak/OFF/İtiş/Çekiş)",
+        badge: "PPL-OFF-PP • 5 Gün",
+        desc: "Haftada 2 kez İtiş, 2 kez Çekiş ve 1 kez Ağır Bacak antrenmanı içeren; Perşembe ve Pazar günleri tam toparlanma sağlayan en popüler ve verimli hipertrofi spliti.",
+        daysOverview: ["Pzt: Push 1 (Göğüs/Triceps)", "Sal: Pull 1 (Sırt/Biceps)", "Çar: Legs (Bacak)", "Per: OFF (Dinlenme)", "Cum: Push 2 (Omuz/Göğüs/Triceps)", "Cmt: Pull 2 (Sırt/Arka Omuz/Kol)", "Paz: OFF (Check-in)"],
+        plan: {
+            pzt: {
+                title: "Push 1 (İtiş — Ağır Göğüs & Omuz / Triceps)",
+                desc: "Ağır Incline DB, Chest Press, Lateral & Triceps",
+                exercises: [
+                    { id: "ppl5_pzt_1", name: "Incline Dumbbell Press", muscle: "Üst Göğüs", target: "3 Set (6-9 Rep)", defaultSets: 3, defaultSeat: "30 Derece", isTopSet: true },
+                    { id: "ppl5_pzt_2", name: "Flat Plate Loaded Chest Press", muscle: "Orta Göğüs", target: "3 Set (8-10 Rep)", defaultSets: 3, defaultSeat: "Koltuk: 4", isTopSet: true },
+                    { id: "ppl5_pzt_3", name: "Pec Deck Fly", muscle: "İç Göğüs", target: "2 Bitirici Set (10-12 Rep)", defaultSets: 2, defaultSeat: "Koltuk: 3", isTopSet: false },
+                    { id: "ppl5_pzt_4", name: "Tek Kol Makine Lateral", muscle: "Yan Omuz 3D", target: "4 Set (12-15 Rep)", defaultSets: 4, defaultSeat: "Koltuk: 5", isTopSet: false },
+                    { id: "ppl5_pzt_5", name: "Düz Bar Triceps Pushdown", muscle: "Triceps Lateral", target: "3 Sert Set (8-10 Rep)", defaultSets: 3, defaultSeat: "Kablo Üst", isTopSet: true },
+                    { id: "ppl5_pzt_6", name: "Overhead Dual Cable Triceps Ext", muscle: "Triceps Uzun Baş", target: "2 Set (10-12 Rep)", defaultSets: 2, defaultSeat: "Kablo Omuz", isTopSet: false }
+                ]
+            },
+            sal: {
+                title: "Pull 1 (Çekiş — Sırt Genişliği & Arka Omuz / Biceps)",
+                desc: "Geniş Kanat, T-Bar Row, Arka Omuz & Biceps",
+                exercises: [
+                    { id: "ppl5_sal_1", name: "Reverse Pec Deck Fly", muscle: "Arka Omuz", target: "3 Set (10-12 Rep)", defaultSets: 3, defaultSeat: "Göğüs Pedi", isTopSet: true },
+                    { id: "ppl5_sal_2", name: "Geniş Tutuş Lat Pulldown", muscle: "Üst Lat", target: "3 Set (8-10 Rep)", defaultSets: 3, defaultSeat: "Bacak Pedi: 4", isTopSet: true },
+                    { id: "ppl5_sal_3", name: "Chest-Supported T-Bar Row", muscle: "Orta Sırt Kalınlık", target: "3 Ağır Set (8-10 Rep)", defaultSets: 3, defaultSeat: "Geniş Açı", isTopSet: true },
+                    { id: "ppl5_sal_4", name: "Seated Cable Row (Dar Tutuş)", muscle: "Alt Lat", target: "2 Set (10-12 Rep)", defaultSets: 2, defaultSeat: "V-Bar", isTopSet: false },
+                    { id: "ppl5_sal_5", name: "Barbell Biceps Curl", muscle: "Biceps Tepe Kütlesi", target: "3 Sert Set (6-8 Rep)", defaultSets: 3, defaultSeat: "Düz Bar", isTopSet: true },
+                    { id: "ppl5_sal_6", name: "Incline DB Biceps Curl", muscle: "Biceps Uzun Baş", target: "2 Set (10-12 Rep)", defaultSets: 2, defaultSeat: "Eğim: 45°", isTopSet: false }
+                ]
+            },
+            car: {
+                title: "Legs (Ağır Bacak & Kalf & Core)",
+                desc: "Ağır Quad, Hamstring, Leg Press & Kalf",
+                exercises: [
+                    { id: "ppl5_car_1", name: "Hack Squat", muscle: "Ön Bacak Quad", target: "3 Ağır Set (3sn iniş)", defaultSets: 3, defaultSeat: "Dar Basış", isTopSet: true },
+                    { id: "ppl5_car_2", name: "Romanian Deadlift (RDL)", muscle: "Hamstring & Glute", target: "3 Set (8-10 Rep)", defaultSets: 3, defaultSeat: "Düz Zemin", isTopSet: true },
+                    { id: "ppl5_car_3", name: "Leg Press", muscle: "Quad Gücü", target: "3 Set (8-10 Rep)", defaultSets: 3, defaultSeat: "Platform Alt", isTopSet: false },
+                    { id: "ppl5_car_4", name: "Lying Leg Curl", muscle: "Hamstring İzolasyon", target: "2 Set (10-12 Rep)", defaultSets: 2, defaultSeat: "Yüzüstü", isTopSet: false },
+                    { id: "ppl5_car_5", name: "Standing Calf Raise", muscle: "Kalf", target: "4 Set (15 Rep)", defaultSets: 4, defaultSeat: "Platform", isTopSet: false }
+                ]
+            },
+            per: {
+                title: "OFF (Dinlenme & Onarım)",
+                desc: "Tam Dinlenme, Glikojen Depolama ve Hidrasyon",
+                exercises: []
+            },
+            cum: {
+                title: "Push 2 (İtiş — Omuz & Üst Göğüs Odaklı / Triceps)",
+                desc: "Overhead Press, Incline Barbell, Yan Omuz & Dips",
+                exercises: [
+                    { id: "ppl5_cum_1", name: "Overhead Dumbbell / Military Press", muscle: "Ön/Genel Omuz", target: "3 Set (6-8 Rep)", defaultSets: 3, defaultSeat: "Dik Sehpa", isTopSet: true },
+                    { id: "ppl5_cum_2", name: "Incline Barbell Bench Press", muscle: "Üst Göğüs", target: "3 Set (8-10 Rep)", defaultSets: 3, defaultSeat: "30 Derece", isTopSet: true },
+                    { id: "ppl5_cum_3", name: "Plate Loaded Chest Press", muscle: "Orta Göğüs", target: "2 Set (8-10 Rep)", defaultSets: 2, defaultSeat: "Koltuk: 4", isTopSet: false },
+                    { id: "ppl5_cum_4", name: "Cable Lateral Raise", muscle: "Yan Omuz 3D", target: "4 Set (12-15 Rep)", defaultSets: 4, defaultSeat: "Kablo Alt", isTopSet: false },
+                    { id: "ppl5_cum_5", name: "Chest Dips / Cable Crossover", muscle: "Alt Göğüs", target: "2 Set (10-12 Rep)", defaultSets: 2, defaultSeat: "Paralel Bar", isTopSet: false },
+                    { id: "ppl5_cum_6", name: "Halat Triceps Pushdown", muscle: "Triceps", target: "3 Set (10-12 Rep)", defaultSets: 3, defaultSeat: "Kablo Üst", isTopSet: false }
+                ]
+            },
+            cmt: {
+                title: "Pull 2 (Çekiş — Sırt Kalınlığı & Arka Omuz / Kol)",
+                desc: "Deadlift / Row, Tek Kol Çekiş, Face Pull & Hammer Curl",
+                exercises: [
+                    { id: "ppl5_cmt_1", name: "Deadlift / Rack Pull", muscle: "Tüm Sırt & Arka Zincir", target: "2 Sert Set (5-6 Rep)", defaultSets: 2, defaultSeat: "Zemin", isTopSet: true },
+                    { id: "ppl5_cmt_2", name: "High Row Tek Kol", muscle: "Lat Kalınlık", target: "3 Set (8-10 Rep)", defaultSets: 3, defaultSeat: "Koltuk: 3", isTopSet: true },
+                    { id: "ppl5_cmt_3", name: "Face Pull (Halat)", muscle: "Arka Omuz & Rotatör", target: "3 Set (12-15 Rep)", defaultSets: 3, defaultSeat: "Kablo Göz Hizası", isTopSet: false },
+                    { id: "ppl5_cmt_4", name: "Close-Grip Lat Pulldown", muscle: "Alt/Orta Lat", target: "3 Set (8-10 Rep)", defaultSets: 3, defaultSeat: "Dar Tutuş", isTopSet: false },
+                    { id: "ppl5_cmt_5", name: "Dumbbell Hammer Curl", muscle: "Brachialis & Ön Kol", target: "3 Set (8-10 Rep)", defaultSets: 3, defaultSeat: "Ayakta", isTopSet: true },
+                    { id: "ppl5_cmt_6", name: "Cable EZ-Biceps Curl", muscle: "Biceps", target: "2 Bitirici Set (10-12 Rep)", defaultSets: 2, defaultSeat: "Kablo Alt", isTopSet: false }
+                ]
+            },
+            paz: {
+                title: "OFF (Haftalık Tartı & Check-in)",
+                desc: "Haftalık Kilo & Hedef Kontrolü",
+                exercises: []
+            }
+        }
+    },
+    {
         id: "ppl_arms_4day",
         aliases: ["push_pull_legs_4day", "ppl_arms_4day", "ppl_arms"],
         name: "Push Pull Legs + Arms (4 Günlük - İtiş/Çekiş/Bacak/Kol)",
