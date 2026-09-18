@@ -7659,6 +7659,19 @@ function renderCoachCalcTotalsOnly() {
     if (totCEl) totCEl.innerText = `${totals.c}g`;
     if (totFEl) totFEl.innerText = `${totals.f}g`;
     if (totSEl) totSEl.innerText = `${totals.sugar}g`;
+
+    // Live sync to locked target inputs
+    if (coachCalcItems.length > 0) {
+        const calEl = document.getElementById("rx-calories");
+        const pEl = document.getElementById("rx-protein");
+        const cEl = document.getElementById("rx-carbs");
+        const fEl = document.getElementById("rx-fat");
+        if (calEl) calEl.value = totals.cal;
+        if (pEl) pEl.value = totals.p;
+        if (cEl) cEl.value = totals.c;
+        if (fEl) fEl.value = totals.f;
+        updateRxCalculatedCals();
+    }
 }
 
 function renderCoachCalcItems() {
