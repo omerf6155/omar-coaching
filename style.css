@@ -405,18 +405,42 @@ body {
     background: var(--bg-card);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-full);
-    padding: 7px 14px;
+    padding: 6px 12px;
     color: var(--text-secondary);
-    font-size: 0.75rem;
+    font-size: 0.74rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    user-select: none;
+}
+
+.day-pill .day-name {
+    font-weight: 800;
+    color: inherit;
+}
+
+.day-pill .day-split-tag {
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.08);
+    color: inherit;
+    opacity: 0.85;
 }
 
 .day-pill.active {
     background: #ffffff;
     color: #000000;
     border-color: #ffffff;
+}
+
+.day-pill.active .day-split-tag {
+    background: rgba(0, 0, 0, 0.12);
+    color: #000000;
 }
 
 .exercise-card {
@@ -5162,21 +5186,21 @@ body.modal-open {
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 14px;
     padding: 12px 10px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    gap: 8px;
     cursor: pointer;
-/* ==================== 4 QUICK ACTION SLOTS ==================== */
+}
+
+/* ==================== 4 QUICK ACTION MEAL SLOTS ==================== */
 .quick-actions-4slots-card {
     padding: 14px;
+    overflow: hidden;
 }
 
 .quick-actions-4grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 10px;
+    gap: 8px;
     margin-top: 6px;
+    width: 100%;
 }
 
 @media (max-width: 650px) {
@@ -5191,18 +5215,21 @@ body.modal-open {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 5px;
+    gap: 4px;
     background: linear-gradient(145deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 14px;
-    padding: 12px 8px 10px;
+    padding: 10px 6px 8px;
     color: #ffffff;
     cursor: pointer;
     transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     user-select: none;
     position: relative;
     overflow: hidden;
-    min-height: 82px;
+    min-height: 80px;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
 }
 
 .qa-4slot-btn:hover {
@@ -5262,49 +5289,116 @@ body.modal-open {
     font-size: 0.55rem;
     font-weight: 800;
     color: var(--text-muted);
-    opacity: 0.6;
+    opacity: 0.7;
 }
 
-/* Slot Config Modal UI */
-.slots-config-container {
+.qa-slot-edit-trigger {
+    position: absolute;
+    top: 4px;
+    right: 5px;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 0.65rem;
+    cursor: pointer;
+    padding: 3px;
+    opacity: 0.6;
+    transition: all 0.15s ease;
+}
+
+.qa-slot-edit-trigger:hover {
+    color: #ffffff;
+    opacity: 1;
+    transform: rotate(45deg);
+}
+
+/* Quick Meal Picker Modal UI */
+.meal-picker-list {
     display: flex;
     flex-direction: column;
     gap: 10px;
+    max-height: 55vh;
+    overflow-y: auto;
+    padding-right: 4px;
 }
 
-.slot-config-card {
-    background: var(--bg-card-subtle);
+.meal-picker-card {
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
     border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 12px;
-    padding: 10px 12px;
+    border-radius: 14px;
+    padding: 12px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.2s ease;
+}
+
+.meal-picker-card:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.meal-picker-card.active-slot-meal {
+    border-color: #30d158;
+    background: rgba(48, 209, 88, 0.08);
+}
+
+.meal-picker-left {
     display: flex;
     align-items: center;
     gap: 12px;
+    flex: 1;
+    min-width: 0;
 }
 
-.slot-config-badge {
-    width: 28px;
-    height: 28px;
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.08);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.75rem;
-    font-weight: 800;
-    color: #ffd60a;
+.meal-picker-icon {
+    font-size: 1.5rem;
     flex-shrink: 0;
 }
 
-.slot-select {
-    flex: 1;
-    background: rgba(0, 0, 0, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 8px;
-    padding: 8px 10px;
+.meal-picker-name {
+    font-size: 0.86rem;
+    font-weight: 700;
     color: #ffffff;
-    font-size: 0.8rem;
-    outline: none;
+}
+
+.meal-picker-macros {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-top: 2px;
+}
+
+.meal-picker-desc {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 220px;
+}
+
+.btn-slot-pin {
+    background: rgba(255, 214, 10, 0.1);
+    border: 1px solid rgba(255, 214, 10, 0.25);
+    color: #ffd60a;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.72rem;
+    transition: all 0.15s ease;
+}
+
+.btn-slot-pin:hover {
+    background: #ffd60a;
+    color: #000000;
+    transform: scale(1.1);
 }
 
 /* 2D Retro Arcade Emblems */

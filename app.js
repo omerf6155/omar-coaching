@@ -1858,8 +1858,8 @@ function createDefaultRpgCharacter() {
 function createDefaultAppData() {
     return {
         targets: { ...DEFAULT_TARGETS },
-        quickActionSlots: ["steps_live", "water", "steps_1000", "pancake"],
-        pinnedQuickActions: ["steps_live", "water", "steps_1000", "pancake"],
+        quickActionSlots: ["pancake", "preworkout", "postworkout", "dinner"],
+        pinnedQuickActions: ["pancake", "preworkout", "postworkout", "dinner"],
         customQuickActions: [],
         activeSplitKey: "ppl_standard",
         customPresets: { ...DEFAULT_PRESET_MEALS },
@@ -1952,6 +1952,15 @@ function loadDataFromStorage() {
     const activeUsername = getActiveSessionUsername();
     const registry = getUsersRegistry();
 
+    const sanitizeSlots = (slots) => {
+        const defaultSlots = ["pancake", "preworkout", "postworkout", "dinner"];
+        if (!slots || !Array.isArray(slots) || slots.length !== 4) return defaultSlots;
+        if (slots.some(s => ["steps_live", "water", "steps_1000", "steps_manual", "stretching"].includes(s))) {
+            return defaultSlots;
+        }
+        return slots;
+    };
+
     // 1. If active user exists in registry, load their isolated data
     if (activeUsername && registry[activeUsername] && registry[activeUsername].data) {
         const parsed = registry[activeUsername].data;
@@ -1963,9 +1972,9 @@ function loadDataFromStorage() {
             customWorkoutPlan: parsed.customWorkoutPlan || JSON.parse(JSON.stringify(DEFAULT_WORKOUT_PLAN)),
             activeSplitKey: parsed.activeSplitKey || "ppl_standard",
             customQuickActions: parsed.customQuickActions || [],
-            quickActionSlots: parsed.quickActionSlots || (parsed.pinnedQuickActions ? parsed.pinnedQuickActions.slice(0, 4) : ["steps_live", "water", "steps_1000", "pancake"]),
+            quickActionSlots: sanitizeSlots(parsed.quickActionSlots),
             supplements: parsed.supplements && parsed.supplements.length > 0 ? parsed.supplements : appData.supplements,
-            pinnedQuickActions: parsed.pinnedQuickActions || ["steps_live", "water", "steps_1000", "pancake"],
+            pinnedQuickActions: sanitizeSlots(parsed.quickActionSlots),
             todayNutrition: { ...createDefaultAppData().todayNutrition, ...(parsed.todayNutrition || {}) },
             supplementsLog: parsed.supplementsLog || {},
             stepHistory: parsed.stepHistory || {},
@@ -1993,9 +2002,9 @@ function loadDataFromStorage() {
                 customWorkoutPlan: parsed.customWorkoutPlan || JSON.parse(JSON.stringify(DEFAULT_WORKOUT_PLAN)),
                 activeSplitKey: parsed.activeSplitKey || "ppl_standard",
                 customQuickActions: parsed.customQuickActions || [],
-                quickActionSlots: parsed.quickActionSlots || (parsed.pinnedQuickActions ? parsed.pinnedQuickActions.slice(0, 4) : ["steps_live", "water", "steps_1000", "pancake"]),
+                quickActionSlots: sanitizeSlots(parsed.quickActionSlots),
                 supplements: parsed.supplements && parsed.supplements.length > 0 ? parsed.supplements : appData.supplements,
-                pinnedQuickActions: parsed.pinnedQuickActions || ["steps_live", "water", "steps_1000", "pancake"],
+                pinnedQuickActions: sanitizeSlots(parsed.quickActionSlots),
                 todayNutrition: { ...createDefaultAppData().todayNutrition, ...(parsed.todayNutrition || {}) },
                 supplementsLog: parsed.supplementsLog || {},
                 stepHistory: parsed.stepHistory || {},
@@ -2253,176 +2262,71 @@ function renderDashboard() {
     evaluateDailyStreak();
 }
 
-function getActionDetails(key) {
-    if (key === "steps_live") {
-        return { icon: "👟", title: "Canlı GPS Takip", sub: "Adım & Hız", action: () => openStepTrackerModal() };
-    }
-    if (key === "stretching") {
-        return { icon: "🧘", title: "Esneme & Mobilite", sub: "Rutinler", action: () => openStretchingModal() };
-    }
-    if (key === "water") {
-        return { icon: "💧", title: "+500ml Su", sub: "Hidrasyon", action: () => addWater(0.5) };
-    }
-    if (key === "steps_1000") {
-        return { icon: "👣", title: "+1.000 Adım", sub: "Kardiyo", action: () => addSteps(1000) };
-    }
-    if (key === "steps_manual") {
-        return { icon: "✍️", title: "Manuel Adım", sub: "Giriş Yap", action: () => promptCustomSteps() };
-    }
-    if (appData.customPresets && appData.customPresets[key]) {
-        const p = appData.customPresets[key];
-        return { icon: "🍽️", title: p.name, sub: `${p.cal} kcal`, action: () => logPresetMeal(key) };
-    }
-    const custom = (appData.customQuickActions || []).find(a => a.id === key);
-    if (custom) {
-        let subTxt = "";
-        if (custom.type === "macro") subTxt = `+${custom.cal} kcal`;
-        else if (custom.type === "water") subTxt = `+${custom.waterVal}L`;
-        else if (custom.type === "steps") subTxt = `+${custom.stepsVal}`;
-        else subTxt = "Kısayol";
-        return { icon: custom.icon || "⚡", title: custom.title, sub: subTxt, action: () => executeCustomAction(custom.id) };
-    }
-    return null;
+function getMealIcon(name) {
+    if (!name) return "🍽️";
+    const n = name.toLowerCase();
+    if (n.includes("pankek") || n.includes("pancake") || n.includes("krep")) return "🥞";
+    if (n.includes("tavuk") || n.includes("hindi") || n.includes("et") || n.includes("biftek") || n.includes("köfte") || n.includes("kıyma")) return "🍗";
+    if (n.includes("pilav") || n.includes("pirinç") || n.includes("makarna") || n.includes("bulgur")) return "🍚";
+    if (n.includes("yulaf") || n.includes("shake") || n.includes("smoothie") || n.includes("whey") || n.includes("kazein") || n.includes("yoğurt")) return "🥣";
+    if (n.includes("yumurta") || n.includes("omlet") || n.includes("kahvaltı")) return "🍳";
+    if (n.includes("ton") || n.includes("balık") || n.includes("somon")) return "🐟";
+    if (n.includes("fıstık") || n.includes("ceviz") || n.includes("badem") || n.includes("kuruyemiş")) return "🥜";
+    if (n.includes("muz") || n.includes("meyve") || n.includes("elma")) return "🍌";
+    return "🍽️";
 }
 
-function openNewCustomActionModal() {
-    document.getElementById("c-action-title").value = "";
-    document.getElementById("c-action-icon").value = "⚡";
-    document.getElementById("c-action-type").value = "macro";
-    toggleCustomActionTypeFields();
-    openModal("modal-custom-action-creator");
-}
-
-function toggleCustomActionTypeFields() {
-    const type = document.getElementById("c-action-type").value;
-    const macroFields = document.getElementById("c-action-macro-fields");
-    const waterFields = document.getElementById("c-action-water-fields");
-    const stepsFields = document.getElementById("c-action-steps-fields");
-    const modalFields = document.getElementById("c-action-modal-fields");
-
-    if (macroFields) macroFields.style.display = (type === "macro") ? "grid" : "none";
-    if (waterFields) waterFields.style.display = (type === "water") ? "block" : "none";
-    if (stepsFields) stepsFields.style.display = (type === "steps") ? "block" : "none";
-    if (modalFields) modalFields.style.display = (type === "modal") ? "block" : "none";
-}
-
-function handleCustomActionSubmit(event) {
-    if (event) event.preventDefault();
-
-    const title = document.getElementById("c-action-title").value.trim();
-    if (!title) {
-        showToast("⚠️ Lütfen bir buton başlığı girin!");
-        return;
-    }
-
-    const icon = document.getElementById("c-action-icon").value.trim() || "⚡";
-    const type = document.getElementById("c-action-type").value;
-
-    const actionId = "cact_" + Date.now();
-    const newAction = {
-        id: actionId,
-        title: title,
-        icon: icon,
-        type: type,
-        cal: parseFloat(document.getElementById("c-action-cal")?.value) || 0,
-        p: parseFloat(document.getElementById("c-action-p")?.value) || 0,
-        c: parseFloat(document.getElementById("c-action-c")?.value) || 0,
-        f: parseFloat(document.getElementById("c-action-f")?.value) || 0,
-        waterVal: parseFloat(document.getElementById("c-action-water-val")?.value) || 0.5,
-        stepsVal: parseInt(document.getElementById("c-action-steps-val")?.value, 10) || 1000,
-        modalTarget: document.getElementById("c-action-modal-target")?.value || "modal-stretching-hub"
+function getQuickMealDetails(key) {
+    if (!key) return null;
+    const presets = appData.customPresets || DEFAULT_PRESET_MEALS;
+    const meal = presets[key] || DEFAULT_PRESET_MEALS[key];
+    if (!meal) return null;
+    return {
+        key: key,
+        icon: getMealIcon(meal.name),
+        name: meal.name,
+        cal: meal.cal || 0,
+        p: meal.p || 0,
+        c: meal.c || 0,
+        f: meal.f || 0,
+        desc: meal.desc || ""
     };
-
-    if (!appData.customQuickActions) appData.customQuickActions = [];
-    appData.customQuickActions.push(newAction);
-
-    saveDataToStorage();
-    closeModal("modal-custom-action-creator");
-    openQuickActionSlotsModal();
-    showToast(`✨ "${title}" özel butonu oluşturuldu! İstediğin slota atayabilirsin.`);
 }
 
-function deleteCustomAction(actionId) {
-    if (!confirm("Bu özel hızlı butonu silmek istediğinizden emin misiniz?")) return;
-
-    if (appData.customQuickActions) {
-        appData.customQuickActions = appData.customQuickActions.filter(a => a.id !== actionId);
-    }
-    if (appData.quickActionSlots) {
-        appData.quickActionSlots = appData.quickActionSlots.map(s => s === actionId ? "" : s);
-    }
-
-    saveDataToStorage();
-    renderDashboard();
-    renderQuickActionsConfig();
-    showToast("Özel buton silindi 🗑️");
-}
-
-function executeCustomAction(actionId) {
-    const action = (appData.customQuickActions || []).find(a => a.id === actionId);
-    if (!action) return;
-
-    if (action.type === "macro") {
-        if (!appData.todayNutrition.meals) appData.todayNutrition.meals = [];
-        const newMeal = {
-            id: `cact_log_${Date.now()}`,
-            presetId: action.id,
-            name: action.title,
-            desc: `${action.p}g P • ${action.c}g C • ${action.f}g F • ${action.cal} kcal`,
-            cal: action.cal,
-            p: action.p,
-            c: action.c,
-            f: action.f,
-            time: getCurrentTimeStr()
-        };
-        appData.todayNutrition.meals.push(newMeal);
-        recalculateDailyTotals();
-        addRpgStatGain('recovery', 2, 25, action.title);
-        evaluateDailyStreak();
-        saveDataToStorage();
-        renderNutritionView();
-        renderDashboard();
-        showToast(`✅ ${action.icon} ${action.title} (+${action.cal} kcal) eklendi!`);
-    } else if (action.type === "water") {
-        addWater(action.waterVal || 0.5);
-    } else if (action.type === "steps") {
-        addSteps(action.stepsVal || 1000);
-    } else if (action.type === "modal") {
-        if (action.modalTarget) {
-            openModal(action.modalTarget);
-        }
-    }
-}
+let currentConfiguringSlot = 0;
 
 function renderDashboardQuickActions() {
     const container = document.getElementById("dashboard-quick-actions-container");
     if (!container) return;
 
     if (!appData.quickActionSlots || appData.quickActionSlots.length !== 4) {
-        appData.quickActionSlots = ["steps_live", "water", "steps_1000", "pancake"];
+        appData.quickActionSlots = ["pancake", "preworkout", "postworkout", "dinner"];
     }
 
     let html = "";
     for (let i = 0; i < 4; i++) {
         const key = appData.quickActionSlots[i];
-        const details = getActionDetails(key);
+        const meal = getQuickMealDetails(key);
 
-        if (details) {
+        if (meal) {
             html += `
-                <div class="qa-4slot-btn" onclick="executeSlotAction(${i})">
+                <div class="qa-4slot-btn" onclick="executeQuickMealSlot(${i})" title="Tek tıkla bugünkü beslenmene ekle">
                     <span class="qa-slot-num-badge">#${i + 1}</span>
-                    <div class="qa-4slot-icon">${details.icon}</div>
-                    <div class="qa-4slot-title">${details.title}</div>
-                    <div class="qa-4slot-sub">${details.sub}</div>
+                    <button type="button" class="qa-slot-edit-trigger" onclick="event.stopPropagation(); openAssignMealSlotModal(${i});" title="Öğünü Değiştir">
+                        <i class="fa-solid fa-gear"></i>
+                    </button>
+                    <div class="qa-4slot-icon">${meal.icon}</div>
+                    <div class="qa-4slot-title">${meal.name}</div>
+                    <div class="qa-4slot-sub">${meal.cal} kcal • ${meal.p}g P</div>
                 </div>
             `;
         } else {
             html += `
-                <div class="qa-4slot-btn empty" onclick="openQuickActionSlotsModal()">
+                <div class="qa-4slot-btn empty" onclick="openAssignMealSlotModal(${i})" title="Beslenmeden öğün seç">
                     <span class="qa-slot-num-badge">#${i + 1}</span>
                     <div class="qa-4slot-icon"><i class="fa-solid fa-plus"></i></div>
-                    <div class="qa-4slot-title">Slot ${i + 1} Ata</div>
-                    <div class="qa-4slot-sub">Seçim Yap</div>
+                    <div class="qa-4slot-title">Öğün Ekle (#${i + 1})</div>
+                    <div class="qa-4slot-sub">Beslenmeden Seç</div>
                 </div>
             `;
         }
@@ -2431,96 +2335,100 @@ function renderDashboardQuickActions() {
     container.innerHTML = html;
 }
 
-function executeSlotAction(slotIndex) {
+function executeQuickMealSlot(slotIndex) {
     if (!appData.quickActionSlots) return;
     const key = appData.quickActionSlots[slotIndex];
-    const details = getActionDetails(key);
-    if (details && details.action) {
-        details.action();
-    } else {
-        openQuickActionSlotsModal();
+    if (!key) {
+        openAssignMealSlotModal(slotIndex);
+        return;
     }
+    logPresetMeal(key);
 }
 
-function openQuickActionSlotsModal() {
-    renderQuickActionsConfig();
-    openModal("modal-quick-actions");
+function openAssignMealSlotModal(slotIndex = 0) {
+    currentConfiguringSlot = slotIndex;
+    const slotTitle = document.getElementById("assign-slot-title");
+    if (slotTitle) slotTitle.innerHTML = `<i class="fa-solid fa-bolt"></i> Hızlı Öğün Ata (#Slot ${slotIndex + 1})`;
+
+    renderMealPickerList();
+    openModal("modal-quick-meal-picker");
 }
 
-function renderQuickActionsConfig() {
-    const container = document.getElementById("slots-config-container");
-    if (!container) return;
+function renderMealPickerList() {
+    const listEl = document.getElementById("quick-meal-picker-list");
+    if (!listEl) return;
 
-    if (!appData.quickActionSlots || appData.quickActionSlots.length !== 4) {
-        appData.quickActionSlots = ["steps_live", "water", "steps_1000", "pancake"];
-    }
+    const presets = appData.customPresets || DEFAULT_PRESET_MEALS;
+    const keys = Object.keys(presets);
+    const activeKey = appData.quickActionSlots ? appData.quickActionSlots[currentConfiguringSlot] : "";
 
-    // Built-in actions list
-    const builtIn = [
-        { key: "steps_live", label: "👟 Canlı GPS & Adım Takip" },
-        { key: "stretching", label: "🧘 Esneme & Mobilite Rutinleri" },
-        { key: "water", label: "💧 +500ml Su Ekle" },
-        { key: "steps_1000", label: "👣 +1.000 Adım Ekle" },
-        { key: "steps_manual", label: "✍️ Manuel Adım Girişi" }
-    ];
-
-    const presets = Object.keys(appData.customPresets || {}).map(k => ({
-        key: k,
-        label: `🍽️ ${appData.customPresets[k].name} (${appData.customPresets[k].cal} kcal)`
-    }));
-
-    const customs = (appData.customQuickActions || []).map(c => ({
-        key: c.id,
-        label: `${c.icon} ${c.title} (${c.type})`
-    }));
-
-    const allOptions = [
-        { group: "Temel Fonksiyonlar", items: builtIn },
-        { group: "Hazır Öğünler", items: presets },
-        { group: "Özel Butonlarınız", items: customs }
-    ];
-
-    let html = "";
-    for (let slotIdx = 0; slotIdx < 4; slotIdx++) {
-        const currentVal = appData.quickActionSlots[slotIdx] || "";
-
-        let optHtml = `<option value="">-- Boş Bırak --</option>`;
-        allOptions.forEach(grp => {
-            if (grp.items.length > 0) {
-                optHtml += `<optgroup label="${grp.group}">`;
-                grp.items.forEach(item => {
-                    const sel = (item.key === currentVal) ? "selected" : "";
-                    optHtml += `<option value="${item.key}" ${sel}>${item.label}</option>`;
-                });
-                optHtml += `</optgroup>`;
-            }
-        });
-
-        html += `
-            <div class="slot-config-card">
-                <div class="slot-config-badge">#${slotIdx + 1}</div>
-                <select class="slot-select" id="slot-select-${slotIdx}">
-                    ${optHtml}
-                </select>
+    if (keys.length === 0) {
+        listEl.innerHTML = `
+            <div style="text-align:center; padding:20px; color:var(--text-secondary); font-size:0.8rem;">
+                Beslenme bölümünde henüz kayıtlı bir öğün şablonun yok.
             </div>
         `;
+        return;
     }
 
-    container.innerHTML = html;
+    let html = "";
+    keys.forEach(key => {
+        const meal = presets[key];
+        const isSelected = (key === activeKey);
+        const icon = getMealIcon(meal.name);
+
+        html += `
+            <div class="meal-picker-card ${isSelected ? 'active-slot-meal' : ''}">
+                <div class="meal-picker-left">
+                    <span class="meal-picker-icon">${icon}</span>
+                    <div>
+                        <div class="meal-picker-name">${meal.name}</div>
+                        <div class="meal-picker-macros">🔥 ${meal.cal} kcal • 💪 ${meal.p}g P • 🌾 ${meal.c}g C • 🥑 ${meal.f}g F</div>
+                        ${meal.desc ? `<div class="meal-picker-desc">${meal.desc}</div>` : ''}
+                    </div>
+                </div>
+                <button type="button" class="btn btn-xs ${isSelected ? 'btn-outline' : 'btn-primary'}" onclick="assignMealToSlot(${currentConfiguringSlot}, '${key}')">
+                    ${isSelected ? '<i class="fa-solid fa-check"></i> Seçili' : '<i class="fa-solid fa-bolt"></i> Bu Slota Ata'}
+                </button>
+            </div>
+        `;
+    });
+
+    listEl.innerHTML = html;
 }
 
-function saveQuickActionSlots() {
-    const slots = [];
-    for (let i = 0; i < 4; i++) {
-        const val = document.getElementById(`slot-select-${i}`)?.value || "";
-        slots.push(val);
+function assignMealToSlot(slotIndex, mealKey) {
+    if (!appData.quickActionSlots || appData.quickActionSlots.length !== 4) {
+        appData.quickActionSlots = ["pancake", "preworkout", "postworkout", "dinner"];
     }
-    appData.quickActionSlots = slots;
-    appData.pinnedQuickActions = slots.filter(Boolean);
+    appData.quickActionSlots[slotIndex] = mealKey;
     saveDataToStorage();
     renderDashboard();
-    closeModal("modal-quick-actions");
-    showToast("4 Hızlı İşlem Slotu Başarıyla Güncellendi! ⚡");
+    closeModal("modal-quick-meal-picker");
+    const meal = (appData.customPresets && appData.customPresets[mealKey]) || DEFAULT_PRESET_MEALS[mealKey];
+    showToast(`⚡ Slot #${slotIndex + 1} için "${meal ? meal.name : mealKey}" atandı!`);
+}
+
+function clearSlotMeal(slotIndex) {
+    if (!appData.quickActionSlots) return;
+    appData.quickActionSlots[slotIndex] = "";
+    saveDataToStorage();
+    renderDashboard();
+    closeModal("modal-quick-meal-picker");
+    showToast(`🗑️ Slot #${slotIndex + 1} boşaltıldı.`);
+}
+
+function promptPinMealToSlot(mealKey) {
+    const meal = (appData.customPresets && appData.customPresets[mealKey]) || DEFAULT_PRESET_MEALS[mealKey];
+    const name = meal ? meal.name : "Öğün";
+    const slotStr = prompt(`"${name}" öğününü anasayfadaki hangi hızlı işlem slotuna atamak istiyorsun? (1, 2, 3 veya 4 yazın):`, "1");
+    if (!slotStr) return;
+    const num = parseInt(slotStr, 10);
+    if (num >= 1 && num <= 4) {
+        assignMealToSlot(num - 1, mealKey);
+    } else {
+        showToast("⚠️ Lütfen 1 ile 4 arasında bir slot numarası girin.");
+    }
 }
 
 // ==================== RPG SANAL KARAKTER & GAMIFICATION MOTORU ====================
@@ -4109,6 +4017,7 @@ function renderNutritionView() {
                         <small>${m.cal} kcal • ${m.p}g P • ${m.c}g C • ${m.f}g F</small>
                     </div>
                     <div style="display:flex; align-items:center; gap:6px;">
+                        <button class="btn-slot-pin" onclick="promptPinMealToSlot('${key}')" title="⚡ Hızlı İşlem Slotuna Sabitle"><i class="fa-solid fa-bolt"></i></button>
                         <button class="btn-edit-item" onclick="openEditRecipeModal('${key}')" title="Çiğ Gramajları Düzenle"><i class="fa-solid fa-pen"></i></button>
                         <button class="btn-delete-item" onclick="deletePreset('${key}')" title="Şablonu Sil"><i class="fa-solid fa-trash"></i></button>
                         <button class="btn-circle-add" onclick="logPresetMeal('${key}')" title="Bugüne Ekle"><i class="fa-solid fa-plus"></i></button>

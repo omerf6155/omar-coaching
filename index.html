@@ -198,21 +198,21 @@
                     </div>
                 </div>
 
-                <!-- 4 Quick Actions Slots (100% User-Customized) -->
+                <!-- 4 Quick Meal Slots (Directly Connected with Nutrition) -->
                 <div class="card quick-actions-4slots-card">
                     <div class="card-header">
-                        <h2>⚡ HIZLI İŞLEMLER (4 SLOT)</h2>
+                        <h2>⚡ HIZLI ÖĞÜNLER (4 SLOT)</h2>
                         <div class="header-action-group">
-                            <button class="btn btn-xs btn-outline" onclick="openQuickActionSlotsModal()" title="4 Butonu Düzenle">
-                                <i class="fa-solid fa-sliders"></i> 4 Slotu Düzenle
+                            <button class="btn btn-xs btn-outline" onclick="openAssignMealSlotModal(0)" title="Slotları Düzenle">
+                                <i class="fa-solid fa-sliders"></i> Slotları Düzenle
                             </button>
-                            <button class="btn btn-xs btn-primary" onclick="openNewCustomActionModal()" title="Yeni Özel Buton Tanımla">
-                                <i class="fa-solid fa-plus"></i> Yeni Buton
+                            <button class="btn btn-xs btn-primary" onclick="openRecipeBuilderModal()" title="Beslenmeye Yeni Öğün / Tarif Ekle">
+                                <i class="fa-solid fa-plus"></i> Yeni Öğün Ekle
                             </button>
                         </div>
                     </div>
                     <div class="quick-actions-4grid" id="dashboard-quick-actions-container">
-                        <!-- Exactly 4 slots populated dynamically -->
+                        <!-- Exactly 4 meal slots populated dynamically -->
                     </div>
                 </div>
 
@@ -901,26 +901,26 @@
         </div>
     </div>
 
-    <!-- 2. QUICK ACTIONS CUSTOMIZATION MODAL -->
-    <div id="modal-quick-actions" class="modal-overlay">
+    <!-- 2. QUICK MEAL PICKER MODAL (100% NUTRITION INTEGRATED) -->
+    <div id="modal-quick-meal-picker" class="modal-overlay">
         <div class="modal-card">
             <div class="modal-header">
-                <h3><i class="fa-solid fa-sliders"></i> 4 Hızlı İşlem Slotunu Belirle</h3>
-                <button class="modal-close-btn" onclick="closeModal('modal-quick-actions')">&times;</button>
+                <h3 id="assign-slot-title"><i class="fa-solid fa-bolt"></i> Hızlı Öğün Ata</h3>
+                <button class="modal-close-btn" onclick="closeModal('modal-quick-meal-picker')">&times;</button>
             </div>
             <div class="modal-body">
                 <p class="text-secondary" style="font-size:0.78rem; margin-bottom:12px;">
-                    Anasayfadaki 4 hızlı butonu istediğin sırayla ata. Dilersen yeni özel butonlar oluşturup onları da bu slotlara yerleştirebilirsin:
+                    Beslenme bölümündeki kayıtlı öğünlerinden birini seç. Anasayfada bu butona bastığında öğün doğrudan bugünkü günlüğüne eklenir:
                 </p>
-                <div id="slots-config-container" class="slots-config-container">
-                    <!-- 4 Slot selector rows rendered dynamically -->
+                <div id="quick-meal-picker-list" class="meal-picker-list">
+                    <!-- Populated dynamically from appData.customPresets -->
                 </div>
                 <div style="display:flex; gap:8px; margin-top:14px;">
-                    <button type="button" class="btn btn-outline btn-block" onclick="openNewCustomActionModal()">
-                        <i class="fa-solid fa-plus"></i> Yeni Buton Tanımla
+                    <button type="button" class="btn btn-outline btn-block" onclick="closeModal('modal-quick-meal-picker'); openRecipeBuilderModal();">
+                        <i class="fa-solid fa-plus"></i> Beslenmeye Yeni Öğün Ekle
                     </button>
-                    <button type="button" class="btn btn-primary btn-block" onclick="saveQuickActionSlots()">
-                        <i class="fa-solid fa-check"></i> 4 Slotu Kaydet
+                    <button type="button" class="btn btn-danger btn-block" style="background:rgba(244,63,94,0.15); border-color:rgba(244,63,94,0.3); color:#f43f5e;" onclick="clearSlotMeal(currentConfiguringSlot)">
+                        <i class="fa-solid fa-trash-can"></i> Bu Slotu Boşalt
                     </button>
                 </div>
             </div>
