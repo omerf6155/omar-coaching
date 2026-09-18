@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="style.css?v=3.8.0">
+    <link rel="stylesheet" href="style.css?v=3.9.0">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
@@ -1823,18 +1823,15 @@
                     </div>
                 </div>
                 <div class="ai-header-actions">
-                    <button type="button" class="btn btn-xs btn-outline" onclick="openApiKeyModal()" title="Gemini API Anahtarını Yönet" style="font-size:0.72rem; padding:4px 8px;">
-                        <i class="fa-solid fa-key" style="color:#ffd60a;"></i> <span id="btn-hdr-apikey-text">API Key</span>
-                    </button>
                     <button class="modal-close-btn" onclick="closeModal('modal-ai-assistant')">&times;</button>
                 </div>
             </div>
 
             <!-- Sleek AI Engine Status Bar & Quick Actions -->
             <div class="ai-mode-status-bar" id="ai-mode-status-bar">
-                <div class="ai-mode-status-info" id="ai-mode-status-info" onclick="openApiKeyModal()" style="cursor:pointer;" title="Canlı Yapay Zeka Durumu (Tıkla ve Yönet)">
-                    <span class="ai-mode-dot" id="ai-mode-dot"></span>
-                    <span id="ai-mode-text">Bağlantı kontrol ediliyor...</span>
+                <div class="ai-mode-status-info" id="ai-mode-status-info">
+                    <span class="ai-mode-dot" id="ai-mode-dot" style="background:#22c55e; box-shadow:0 0 8px #22c55e;"></span>
+                    <span id="ai-mode-text">Enes Abi 🦍 Yerleşik Akıllı Koç • <strong>Aktif</strong></span>
                 </div>
                 <button type="button" class="btn-clear-ai-chat" onclick="clearAssistantChat()" title="Mevcut Sohbeti Temizle">
                     <i class="fa-solid fa-rotate-left"></i> Temizle
@@ -2323,6 +2320,6 @@
     <!-- Notification Toast -->
     <div id="toast" class="toast">Kaydedildi</div>
 
-    <script src="app.js?v=3.8.0"></script>
+    <script src="app.js?v=3.9.0"></script>
 </body>
 </html>

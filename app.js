@@ -8318,14 +8318,26 @@ async function testGeminiApiKeyInline() {
 function openAssistantModal(personaKey) {
     activeAssistantPersona = "enes";
     updateAssistantModalHeader();
-    checkGeminiApiKeyStatus();
     renderAssistantQuickTopics();
 
+    // Clean any old error messages from chat history
     if (!assistantChatHistory.enes || assistantChatHistory.enes.length === 0) {
         const persona = ASSISTANT_PERSONAS.enes;
         assistantChatHistory.enes = [
             { sender: "assistant", text: persona.welcomeMsg, time: getCurrentTimeStr() }
         ];
+    } else {
+        assistantChatHistory.enes = assistantChatHistory.enes.filter(m => {
+            if (!m || !m.text) return false;
+            if (m.text.includes("Gemini Bağlantı Uyarısı") || m.text.includes("Bağlantı Hatası") || m.text.includes("Hatalı API Key")) return false;
+            return true;
+        });
+        if (assistantChatHistory.enes.length === 0) {
+            const persona = ASSISTANT_PERSONAS.enes;
+            assistantChatHistory.enes = [
+                { sender: "assistant", text: persona.welcomeMsg, time: getCurrentTimeStr() }
+            ];
+        }
     }
 
     renderAssistantMessages();
@@ -8374,7 +8386,20 @@ function updateAssistantModalHeader() {
     if (roleEl) roleEl.innerText = persona.role;
     if (hintEl) hintEl.innerText = persona.tagline;
 
-    checkGeminiApiKeyStatus();
+    const modeBadge = document.getElementById("ai-active-mode-badge");
+    if (modeBadge) {
+        modeBadge.className = "ai-status-indicator mode-offline";
+        modeBadge.innerHTML = `<i class="fa-solid fa-bolt"></i> Baş Danışman`;
+    }
+
+    const modeText = document.getElementById("ai-mode-text");
+    const modeDot = document.getElementById("ai-mode-dot");
+    if (modeText) modeText.innerHTML = `Enes Abi Akıllı Motor • <strong>Aktif</strong>`;
+    if (modeDot) {
+        modeDot.className = "ai-mode-dot active";
+        modeDot.style.background = "#22c55e";
+        modeDot.style.boxShadow = "0 0 8px #22c55e";
+    }
 }
 
 function clearAssistantChat() {
@@ -8492,46 +8517,14 @@ async function sendAssistantMessage() {
     }
 
     const startTime = Date.now();
-    const rawApiKey = localStorage.getItem("OMAR_GEMINI_API_KEY");
-    const apiKey = typeof sanitizeGeminiApiKey === "function" ? sanitizeGeminiApiKey(rawApiKey) : (rawApiKey || "").trim();
-    let aiResponse = null;
-    let geminiFailedError = null;
 
-    // 3. Process with Online Gemini API or Deep Offline Engine
-    if (apiKey && apiKey.length > 10 && navigator.onLine) {
-        try {
-            aiResponse = await callGeminiAssistantApi("enes", userText, apiKey);
-        } catch (e) {
-            console.error("Gemini Live Call Error:", e);
-            geminiFailedError = e.message;
-        }
-    }
+    // 3. Process with 100% reliable, fast, local intelligence
+    const aiResponse = processOfflineAssistantResponse("enes", userText);
 
-    if (!aiResponse) {
-        if (geminiFailedError) {
-            const trError = typeof translateGeminiErrorToTurkish === "function" ? translateGeminiErrorToTurkish(0, geminiFailedError) : geminiFailedError;
-            aiResponse = {
-                text: `⚠️ <strong>Gemini Bağlantı Uyarısı:</strong><br><br>${trError}<br><br>Yeni bir API anahtarı girebilir veya anahtarı silerek Enes Abi'nin yerleşik akıllı motoruyla kesintisiz devam edebilirsin:`,
-                actionHtml: `
-                    <div style="display:flex; flex-direction:column; gap:6px; margin-top:6px;">
-                        <button class="ai-action-btn btn-swap" onclick="openApiKeyModal()">
-                            <i class="fa-solid fa-key"></i> 🔑 Yeni API Key Gir / Test Et
-                        </button>
-                        <button class="ai-action-btn btn-swap" style="background:rgba(239,68,68,0.15); border-color:rgba(239,68,68,0.4); color:#fca5a5;" onclick="clearGeminiApiKeyAndSwitchOffline()">
-                            <i class="fa-solid fa-trash-can"></i> 🗑️ Hatalı API Key'i Sil & Çevrimdışı Devam Et
-                        </button>
-                    </div>
-                `
-            };
-        } else {
-            aiResponse = processOfflineAssistantResponse("enes", userText);
-        }
-    }
-
-    // Natural smooth response delay
+    // Natural smooth response delay (300ms)
     const elapsed = Date.now() - startTime;
-    if (elapsed < 500) {
-        await new Promise(r => setTimeout(r, 500 - elapsed));
+    if (elapsed < 300) {
+        await new Promise(r => setTimeout(r, 300 - elapsed));
     }
 
     // Remove typing indicator
@@ -9126,7 +9119,7 @@ function processOfflineAssistantResponse(personaKey, userText) {
 
     // DEFAULT SMART FALLBACK
     return {
-        text: `Bugünkü antrenman günün: <strong>${currentPlan.title}</strong> (${currentPlan.desc}).<br><br>Hangi hareket doluysa, neren ağrıyorsa, dolaptaki yemekleri nasıl değerlendireceğini ya da hangi takviyeyi alacağını açıkça sor aslanım; 1'e 1 çözümünü hemen patlatayım!<br><br><small style="color:var(--text-muted);">💡 <em>Not: Sınırsız sohbet ve canlı yapay zeka deneyimi için <a href="javascript:void(0)" onclick="openApiKeyModal()" style="color:#ffd60a; text-decoration:underline;">Gemini API Key bağlayabilirsin</a>.</em></small>`
+        text: `Bugünkü antrenman günün: <strong>${currentPlan.title}</strong> (${currentPlan.desc}).<br><br>Hangi hareket doluysa, neren ağrıyorsa, dolaptaki yemekleri nasıl değerlendireceğini ya da hangi takviyeyi alacağını sor aslanım; 1'e 1 çözümünü hemen patlatayım!`
     };
 }
 
