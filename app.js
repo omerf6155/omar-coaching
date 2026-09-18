@@ -2147,6 +2147,17 @@ function createDefaultRpgCharacter() {
     };
 }
 
+function hasValidWorkoutExercises(plan) {
+    if (!plan || typeof plan !== 'object') return false;
+    let count = 0;
+    Object.keys(plan).forEach(k => {
+        if (plan[k] && Array.isArray(plan[k].exercises) && plan[k].exercises.length > 0) {
+            count += plan[k].exercises.length;
+        }
+    });
+    return count > 0;
+}
+
 function createDefaultAppData() {
     return {
         targets: { ...DEFAULT_TARGETS },
@@ -2198,6 +2209,11 @@ let currentPortalMode = "athlete"; // 'athlete' | 'coach'
 let currentCoachActiveTab = "roster";
 let currentCoachSelectedAthlete = "omer";
 let currentCoachDetailSubtab = "nutrition";
+let currentCoachDietAthlete = "omer";
+let currentCoachWorkoutAthlete = "omer";
+let currentCoachDietDrafts = {}; // { [username]: { targets: {}, meals: [] } }
+let currentCoachWorkoutDrafts = {}; // { [username]: { pzt: {...}, sal: {...}, ... } }
+let currentCoachWorkoutRevDay = "pzt";
 let currentCoachFilterGoal = "all";
 
 // Initialize Application
@@ -2256,12 +2272,15 @@ function loadDataFromStorage() {
     // 1. If active user exists in registry, load their isolated data
     if (activeUsername && registry[activeUsername] && registry[activeUsername].data) {
         const parsed = registry[activeUsername].data;
+        const validPlan = hasValidWorkoutExercises(parsed.customWorkoutPlan) 
+                          ? parsed.customWorkoutPlan 
+                          : JSON.parse(JSON.stringify(DEFAULT_WORKOUT_PLAN));
         appData = {
             ...createDefaultAppData(),
             ...parsed,
             targets: { ...DEFAULT_TARGETS, ...(parsed.targets || {}) },
             customPresets: { ...DEFAULT_PRESET_MEALS, ...(parsed.customPresets || {}) },
-            customWorkoutPlan: parsed.customWorkoutPlan || JSON.parse(JSON.stringify(DEFAULT_WORKOUT_PLAN)),
+            customWorkoutPlan: validPlan,
             activeSplitKey: parsed.activeSplitKey || "ppl_standard",
             customQuickActions: parsed.customQuickActions || [],
             quickActionSlots: sanitizeSlots(parsed.quickActionSlots),
@@ -2286,12 +2305,15 @@ function loadDataFromStorage() {
     if (saved) {
         try {
             const parsed = JSON.parse(saved);
+            const validPlan = hasValidWorkoutExercises(parsed.customWorkoutPlan) 
+                              ? parsed.customWorkoutPlan 
+                              : JSON.parse(JSON.stringify(DEFAULT_WORKOUT_PLAN));
             appData = {
                 ...createDefaultAppData(),
                 ...parsed,
                 targets: { ...DEFAULT_TARGETS, ...(parsed.targets || {}) },
                 customPresets: { ...DEFAULT_PRESET_MEALS, ...(parsed.customPresets || {}) },
-                customWorkoutPlan: parsed.customWorkoutPlan || JSON.parse(JSON.stringify(DEFAULT_WORKOUT_PLAN)),
+                customWorkoutPlan: validPlan,
                 activeSplitKey: parsed.activeSplitKey || "ppl_standard",
                 customQuickActions: parsed.customQuickActions || [],
                 quickActionSlots: sanitizeSlots(parsed.quickActionSlots),
@@ -8411,10 +8433,19 @@ function initCoachWorkoutRev(username) {
     }
 
     // Load or initialize draft
-    if (!currentCoachWorkoutDrafts[username]) {
-        const ath = registry[username];
-        const uData = ath.data || {};
-        const sourcePlan = uData.customWorkoutPlan || DEFAULT_WORKOUT_PLAN;
+    const ath = registry[username];
+    const uData = (ath && ath.data) || {};
+    let sourcePlan = uData.customWorkoutPlan;
+    if (!hasValidWorkoutExercises(sourcePlan)) {
+        sourcePlan = (appData && hasValidWorkoutExercises(appData.customWorkoutPlan)) 
+                     ? appData.customWorkoutPlan 
+                     : JSON.parse(JSON.stringify(DEFAULT_WORKOUT_PLAN));
+        if (ath && ath.data) {
+            ath.data.customWorkoutPlan = JSON.parse(JSON.stringify(sourcePlan));
+            saveUsersRegistry(registry);
+        }
+    }
+    if (!currentCoachWorkoutDrafts[username] || !hasValidWorkoutExercises(currentCoachWorkoutDrafts[username])) {
         currentCoachWorkoutDrafts[username] = JSON.parse(JSON.stringify(sourcePlan));
     }
 
@@ -8442,7 +8473,11 @@ function renderCoachWorkoutRevDaysBar() {
     if (!container) return;
 
     const username = currentCoachSelectedAthlete;
-    const draft = currentCoachWorkoutDrafts[username] || DEFAULT_WORKOUT_PLAN;
+    let draft = currentCoachWorkoutDrafts[username];
+    if (!hasValidWorkoutExercises(draft)) {
+        draft = JSON.parse(JSON.stringify(DEFAULT_WORKOUT_PLAN));
+        if (username) currentCoachWorkoutDrafts[username] = draft;
+    }
     const days = ['pzt', 'sal', 'car', 'per', 'cum', 'cmt', 'paz'];
 
     container.innerHTML = days.map(dayKey => {
@@ -8464,8 +8499,11 @@ function renderCoachWorkoutRevDaysBar() {
 
 function renderCoachWorkoutRevDay() {
     const username = currentCoachSelectedAthlete;
-    if (!username || !currentCoachWorkoutDrafts[username]) return;
+    if (!username) return;
 
+    if (!hasValidWorkoutExercises(currentCoachWorkoutDrafts[username])) {
+        currentCoachWorkoutDrafts[username] = JSON.parse(JSON.stringify(DEFAULT_WORKOUT_PLAN));
+    }
     const draft = currentCoachWorkoutDrafts[username];
     const dayKey = currentCoachWorkoutRevDay;
     if (!draft[dayKey]) {
