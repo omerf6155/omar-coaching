@@ -8552,32 +8552,26 @@ async function sendAssistantMessage() {
 // ==================== ONLINE GEMINI MULTI-TURN API ENGINE ====================
 
 function cleanGeminiOutput(rawText) {
-    if (!rawText) return "";
+    if (!rawText || typeof rawText !== "string") return "";
     let text = rawText.trim();
+    if (!text) return "";
 
-    // 1. Strip XML/HTML-like thought or scratchpad tags
-    text = text.replace(/<(thought|thinking|reasoning|scratchpad|internal)>[\s\S]*?<\/\1>/gi, '').trim();
+    const originalText = text;
 
-    // 2. Remove leading "Thought:\n..." or "Reasoning:\n..." blocks
-    text = text.replace(/^(Thought|Reasoning|Thinking|Plan|Internal Monologue|Scratchpad):\s*[\s\S]*?(?=\n\n|\n[A-ZÇĞİÖŞÜ"“]|$)/i, '').trim();
+    try {
+        // 1. Strip XML/HTML-like thought or scratchpad tags
+        text = text.replace(/<(thought|thinking|reasoning|scratchpad|internal)>[\s\S]*?<\/\1>/gi, '').trim();
 
-    // 3. Scratchpad / Planning section detection
-    const scratchpadHeaderRegex = /^(\*\s*\*|\*\s*\*\*|\*\*|\*|#+|-|\d+\.)\s*(Greeting|Vibe\s*Check|Context|Contextual\s*Integration|Plan|Goal|Tone|Step|Action|Analysis|Strategy|Workout\s*Check|Persona|Draft|Response|Closing|Internal\s*Thought|Opening)\b[:\*]?/i;
-    
-    const lines = text.split("\n");
-    const hasScratchpad = lines.some(l => scratchpadHeaderRegex.test(l.trim()));
+        // 2. Remove leading "Thought:\n..." or "Reasoning:\n..." blocks
+        text = text.replace(/^(Thought|Reasoning|Thinking|Plan|Internal Monologue|Scratchpad):\s*[\s\S]*?(?=\n\n|\n[A-ZÇĞİÖŞÜ"“]|$)/i, '').trim();
 
-    if (hasScratchpad) {
-        // Look for full dialogue quote block at the end (e.g. "Vay aslanım!...")
-        const quoteMatches = text.match(/["“][^"“”]{20,}["”]/g);
-        if (quoteMatches && quoteMatches.length > 0) {
-            const turkishQuotes = quoteMatches.map(q => q.replace(/^["“]|["”]$/g, '').trim())
-                .filter(q => /[çğıöşüÇĞİÖŞÜ]/i.test(q) || /aslan|paşa|kral|hocam|abi|şampiyon|bomba|selam|antrenman|demir|kütle/i.test(q));
-            if (turkishQuotes.length > 0) {
-                text = turkishQuotes.join("\n\n");
-            }
-        } else {
-            // Line-by-line filtering
+        // 3. Scratchpad / Planning section detection
+        const scratchpadHeaderRegex = /^(\*+\s*\*+|\*+|-|#+|\d+\.)\s*(Greeting|Vibe\s*Check|Context|Contextual\s*Integration|Plan|Goal|Tone|Step|Action|Analysis|Strategy|Workout\s*Check|Persona|Draft|Response|Closing|Internal\s*Thought|Opening)\b[:\*]?/i;
+        
+        const lines = text.split(/\r?\n/);
+        const hasScratchpad = lines.some(l => scratchpadHeaderRegex.test(l.trim()));
+
+        if (hasScratchpad) {
             const cleanLines = [];
             let inScratchpad = false;
 
@@ -8588,8 +8582,8 @@ function cleanGeminiOutput(rawText) {
                 if (scratchpadHeaderRegex.test(tr)) {
                     inScratchpad = true;
                     // Extract possible dialogue inside the header line: * *Greeting:* "Vay aslanım!"
-                    const inlineQuote = tr.match(/["“]([^"“”]+)["”]/);
-                    if (inlineQuote && inlineQuote[1] && (/[çğıöşüÇĞİÖŞÜ]/.test(inlineQuote[1]) || inlineQuote[1].length > 15)) {
+                    const inlineQuote = tr.match(/["“]([^"“”]{5,})["”]/);
+                    if (inlineQuote && inlineQuote[1]) {
                         cleanLines.push(inlineQuote[1].trim());
                     }
                     continue;
@@ -8597,11 +8591,11 @@ function cleanGeminiOutput(rawText) {
 
                 if (inScratchpad) {
                     // English prompt engineering directives
-                    if (/^(\*|-|\d+\.|\s+)?\s*(Respond|Match|Acknowledge|Check|Maintain|Transition|Ask|State|Ensure|Formulate|Keep|Show|Adopt)\b/i.test(tr)) {
+                    if (/^(\*|-|\d+\.|\s+)?\s*(Respond|Match|Acknowledge|Check|Maintain|Transition|Ask|State|Ensure|Formulate|Keep|Show|Adopt|Set|Deliver)\b/i.test(tr)) {
                         continue;
                     }
                     // Dialogue markers / Turkish keywords
-                    if (/[çğıöşüÇĞİÖŞÜ]/.test(tr) || /^(vay|eyvallah|selam|merhaba|aslanım|paşam|kral|canavar|şampiyon|hocam|bak şimdi|ne haber|naber|antrenman|kalori|protein)/i.test(tr) || tr.startsWith('"') || tr.startsWith('“')) {
+                    if (/[çğıöşüÇĞİÖŞÜ]/.test(tr) || /^(vay|eyvallah|selam|merhaba|aslanım|paşam|kral|canavar|şampiyon|hocam|bak|ne haber|naber|antrenman|kalori|protein|dinlenme)/i.test(tr) || tr.startsWith('"') || tr.startsWith('“')) {
                         inScratchpad = false;
                         cleanLines.push(line);
                     }
@@ -8614,19 +8608,23 @@ function cleanGeminiOutput(rawText) {
                 text = cleanLines.join("\n").trim();
             }
         }
+
+        // 4. Remove outer surrounding quotes if the whole message is wrapped
+        text = text.replace(/^["“]([\s\S]*?)["”]$/s, '$1').trim();
+
+        // 5. Convert markdown bold **word** to <strong>word</strong>
+        text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+        // 6. Format HTML line breaks
+        text = text.replace(/\r\n/g, '\n').replace(/\n{3,}/g, '\n\n');
+        text = text.replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>');
+
+    } catch (err) {
+        console.warn("cleanGeminiOutput error:", err);
+        return originalText.replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>');
     }
 
-    // 4. Remove outer surrounding quotes if the whole message is wrapped
-    text = text.replace(/^["“]([\s\S]*?)["”]$/s, '$1').trim();
-
-    // 5. Convert markdown bold **word** to <strong>word</strong>
-    text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-
-    // 6. Format HTML line breaks
-    text = text.replace(/\r\n/g, '\n').replace(/\n{3,}/g, '\n\n');
-    text = text.replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>');
-
-    return text;
+    return text || originalText.replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>');
 }
 
 async function callGeminiAssistantApi(personaKey, userText, apiKey) {
@@ -8675,9 +8673,17 @@ Biçimlendirme Kuralları:
 - Vurgulamak istediğin kilit noktaları <strong>...</strong> içine al.
 - Doğrudan sohbete gir; asla "Sistem mesajı:", "AI:" gibi başlıklar koyma.`;
 
-    const history = assistantChatHistory.enes || [];
-    const contents = [];
+    // 1. Clean history to avoid passing old error cards to Gemini API
+    const history = (assistantChatHistory.enes || []).filter(m => {
+        if (!m || !m.text) return false;
+        const txt = m.text;
+        if (txt.includes("Gemini Bağlantı Uyarısı") || txt.includes("Bağlantı Hatası") || txt.includes("Hatalı API Key")) {
+            return false;
+        }
+        return true;
+    });
 
+    const contents = [];
     history.forEach(m => {
         const role = m.sender === "user" ? "user" : "model";
         const cleanText = (m.text || "").replace(/<[^>]*>?/gm, ' ').replace(/&nbsp;/g, ' ').trim();
@@ -8832,11 +8838,43 @@ Biçimlendirme Kuralları:
         throw lastError || new Error("Gemini API isteği başarısız oldu.");
     }
 
-    const reply = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0] && data.candidates[0].content.parts[0].text;
+    // Comprehensive response extractor: inspects all candidate parts and filters out thought blocks
+    let rawReply = "";
+    if (data.candidates && data.candidates.length > 0) {
+        const cand = data.candidates[0];
+        if (cand.content && Array.isArray(cand.content.parts)) {
+            // Priority 1: All parts where thought is false
+            const nonThoughtParts = cand.content.parts
+                .filter(p => !p.thought && p.text && typeof p.text === "string" && p.text.trim())
+                .map(p => p.text.trim());
+            
+            if (nonThoughtParts.length > 0) {
+                rawReply = nonThoughtParts.join("\n\n");
+            } else {
+                // Priority 2: Fallback to any text parts
+                const anyParts = cand.content.parts
+                    .filter(p => p.text && typeof p.text === "string" && p.text.trim())
+                    .map(p => p.text.trim());
+                if (anyParts.length > 0) {
+                    rawReply = anyParts.join("\n\n");
+                }
+            }
+        }
+    }
 
-    if (!reply) throw new Error("Boş Gemini yanıtı döndü.");
+    if (!rawReply && data.promptFeedback && data.promptFeedback.blockReason) {
+        throw new Error(`Google Güvenlik Filtresi yanıtı engelledi: ${data.promptFeedback.blockReason}`);
+    }
 
-    const formattedText = cleanGeminiOutput(reply);
+    if (!rawReply) {
+        const finishReason = (data.candidates && data.candidates[0] && data.candidates[0].finishReason) || "Belirsiz";
+        throw new Error(`Gemini boş yanıt döndürdü (Bitiş Durumu: ${finishReason}).`);
+    }
+
+    let formattedText = cleanGeminiOutput(rawReply);
+    if (!formattedText || !formattedText.trim()) {
+        formattedText = rawReply.replace(/\n\n/g, "<br><br>").replace(/\n/g, "<br>");
+    }
     
     // Auto-generate dynamic action buttons based on keywords
     let actionHtml = null;
