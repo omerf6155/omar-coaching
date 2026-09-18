@@ -4662,24 +4662,75 @@ function selectWorkoutDay(dayKey) {
     renderWorkoutView(dayKey);
 }
 
-function getExerciseSetCount(ex) {
-    if (ex && ex.setDirectives && Array.isArray(ex.setDirectives) && ex.setDirectives.length > 0) {
+function getExerciseBaseSetCount(ex) {
+    if (!ex) return 2;
+    if (ex.setDirectives && Array.isArray(ex.setDirectives) && ex.setDirectives.length > 0) {
         return ex.setDirectives.length;
-    }
-    if (appData.exerciseSetsCount && appData.exerciseSetsCount[ex.id]) {
-        return appData.exerciseSetsCount[ex.id];
     }
     return ex.defaultSets || ex.sets || 2;
 }
 
-function changeExerciseSets(exId, delta) {
-    const current = (appData.exerciseSetsCount && appData.exerciseSetsCount[exId]) || 2;
-    const updated = Math.max(1, Math.min(8, current + delta));
-    if (!appData.exerciseSetsCount) appData.exerciseSetsCount = {};
-    appData.exerciseSetsCount[exId] = updated;
-    saveDataToStorage();
-    renderWorkoutView(currentActiveDay);
-    showToast(`Set sayısı güncellendi: ${updated}`);
+function getExerciseSetCount(ex) {
+    if (!ex) return 2;
+    const base = getExerciseBaseSetCount(ex);
+    if (appData.exerciseSetsCount && typeof appData.exerciseSetsCount[ex.id] === 'number') {
+        const saved = appData.exerciseSetsCount[ex.id];
+        // Enforce strict constraint: between base and base + 1
+        return Math.max(base, Math.min(base + 1, saved));
+    }
+    return base;
+}
+
+function changeExerciseSets(exId, delta, baseSetsParam) {
+    const plan = (appData.customWorkoutPlan && appData.customWorkoutPlan[currentActiveDay]) || (DEFAULT_WORKOUT_PLAN && DEFAULT_WORKOUT_PLAN[currentActiveDay]);
+    let ex = null;
+    if (plan && plan.exercises) {
+        ex = plan.exercises.find(e => e.id === exId);
+    }
+    const base = baseSetsParam || (ex ? getExerciseBaseSetCount(ex) : 2);
+    const current = (appData.exerciseSetsCount && typeof appData.exerciseSetsCount[exId] === 'number') 
+                    ? appData.exerciseSetsCount[exId] 
+                    : base;
+
+    if (delta > 0) {
+        if (current >= base + 1) {
+            showToast("⚠️ Koç programına hareket başına maksimum 1 ekstra Back-Off set eklenebilir.", "warning");
+            return;
+        }
+        const updated = base + 1;
+        if (!appData.exerciseSetsCount) appData.exerciseSetsCount = {};
+        appData.exerciseSetsCount[exId] = updated;
+
+        // Auto-initialize extra set log as BACK if not present
+        if (!appData.workoutLogs) appData.workoutLogs = {};
+        if (!appData.workoutLogs[exId]) appData.workoutLogs[exId] = [];
+        if (!appData.workoutLogs[exId][updated - 1]) {
+            appData.workoutLogs[exId][updated - 1] = {
+                weight: "",
+                reps: "",
+                rir: "",
+                setType: "BACK",
+                date: new Date().toISOString().split('T')[0]
+            };
+        } else if (!appData.workoutLogs[exId][updated - 1].setType) {
+            appData.workoutLogs[exId][updated - 1].setType = "BACK";
+        }
+
+        saveDataToStorage();
+        renderWorkoutView(currentActiveDay);
+        showToast("⚡ +1 Ekstra Back-Off seti eklendi (Sporcu İnisiyatifi) 💪");
+    } else if (delta < 0) {
+        if (current <= base) {
+            showToast("⚠️ Koçun belirlediği temel setler silinemez.", "warning");
+            return;
+        }
+        const updated = base;
+        if (!appData.exerciseSetsCount) appData.exerciseSetsCount = {};
+        appData.exerciseSetsCount[exId] = updated;
+        saveDataToStorage();
+        renderWorkoutView(currentActiveDay);
+        showToast("Ekstra Back-Off seti kaldırıldı.");
+    }
 }
 
 function calculateOverloadTarget(prevLogs) {
@@ -4907,6 +4958,7 @@ function renderWorkoutView(dayKey) {
     plan.exercises.forEach(ex => {
         const savedSeat = (appData.seatSettings && appData.seatSettings[ex.id]) || ex.defaultSeat;
         const lastLog = (appData.workoutLogs && appData.workoutLogs[ex.id]) || [];
+        const baseSets = getExerciseBaseSetCount(ex);
         const totalSets = getExerciseSetCount(ex);
         const overloadHint = calculateOverloadTarget(lastLog);
 
@@ -4942,18 +4994,21 @@ function renderWorkoutView(dayKey) {
 
         for (let i = 1; i <= totalSets; i++) {
             const prevSet = lastLog[i - 1] || { weight: "-", reps: "-", rir: "", setType: "" };
-            const coachDir = (ex.setDirectives && ex.setDirectives[i - 1]) || null;
-            const defaultTag = (coachDir && coachDir.type) ? coachDir.type : ((i === 1 && ex.isTopSet) ? "TOP" : (i > 1 && ex.isTopSet) ? "BACK" : "S" + i);
+            const isExtraBackOff = (i > baseSets);
+            const coachDir = (!isExtraBackOff && ex.setDirectives && ex.setDirectives[i - 1]) || null;
+            const defaultTag = isExtraBackOff ? "BACK" : ((coachDir && coachDir.type) ? coachDir.type : ((i === 1 && ex.isTopSet) ? "TOP" : (i > 1 && ex.isTopSet) ? "BACK" : "S" + i));
             const currentSetType = prevSet.setType || defaultTag;
             const savedW = prevSet.weight !== '-' ? prevSet.weight : '';
             const savedR = prevSet.reps !== '-' ? prevSet.reps : '';
             const savedRir = prevSet.rir || '';
             const tagClass = currentSetType === 'TOP' ? 'tag-top' : currentSetType === 'BACK' ? 'tag-back' : currentSetType === 'ISINMA' ? 'tag-warm' : currentSetType === 'DROP' ? 'tag-drop' : 'tag-normal';
 
-            const coachTargetText = coachDir ? `${coachDir.type && coachDir.type !== 'S' + i ? coachDir.type + ' • ' : ''}${coachDir.reps || ''}${coachDir.rir ? ' • ' + coachDir.rir.replace(/\(.*\)/, '').trim() : ''}`.trim() : '';
+            const coachTargetText = isExtraBackOff
+                ? "⚡ Ekstra Back-Off (Sporcu İnisiyatifi)"
+                : (coachDir ? `${coachDir.type && coachDir.type !== 'S' + i ? coachDir.type + ' • ' : ''}${coachDir.reps || ''}${coachDir.rir ? ' • ' + coachDir.rir.replace(/\(.*\)/, '').trim() : ''}`.trim() : '');
 
             html += `
-                <tr class="set-row">
+                <tr class="set-row ${isExtraBackOff ? 'set-row-extra' : ''}" style="${isExtraBackOff ? 'background:rgba(96,165,250,0.05);' : ''}">
                     <td>
                         <select class="set-type-select ${tagClass}" id="type_${ex.id}_${i}" onchange="autoSaveSet('${ex.id}', ${i})" title="Set Tipi Seç">
                             <option value="TOP" ${currentSetType === 'TOP' ? 'selected' : ''}>🔥 TOP</option>
@@ -4965,7 +5020,7 @@ function renderWorkoutView(dayKey) {
                     </td>
                     <td style="font-size: 0.75rem; color: var(--text-muted); line-height:1.25;">
                         <div>${prevSet.weight !== '-' ? `<span style="color:#ffffff; font-weight:700;">${prevSet.weight}kg</span> × ${prevSet.reps}` : '<span style="opacity:0.35;">-</span>'}</div>
-                        ${coachTargetText ? `<div style="font-size:0.62rem; color:#ffd60a; font-weight:700; margin-top:2px;" title="Koç Direktifi"><i class="fa-solid fa-bullseye"></i> ${coachTargetText}</div>` : ''}
+                        ${coachTargetText ? `<div style="font-size:0.62rem; color:${isExtraBackOff ? '#60a5fa' : '#ffd60a'}; font-weight:700; margin-top:2px;" title="${isExtraBackOff ? 'Ekstra Set' : 'Koç Direktifi'}"><i class="fa-solid ${isExtraBackOff ? 'fa-bolt' : 'fa-bullseye'}"></i> ${coachTargetText}</div>` : ''}
                     </td>
                     <td>
                         <div style="display: flex; gap: 3px;">
@@ -4991,11 +5046,28 @@ function renderWorkoutView(dayKey) {
         html += `
                     </tbody>
                 </table>
-                <div class="ex-card-actions">
-                    <span style="font-size:0.7rem; color:var(--text-muted);">Toplam: ${totalSets} Set</span>
-                    <div style="display:flex; gap:6px;">
-                        <button class="btn btn-xs btn-outline" onclick="changeExerciseSets('${ex.id}', -1)" title="Set Sil"><i class="fa-solid fa-minus"></i> Set</button>
-                        <button class="btn btn-xs btn-outline" onclick="changeExerciseSets('${ex.id}', 1)" title="Set Ekle"><i class="fa-solid fa-plus"></i> Set</button>
+                <div class="ex-card-actions" style="display:flex; justify-content:space-between; align-items:center; padding-top:8px; border-top:1px solid rgba(255,255,255,0.06); margin-top:8px;">
+                    <div>
+                        <span style="font-size:0.72rem; font-weight:700; color:var(--text-secondary);">
+                            Toplam: <strong style="color:#ffffff;">${totalSets} Set</strong>
+                            ${totalSets > baseSets ? '<span style="color:#60a5fa; font-size:0.65rem; font-weight:800; margin-left:4px; background:rgba(96,165,250,0.12); padding:2px 6px; border-radius:4px; border:1px solid rgba(96,165,250,0.3);"><i class="fa-solid fa-bolt"></i> +1 Ekstra Back-Off</span>' : ''}
+                        </span>
+                    </div>
+                    <div style="display:flex; gap:6px; align-items:center;">
+                        ${totalSets > baseSets ? `
+                            <button class="btn btn-xs btn-outline" onclick="changeExerciseSets('${ex.id}', -1, ${baseSets})" title="Ekstra Back-Off Setini Kaldır" style="border-color:#ef4444; color:#ef4444; font-size:0.68rem; padding:3px 8px;">
+                                <i class="fa-solid fa-minus"></i> Ekstra Seti Sil
+                            </button>
+                        ` : ''}
+                        ${totalSets < baseSets + 1 ? `
+                            <button class="btn btn-xs btn-outline" onclick="changeExerciseSets('${ex.id}', 1, ${baseSets})" title="İnisiyatifinizle Maksimum 1 Ekstra Back-Off Seti Ekleyin" style="border-color:#60a5fa; color:#60a5fa; font-weight:700; font-size:0.68rem; padding:3px 8px;">
+                                <i class="fa-solid fa-plus"></i> +1 Back-Off Ekle
+                            </button>
+                        ` : `
+                            <span style="font-size:0.65rem; color:#60a5fa; font-weight:700; background:rgba(96,165,250,0.08); border:1px solid rgba(96,165,250,0.25); padding:3px 8px; border-radius:4px;">
+                                <i class="fa-solid fa-circle-check"></i> +1 Back-Off Aktif (Maks)
+                            </span>
+                        `}
                     </div>
                 </div>
             </div>
