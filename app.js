@@ -8337,60 +8337,92 @@ function renderCoachWorkoutRevDay() {
             const isFirst = idx === 0;
             const isLast = idx === dayPlan.exercises.length - 1;
 
+            // Extract or infer reps and rir
+            let repsVal = ex.reps;
+            let rirVal = ex.rir;
+            if (!repsVal) {
+                if (ex.target) {
+                    const match = ex.target.match(/(\d+[\s-]*\d*\s*rep|\d+[\s-]+\d+|\d+\s*tekrar)/i);
+                    repsVal = match ? match[0].replace(/rep|tekrar/gi, '').trim() + " rep" : ex.target;
+                } else {
+                    repsVal = "6-9 rep";
+                }
+                ex.reps = repsVal;
+            }
+            if (!rirVal) {
+                if (ex.isTopSet) {
+                    rirVal = "RIR 0 (Tükeniş)";
+                } else if (ex.target && ex.target.toLowerCase().includes("rir")) {
+                    const rirMatch = ex.target.match(/rir\s*\d+/i);
+                    rirVal = rirMatch ? rirMatch[0].toUpperCase() : "RIR 1 (1 Kala)";
+                } else {
+                    rirVal = ex.isTopSet ? "RIR 0 (Tükeniş)" : "RIR 1 (1 Kala)";
+                }
+                ex.rir = rirVal;
+            }
+
             return `
-                <div class="card" style="background:var(--bg-input); border:1px solid var(--border-subtle); padding:10px; margin-bottom:8px; position:relative;">
-                    <!-- Top Bar: Index + Prominent Movement Name + Top Set Badge + Actions -->
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:8px;">
+                <div class="card" style="background:var(--bg-input); border:1px solid rgba(255,255,255,0.09); padding:10px 12px; margin-bottom:10px; border-radius:10px; position:relative;">
+                    <!-- Top Bar: Index + Direct Title Input + TopSet Toggle + Action Buttons -->
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; gap:8px; flex-wrap:wrap;">
                         <div style="display:flex; align-items:center; gap:8px; min-width:0; flex:1;">
-                            <span class="badge-role" style="background:#ffd60a; color:#000; font-size:0.7rem; font-weight:900; padding:2px 7px; border-radius:4px; flex-shrink:0;">#${idx + 1}</span>
-                            <strong id="coach-rx-ex-name-disp-${idx}" style="color:#ffffff; font-size:0.85rem; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                                ${ex.name || 'İsimsiz Egzersiz'}
-                            </strong>
-                            <span id="coach-rx-ex-topset-badge-${idx}">
-                                ${ex.isTopSet ? `<span class="top-set-badge" style="font-size:0.6rem; padding:1px 5px;"><i class="fa-solid fa-fire"></i> TOP SET</span>` : ''}
-                            </span>
+                            <span class="badge-role" style="background:#ffd60a; color:#000; font-size:0.72rem; font-weight:900; padding:3px 8px; border-radius:4px; flex-shrink:0;">#${idx + 1}</span>
+                            <input type="text" value="${ex.name || ''}" 
+                                   oninput="updateCoachRxExField(${idx}, 'name', this.value)" 
+                                   placeholder="Hareket Adı (Örn: Incline DB Press)..." 
+                                   style="flex:1; min-width:0; background:transparent; border:none; border-bottom:1px dashed rgba(255,255,255,0.2); color:#ffffff; font-size:0.88rem; font-weight:800; padding:2px 4px; outline:none;"
+                                   title="Hareket adını doğrudan buradan değiştirebilirsiniz">
                         </div>
-                        <div style="display:flex; align-items:center; gap:4px; flex-shrink:0;">
-                            <button type="button" class="btn-chat-sync" onclick="moveCoachRxExercise(${idx}, -1)" ${isFirst ? 'disabled style="opacity:0.3; cursor:default;"' : ''} title="Yukarı Taşı" style="padding:2px 7px; font-size:0.65rem;">
+                        <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
+                            <label style="display:flex; align-items:center; gap:5px; font-size:0.68rem; color:#ffd60a; cursor:pointer; background:rgba(255,214,10,0.08); padding:3px 8px; border-radius:4px; border:1px solid rgba(255,214,10,0.22); white-space:nowrap;">
+                                <input type="checkbox" ${ex.isTopSet ? 'checked' : ''} onchange="updateCoachRxExField(${idx}, 'isTopSet', this.checked)" style="accent-color:#ffd60a; cursor:pointer;">
+                                <span style="font-weight:700;"><i class="fa-solid fa-fire"></i> Top Set</span>
+                            </label>
+                            <button type="button" class="btn-chat-sync" onclick="moveCoachRxExercise(${idx}, -1)" ${isFirst ? 'disabled style="opacity:0.3; cursor:default;"' : ''} title="Yukarı Taşı" style="padding:3px 7px; font-size:0.65rem;">
                                 <i class="fa-solid fa-arrow-up"></i>
                             </button>
-                            <button type="button" class="btn-chat-sync" onclick="moveCoachRxExercise(${idx}, 1)" ${isLast ? 'disabled style="opacity:0.3; cursor:default;"' : ''} title="Aşağı Taşı" style="padding:2px 7px; font-size:0.65rem;">
+                            <button type="button" class="btn-chat-sync" onclick="moveCoachRxExercise(${idx}, 1)" ${isLast ? 'disabled style="opacity:0.3; cursor:default;"' : ''} title="Aşağı Taşı" style="padding:3px 7px; font-size:0.65rem;">
                                 <i class="fa-solid fa-arrow-down"></i>
                             </button>
-                            <button type="button" class="btn-delete-item" onclick="removeCoachRxExercise(${idx})" title="Egzersizi Sil" style="padding:3px 7px; font-size:0.7rem; margin-left:4px;">
+                            <button type="button" class="btn-delete-item" onclick="removeCoachRxExercise(${idx})" title="Egzersizi Sil" style="padding:4px 8px; font-size:0.7rem; margin-left:2px;">
                                 <i class="fa-solid fa-trash"></i>
                             </button>
                         </div>
                     </div>
 
-                    <!-- Row 1: Exercise Name & Target Reps/RIR -->
-                    <div class="form-row-2" style="margin-bottom:6px;">
+                    <!-- Row 1: Set Sayısı | Hedef Tekrar (Ayrı) | Hedef RIR (Ayrı) -->
+                    <div style="display:grid; grid-template-columns: 80px 1fr 1fr; gap:6px; margin-bottom:8px;">
                         <div class="form-group" style="margin-bottom:0;">
-                            <label style="font-size:0.65rem;">Hareket Adı</label>
-                            <input type="text" value="${ex.name || ''}" oninput="updateCoachRxExField(${idx}, 'name', this.value)" placeholder="Egzersiz Adı" style="font-size:0.75rem; padding:5px 8px; font-weight:700;">
+                            <label style="font-size:0.62rem; color:var(--text-secondary); text-transform:uppercase; font-weight:700;"><i class="fa-solid fa-layer-group" style="color:#ffd60a;"></i> Set</label>
+                            <input type="number" min="1" max="10" value="${ex.defaultSets || 2}" 
+                                   onchange="updateCoachRxExField(${idx}, 'defaultSets', parseInt(this.value)||2)" 
+                                   style="font-size:0.75rem; padding:6px 8px; text-align:center; font-weight:800;">
                         </div>
                         <div class="form-group" style="margin-bottom:0;">
-                            <label style="font-size:0.65rem;">Hedef Tekrar & RIR</label>
-                            <input type="text" value="${ex.target || ''}" oninput="updateCoachRxExField(${idx}, 'target', this.value)" placeholder="Örn: 2-3 Set (6-9 Tekrar)" style="font-size:0.75rem; padding:5px 8px;">
+                            <label style="font-size:0.62rem; color:var(--text-secondary); text-transform:uppercase; font-weight:700;"><i class="fa-solid fa-repeat" style="color:#60a5fa;"></i> Hedef Tekrar</label>
+                            <input type="text" value="${repsVal}" 
+                                   oninput="updateCoachRxExRepsAndRir(${idx}, 'reps', this.value)" 
+                                   placeholder="Örn: 6-8 veya 8-10" 
+                                   style="font-size:0.75rem; padding:6px 8px; font-weight:800; color:#60a5fa;">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label style="font-size:0.62rem; color:var(--text-secondary); text-transform:uppercase; font-weight:700;"><i class="fa-solid fa-gauge-high" style="color:#ff453a;"></i> Hedef RIR</label>
+                            <select onchange="updateCoachRxExRepsAndRir(${idx}, 'rir', this.value)" class="form-select" style="font-size:0.72rem; padding:6px 6px; font-weight:800; color:#ff453a;">
+                                <option value="RIR 0 (Tükeniş)" ${rirVal.includes("0") && !rirVal.includes("0-1") ? 'selected' : ''}>RIR 0 (Tükeniş 🔥)</option>
+                                <option value="RIR 1 (1 Kala)" ${rirVal.includes("1") && !rirVal.includes("0") ? 'selected' : ''}>RIR 1 (1 Kala)</option>
+                                <option value="RIR 2 (2 Kala)" ${rirVal.includes("2") ? 'selected' : ''}>RIR 2 (2 Kala)</option>
+                                <option value="RIR 0-1 (Sınır)" ${rirVal.includes("0-1") ? 'selected' : ''}>RIR 0-1 (Sınır)</option>
+                            </select>
                         </div>
                     </div>
 
-                    <!-- Row 2: Default Sets, Seat/Machine Setup, Top Set Checkbox -->
-                    <div style="display:grid; grid-template-columns: 80px 1fr auto; gap:6px; align-items:flex-end;">
-                        <div class="form-group" style="margin-bottom:0;">
-                            <label style="font-size:0.65rem;">Set Sayısı</label>
-                            <input type="number" min="1" max="10" value="${ex.defaultSets || 2}" onchange="updateCoachRxExField(${idx}, 'defaultSets', parseInt(this.value)||2)" style="font-size:0.75rem; padding:5px 8px;">
-                        </div>
-                        <div class="form-group" style="margin-bottom:0;">
-                            <label style="font-size:0.65rem;">Sehpa / Koltuk / Ekipman Ayarı</label>
-                            <input type="text" value="${ex.defaultSeat || ''}" oninput="updateCoachRxExField(${idx}, 'defaultSeat', this.value)" placeholder="Örn: Koltuk: 4, Açı: 30°" style="font-size:0.75rem; padding:5px 8px;">
-                        </div>
-                        <div style="padding-bottom:6px;">
-                            <label style="display:flex; align-items:center; gap:4px; font-size:0.68rem; color:#ffd60a; cursor:pointer; white-space:nowrap;">
-                                <input type="checkbox" ${ex.isTopSet ? 'checked' : ''} onchange="updateCoachRxExField(${idx}, 'isTopSet', this.checked)" style="accent-color:#ffd60a;">
-                                <span>Top Set</span>
-                            </label>
-                        </div>
+                    <!-- Row 2: Sehpa / Koltuk / Ekipman Ayarı -->
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label style="font-size:0.62rem; color:var(--text-secondary); text-transform:uppercase; font-weight:700;"><i class="fa-solid fa-sliders" style="color:#eab308;"></i> Sehpa Açısı / Koltuk / Ekipman Notu</label>
+                        <input type="text" value="${ex.defaultSeat || ''}" 
+                               oninput="updateCoachRxExField(${idx}, 'defaultSeat', this.value)" 
+                               placeholder="Örn: 30 Derece, Koltuk: 4, Geniş Tutuş..." 
+                               style="font-size:0.75rem; padding:6px 8px;">
                     </div>
                 </div>
             `;
@@ -8400,6 +8432,21 @@ function renderCoachWorkoutRevDay() {
     if (isCoachRxAddDrawerOpen) {
         renderCoachRxLibExercises();
     }
+}
+
+function updateCoachRxExRepsAndRir(index, field, value) {
+    const username = currentCoachSelectedAthlete;
+    if (!username || !currentCoachWorkoutDrafts[username]) return;
+
+    const dayPlan = currentCoachWorkoutDrafts[username][currentCoachWorkoutRevDay];
+    if (!dayPlan || !dayPlan.exercises[index]) return;
+
+    const ex = dayPlan.exercises[index];
+    ex[field] = value;
+
+    const reps = ex.reps || "6-10";
+    const rir = ex.rir || "RIR 0";
+    ex.target = `${reps} • ${rir}`;
 }
 
 function updateCoachRxDayMeta() {
