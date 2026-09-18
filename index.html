@@ -927,6 +927,35 @@
         </div>
     </div>
 
+    <!-- 2.1 QUICK MEAL LOG CONFIRMATION MODAL -->
+    <div id="modal-confirm-quick-meal" class="modal-overlay">
+        <div class="modal-card" style="max-width:380px;">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-utensils"></i> Öğün Günlüğe Eklensin mi?</h3>
+                <button class="modal-close-btn" onclick="closeModal('modal-confirm-quick-meal')">&times;</button>
+            </div>
+            <div class="modal-body" style="text-align:center; padding:16px 14px;">
+                <div class="confirm-meal-icon" id="confirm-meal-icon" style="font-size:3rem; margin-bottom:8px;">🥞</div>
+                <h4 id="confirm-meal-name" style="font-size:1.1rem; font-weight:800; color:#ffffff; margin-bottom:4px;">Öğün</h4>
+                <p id="confirm-meal-desc" class="text-secondary" style="font-size:0.75rem; margin-bottom:12px; line-height:1.4;">Öğün Detayları</p>
+                
+                <div class="confirm-meal-macro-box" style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:10px; margin-bottom:16px;">
+                    <div id="confirm-meal-cal" style="font-size:1.3rem; font-weight:800; color:#ffd60a; margin-bottom:2px;">+0 kcal</div>
+                    <div id="confirm-meal-macros" style="font-size:0.74rem; font-weight:600; color:var(--text-secondary);">0g P • 0g C • 0g F</div>
+                </div>
+
+                <div style="display:flex; gap:10px;">
+                    <button type="button" class="btn btn-outline btn-block" onclick="closeModal('modal-confirm-quick-meal')">
+                        <i class="fa-solid fa-xmark"></i> İptal
+                    </button>
+                    <button type="button" class="btn btn-primary btn-block" onclick="confirmLogQuickMeal()">
+                        <i class="fa-solid fa-check"></i> Evet, Ekle
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- 2.1 CUSTOM ACTION CREATOR MODAL -->
     <div id="modal-custom-action-creator" class="modal-overlay">
         <div class="modal-card">

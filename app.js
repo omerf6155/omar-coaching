@@ -1858,8 +1858,8 @@ function createDefaultRpgCharacter() {
 function createDefaultAppData() {
     return {
         targets: { ...DEFAULT_TARGETS },
-        quickActionSlots: ["pancake", "preworkout", "postworkout", "dinner"],
-        pinnedQuickActions: ["pancake", "preworkout", "postworkout", "dinner"],
+        quickActionSlots: ["", "", "", ""],
+        pinnedQuickActions: ["", "", "", ""],
         customQuickActions: [],
         activeSplitKey: "ppl_standard",
         customPresets: { ...DEFAULT_PRESET_MEALS },
@@ -1953,7 +1953,7 @@ function loadDataFromStorage() {
     const registry = getUsersRegistry();
 
     const sanitizeSlots = (slots) => {
-        const defaultSlots = ["pancake", "preworkout", "postworkout", "dinner"];
+        const defaultSlots = ["", "", "", ""];
         if (!slots || !Array.isArray(slots) || slots.length !== 4) return defaultSlots;
         if (slots.some(s => ["steps_live", "water", "steps_1000", "steps_manual", "stretching"].includes(s))) {
             return defaultSlots;
@@ -2294,13 +2294,14 @@ function getQuickMealDetails(key) {
 }
 
 let currentConfiguringSlot = 0;
+let pendingMealLogKey = null;
 
 function renderDashboardQuickActions() {
     const container = document.getElementById("dashboard-quick-actions-container");
     if (!container) return;
 
     if (!appData.quickActionSlots || appData.quickActionSlots.length !== 4) {
-        appData.quickActionSlots = ["pancake", "preworkout", "postworkout", "dinner"];
+        appData.quickActionSlots = ["", "", "", ""];
     }
 
     let html = "";
@@ -2310,7 +2311,7 @@ function renderDashboardQuickActions() {
 
         if (meal) {
             html += `
-                <div class="qa-4slot-btn" onclick="executeQuickMealSlot(${i})" title="Tek tıkla bugünkü beslenmene ekle">
+                <div class="qa-4slot-btn" onclick="executeQuickMealSlot(${i})" title="Öğün Detayı ve Günlüğe Ekleme Onayı">
                     <span class="qa-slot-num-badge">#${i + 1}</span>
                     <button type="button" class="qa-slot-edit-trigger" onclick="event.stopPropagation(); openAssignMealSlotModal(${i});" title="Öğünü Değiştir">
                         <i class="fa-solid fa-gear"></i>
@@ -2342,6 +2343,40 @@ function executeQuickMealSlot(slotIndex) {
         openAssignMealSlotModal(slotIndex);
         return;
     }
+    openConfirmQuickMealLogModal(key);
+}
+
+function openConfirmQuickMealLogModal(mealKey) {
+    const meal = getQuickMealDetails(mealKey);
+    if (!meal) {
+        showToast("⚠️ Seçilen öğün bulunamadı.");
+        return;
+    }
+    pendingMealLogKey = mealKey;
+
+    const iconEl = document.getElementById("confirm-meal-icon");
+    const nameEl = document.getElementById("confirm-meal-name");
+    const descEl = document.getElementById("confirm-meal-desc");
+    const calEl = document.getElementById("confirm-meal-cal");
+    const macrosEl = document.getElementById("confirm-meal-macros");
+
+    if (iconEl) iconEl.innerText = meal.icon;
+    if (nameEl) nameEl.innerText = meal.name;
+    if (descEl) descEl.innerText = meal.desc || "Kayıtlı beslenme öğünü";
+    if (calEl) calEl.innerText = `+${meal.cal} kcal`;
+    if (macrosEl) macrosEl.innerText = `${meal.p}g P • ${meal.c}g C • ${meal.f}g F`;
+
+    openModal("modal-confirm-quick-meal");
+}
+
+function confirmLogQuickMeal() {
+    if (!pendingMealLogKey) {
+        closeModal("modal-confirm-quick-meal");
+        return;
+    }
+    const key = pendingMealLogKey;
+    pendingMealLogKey = null;
+    closeModal("modal-confirm-quick-meal");
     logPresetMeal(key);
 }
 
@@ -2399,7 +2434,7 @@ function renderMealPickerList() {
 
 function assignMealToSlot(slotIndex, mealKey) {
     if (!appData.quickActionSlots || appData.quickActionSlots.length !== 4) {
-        appData.quickActionSlots = ["pancake", "preworkout", "postworkout", "dinner"];
+        appData.quickActionSlots = ["", "", "", ""];
     }
     appData.quickActionSlots[slotIndex] = mealKey;
     saveDataToStorage();
@@ -8915,15 +8950,235 @@ function processOfflineAssistantResponse(personaKey, userText) {
     // 3. KÜRAY (SUPLEMENT & BİYOKİMYA DEEP KNOWLEDGE)
     // -------------------------------------------------------------
     if (personaKey === "kuray") {
-        // Yağ yakıcı / L-Karnitin / Termojenik gerçeği
-        if (t.includes("karnitin") || t.includes("carnitine") || t.includes("yağ yakıcı") || t.includes("termojenik") || t.includes("cla")) {
+        // 1. Kreatin: Formlar (Monohidrat vs HCL/Kre-Alkalyn), Saç Dökülmesi Miti, Su Tutumu (İntraselüler), Yükleme
+        if (t.includes("kreatin") || t.includes("creatine") || t.includes("saç") || t.includes("dökül") || t.includes("su tut") || t.includes("ödem") || t.includes("hcl") || t.includes("monohidrat") || t.includes("yükleme") || t.includes("bırakınca")) {
+            if (t.includes("saç") || t.includes("dök")) {
+                return {
+                    text: `Şu 'kreatin saç döker' şehir efsanesine bilimsel noktayı koyalım paşam:<br><br>
+                           🔬 <strong>Mitin Çıkış Noktası:</strong> 2009 yılında Güney Afrika'da 20 ragbi oyuncusu üzerinde yapılan küçük bir çalışmada DHT (Dihidrotestosteron) seviyesinin geçici arttığı iddia edildi. Ancak son 15 yılda yapılan <strong>20'den fazla bağımsız klinik çalışmanın hiçbiri</strong> saç dökülmesi veya DHT artışı bulgusunu tekrarlayamadı.<br><br>
+                           🧬 <strong>Gerçek:</strong> Genetik olarak erkek tipi kellik (Androjenik Alopesi) yatkınlığın yoksa kreatin saçını dökmez! Gönül rahatlığıyla her gün 5g içebilirsin.`,
+                    actionHtml: `
+                        <button class="ai-action-btn btn-supplement" onclick="applyAiSupplementAdd('cat_creatine')">
+                            <i class="fa-solid fa-bolt"></i> Kreatin Monohidrat'ı Protokolüme Ekle ⚡
+                        </button>
+                    `
+                };
+            }
+
+            if (t.includes("su tut") || t.includes("ödem") || t.includes("şişir")) {
+                return {
+                    text: `Kreatinin su tutumu hakkında en büyük yanılgı: 'Kreatin beni sulandırıp yağlı gösterir' korkusudur.<br><br>
+                           💧 <strong>İntraselüler (Hücre İçi) Hidrasyon:</strong> Kreatin suyu deri altına (ekstraselüler) DEĞİL, doğrudan <strong>kas hücresinin içine (intraselüler)</strong> çeker.<br>
+                           💪 <strong>Sonuç:</strong> Kas lifleri daha sert, daha dolgun ve 3D görünür. Hücre içi su basıncı aynı zamanda protein sentezini (mTOR) tetikleyen anabolik bir sinyaldir!`,
+                    actionHtml: `
+                        <button class="ai-action-btn btn-supplement" onclick="applyAiSupplementAdd('cat_creatine')">
+                            <i class="fa-solid fa-bolt"></i> Kreatin Monohidrat'ı Protokolüme Ekle ⚡
+                        </button>
+                    `
+                };
+            }
+
+            if (t.includes("hcl") || t.includes("kre-alkalyn") || t.includes("form") || t.includes("hangisi")) {
+                return {
+                    text: `Piyasadaki pazarlama tuzaklarına kanma: Kreatin HCL, Nitrate veya Kre-Alkalyn gibi süslü formlar Monohidrat'tan 3 kat pahalıdır ama kas gücüne <strong>%1 bile ekstra katkı sağlamaz</strong>!<br><br>
+                           🥇 <strong>Altın Standart:</strong> <strong>Kreatin Monohidrat (Creapure / Mikronize)</strong> %99.8 biyoyararlanıma sahiptir ve en çok kanıtlanmış takviyedir. Sadece Monohidrat sende mide krampı yapıyorsa HCL düşünülür, aksi halde boşa para harcama!`,
+                    actionHtml: `
+                        <button class="ai-action-btn btn-supplement" onclick="applyAiSupplementAdd('cat_creatine')">
+                            <i class="fa-solid fa-bolt"></i> Kreatin Monohidrat'ı Protokolüme Ekle ⚡
+                        </button>
+                    `
+                };
+            }
+
+            // Genel kreatin dozu ve yükleme
             return {
-                text: `Dobra konuşacağım paşam: Piyasadaki L-Karnitin ve 'yağ yakıcı' adı altında satılan hapların %95'i <strong>para tuzağıdır</strong>!<br><br>
-                       Kalori açığı (kalorik defisit) bırakmadan hiçbir toz yağ yakmaz. Paranı boş kutulara kaptırma; antrenman öncesi sert bir filtre kahve iç, diyetine sadık kal, o parayı da kaliteli tavuk veya ete yatır!`
+                text: `Kreatin dünyada hakkında en çok araştırma yapılmış 1 numaralı kütle ve güç suplementidir!<br><br>
+                       🔥 <strong>Protokol & Dozlama:</strong><br>
+                       - Yükleme yapmana (günde 20g içmeye) hiç gerek yok; mideyi ve böbreği yormadan her gün sabit <strong>5 gram Kreatin Monohidrat</strong> al.<br>
+                       - 3 hafta içinde kas içi fosfokreatin depoların %100 dolar.<br>
+                       - ⏰ <strong>Zamanlama:</strong> Antrenman öncesi, sonrası veya sabah kahvaltıyla... Zamanı fark etmez, ana kural <strong>her gün aksatmadan</strong> almaktır!`,
+                actionHtml: `
+                    <button class="ai-action-btn btn-supplement" onclick="applyAiSupplementAdd('cat_creatine')">
+                        <i class="fa-solid fa-bolt"></i> Kreatin Monohidrat'ı Protokolüme Ekle 🔥
+                    </button>
+                `
             };
         }
 
-        // Protein tozu zararlı mı / böbrek
+        // 2. Pre-Workout / Sitrülin Malat vs Arjinin / Beta-Alanin / Kafein / Pump
+        if (t.includes("pump") || t.includes("damar") || t.includes("pre") || t.includes("sitrulin") || t.includes("citrulline") || t.includes("arjinin") || t.includes("arginine") || t.includes("beta alanin") || t.includes("karıncalan") || t.includes("kafein")) {
+            if (t.includes("arjinin") || t.includes("arginine") || t.includes("sitrulin") || t.includes("citrulline")) {
+                return {
+                    text: `Biyokimya dersine hoş geldin paşam: <strong>Neden Arjinin çöp, L-Sitrülin kraldır?</strong><br><br>
+                           🧪 <strong>1. First-Pass Etkisi:</strong> Ağızdan aldığın L-Arjinin karaciğerdeki 'Arginaz' enzimi tarafından %70 oranında parçalanır, damarlara neredeyse hiç ulaşamaz!<br>
+                           🚀 <strong>2. L-Sitrülin Malat (2:1):</strong> Karaciğeri doğrudan baypas eder, böbreklerde saf Arjinine dönüşerek kandaki Nitrik Oksit (NO) seviyesini Arjininin kendisinden 3 kat daha fazla yükseltir.<br><br>
+                           📊 <strong>Klinik Doz:</strong> Antrenmandan 30-45 dk önce <strong>6 - 8 gram L-Sitrülin Malat</strong>!`,
+                    actionHtml: `
+                        <button class="ai-action-btn btn-supplement" onclick="applyAiSupplementAdd('cat_citrulline')">
+                            <i class="fa-solid fa-plus"></i> L-Sitrülin Malat (6-8g) Ekle ⚡
+                        </button>
+                    `
+                };
+            }
+
+            if (t.includes("beta alanin") || t.includes("karıncalan") || t.includes("kaşın")) {
+                return {
+                    text: `Yüzündeki ve parmaklarındaki o karıncalanma hissi (Parestezi) seni korkutmasın paşam!<br><br>
+                           ⚡ <strong>Nasıl Çalışır?</strong> Beta-Alanin kas içindeki <strong>Karnozin</strong> seviyesini artırır. Ağır setlerde oluşan hidrojen iyonlarını (laktik asit yanmasını) tamponlayarak tükenişe <strong>+2 ila 3 tekrar</strong> daha eklemeni sağlar.<br>
+                           🐜 <strong>Karıncalanma:</strong> Deri altındaki duyu sinirlerinin geçici uyarılmasıdır, tamamen zararsızdır. Günlük klinik doz: <strong>3.2g - 4g</strong>.`,
+                    actionHtml: `
+                        <button class="ai-action-btn btn-supplement" onclick="applyAiSupplementAdd('cat_betaalanine')">
+                            <i class="fa-solid fa-plus"></i> Beta-Alanin'i Listeme Ekle 🐜
+                        </button>
+                    `
+                };
+            }
+
+            return {
+                text: `Damarların hortum gibi açılması ve sette odaklanmanın zirve yapması için <strong>Bilimsel Pre-Workout Kokteyli</strong>:<br><br>
+                       1. ⚡ <strong>L-Sitrülin Malat (6-8g):</strong> Saf Nitrik Oksit ve kas kanlanması.<br>
+                       2. ☕ <strong>Kafein Anhidroz (200mg):</strong> Merkezi sinir sistemi uyarımı ve motor ünite aktivasyonu.<br>
+                       3. 🧂 <strong>Himalaya / Kaya Tuzu (1g):</strong> Damar içi plazma hacmi ve patlayıcı pump.<br>
+                       4. 🐜 <strong>Beta-Alanin (3.2g):</strong> Laktik asit tamponlama ve set dayanıklılığı.`,
+                actionHtml: `
+                    <button class="ai-action-btn btn-supplement" onclick="applyAiSupplementAdd('cat_citrulline')">
+                        <i class="fa-solid fa-plus"></i> L-Sitrülin Malat Ekle ⚡
+                    </button>
+                    <button class="ai-action-btn btn-supplement" style="background:linear-gradient(135deg,#0284c7,#0369a1); margin-top:4px;" onclick="applyAiSupplementAdd('cat_betaalanine')">
+                        <i class="fa-solid fa-plus"></i> Beta-Alanin Ekle 🐜
+                    </button>
+                `
+            };
+        }
+
+        // 3. Magnezyum Formları & Uyku / Kramp / GABA
+        if (t.includes("magnezyum") || t.includes("magnesium") || t.includes("kramp") || t.includes("uyku") || t.includes("gece") || t.includes("yorgun uyan") || t.includes("melatonin") || t.includes("dinlen")) {
+            return {
+                text: `Eczaneden rastgele magnezyum alırsan paran çöpe gider paşam! İşte <strong>Biyokimyasal Magnezyum Rehberi</strong>:<br><br>
+                       ❌ <strong>Magnezyum Oksit:</strong> Emilimi sadece %4'tür! Sadece bağırsakta su çeker ve ishal yapar, kaslarına zerre faydası olmaz.<br>
+                       💤 <strong>Magnezyum Bisglisinat (250-400 mg):</strong> Glisin amino asidine bağlıdır. Kan-beyin bariyerini geçer, GABA reseptörlerini aktive ederek sinir sistemini yatıştırır ve derin REM uykusu sağlar (Gece uykudan 45dk önce).<br>
+                       ⚡ <strong>Magnezyum Malat:</strong> Malik asit içerir, hücre içi Krebs döngüsünde ATP üretimini destekler (Sabah/gündüz enerji ve kas yorgunluğu için).<br>
+                       🧠 <strong>Magnezyum L-Treonat:</strong> Beyin dokusuna en yüksek oranda geçen formdur; odak ve bilişsel güç için.`,
+                actionHtml: `
+                    <button class="ai-action-btn btn-supplement" onclick="applyAiSupplementAdd('cat_magnesium_bis')">
+                        <i class="fa-solid fa-plus"></i> Magnezyum Bisglisinat'ı Ekle 💤
+                    </button>
+                    <button class="ai-action-btn btn-supplement" style="background:linear-gradient(135deg,#6366f1,#4f46e5); margin-top:4px;" onclick="applyAiSupplementAdd('cat_melatonin')">
+                        <i class="fa-solid fa-moon"></i> Melatonin'i Ekle 🌙
+                    </button>
+                `
+            };
+        }
+
+        // 4. D3 Vitamini + K2 (MK-7) / Testosteron / Kalsiyum
+        if (t.includes("d3") || t.includes("k2") || t.includes("d vitamini") || t.includes("kemik") || t.includes("testosteron") || t.includes("güneş")) {
+            return {
+                text: `D Vitamini bir vitaminden ziyade <strong>steroid yapılı bir pro-hormondur</strong> paşam! Testosteron üretiminden bağışıklığa kadar her şeyin temelidir:<br><br>
+                       ☀️ <strong>D3 + K2 (MK-7) Sinerjisi Neden Şarttır?</strong><br>
+                       - <strong>Vitamin D3 (5.000 IU):</strong> Bağırsaklardan kalsiyum emilimini maksimuma çıkarır.<br>
+                       - <strong>Vitamin K2 MK-7 (100 mcg):</strong> Bu serbest kalsiyumu damarlardan toplayıp doğrudan <strong>kemik ve kas dokusuna kilitler</strong>. K2 olmadan yüksek D3 almak damar kireçlenmesi (arteriyel kalsifikasyon) riski yaratır!<br><br>
+                       💡 <strong>Kural:</strong> Yağda çözünen vitaminler olduğu için mutlaka <strong>yağ içeren bir öğünle (kahvaltı veya akşam)</strong> alınmalıdır.`,
+                actionHtml: `
+                    <button class="ai-action-btn btn-supplement" onclick="applyAiSupplementAdd('cat_d3k2')">
+                        <i class="fa-solid fa-plus"></i> Vitamin D3 + K2 (MK-7) Ekle ☀️
+                    </button>
+                `
+            };
+        }
+
+        // 5. Omega-3 Balık Yağı (EPA & DHA Matematiği)
+        if (t.includes("omega") || t.includes("balık yağı") || t.includes("epa") || t.includes("dha") || t.includes("kalp") || t.includes("enflamasyon")) {
+            return {
+                text: `Kutunun önündeki '1000 mg Balık Yağı' yazısına aldanma paşam, tuzağa düşme!<br><br>
+                       🐟 <strong>EPA & DHA Matematiği:</strong><br>
+                       - Önemli olan toplam balık yağı değil, kapsülün içindeki <strong>aktif EPA ve DHA miktarıdır</strong>.<br>
+                       - Bir sporcunun kas protein sentezini (mTOR duyarlılığını) artırması ve ağır kiloların eklemlerde yarattığı COX-2 enflamasyonunu temizlemesi için günde minimum <strong>1500 - 2000 mg aktif EPA+DHA</strong> alması gerekir.<br>
+                       - Form olarak mutlaka <strong>Trigliserit (TG)</strong> form tercih edilmelidir; Etil Ester (EE) formların emilimi düşüktür.`,
+                actionHtml: `
+                    <button class="ai-action-btn btn-supplement" onclick="applyAiSupplementAdd('cat_omega3')">
+                        <i class="fa-solid fa-plus"></i> Omega-3 Trigliserit Form Ekle 🐟
+                    </button>
+                `
+            };
+        }
+
+        // 6. Kolajen + C Vitamini / Tendon & Eklem Yükleme Protokolü
+        if (t.includes("kolajen") || t.includes("collagen") || t.includes("tendon") || t.includes("bağ doku") || t.includes("kıkırdak") || t.includes("dirsek ağrı") || t.includes("diz ağrı")) {
+            return {
+                text: `Ağır basışlarda dirseklerin veya diz tendonların sızlıyorsa Keith Baar'ın ünlü <strong>Tendon Yükleme Protokolü</strong> şöyledir:<br><br>
+                       🦴 <strong>Protokol:</strong><br>
+                       - Antrenmandan tam <strong>45-60 dakika önce</strong> 10-15g Hidrolize Kolajen Peptit (Tip 1 & 3) + 500mg C Vitamini alınır.<br>
+                       - <strong>Neden bu zamanlama?</strong> Antrenman esnasında tendonlara kan akışı tavan yaptığında, kandaki serbest hidroksiprolin ve prolin amino asitleri hasarlı tendon dokusuna hücum eder ve kolajen sentezini 2 katına çıkarır!`,
+                actionHtml: `
+                    <button class="ai-action-btn btn-supplement" onclick="applyAiSupplementAdd('cat_collagen')">
+                        <i class="fa-solid fa-plus"></i> Kolajen Peptit Protokolünü Ekle 🦴
+                    </button>
+                    <button class="ai-action-btn btn-supplement" style="background:linear-gradient(135deg,#f59e0b,#d97706); margin-top:4px;" onclick="applyAiSupplementAdd('cat_vitaminc')">
+                        <i class="fa-solid fa-plus"></i> C Vitamini (500mg) Ekle 🍊
+                    </button>
+                `
+            };
+        }
+
+        // 7. EAA vs BCAA Gerçeği
+        if (t.includes("bcaa") || t.includes("eaa") || t.includes("amino asit") || t.includes("esansiyel")) {
+            return {
+                text: `Sektörün en büyük yalanlarından biri: <strong>BCAA vs EAA Gerçeği</strong>!<br><br>
+                       ❌ <strong>BCAA (Lösin, İzolösin, Valin):</strong> Lösin kas protein sentezi motorunu çalıştırır (anahtarı çevirir) ama motorun çalışması için gereken diğer 6 esansiyel amino asit ortamda yoktur! Vücut eksik amino asitleri tamamlamak için kendi kas dokusunu yıkar.<br>
+                       ✅ <strong>EAA (9 Esansiyel Amino Asit):</strong> Kas inşası için gereken spektrumun tamamını sağlar.<br>
+                       💡 <strong>Özet:</strong> Günlük proteinini tavuk, et, yumurta ve wheyden tam alıyorsan BCAA'ya da EAA'ya da bir kuruş para verme; fuzuli masraftır!`,
+                actionHtml: `
+                    <button class="ai-action-btn btn-supplement" onclick="applyAiSupplementAdd('cat_eaa')">
+                        <i class="fa-solid fa-plus"></i> EAA (9 Esansiyel Amino Asit) Ekle 🧬
+                    </button>
+                `
+            };
+        }
+
+        // 8. Sindirim Enzimleri, Betaine HCl, Şişkinlik & Gaz
+        if (t.includes("şişkin") || t.includes("gaz") || t.includes("sindirim") || t.includes("mide") || t.includes("hazımsız") || t.includes("enzim") || t.includes("sirke") || t.includes("probiyotik")) {
+            return {
+                text: `Bulk döneminde günde 3000-4000 kalori yerken karnın davul gibi şişiyorsa sorun yediklerinde değil, <strong>sindirememendedir</strong>. Sindirilmeyen yemek kas yapmaz, bağırsakta çürüyüp toksin ve gaz üretir!<br><br>
+                       🧪 <strong>1. Sindirim Enzimleri (Proteaz, Amilaz, Lipaz):</strong> En ağır karbonhidrat/protein öğününden önce 1 kapsül al; besinleri mikronize parçalara ayırır.<br>
+                       🍏 <strong>2. Elma Sirkesi / Betaine HCl:</strong> Mide asiditesini (PH 1.5-2.0) optimize ederek pepsin enzimini aktive eder; et ve tavuğun taş gibi oturmasını engeller.<br>
+                       🦠 <strong>3. Geniş Spektrumlu Probiyotik:</strong> Bağırsak mikrobiyotasını besleyip besin emilim katsayısını tavan yaptırır.`,
+                actionHtml: `
+                    <button class="ai-action-btn btn-supplement" onclick="applyAiSupplementAdd('cat_enzymes')">
+                        <i class="fa-solid fa-plus"></i> Sindirim Enzimleri Kompleksi Ekle 🧪
+                    </button>
+                    <button class="ai-action-btn btn-supplement" style="background:linear-gradient(135deg,#10b981,#059669); margin-top:4px;" onclick="applyAiSupplementAdd('cat_probiotics')">
+                        <i class="fa-solid fa-plus"></i> Probiyotik Desteği Ekle 🦠
+                    </button>
+                `
+            };
+        }
+
+        // 9. Ashwagandha KSM-66 & Kortizol / ZMA / Çinko
+        if (t.includes("ashwagandha") || t.includes("ksm") || t.includes("kortizol") || t.includes("stres") || t.includes("zma") || t.includes("çinko") || t.includes("zinc")) {
+            return {
+                text: `Ağır antrenman hacmi ve günlük hayat stresi kortizolü fırlatır. Yüksek kortizol ise testosteronun ve kas gelişiminin 1 numaralı düşmanıdır:<br><br>
+                       🌿 <strong>Ashwagandha (KSM-66, 600mg):</strong> Klinik çalışmalarda serum kortizol seviyelerini %27.9 oranında düşürdüğü ve toparlanmayı hızlandırdığı kanıtlanmış standardize adaptojendir.<br>
+                       🛡️ <strong>Çinko Pikolinat (15-30mg) + B6:</strong> Testosteron sentezinde rol oynayan LH hormonunu destekler ve bağışıklığı zırh gibi korur. Akşam yemekle alınması idealdir.`,
+                actionHtml: `
+                    <button class="ai-action-btn btn-supplement" onclick="applyAiSupplementAdd('cat_ashwagandha')">
+                        <i class="fa-solid fa-plus"></i> Ashwagandha KSM-66 Ekle 🌿
+                    </button>
+                    <button class="ai-action-btn btn-supplement" style="background:linear-gradient(135deg,#6366f1,#4f46e5); margin-top:4px;" onclick="applyAiSupplementAdd('cat_zinc')">
+                        <i class="fa-solid fa-plus"></i> Çinko Pikolinat Ekle 🛡️
+                    </button>
+                `
+            };
+        }
+
+        // 10. Yağ yakıcı / L-Karnitin / Termojenik gerçeği
+        if (t.includes("karnitin") || t.includes("carnitine") || t.includes("yağ yakıcı") || t.includes("termojenik") || t.includes("cla")) {
+            return {
+                text: `Dobra konuşacağım paşam: Piyasadaki L-Karnitin ve 'yağ yakıcı' adı altında satılan hapların %95'i <strong>para tuzağıdır</strong>!<br><br>
+                       Kalori açığı (kalorik defisit) bırakmadan hiçbir toz veya hap yağ yakmaz. Paranı boş kutulara kaptırma; antrenman öncesi sert bir filtre kahve iç, diyetine sadık kal, o parayı da kaliteli biftek veya yumurtaya yatır!`
+            };
+        }
+
+        // 11. Protein tozu zararlı mı / böbrek
         if (t.includes("zarar") || t.includes("böbrek") || t.includes("toz") && t.includes("sağlık")) {
             return {
                 text: `Efsaneleri bir kenara bırakalım: <strong>Whey Protein Tozu peynir altı suyunun filtrelenip kurutulmuş halidir</strong>; yani sütten gelir, kimyasal zehir değildir!<br><br>
@@ -8931,92 +9186,28 @@ function processOfflineAssistantResponse(personaKey, userText) {
             };
         }
 
-        // Uyku / Melatonin / Magnezyum
-        if (t.includes("uyku") || t.includes("gece") || t.includes("toparlan") || t.includes("yorgun") || t.includes("dinlen")) {
+        // 12. Temel Stack / Ne lazım
+        if (t.includes("ne lazım") || t.includes("hangisi") || t.includes("şart") || t.includes("stack") || t.includes("tavsiye") || t.includes("başlangıç")) {
             return {
-                text: `Gece deliksiz uyuyamıyorsan kas büyümesini unut paşam. Büyüme hormonu ve kas proteini sentezi derin REM uykusunda tavan yapar:<br><br>
-                       💤 <strong>Magnezyum Bisglisinat (250-400 mg):</strong> Beyindeki GABA reseptörlerine bağlanır, sinir sistemini susturur ve kas kramplarını siler.<br>
-                       🌙 <strong>Melatonin (1-3 mg):</strong> Sirkadiyen ritmini düzenler, 20 dakikada tatlı bir uykuya daldırır.`,
-                actionHtml: `
-                    <button class="ai-action-btn btn-supplement" onclick="applyAiSupplementAdd('cat_mag_bis')">
-                        <i class="fa-solid fa-plus"></i> Magnezyum Bisglisinat'ı Listeme Ekle 💊
-                    </button>
-                    <button class="ai-action-btn btn-supplement" style="background:linear-gradient(135deg,#6366f1,#4f46e5); margin-top:4px;" onclick="applyAiSupplementAdd('cat_melatonin')">
-                        <i class="fa-solid fa-moon"></i> Melatonin'i Listeme Ekle 🌙
-                    </button>
-                `
-            };
-        }
-
-        // Şişkinlik / Gaz / Sindirim / Mide
-        if (t.includes("şişkin") || t.includes("gaz") || t.includes("mide") || t.includes("sindirim") || t.includes("hazımsız")) {
-            return {
-                text: `Bulkta yüksek pirinç ve et tüketiminden karnın davul gibi şişiyorsa mide asidin ve enzimlerin yetersizdir. Sindirilmeyen besin kas yapmaz, bağırsakta fermente olup gaz yapar!<br><br>
-                       🧪 <strong>Sindirim Enzimleri Kompleksi (Proteaz & Amilaz):</strong> En ağır öğününle 1 kapsül alıyorsun, dakikalar içinde şişkinliği bitirir.<br>
-                       🍏 <strong>Organik Elma Sirkesi:</strong> Yemekten 10dk önce suya 1 kaşık karıştır, mide HCL asidini optimize et.`,
-                actionHtml: `
-                    <button class="ai-action-btn btn-supplement" onclick="applyAiSupplementAdd('cat_enzymes')">
-                        <i class="fa-solid fa-plus"></i> Sindirim Enzimlerini Listeme Ekle 🧪
-                    </button>
-                `
-            };
-        }
-
-        // Pump / Damar / Sitrulin / Pre-Workout / Enerji
-        if (t.includes("pump") || t.includes("damar") || t.includes("pre") || t.includes("enerji") || t.includes("sitrulin") || t.includes("kafein")) {
-            return {
-                text: `Damarların itfaiye hortumu gibi açılmasını ve sette tükenmemeyi istiyorsan:<br><br>
-                       ⚡ <strong>L-Sitrulin Malat (6-8 gram):</strong> Kandaki nitrik oksit (NO) seviyesini tavan yaptırır, kaslara kan pompalar.<br>
-                       ☕ <strong>Kafein (200 mg):</strong> Merkezi sinir sistemini uyarır, odaklanmayı artırır.`,
-                actionHtml: `
-                    <button class="ai-action-btn btn-supplement" onclick="applyAiSupplementAdd('cat_citrulline')">
-                        <i class="fa-solid fa-plus"></i> L-Sitrulin Malat'ı Listeme Ekle ⚡
-                    </button>
-                `
-            };
-        }
-
-        // Kreatin / Güç / Kütle
-        if (t.includes("kreatin") || t.includes("creatine") || t.includes("güç") || t.includes("su tutma") || t.includes("ne zaman")) {
-            return {
-                text: `Kreatin dünyada hakkında en çok araştırma yapılmış 1 numaralı kütle suplementidir!<br><br>
-                       🔥 <strong>Kullanım:</strong> Yükleme yapmana gerek yok; her gün düzenli <strong>5 gram Kreatin Monohidrat</strong> al. Hücre içi ATP depolarını fuller, sette +2 tekrar ve net kas gücü kazandırır. Zamanı fark etmez, her gün aksatmadan iç!`,
+                text: `Piyasadaki fuzuli para tuzaklarını çöpe at. Bir sporcuya gerçekten çalışan **Kutsal 4'lü Temel Protokol** şudur:<br><br>
+                       1. ⚡ <strong>Kreatin Monohidrat (5g):</strong> Saf güç, ATP ve hücresel hidrasyon.<br>
+                       2. 🥛 <strong>Whey Protein Isolate:</strong> Pratik günlük protein tamamlama.<br>
+                       3. 💤 <strong>Magnezyum Bisglisinat (300mg):</strong> Derin REM uykusu & sinir sistemi.<br>
+                       4. 🐟 <strong>Omega-3 (Yüksek EPA/DHA):</strong> Eklem sağlığı & antienflamatuar koruma.`,
                 actionHtml: `
                     <button class="ai-action-btn btn-supplement" onclick="applyAiSupplementAdd('cat_creatine')">
-                        <i class="fa-solid fa-bolt"></i> Kreatin Monohidrat'ı Listeme Ekle 🔥
+                        <i class="fa-solid fa-plus"></i> Kreatin Ekle
+                    </button>
+                    <button class="ai-action-btn btn-supplement" style="background:linear-gradient(135deg,#059669,#047857); margin-top:4px;" onclick="applyAiSupplementAdd('cat_magnesium_bis')">
+                        <i class="fa-solid fa-plus"></i> Magnezyum Bisglisinat Ekle
                     </button>
                 `
-            };
-        }
-
-        // Eklem Ağrısı / Omega 3 / Kolajen
-        if (t.includes("eklem") || t.includes("kıkırdak") || t.includes("omega") || t.includes("balık yağı") || t.includes("kolajen")) {
-            return {
-                text: `Ağır kiloların altında eklemlerin gıcırdıyorsa:<br><br>
-                       🐟 <strong>Yüksek EPA/DHA Omega-3 (2000-3000 mg):</strong> Eklem içi iltihabı ve sürtünmeyi siler.<br>
-                       🦴 <strong>Tip 2 Kolajen + C Vitamini:</strong> Kıkırdak dokunun elastikiyetini korur.`,
-                actionHtml: `
-                    <button class="ai-action-btn btn-supplement" onclick="applyAiSupplementAdd('cat_omega3')">
-                        <i class="fa-solid fa-plus"></i> Omega-3 Balık Yağını Listeme Ekle 🐟
-                    </button>
-                `
-            };
-        }
-
-        // Temel Stack / Ne lazım
-        if (t.includes("ne lazım") || t.includes("hangisi") || t.includes("şart") || t.includes("stack") || t.includes("tavsiye")) {
-            return {
-                text: `Piyasadaki fuzuli para tuzaklarını çöpe at. Bir sporcuya gerçekten çalışan **Kutsal 4'lü Stack** şudur:<br><br>
-                       1. <strong>Kreatin Monohidrat (5g):</strong> Saf güç & ATP.<br>
-                       2. <strong>Whey Protein:</strong> Pratik günlük protein tamamlama.<br>
-                       3. <strong>Magnezyum Bisglisinat:</strong> Derin uyku & sinir sistemi.<br>
-                       4. <strong>Omega-3 (Yüksek EPA/DHA):</strong> Kalp & eklem sağlığı.`
             };
         }
 
         // Genel suplement danışması
         return {
-            text: `Derdin neyse söyle (uyku, sindirim/gaz, pump, kramp, eklem ağrısı veya temel bulk stack'i), sana boş kutuları değil, gerçekten çalışan takviyeleri yazayım!`
+            text: `Derdin neyse açıkça söyle paşam: Uyku kalitesi, preworkout/pump, kreatin mitleri, magnezyum formları, şişkinlik/gaz, eklem-tendon sağlığı veya temel bulk stack'i... Sana boş kutuları değil, biyokimyasal olarak çalışan takviyeleri yazayım!`
         };
     }
 
