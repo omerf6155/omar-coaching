@@ -537,6 +537,20 @@
                     </div>
                 </div>
 
+                <!-- Coach Pending Athlete Requests Card -->
+                <div class="card" id="coach-requests-card" style="display:none; background:rgba(255,214,10,0.05); border:1px solid rgba(255,214,10,0.25); margin-bottom:14px;">
+                    <div class="card-header" style="margin-bottom:6px;">
+                        <h2 style="color:#ffd60a; font-size:0.8rem;"><i class="fa-solid fa-bell"></i> BEKLEYEN SPORCU TALEPLERİ</h2>
+                        <span class="badge-role" id="coach-requests-count-badge" style="background:#ffd60a; color:#000; font-weight:800; font-size:0.65rem;">0 Yeni</span>
+                    </div>
+                    <p class="text-secondary" style="font-size:0.72rem; line-height:1.4; margin-bottom:8px;">
+                        Sporcularınızın diyet, antrenman ve suplement değişiklik talepleri:
+                    </p>
+                    <div id="coach-requests-list" style="display:flex; flex-direction:column; gap:8px;">
+                        <!-- Dynamically populated -->
+                    </div>
+                </div>
+
                 <!-- Athlete Search & Filter Filter Pills -->
                 <div class="roster-filter-row">
                     <div class="roster-search-wrap">
@@ -1084,8 +1098,21 @@
                 <h3><i class="fa-solid fa-sliders"></i> Hedefleri ve Ayarları Düzenle</h3>
                 <button class="modal-close-btn" onclick="closeModal('modal-settings')">&times;</button>
             </div>
-            <div class="modal-body">
-                <p class="text-secondary" style="font-size:0.8rem; margin-bottom:12px;">
+                <!-- Coach Lock Banner (shown when athlete is managed by coach) -->
+                <div id="settings-coach-lock-banner" style="display:none; background:rgba(255,214,10,0.1); border:1px solid rgba(255,214,10,0.3); border-radius:8px; padding:10px; margin-bottom:12px;">
+                    <div style="display:flex; align-items:center; gap:8px; color:#ffd60a; font-size:0.78rem; font-weight:700;">
+                        <i class="fa-solid fa-lock"></i>
+                        <span>ANTRENÖR KONTROLÜ AKTİF</span>
+                    </div>
+                    <p style="font-size:0.72rem; color:var(--text-secondary); margin-top:4px; line-height:1.4;">
+                        Beslenme, kalori ve adım hedefleriniz koçunuz tarafından belirlenmektedir. Doğrudan değişiklik kilitlidir.
+                    </p>
+                    <button type="button" class="btn btn-xs btn-outline btn-block" onclick="closeModal('modal-settings'); openCoachChangeRequestModal('nutrition');" style="margin-top:8px; border-color:#ffd60a; color:#ffd60a; font-weight:700;">
+                        <i class="fa-solid fa-paper-plane"></i> 📢 Koçtan Hedef Değişikliği Talep Et
+                    </button>
+                </div>
+
+                <p class="text-secondary" id="settings-info-text" style="font-size:0.8rem; margin-bottom:12px;">
                     Uygulamadaki tüm kalori, makro, su ve adım hedeflerini kendi güncel planına göre ayarlayabilirsin.
                 </p>
                 <div class="form-group">
@@ -1139,10 +1166,10 @@
                     </small>
                 </div>
 
-                <button class="btn btn-primary btn-block" style="margin-top:10px;" onclick="saveCustomTargets()">
+                <button id="btn-save-settings" class="btn btn-primary btn-block" style="margin-top:10px;" onclick="saveCustomTargets()">
                     Hedefleri Kaydet
                 </button>
-                <div style="margin-top:12px; padding-top:12px; border-top:1px solid var(--border-subtle);">
+                <div id="settings-wizard-launch-wrap" style="margin-top:12px; padding-top:12px; border-top:1px solid var(--border-subtle);">
                     <button class="btn btn-outline btn-block" style="border-color:var(--status-blue); color:#ffffff; background:rgba(10, 132, 255, 0.12);" onclick="closeModal('modal-settings'); openOnboardingWizard();">
                         <i class="fa-solid fa-wand-magic-sparkles"></i> Diyet & Hedef Sihirbazını Başlat
                     </button>
@@ -1305,6 +1332,22 @@
                 <button class="modal-close-btn" onclick="closeModal('modal-workout-splits')">&times;</button>
             </div>
             <div class="modal-body">
+                <!-- Coach Lock Banner for Splits -->
+                <div id="splits-coach-lock-banner" style="display:none; background:rgba(255,214,10,0.1); border:1px solid rgba(255,214,10,0.3); border-radius:8px; padding:10px; margin-bottom:12px;">
+                    <div style="display:flex; align-items:center; justify-content:space-between;">
+                        <div style="display:flex; align-items:center; gap:8px; color:#ffd60a; font-size:0.78rem; font-weight:700;">
+                            <i class="fa-solid fa-lock"></i>
+                            <span>ANTRENÖR SPLİTİ YÖNETMEKTEDİR</span>
+                        </div>
+                        <button type="button" class="btn btn-xs btn-outline" onclick="closeModal('modal-workout-splits'); openCoachChangeRequestModal('workout');" style="border-color:#ffd60a; color:#ffd60a; font-size:0.68rem;">
+                            <i class="fa-solid fa-paper-plane"></i> Split Değişikliği İste
+                        </button>
+                    </div>
+                    <p style="font-size:0.72rem; color:var(--text-secondary); margin-top:4px; line-height:1.4;">
+                        Antrenman programınız koç direktifindedir. Yeni split geçişi için koçunuza talep iletebilirsiniz.
+                    </p>
+                </div>
+
                 <div class="split-tab-pills">
                     <button type="button" class="split-nav-pill active" onclick="switchSplitSubtab('templates', this)">🏆 Popüler Şablonlar</button>
                     <button type="button" class="split-nav-pill" onclick="switchSplitSubtab('swap', this)">🔀 Gün Takası & Rotasyon</button>
@@ -1520,6 +1563,22 @@
                 <button class="modal-close-btn" onclick="closeModal('modal-exercise-manager')">&times;</button>
             </div>
             <div class="modal-body">
+                <!-- Coach Lock Banner for Exercise Manager -->
+                <div id="ex-mgr-coach-lock-banner" style="display:none; background:rgba(255,214,10,0.1); border:1px solid rgba(255,214,10,0.3); border-radius:8px; padding:10px; margin-bottom:12px;">
+                    <div style="display:flex; align-items:center; justify-content:space-between;">
+                        <div style="display:flex; align-items:center; gap:8px; color:#ffd60a; font-size:0.78rem; font-weight:700;">
+                            <i class="fa-solid fa-lock"></i>
+                            <span>ANTRENÖR PROGRAMI KİLİTLİDİR</span>
+                        </div>
+                        <button type="button" class="btn btn-xs btn-outline" onclick="closeModal('modal-exercise-manager'); openCoachChangeRequestModal('workout');" style="border-color:#ffd60a; color:#ffd60a; font-size:0.68rem;">
+                            <i class="fa-solid fa-paper-plane"></i> Hareket Değişimi İste
+                        </button>
+                    </div>
+                    <p style="font-size:0.72rem; color:var(--text-secondary); margin-top:4px; line-height:1.4;">
+                        Hareket listeniz koçunuz tarafından belirlenmiştir. Sakatlık veya ekipman eksikliği durumunda koçtan revizyon talep edebilirsiniz.
+                    </p>
+                </div>
+
                 <!-- Current exercises for the active day -->
                 <div class="card-header" style="margin-bottom:6px;">
                     <h2 style="font-size:0.8rem;"><i class="fa-solid fa-list-check"></i> MEVCUT GÜNÜN HAREKETLERİ</h2>
@@ -1675,17 +1734,26 @@
                     <div class="form-group">
                         <label>Haftalık Antrenman Sıklığı</label>
                         <select id="wizard-workout-frequency">
-                            <option value="3">3 - 4 Gün (Klasik Split / Fullbody)</option>
-                            <option value="5" selected>4 - 5 Gün (Push/Pull/Legs - İdeal)</option>
-                            <option value="6">5 - 6 Gün (Yüksek Frekanslı İleri Düzey)</option>
+                            <option value="1-2">1 - 2 Gün (Hafta Sonu / Hafif Başlangıç)</option>
+                            <option value="3">3 Gün (Tüm Vücut - Full Body Split)</option>
+                            <option value="4">4 Gün (Üst / Alt Vücut - Upper / Lower)</option>
+                            <option value="5" selected>4 - 5 Gün (İtiş / Çekiş / Bacak - Push/Pull/Legs)</option>
+                            <option value="5-bro">5 Gün (Bölgesel Tek Adale - Klasik Bro Split)</option>
+                            <option value="6-arnold">5 - 6 Gün (Göğüs-Sırt / Omuz-Kol / Bacak - Arnold Split)</option>
+                            <option value="6-ppl">6 Gün (İleri Seviye PPL x2 Çift Döngü)</option>
+                            <option value="7">7 Gün (Günlük Yüksek Frekans / Atletik Kondisyon)</option>
                         </select>
                     </div>
                     <div class="form-group">
                         <label>Günlük Gün İçi Hareketlilik (Adım / İş)</label>
                         <select id="wizard-activity-level">
-                            <option value="sedentary">Masa Başı / Düşük Aktivite (&lt; 5.000 Adım)</option>
-                            <option value="moderate" selected>Orta Hareketli (7.000 - 10.000 Adım)</option>
-                            <option value="active">Yüksek Hareketli / Ayakta İş (12.000+ Adım)</option>
+                            <option value="sedentary_low">Hareketsiz / Tamamen Masa Başı (&lt; 3.000 Adım)</option>
+                            <option value="sedentary">Düşük Hareketli / Ev İçi Yaşam (3.000 - 5.000 Adım)</option>
+                            <option value="light">Hafif Hareketli / Kısa Yürüyüşler (5.000 - 7.500 Adım)</option>
+                            <option value="moderate" selected>Orta Hareketli / Gün İçi Rutin (7.500 - 10.000 Adım)</option>
+                            <option value="active">Yüksek Hareketli / Aktif Yaşam (10.000 - 13.000 Adım)</option>
+                            <option value="very_active">Çok Hareketli / Sürekli Ayakta / Garson vb. (13.000 - 16.000 Adım)</option>
+                            <option value="extreme">Ekstrem / Ağır Fiziksel İş / Kurye / İnşaat (16.000+ Adım)</option>
                         </select>
                     </div>
                 </div>
@@ -1693,7 +1761,7 @@
                 <!-- STEP 3: SETUP PATH SELECTION -->
                 <div class="wizard-step-view" id="wizard-step-3" style="display:none;">
                     <p class="wizard-intro-text">
-                        Beslenme programını nasıl oluşturmak istersin?
+                        Beslenme ve antrenman programını nasıl oluşturmak istersin?
                     </p>
                     <div class="path-selection-grid">
                         <!-- Path A: Auto Wizard -->
@@ -1707,24 +1775,76 @@
                             </div>
                         </div>
 
-                        <!-- Path B: Manual Entry -->
+                        <!-- Path B: Manual Entry with Smart Food & Gram Calculator -->
                         <div class="path-card" onclick="selectWizardPath('manual')" id="path-card-manual">
                             <div class="path-icon-badge"><i class="fa-solid fa-sliders"></i></div>
                             <div class="path-content">
-                                <h4 class="path-title">Kendi Hazır Planım Var (Manuel Giriş)</h4>
+                                <h4 class="path-title">Manuel Makro & Ürün/Gram ile Hesaplama</h4>
                                 <p class="path-desc">
-                                    Kendi belirlediğin kalori ve makro (Protein, Karb, Yağ) hedeflerini doğrudan sisteme gir.
+                                    Kendi belirlediğin makroları gir veya akıllı ürün &amp; gramaj hesaplayıcıyla gıdaları seçip otomatik kalori/makro bul.
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Path C: Coach Directed Plan -->
+                        <div class="path-card" onclick="selectWizardPath('coach')" id="path-card-coach">
+                            <div class="path-icon-badge" style="background:rgba(255,214,10,0.15); color:#ffd60a;"><i class="fa-solid fa-crown"></i></div>
+                            <div class="path-content">
+                                <h4 class="path-title" style="color:#ffd60a;">👑 Koçum Tarafından Belirlenecek (Antrenör Direktifli)</h4>
+                                <p class="path-desc">
+                                    Tüm kalori, makro hedefleri, antrenman spliti ve beslenme planım doğrudan baş antrenörüm tarafından uzaktan atanıp yönetilsin.
                                 </p>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- STEP 4A: MANUAL MACROS (if path === 'manual') -->
+                <!-- STEP 4A: MANUAL MACROS & SMART FOOD/GRAM CALCULATOR (if path === 'manual') -->
                 <div class="wizard-step-view" id="wizard-step-4-manual" style="display:none;">
                     <p class="wizard-intro-text">
-                        Günlük hedef kalori ve makrolarını belirle:
+                        Günlük hedef kalori ve makrolarını belirle veya aşağıdaki ürün &amp; gramaj hesaplayıcıyı kullanarak otomatik hesaplat:
                     </p>
+
+                    <!-- Smart Food & Gram Calculator in Manual Step 4 -->
+                    <div class="card" style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.08); padding:12px; margin-bottom:14px; border-radius:10px;">
+                        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+                            <span style="font-size:0.75rem; font-weight:700; color:var(--accent-orange);"><i class="fa-solid fa-calculator"></i> 🌾 ÜRÜN &amp; GRAMAJ İLE MAKRO/KALORİ BULUCU</span>
+                            <span style="font-size:0.68rem; color:var(--text-secondary);">Çiğ Değerler</span>
+                        </div>
+                        <div style="display:flex; gap:8px; align-items:flex-end; margin-bottom:8px;">
+                            <div style="flex:2;">
+                                <label style="font-size:0.68rem; color:var(--text-secondary); display:block; margin-bottom:3px;">Besin Seç</label>
+                                <select id="wizard-manual-food-select" class="form-select-sm" style="width:100%; font-size:0.75rem; padding:6px 8px;">
+                                    <!-- Populated dynamically from RAW_FOODS_DATABASE with optgroups -->
+                                </select>
+                            </div>
+                            <div style="flex:1;">
+                                <label style="font-size:0.68rem; color:var(--text-secondary); display:block; margin-bottom:3px;">Gramaj (g)</label>
+                                <input type="number" id="wizard-manual-food-amount" value="100" min="1" step="5" class="form-input-sm" style="width:100%; font-size:0.75rem; padding:6px 8px;">
+                            </div>
+                            <button type="button" class="btn btn-xs btn-primary" onclick="addFoodToWizardManualCalc()" style="height:32px; white-space:nowrap; padding:0 12px;">
+                                <i class="fa-solid fa-plus"></i> Ekle
+                            </button>
+                        </div>
+                        
+                        <!-- Added food items container -->
+                        <div id="wizard-manual-calc-items-list" style="display:flex; flex-direction:column; gap:4px; max-height:140px; overflow-y:auto; margin-bottom:8px;">
+                            <div style="font-size:0.7rem; color:var(--text-muted); text-align:center; padding:6px;">Henüz besin eklenmedi. Yukarıdan ürün seçip ekleyebilirsiniz.</div>
+                        </div>
+
+                        <!-- Live Totals from Calculator -->
+                        <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.3); padding:8px 10px; border-radius:6px; border:1px solid rgba(255,255,255,0.05); font-size:0.72rem;">
+                            <div>
+                                <span>Toplam: </span>
+                                <strong id="wizard-manual-calc-cal" style="color:var(--status-green);">0 kcal</strong>
+                                <span style="color:var(--text-secondary); margin-left:6px;">(<span id="wizard-manual-calc-p">0</span>g P • <span id="wizard-manual-calc-c">0</span>g C • <span id="wizard-manual-calc-f">0</span>g F • <span id="wizard-manual-calc-sugar" style="color:#f59e0b;">0</span>g Şeker)</span>
+                            </div>
+                            <button type="button" class="btn btn-xs btn-outline" onclick="applyWizardManualCalcToTargets()" style="font-size:0.68rem; padding:3px 8px; border-color:var(--status-green); color:var(--status-green);">
+                                ⚡ Hedeflere Aktar
+                            </button>
+                        </div>
+                    </div>
+
                     <div class="form-group">
                         <label>Günlük Kalori Hedefi (kcal)</label>
                         <input type="number" id="wizard-manual-cal" placeholder="2770">
@@ -1751,6 +1871,20 @@
                         <div class="form-group">
                             <label>Günlük Adım</label>
                             <input type="number" id="wizard-manual-steps" value="7500" placeholder="7500">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STEP 4C: COACH DIRECTED WAITING / INFO (if path === 'coach') -->
+                <div class="wizard-step-view" id="wizard-step-4-coach" style="display:none;">
+                    <div class="card" style="background:rgba(255,214,10,0.06); border:1px solid rgba(255,214,10,0.3); text-align:center; padding:24px 16px; border-radius:12px;">
+                        <div style="font-size:2.4rem; color:#ffd60a; margin-bottom:10px;"><i class="fa-solid fa-crown"></i></div>
+                        <h3 style="color:#ffd60a; font-size:1.05rem; margin-bottom:8px;">Antrenör Direktifli Yönetim Aktif</h3>
+                        <p style="font-size:0.8rem; color:var(--text-secondary); line-height:1.5; margin-bottom:14px;">
+                            Fiziksel profiliniz kaydedilecek ve hesabınız <strong>Baş Antrenör Ömer</strong>'e bağlanacak. Günlük kalori, makro, su, adım ve antrenman splitiniz doğrudan koçunuz tarafından reçete masasında atanacaktır.
+                        </p>
+                        <div style="background:rgba(0,0,0,0.4); padding:10px; border-radius:8px; display:inline-block; font-size:0.75rem; color:#ffd60a;">
+                            <i class="fa-solid fa-lock"></i> Beslenme ve antrenman rutinleriniz koç onayına bağlı olacaktır.
                         </div>
                     </div>
                 </div>
@@ -2020,6 +2154,42 @@
                     <i class="fa-solid fa-paper-plane"></i>
                 </button>
             </form>
+        </div>
+    </div>
+
+    <!-- 10.1 ATHLETE TO COACH CHANGE / REVISION REQUEST MODAL -->
+    <div id="modal-coach-change-request" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-paper-plane" style="color:#ffd60a;"></i> Antrenörden Değişiklik Talep Et</h3>
+                <button class="modal-close-btn" onclick="closeModal('modal-coach-change-request')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="text-secondary" style="font-size:0.78rem; line-height:1.45; margin-bottom:12px;">
+                    Programınız veya hedefleriniz koçunuz tarafından yönetilmektedir. Yapılmasını istediğiniz değişiklikleri buradan doğrudan baş antrenörünüze iletebilirsiniz.
+                </p>
+                <form onsubmit="handleAthleteSubmitChangeRequest(event)">
+                    <div class="form-group">
+                        <label>Talep Kategorisi</label>
+                        <select id="change-req-category" class="form-select">
+                            <option value="nutrition">🍽️ Beslenme &amp; Kalori / Makro Hedefleri</option>
+                            <option value="workout">🏋️ Antrenman Spliti &amp; Hareket Değişimi</option>
+                            <option value="supplements">💊 Suplement Protokolü</option>
+                            <option value="weight">🎯 Kilo Hedefi &amp; Strateji (Bulk / Cut / Recomp)</option>
+                            <option value="other">💬 Diğer Özel Talep</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Talep Detayı &amp; Açıklamanız</label>
+                        <textarea id="change-req-details" rows="4" class="form-textarea" required placeholder="Örn: Hocam antrenman öncesi enerjim düşüyor, karbonhidratı 50g artırabilir miyiz? Veya Squat yerine Hack Squat yazabilir miyiz?"></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block" style="background:linear-gradient(135deg, #ffd60a, #ff9f0a); color:#000; font-weight:800; border-color:#ffd60a;">
+                        <i class="fa-solid fa-paper-plane"></i> Talebi Antrenöre İlet 🚀
+                    </button>
+                </form>
+            </div>
         </div>
     </div>
 

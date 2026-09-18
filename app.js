@@ -2167,15 +2167,47 @@ function updateDateDisplay() {
 // ==================== TARGETS & SETTINGS ====================
 
 function initSettingsForm() {
-    const t = appData.targets;
-    document.getElementById("setting-calories").value = t.calories;
-    document.getElementById("setting-protein").value = t.protein;
-    document.getElementById("setting-carbs").value = t.carbs;
-    document.getElementById("setting-fat").value = t.fat;
-    document.getElementById("setting-water").value = t.water;
-    document.getElementById("setting-steps").value = t.steps;
-    document.getElementById("setting-gain-min").value = t.weeklyGainMin;
-    document.getElementById("setting-gain-max").value = t.weeklyGainMax;
+    const t = appData.targets || DEFAULT_TARGETS;
+    document.getElementById("setting-calories").value = t.calories || 2770;
+    document.getElementById("setting-protein").value = t.protein || 167;
+    document.getElementById("setting-carbs").value = t.carbs || 344;
+    document.getElementById("setting-fat").value = t.fat || 77;
+    document.getElementById("setting-water").value = t.water || 3.5;
+    document.getElementById("setting-steps").value = t.steps || 7500;
+    document.getElementById("setting-gain-min").value = t.weeklyGainMin || 0.15;
+    document.getElementById("setting-gain-max").value = t.weeklyGainMax || 0.35;
+
+    const isControlled = isAthleteUnderCoachControl();
+    const lockBanner = document.getElementById("settings-coach-lock-banner");
+    const infoText = document.getElementById("settings-info-text");
+    const saveBtn = document.getElementById("btn-save-settings");
+    const wizardWrap = document.getElementById("settings-wizard-launch-wrap");
+
+    const inputs = [
+        "setting-calories", "setting-protein", "setting-carbs",
+        "setting-fat", "setting-water", "setting-steps",
+        "setting-gain-min", "setting-gain-max"
+    ];
+
+    if (isControlled) {
+        if (lockBanner) lockBanner.style.display = "block";
+        if (infoText) infoText.style.display = "none";
+        if (saveBtn) saveBtn.style.display = "none";
+        if (wizardWrap) wizardWrap.style.display = "none";
+        inputs.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.disabled = true;
+        });
+    } else {
+        if (lockBanner) lockBanner.style.display = "none";
+        if (infoText) infoText.style.display = "block";
+        if (saveBtn) saveBtn.style.display = "block";
+        if (wizardWrap) wizardWrap.style.display = "block";
+        inputs.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.disabled = false;
+        });
+    }
 
     const geminiInput = document.getElementById("setting-gemini-key");
     if (geminiInput) {
@@ -2184,6 +2216,11 @@ function initSettingsForm() {
 }
 
 function saveCustomTargets() {
+    if (isAthleteUnderCoachControl()) {
+        showToast("⚠️ Beslenme ve makro hedefleriniz koçunuz tarafından yönetilmektedir. Lütfen koçunuza değişiklik talebi iletiniz.", "error");
+        return;
+    }
+
     const cal = parseInt(document.getElementById("setting-calories").value) || DEFAULT_TARGETS.calories;
     const p = parseInt(document.getElementById("setting-protein").value) || DEFAULT_TARGETS.protein;
     const c = parseInt(document.getElementById("setting-carbs").value) || DEFAULT_TARGETS.carbs;
@@ -2225,38 +2262,48 @@ function saveCustomTargets() {
 
 function renderDashboard() {
     recalculateDailyTotals();
-    const n = appData.todayNutrition;
-    const t = appData.targets;
+    const n = appData.todayNutrition || {};
+    const t = appData.targets || DEFAULT_TARGETS;
 
-    document.getElementById("consumed-cal").innerText = Math.round(n.calories).toLocaleString('tr-TR');
-    document.getElementById("target-cal-lbl").innerText = ` / ${t.calories.toLocaleString('tr-TR')} kcal`;
-    document.getElementById("macro-status-badge").innerText = `${t.calories.toLocaleString('tr-TR')} kcal`;
-    document.getElementById("remaining-cal").innerText = Math.max(0, Math.round(t.calories - n.calories)).toLocaleString('tr-TR');
+    const calTarget = t.calories || 2770;
+    const pTarget = t.protein || 167;
+    const cTarget = t.carbs || 344;
+    const fTarget = t.fat || 77;
+    const waterTarget = t.water || 3.5;
+    const stepsTarget = t.steps || 7500;
+
+    document.getElementById("consumed-cal").innerText = Math.round(n.calories || 0).toLocaleString('tr-TR');
+    document.getElementById("target-cal-lbl").innerText = ` / ${calTarget.toLocaleString('tr-TR')} kcal`;
+    document.getElementById("macro-status-badge").innerText = `${calTarget.toLocaleString('tr-TR')} kcal`;
+    document.getElementById("remaining-cal").innerText = Math.max(0, Math.round(calTarget - (n.calories || 0))).toLocaleString('tr-TR');
     
     document.getElementById("water-consumed").innerText = (n.water || 0).toFixed(1);
-    document.getElementById("target-water-lbl").innerText = t.water.toFixed(1);
+    document.getElementById("target-water-lbl").innerText = waterTarget.toFixed(1);
 
     const stepsCount = n.steps || 0;
     document.getElementById("steps-val").innerText = stepsCount.toLocaleString('tr-TR');
-    document.getElementById("target-steps-lbl").innerText = t.steps.toLocaleString('tr-TR');
-    const stepsPct = Math.min(100, (stepsCount / t.steps) * 100);
+    document.getElementById("target-steps-lbl").innerText = stepsTarget.toLocaleString('tr-TR');
+    const stepsPct = Math.min(100, (stepsCount / stepsTarget) * 100);
     const barSteps = document.getElementById("bar-steps");
     if (barSteps) barSteps.style.width = `${stepsPct}%`;
 
-    document.getElementById("consumed-p").innerText = Math.round(n.protein);
-    document.getElementById("target-p-lbl").innerText = ` / ${t.protein}g`;
-    document.getElementById("consumed-c").innerText = Math.round(n.carbs);
-    document.getElementById("target-c-lbl").innerText = ` / ${t.carbs}g`;
-    document.getElementById("consumed-f").innerText = Math.round(n.fat);
-    document.getElementById("target-f-lbl").innerText = ` / ${t.fat}g`;
+    document.getElementById("consumed-p").innerText = Math.round(n.protein || 0);
+    document.getElementById("target-p-lbl").innerText = ` / ${pTarget}g`;
+    document.getElementById("consumed-c").innerText = Math.round(n.carbs || 0);
+    document.getElementById("target-c-lbl").innerText = ` / ${cTarget}g`;
+    document.getElementById("consumed-f").innerText = Math.round(n.fat || 0);
+    document.getElementById("target-f-lbl").innerText = ` / ${fTarget}g`;
 
-    const pPct = Math.min(100, (n.protein / t.protein) * 100);
-    const cPct = Math.min(100, (n.carbs / t.carbs) * 100);
-    const fPct = Math.min(100, (n.fat / t.fat) * 100);
+    const pPct = Math.min(100, ((n.protein || 0) / pTarget) * 100);
+    const cPct = Math.min(100, ((n.carbs || 0) / cTarget) * 100);
+    const fPct = Math.min(100, ((n.fat || 0) / fTarget) * 100);
 
-    document.getElementById("bar-p").style.width = `${pPct}%`;
-    document.getElementById("bar-c").style.width = `${cPct}%`;
-    document.getElementById("bar-f").style.width = `${fPct}%`;
+    const barP = document.getElementById("bar-p");
+    const barC = document.getElementById("bar-c");
+    const barF = document.getElementById("bar-f");
+    if (barP) barP.style.width = `${pPct}%`;
+    if (barC) barC.style.width = `${cPct}%`;
+    if (barF) barF.style.width = `${fPct}%`;
 
     renderDashboardQuickActions();
     renderDashboardSupplementsSummary();
@@ -4040,6 +4087,23 @@ function clearTodayMeals() {
     }
 }
 
+function promptRenamePreset(key) {
+    const presets = appData.customPresets || DEFAULT_PRESET_MEALS;
+    const current = presets[key];
+    if (!current) return;
+
+    const newName = prompt("Öğün adını girin (veya dilediğiniz özel ismi yazın):", current.name);
+    if (newName === null) return;
+
+    if (!appData.customPresets) {
+        appData.customPresets = JSON.parse(JSON.stringify(DEFAULT_PRESET_MEALS));
+    }
+    appData.customPresets[key].name = newName.trim() || `Öğün ${key}`;
+    saveDataToStorage();
+    renderNutritionView();
+    showToast("Öğün adı başarıyla güncellendi! ✏️");
+}
+
 function renderNutritionView() {
     const presetContainer = document.getElementById("preset-meals-container");
     if (presetContainer) {
@@ -4049,13 +4113,15 @@ function renderNutritionView() {
             return `
                 <div class="meal-preset-item">
                     <div class="meal-preset-details">
-                        <strong>${m.name}</strong>
+                        <strong onclick="promptRenamePreset('${key}')" style="cursor:pointer;" title="Öğün Adını Değiştirmek İçin Tıkla">
+                            ${m.name} <i class="fa-solid fa-pencil" style="font-size:0.68rem; color:var(--text-secondary); margin-left:4px;"></i>
+                        </strong>
                         <span>${m.desc || ''}</span>
                         <small>${m.cal} kcal • ${m.p}g P • ${m.c}g C • ${m.f}g F</small>
                     </div>
                     <div style="display:flex; align-items:center; gap:6px;">
                         <button class="btn-slot-pin" onclick="promptPinMealToSlot('${key}')" title="⚡ Hızlı İşlem Slotuna Sabitle"><i class="fa-solid fa-bolt"></i></button>
-                        <button class="btn-edit-item" onclick="openEditRecipeModal('${key}')" title="Çiğ Gramajları Düzenle"><i class="fa-solid fa-pen"></i></button>
+                        <button class="btn-edit-item" onclick="openEditRecipeModal('${key}')" title="Çiğ Gramajları & İsmi Düzenle"><i class="fa-solid fa-pen"></i></button>
                         <button class="btn-delete-item" onclick="deletePreset('${key}')" title="Şablonu Sil"><i class="fa-solid fa-trash"></i></button>
                         <button class="btn-circle-add" onclick="logPresetMeal('${key}')" title="Bugüne Ekle"><i class="fa-solid fa-plus"></i></button>
                     </div>
@@ -4188,6 +4254,11 @@ function filterSupplementCatalog() {
 }
 
 function addSupplementFromCatalog(suppId) {
+    if (isAthleteUnderCoachControl()) {
+        showToast("⚠️ Suplement protokolünüz koçunuz tarafından belirlenmektedir. Değişiklik için koçtan talep ediniz.", "error");
+        return;
+    }
+
     const master = MASTER_SUPPLEMENT_DATABASE.find(s => s.id === suppId);
     if (!master) return;
 
@@ -4203,6 +4274,11 @@ function addSupplementFromCatalog(suppId) {
 }
 
 function deleteSupplement(suppId) {
+    if (isAthleteUnderCoachControl()) {
+        showToast("⚠️ Suplement protokolünüz koçunuz tarafından belirlenmektedir. Değişiklik için koçtan talep ediniz.", "error");
+        return;
+    }
+
     if (confirm("Bu suplementi listeden çıkarmak istiyor musunuz?")) {
         appData.supplements = (appData.supplements || []).filter(s => s.id !== suppId);
         saveDataToStorage();
@@ -4353,12 +4429,25 @@ function renderWorkoutSplitsModal() {
     const listEl = document.getElementById("split-templates-list");
     if (!listEl) return;
 
+    const isControlled = isAthleteUnderCoachControl();
+    const lockBanner = document.getElementById("splits-coach-lock-banner");
+    if (lockBanner) lockBanner.style.display = isControlled ? "block" : "none";
+
     const currentSplitId = appData.activeSplitKey || "ppl_standard";
 
     listEl.innerHTML = MASTER_SPLIT_TEMPLATES.map(tmpl => {
         const isCurrent = (tmpl.id === currentSplitId);
         const daysHtml = tmpl.daysOverview.map(d => `<span class="split-day-chip">${d}</span>`).join("");
         
+        let actionBtnHtml = "";
+        if (isCurrent) {
+            actionBtnHtml = `<button type="button" class="btn btn-xs btn-outline active-plan-btn" disabled><i class="fa-solid fa-check"></i> Aktif Planın</button>`;
+        } else if (isControlled) {
+            actionBtnHtml = `<button type="button" class="btn btn-xs btn-outline" onclick="closeModal('modal-workout-splits'); openCoachChangeRequestModal('workout', 'Split Değişimi: ${tmpl.name}');" style="border-color:#ffd60a; color:#ffd60a; font-weight:700;"><i class="fa-solid fa-paper-plane"></i> Koçtan Talep Et</button>`;
+        } else {
+            actionBtnHtml = `<button type="button" class="btn btn-xs btn-primary" onclick="applySplitTemplate('${tmpl.id}')"><i class="fa-solid fa-bolt"></i> Bu Spliti Uygula</button>`;
+        }
+
         return `
             <div class="split-template-card ${isCurrent ? 'active' : ''}">
                 <div class="split-card-top">
@@ -4374,10 +4463,7 @@ function renderWorkoutSplitsModal() {
                     ${daysHtml}
                 </div>
                 <div class="split-action-row">
-                    ${isCurrent ? 
-                        `<button type="button" class="btn btn-xs btn-outline active-plan-btn" disabled><i class="fa-solid fa-check"></i> Aktif Planın</button>` :
-                        `<button type="button" class="btn btn-xs btn-primary" onclick="applySplitTemplate('${tmpl.id}')"><i class="fa-solid fa-bolt"></i> Bu Spliti Uygula</button>`
-                    }
+                    ${actionBtnHtml}
                 </div>
             </div>
         `;
@@ -4385,6 +4471,11 @@ function renderWorkoutSplitsModal() {
 }
 
 function applySplitTemplate(templateId) {
+    if (isAthleteUnderCoachControl()) {
+        showToast("⚠️ Antrenman splitiniz koçunuz tarafından yönetilmektedir. Lütfen koçtan talep ediniz.", "error");
+        return;
+    }
+
     const tmpl = MASTER_SPLIT_TEMPLATES.find(t => t.id === templateId);
     if (!tmpl) return;
 
@@ -4639,6 +4730,10 @@ function openExerciseManagerModal() {
     const plan = appData.customWorkoutPlan[currentActiveDay];
     if (!plan) return;
 
+    const isControlled = isAthleteUnderCoachControl();
+    const lockBanner = document.getElementById("ex-mgr-coach-lock-banner");
+    if (lockBanner) lockBanner.style.display = isControlled ? "block" : "none";
+
     document.getElementById("ex-mgr-day-title").innerHTML = `<i class="fa-solid fa-dumbbell"></i> ${plan.title} - Hareketleri Düzenle`;
     
     // Reset search input
@@ -4656,6 +4751,8 @@ function renderCurrentExercisesInManager() {
     const plan = appData.customWorkoutPlan[currentActiveDay];
     if (!listContainer || !plan) return;
 
+    const isControlled = isAthleteUnderCoachControl();
+
     if (plan.exercises.length === 0) {
         listContainer.innerHTML = `<p class="text-muted" style="text-align:center; font-size:0.8rem; padding:10px 0;">Bu gün için henüz kayıtlı hareket yok. Aşağıdaki kütüphaneden ekleyebilirsiniz.</p>`;
         return;
@@ -4671,13 +4768,21 @@ function renderCurrentExercisesInManager() {
                 </div>
             </div>
             <div style="display:flex; align-items:center; gap:6px;">
-                <button class="btn-delete-item" onclick="removeExerciseFromDay(${idx})" title="Hareketten Çıkar"><i class="fa-solid fa-trash"></i></button>
+                ${isControlled ? 
+                    `<button class="btn-delete-item" onclick="openCoachChangeRequestModal('workout', '${ex.name} hareketinin değişimi')" title="Koçtan Değişim İste" style="color:#ffd60a;"><i class="fa-solid fa-paper-plane"></i></button>` :
+                    `<button class="btn-delete-item" onclick="removeExerciseFromDay(${idx})" title="Hareketten Çıkar"><i class="fa-solid fa-trash"></i></button>`
+                }
             </div>
         </div>
     `).join("");
 }
 
 function removeExerciseFromDay(index) {
+    if (isAthleteUnderCoachControl()) {
+        showToast("⚠️ Antrenman hareketleriniz koçunuz tarafından yönetilmektedir. Değişiklik için lütfen koçtan talep ediniz.", "error");
+        return;
+    }
+
     const plan = appData.customWorkoutPlan[currentActiveDay];
     if (!plan || !plan.exercises[index]) return;
 
@@ -4802,6 +4907,11 @@ function renderLibraryExercises() {
 }
 
 function addExerciseToDay(libExId) {
+    if (isAthleteUnderCoachControl()) {
+        showToast("⚠️ Antrenman hareketleriniz koçunuz tarafından yönetilmektedir. Değişiklik için lütfen koçtan talep ediniz.", "error");
+        return;
+    }
+
     const libEx = EXERCISE_LIBRARY.find(e => e.id === libExId);
     if (!libEx) return;
 
@@ -5102,9 +5212,9 @@ let wizardState = {
     age: 24,
     height: 178,
     weight: 74.0,
-    frequency: 5, // 3, 5, 6
-    activity: "moderate", // "sedentary", "moderate", "active"
-    path: "auto", // "auto", "manual"
+    frequency: "5", // 1-2, 3, 4, 5, 5-bro, 6-arnold, 6-ppl, 7
+    activity: "moderate", // sedentary_low, sedentary, light, moderate, active, very_active, extreme
+    path: "auto", // "auto", "manual", "coach"
     manualKcal: 2770,
     manualP: 167,
     manualC: 344,
@@ -5117,6 +5227,134 @@ let wizardState = {
     mealCount: 4,
     calculated: null
 };
+
+// Wizard Smart Food & Gram Calculator Items
+let wizardManualCalcItems = [];
+
+function initWizardManualFoodSelect() {
+    const selectEl = document.getElementById("wizard-manual-food-select");
+    if (!selectEl || selectEl.options.length > 0) return;
+
+    const proteins = RAW_FOODS_DATABASE.filter(f => ["tavuk_gogsu", "hindi_gogsu", "dana_kiyma", "dana_biftek", "yumurta_butun", "yumurta_beyazi", "somon", "ton_baligi", "lor_peyniri", "quark_yogurt", "whey_toz"].includes(f.id));
+    const carbs = RAW_FOODS_DATABASE.filter(f => ["cig_pirinc", "pirinc_unu", "cig_yulaf", "cig_makarna", "cig_patates", "cig_tatli_patates", "cig_karabugday", "muz", "bal", "pekmez", "hurma", "pirinc_patlagi"].includes(f.id));
+    const fats = RAW_FOODS_DATABASE.filter(f => ["zeytinyagi", "hindistan_cevizi_yagi", "fistik_ezmesi", "cig_badem", "cig_ceviz", "avokado", "tereyagi"].includes(f.id));
+
+    let html = `<option value="">-- Listeden Çiğ Besin Seçin --</option>`;
+    html += `<optgroup label="🥩 PROTEİN KAYNAKLARI">` + proteins.map(f => `<option value="${f.id}">${f.name} (100g: ${f.cal} kcal | ${f.p}P / ${f.c}C / ${f.f}F / ${f.sugar || 0}Şeker)</option>`).join("") + `</optgroup>`;
+    html += `<optgroup label="🍚 KARBONHİDRAT KAYNAKLARI">` + carbs.map(f => `<option value="${f.id}">${f.name} (100g: ${f.cal} kcal | ${f.p}P / ${f.c}C / ${f.f}F / ${f.sugar || 0}Şeker)</option>`).join("") + `</optgroup>`;
+    html += `<optgroup label="🥑 SAĞLIKLI YAĞ KAYNAKLARI">` + fats.map(f => `<option value="${f.id}">${f.name} (100g: ${f.cal} kcal | ${f.p}P / ${f.c}C / ${f.f}F / ${f.sugar || 0}Şeker)</option>`).join("") + `</optgroup>`;
+    
+    selectEl.innerHTML = html;
+}
+
+function addFoodToWizardManualCalc() {
+    const selectEl = document.getElementById("wizard-manual-food-select");
+    const amountEl = document.getElementById("wizard-manual-food-amount");
+    if (!selectEl || !amountEl) return;
+
+    const foodId = selectEl.value;
+    const amount = parseFloat(amountEl.value) || 0;
+
+    if (!foodId) {
+        showToast("⚠️ Lütfen eklenecek bir besin seçin!");
+        return;
+    }
+    if (amount <= 0) {
+        showToast("⚠️ Lütfen geçerli bir gramaj girin!");
+        return;
+    }
+
+    const food = RAW_FOODS_DATABASE.find(f => f.id === foodId);
+    if (!food) return;
+
+    wizardManualCalcItems.push({
+        foodId: food.id,
+        name: food.name,
+        amount: amount,
+        p: +(food.p * (amount / 100)).toFixed(1),
+        c: +(food.c * (amount / 100)).toFixed(1),
+        f: +(food.f * (amount / 100)).toFixed(1),
+        sugar: +((food.sugar || 0) * (amount / 100)).toFixed(1),
+        cal: Math.round(food.cal * (amount / 100))
+    });
+
+    renderWizardManualCalcUI();
+    showToast(`✅ ${amount}g ${food.name} hesaplayıcıya eklendi.`);
+}
+
+function removeWizardManualCalcItem(index) {
+    wizardManualCalcItems.splice(index, 1);
+    renderWizardManualCalcUI();
+}
+
+function renderWizardManualCalcUI() {
+    const listEl = document.getElementById("wizard-manual-calc-items-list");
+    if (!listEl) return;
+
+    if (wizardManualCalcItems.length === 0) {
+        listEl.innerHTML = `<div style="font-size:0.7rem; color:var(--text-muted); text-align:center; padding:6px;">Henüz besin eklenmedi. Yukarıdan ürün seçip ekleyebilirsiniz.</div>`;
+    } else {
+        listEl.innerHTML = wizardManualCalcItems.map((item, idx) => `
+            <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.04); padding:4px 8px; border-radius:6px; font-size:0.72rem;">
+                <div>
+                    <strong>${item.amount}g ${item.name}</strong>
+                    <div style="font-size:0.65rem; color:var(--text-secondary);">${item.cal} kcal • ${item.p}g P • ${item.c}g C • ${item.f}g F • ${item.sugar}g Şeker</div>
+                </div>
+                <button type="button" onclick="removeWizardManualCalcItem(${idx})" style="background:none; border:none; color:#f43f5e; cursor:pointer; font-size:0.75rem;">
+                    <i class="fa-solid fa-trash-can"></i>
+                </button>
+            </div>
+        `).join("");
+    }
+
+    let totCal = 0, totP = 0, totC = 0, totF = 0, totSugar = 0;
+    wizardManualCalcItems.forEach(item => {
+        totCal += item.cal || 0;
+        totP += item.p || 0;
+        totC += item.c || 0;
+        totF += item.f || 0;
+        totSugar += item.sugar || 0;
+    });
+
+    const calEl = document.getElementById("wizard-manual-calc-cal");
+    const pEl = document.getElementById("wizard-manual-calc-p");
+    const cEl = document.getElementById("wizard-manual-calc-c");
+    const fEl = document.getElementById("wizard-manual-calc-f");
+    const sEl = document.getElementById("wizard-manual-calc-sugar");
+
+    if (calEl) calEl.innerText = `${Math.round(totCal)} kcal`;
+    if (pEl) pEl.innerText = Math.round(totP);
+    if (cEl) cEl.innerText = Math.round(totC);
+    if (fEl) fEl.innerText = Math.round(totF);
+    if (sEl) sEl.innerText = Math.round(totSugar);
+}
+
+function applyWizardManualCalcToTargets() {
+    let totCal = 0, totP = 0, totC = 0, totF = 0;
+    wizardManualCalcItems.forEach(item => {
+        totCal += item.cal || 0;
+        totP += item.p || 0;
+        totC += item.c || 0;
+        totF += item.f || 0;
+    });
+
+    if (totCal <= 0) {
+        showToast("⚠️ Önce hesaplayıcıya en az bir besin ekleyin!");
+        return;
+    }
+
+    document.getElementById("wizard-manual-cal").value = Math.round(totCal);
+    document.getElementById("wizard-manual-p").value = Math.round(totP);
+    document.getElementById("wizard-manual-c").value = Math.round(totC);
+    document.getElementById("wizard-manual-f").value = Math.round(totF);
+
+    wizardState.manualKcal = Math.round(totCal);
+    wizardState.manualP = Math.round(totP);
+    wizardState.manualC = Math.round(totC);
+    wizardState.manualF = Math.round(totF);
+
+    showToast(`⚡ ${Math.round(totCal)} kcal ve makrolar hedeflere aktarıldı!`);
+}
 
 function checkOnboardingStatus() {
     if (!appData.onboardingCompleted) {
@@ -5136,7 +5374,7 @@ function openOnboardingWizard() {
         wizardState.age = p.age || 24;
         wizardState.height = p.height || 178;
         wizardState.weight = p.weight || 74.0;
-        wizardState.frequency = p.frequency || 5;
+        wizardState.frequency = p.frequency || "5";
         wizardState.activity = p.activity || "moderate";
         wizardState.goal = p.goal || "bulk";
         wizardState.path = p.path || "auto";
@@ -5266,6 +5504,7 @@ function renderWizardStep() {
         "wizard-step-2",
         "wizard-step-3",
         "wizard-step-4-manual",
+        "wizard-step-4-coach",
         "wizard-step-4-auto",
         "wizard-step-5"
     ];
@@ -5292,11 +5531,17 @@ function renderWizardStep() {
         if (wizardState.path === "manual") {
             heading.innerText = "4. Kalori ve Makro Hedeflerin";
             document.getElementById("wizard-step-4-manual").style.display = "block";
+            initWizardManualFoodSelect();
+            nextBtn.innerHTML = 'Hesapla & Önizle <i class="fa-solid fa-wand-magic-sparkles"></i>';
+        } else if (wizardState.path === "coach") {
+            heading.innerText = "4. Antrenör Direktifli Yönetim";
+            document.getElementById("wizard-step-4-coach").style.display = "block";
+            nextBtn.innerHTML = 'Önizlemeye Geç <i class="fa-solid fa-chevron-right"></i>';
         } else {
             heading.innerText = "4. Besin Tercihlerin & Öğün Sayısı";
             document.getElementById("wizard-step-4-auto").style.display = "block";
+            nextBtn.innerHTML = 'Hesapla & Önizle <i class="fa-solid fa-wand-magic-sparkles"></i>';
         }
-        nextBtn.innerHTML = 'Hesapla & Önizle <i class="fa-solid fa-wand-magic-sparkles"></i>';
     } else if (step === 5) {
         heading.innerText = "5. Kişiye Özel Plan Özeti";
         document.getElementById("wizard-step-5").style.display = "block";
@@ -5312,7 +5557,7 @@ function nextWizardStep() {
         const age = parseInt(document.getElementById("wizard-age").value) || 24;
         const height = parseInt(document.getElementById("wizard-height").value) || 178;
         const weight = parseFloat(document.getElementById("wizard-weight").value) || 74.0;
-        const frequency = parseInt(document.getElementById("wizard-workout-frequency").value) || 5;
+        const frequency = document.getElementById("wizard-workout-frequency").value || "5";
         const activity = document.getElementById("wizard-activity-level").value || "moderate";
 
         wizardState.age = age;
@@ -5370,11 +5615,42 @@ function calculateWizardPlan() {
     }
     bmr = Math.round(bmr);
 
-    // 2. Activity Multiplier
-    let activityMult = 1.35;
-    if (activity === "sedentary") activityMult = 1.25 + (frequency * 0.025);
-    else if (activity === "moderate") activityMult = 1.35 + (frequency * 0.03);
-    else if (activity === "active") activityMult = 1.45 + (frequency * 0.035);
+    // 2. Frequency numeric factor
+    let freqNum = 4;
+    if (frequency === "1-2") freqNum = 2;
+    else if (frequency === "3") freqNum = 3;
+    else if (frequency === "4") freqNum = 4;
+    else if (frequency === "5" || frequency === "5-bro") freqNum = 5;
+    else if (frequency === "6-arnold" || frequency === "6-ppl") freqNum = 6;
+    else if (frequency === "7") freqNum = 7;
+    else freqNum = parseFloat(frequency) || 4;
+
+    // 3. Activity Multiplier & Step Targets
+    let activityMult = 1.38;
+    let autoStepTarget = 8000;
+
+    if (activity === "sedentary_low") {
+        activityMult = 1.15 + (freqNum * 0.02);
+        autoStepTarget = 4000;
+    } else if (activity === "sedentary") {
+        activityMult = 1.25 + (freqNum * 0.025);
+        autoStepTarget = 5500;
+    } else if (activity === "light") {
+        activityMult = 1.32 + (freqNum * 0.025);
+        autoStepTarget = 7000;
+    } else if (activity === "moderate") {
+        activityMult = 1.40 + (freqNum * 0.03);
+        autoStepTarget = 9000;
+    } else if (activity === "active") {
+        activityMult = 1.50 + (freqNum * 0.035);
+        autoStepTarget = 11500;
+    } else if (activity === "very_active") {
+        activityMult = 1.62 + (freqNum * 0.04);
+        autoStepTarget = 14500;
+    } else if (activity === "extreme") {
+        activityMult = 1.78 + (freqNum * 0.045);
+        autoStepTarget = 17500;
+    }
 
     const tdee = Math.round(bmr * activityMult);
 
@@ -5386,6 +5662,14 @@ function calculateWizardPlan() {
         targetP = wizardState.manualP;
         targetC = wizardState.manualC;
         targetF = wizardState.manualF;
+    } else if (path === "coach") {
+        // Coach baseline calculation
+        targetCal = tdee + (goal === "bulk" ? 300 : (goal === "cut" ? -400 : 0));
+        targetP = Math.round(weight * 2.2);
+        targetF = Math.round(weight * 0.9);
+        targetC = Math.max(50, Math.round((targetCal - (targetP * 4 + targetF * 9)) / 4));
+        gainMin = goal === "cut" ? -0.5 : 0.2;
+        gainMax = goal === "cut" ? -0.2 : 0.35;
     } else {
         // Automatic Calculation based on Goal
         if (goal === "bulk") {
@@ -5413,9 +5697,9 @@ function calculateWizardPlan() {
     }
 
     const targetWater = path === "manual" ? wizardState.manualWater : Math.max(2.5, +(weight * 0.045).toFixed(1));
-    const targetSteps = path === "manual" ? wizardState.manualSteps : (activity === "active" ? 10000 : (activity === "moderate" ? 8000 : 6000));
+    const targetSteps = path === "manual" ? wizardState.manualSteps : autoStepTarget;
 
-    // 3. Generate Intelligent Meal Presets with RAW Grams if auto
+    // 4. Generate Intelligent Meal Presets with RAW Grams if auto
     let generatedPresets = {};
     if (path === "auto") {
         generatedPresets = generateAutoMealPresets({
@@ -5816,6 +6100,206 @@ function getRevisionsDB() {
 
 function saveRevisionsDB(db) {
     localStorage.setItem("OMAR_REVISIONS_DB", JSON.stringify(db));
+}
+
+// ==================== COACH AUTHORITY LOCK & REQUEST/APPROVAL WORKFLOW ====================
+
+function isAthleteUnderCoachControl() {
+    const activeUsername = (getActiveSessionUsername() || "").toLowerCase().trim();
+    if (!activeUsername) {
+        return !!(appData && (appData.coachControlled || appData.coachLinked));
+    }
+    
+    const registry = getUsersRegistry();
+    const user = registry[activeUsername];
+    if (user) {
+        if (user.coachControlled === true || user.coachLinked === true) return true;
+        if (user.role === "athlete" && user.coachUsername) return true;
+    }
+    if (appData && (appData.coachControlled === true || appData.coachLinked === true)) {
+        return true;
+    }
+    return false;
+}
+
+function isAthleteApprovedByCoach() {
+    const activeUsername = (getActiveSessionUsername() || "").toLowerCase().trim();
+    if (!activeUsername) return true; // Standalone demo mode
+    const registry = getUsersRegistry();
+    const user = registry[activeUsername];
+    if (!user) return false;
+    if (user.role === "coach") return true;
+    return !!(user.coachLinked || user.coachControlled || user.coachUsername || user.id === "omer" || activeUsername === "omer");
+}
+
+function getCoachChangeRequestsDB() {
+    try {
+        const data = localStorage.getItem("OMAR_CHANGE_REQUESTS_DB");
+        return data ? JSON.parse(data) : [];
+    } catch (e) {
+        return [];
+    }
+}
+
+function saveCoachChangeRequestsDB(db) {
+    localStorage.setItem("OMAR_CHANGE_REQUESTS_DB", JSON.stringify(db));
+}
+
+function openCoachChangeRequestModal(category = "nutrition", details = "") {
+    const catSelect = document.getElementById("change-req-category");
+    const detInput = document.getElementById("change-req-details");
+    if (catSelect) catSelect.value = category;
+    if (detInput && details) detInput.value = details;
+    openModal("modal-coach-change-request");
+}
+
+function handleAthleteSubmitChangeRequest(event) {
+    if (event) event.preventDefault();
+    const activeUsername = (getActiveSessionUsername() || "omer").toLowerCase().trim();
+    const cat = document.getElementById("change-req-category").value;
+    const details = document.getElementById("change-req-details").value.trim();
+
+    if (!details) {
+        showToast("⚠️ Lütfen talebinizi detaylandırın!");
+        return;
+    }
+
+    const catLabels = {
+        nutrition: "🍽️ Beslenme & Hedefler",
+        workout: "🏋️ Antrenman Spliti / Hareket",
+        supplements: "💊 Suplement Protokolü",
+        weight: "🎯 Kilo / Strateji",
+        other: "💬 Özel Talep"
+    };
+
+    const requests = getCoachChangeRequestsDB();
+    const newReq = {
+        id: "req_" + Date.now(),
+        username: activeUsername,
+        name: (appData && appData.profile && appData.profile.name) || activeUsername,
+        category: cat,
+        categoryLabel: catLabels[cat] || cat,
+        details: details,
+        date: new Date().toISOString().split('T')[0],
+        time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
+        status: "pending"
+    };
+    requests.unshift(newReq);
+    saveCoachChangeRequestsDB(requests);
+
+    // Send note to coach in chat
+    const chatDb = getChatDB();
+    if (!chatDb[activeUsername]) chatDb[activeUsername] = [];
+    chatDb[activeUsername].push({
+        sender: "athlete",
+        text: `📢 [DEĞİŞİKLİK TALEBİ - ${newReq.categoryLabel}]: "${details}"`,
+        time: newReq.time,
+        date: newReq.date,
+        read: false
+    });
+    saveChatDB(chatDb);
+
+    closeModal("modal-coach-change-request");
+    showToast("Talebiniz koçunuza başarıyla iletildi! 🚀 Koçunuz inceleyip onaylayacaktır.");
+}
+
+function renderCoachChangeRequests() {
+    const cardEl = document.getElementById("coach-requests-card");
+    const listEl = document.getElementById("coach-requests-list");
+    const badgeEl = document.getElementById("coach-requests-count-badge");
+    if (!cardEl || !listEl) return;
+
+    const requests = getCoachChangeRequestsDB();
+    const pendingReqs = requests.filter(r => r.status === "pending");
+
+    if (badgeEl) badgeEl.innerText = `${pendingReqs.length} Yeni`;
+
+    if (pendingReqs.length === 0) {
+        cardEl.style.display = "none";
+        return;
+    }
+
+    cardEl.style.display = "block";
+    listEl.innerHTML = pendingReqs.map(r => `
+        <div style="background:rgba(0,0,0,0.3); border:1px solid rgba(255,214,10,0.2); border-radius:8px; padding:10px; font-size:0.75rem;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                <strong style="color:#ffd60a;">${r.name} (@${r.username})</strong>
+                <span style="font-size:0.68rem; color:var(--text-secondary);">${r.date} ${r.time}</span>
+            </div>
+            <div style="font-size:0.72rem; color:var(--accent-orange); font-weight:700; margin-bottom:4px;">
+                ${r.categoryLabel}
+            </div>
+            <p style="color:#ffffff; margin-bottom:8px; line-height:1.4; background:rgba(255,255,255,0.03); padding:6px; border-radius:6px;">
+                "${r.details}"
+            </p>
+            <div style="display:flex; gap:8px;">
+                <button type="button" class="btn btn-xs btn-primary" onclick="approveCoachChangeRequest('${r.id}')" style="flex:1; background:var(--status-green); border-color:var(--status-green); color:#000; font-weight:800;">
+                    <i class="fa-solid fa-check"></i> Onayla & Revizeye Git
+                </button>
+                <button type="button" class="btn btn-xs btn-danger" onclick="rejectCoachChangeRequest('${r.id}')" style="flex:1;">
+                    <i class="fa-solid fa-xmark"></i> Reddet & Not Yaz
+                </button>
+            </div>
+        </div>
+    `).join("");
+}
+
+function approveCoachChangeRequest(reqId) {
+    const requests = getCoachChangeRequestsDB();
+    const req = requests.find(r => r.id === reqId);
+    if (!req) return;
+
+    req.status = "approved";
+    saveCoachChangeRequestsDB(requests);
+
+    const chatDb = getChatDB();
+    if (!chatDb[req.username]) chatDb[req.username] = [];
+    chatDb[req.username].push({
+        sender: "coach",
+        text: `✅ [TALEP ONAYLANDI]: "${req.details}" konulu talebiniz onaylandı ve planınıza uygulanıyor.`,
+        time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
+        date: new Date().toISOString().split('T')[0],
+        read: false
+    });
+    saveChatDB(chatDb);
+
+    renderCoachChangeRequests();
+    showToast(`✅ ${req.name} sporcusunun talebi onaylandı!`);
+
+    if (req.category === "workout") {
+        currentCoachSelectedAthlete = req.username;
+        goToWorkoutPrescriptionForCurrentAthlete();
+    } else {
+        currentCoachSelectedAthlete = req.username;
+        goToPrescriptionForCurrentAthlete();
+    }
+}
+
+function rejectCoachChangeRequest(reqId) {
+    const requests = getCoachChangeRequestsDB();
+    const req = requests.find(r => r.id === reqId);
+    if (!req) return;
+
+    const reason = prompt(`"${req.name}" sporcusunun talebini reddetme gerekçeniz (sporcuya iletilecektir):`, "Mevcut hedefinize göre bu aşamada planı korumamız daha uygun.");
+    if (reason === null) return;
+
+    req.status = "rejected";
+    req.rejectReason = reason;
+    saveCoachChangeRequestsDB(requests);
+
+    const chatDb = getChatDB();
+    if (!chatDb[req.username]) chatDb[req.username] = [];
+    chatDb[req.username].push({
+        sender: "coach",
+        text: `❌ [TALEP REDDEDİLDİ]: "${req.details}" talebiniz incelendi. Koç Açıklaması: "${reason}"`,
+        time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
+        date: new Date().toISOString().split('T')[0],
+        read: false
+    });
+    saveChatDB(chatDb);
+
+    renderCoachChangeRequests();
+    showToast(`❌ Talep reddedildi ve sporcuya gerekçe iletildi.`);
 }
 
 // Generate Unique 4-Digit Random Athlete Identity Tag (#1000 - #9999)
@@ -6435,6 +6919,7 @@ function filterCoachRosterByGoal(goal, btn) {
 }
 
 function renderCoachRoster() {
+    renderCoachChangeRequests();
     const container = document.getElementById("coach-roster-container");
     if (!container) return;
 
@@ -7167,12 +7652,25 @@ function submitCoachPrescription() {
         saveUsersRegistry(registry);
     }
 
+    // If current session is this athlete, sync appData targets immediately
+    const activeUsername = getActiveSessionUsername();
+    if (activeUsername === username || (appData && appData.profile && appData.profile.username === username)) {
+        appData.targets = {
+            calories, protein, carbs, fat, water, steps,
+            weeklyGainMin: gainMin,
+            weeklyGainMax: gainMax
+        };
+        saveDataToStorage();
+        renderDashboard();
+        initSettingsForm();
+    }
+
     // Send automated chat note
     const chatDb = getChatDB();
     if (!chatDb[username]) chatDb[username] = [];
     chatDb[username].push({
         sender: "coach",
-        text: `📋 [YENİ HEDEF & REVİZYON]: Günlük ${calories} kcal (${protein}P / ${carbs}C / ${fat}F). Not: "${coachNote}"`,
+        text: `📋 [YENİ HEDEF & REVİZYON]: Günlük ${calories} kcal (${protein}P / ${carbs}C / ${fat}F / ${steps} Adım / ${water}L Su). Not: "${coachNote}"`,
         time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
         date: new Date().toISOString().split('T')[0],
         read: false
@@ -8528,6 +9026,33 @@ function renderAthleteChatMessages(username) {
     if (!msgsArea) return;
 
     const cleanUsername = (username || "omer").toLowerCase().trim();
+    
+    // Check if athlete is approved/connected by coach
+    if (!isAthleteApprovedByCoach()) {
+        const registry = getUsersRegistry();
+        const user = registry[cleanUsername] || {};
+        const tag = user.athleteTag || "#4829";
+
+        msgsArea.innerHTML = `
+            <div style="text-align:center; padding:30px 14px; color:var(--text-secondary); font-size:0.78rem;">
+                <div style="font-size:2.4rem; color:#ffd60a; margin-bottom:10px;"><i class="fa-solid fa-lock"></i></div>
+                <h4 style="color:#ffffff; margin-bottom:6px; font-size:0.95rem;">Antrenör Bağlantısı Bekleniyor</h4>
+                <p style="line-height:1.5; margin-bottom:14px; font-size:0.75rem;">
+                    Koçunuz sizi sporcu kadrosuna eklediğinde doğrudan buradan canlı mesajlaşma ve reçete akışı başlayacaktır.
+                </p>
+                <div style="background:rgba(0,0,0,0.4); border:1px dashed rgba(255,214,10,0.3); padding:10px; border-radius:8px; display:inline-block; font-size:0.8rem; margin-bottom:14px;">
+                    Sporcu Kimlik Kodunuz: <strong style="color:#ffd60a; font-size:0.95rem;">${tag}</strong> (@${cleanUsername})
+                </div>
+                <div>
+                    <button type="button" class="btn btn-xs btn-primary" onclick="copyAthleteTag()" style="background:linear-gradient(135deg, #ffd60a, #ff9f0a); color:#000; font-weight:800; border-color:#ffd60a;">
+                        <i class="fa-solid fa-copy"></i> Sporcu Kodumu Kopyala
+                    </button>
+                </div>
+            </div>
+        `;
+        return;
+    }
+
     const chatDb = getChatDB();
     let msgs = chatDb[cleanUsername] || [];
     msgs = msgs.filter(m => !m.text || (!m.text.includes("Bench Press'te 80kg") && !m.text.includes("Mükemmel iş! Gelecek hafta") && !m.text.includes("Hocam 80kg ile 8 rep")));
@@ -8566,6 +9091,12 @@ function renderAthleteChatMessages(username) {
 
 function handleAthleteSendMessage(event) {
     if (event) event.preventDefault();
+
+    if (!isAthleteApprovedByCoach()) {
+        showToast("⚠️ Antrenörünüz henüz sizi sporcu listesine eklemedi. Lütfen önce sporcu kodunuzu koçunuza iletiniz.", "error");
+        return;
+    }
+
     const input = document.getElementById("athlete-chat-input");
     if (!input || !input.value.trim()) return;
 
@@ -8587,21 +9118,18 @@ function insertAthleteQuickMessage(text) {
 }
 
 function clearAthleteChat() {
+    if (!confirm("Koç ile olan tüm sohbet geçmişini temizlemek istiyor musunuz?")) return;
+
     const activeUsername = (getActiveSessionUsername() || "omer").toLowerCase().trim();
     const chatDb = getChatDB();
     chatDb[activeUsername] = [];
     saveChatDB(chatDb);
+
     renderAthleteChatMessages(activeUsername);
 
-    const clearPayload = { type: "chat_clear", athleteUsername: activeUsername };
-    if (realtimeChatState.localBus) {
-        try { realtimeChatState.localBus.postMessage(clearPayload); } catch (e) {}
-    }
-    const topic = `${OMAR_REALTIME_CONFIG.topicPrefix}${activeUsername}`;
-    const payloadStr = JSON.stringify(clearPayload);
-    fetch(`${OMAR_REALTIME_CONFIG.brokerBase}/${topic}`, {
-        method: "POST",
-        body: payloadStr
+    fetch(`${CHAT_CLOUD_ENDPOINT}?action=clear&channel=${encodeURIComponent(activeUsername)}`, {
+        method: "GET",
+        mode: "no-cors"
     }).catch(() => {});
 
     showToast("Sohbet geçmişi temizlendi 🗑️");
@@ -8629,6 +9157,8 @@ function checkAthletePendingRevision() {
                     <div class="rev-macro-item"><span>Protein</span><strong>${rev.protein}g</strong></div>
                     <div class="rev-macro-item"><span>Karb</span><strong>${rev.carbs}g</strong></div>
                     <div class="rev-macro-item"><span>Yağ</span><strong>${rev.fat}g</strong></div>
+                    <div class="rev-macro-item"><span>Adım</span><strong>${(rev.steps || 7500).toLocaleString('tr-TR')}</strong></div>
+                    <div class="rev-macro-item"><span>Su</span><strong>${rev.water || 3.5}L</strong></div>
                 `;
             }
             banner.style.display = "block";
@@ -8647,14 +9177,14 @@ function acceptCoachRevision() {
     if (!rev) return;
 
     appData.targets = {
-        calories: rev.calories,
-        protein: rev.protein,
-        carbs: rev.carbs,
-        fat: rev.fat,
-        water: rev.water || 3.5,
-        steps: rev.steps || 7500,
-        weeklyGainMin: rev.gainMin || 0.15,
-        weeklyGainMax: rev.gainMax || 0.35
+        calories: parseInt(rev.calories) || 2770,
+        protein: parseInt(rev.protein) || 167,
+        carbs: parseInt(rev.carbs) || 344,
+        fat: parseInt(rev.fat) || 77,
+        water: parseFloat(rev.water) || 3.5,
+        steps: parseInt(rev.steps) || 7500,
+        weeklyGainMin: parseFloat(rev.gainMin) || 0.15,
+        weeklyGainMax: parseFloat(rev.gainMax) || 0.35
     };
 
     rev.applied = true;
@@ -8669,7 +9199,7 @@ function acceptCoachRevision() {
     const banner = document.getElementById("athlete-revision-banner");
     if (banner) banner.style.display = "none";
 
-    showToast("Koç revizyonu ve yeni hedefler başarıyla uygulandı! 🎯🔥");
+    showToast("Koç revizyonu ve yeni hedefler (Adım: " + (rev.steps || 7500).toLocaleString('tr-TR') + ") başarıyla uygulandı! 🎯🔥");
 }
 
 function checkAthleteUnreadMessages() {
