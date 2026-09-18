@@ -8204,13 +8204,57 @@ async function testGeminiApiKeyInline() {
     resultBox.style.color = "#38bdf8";
     resultBox.innerHTML = "<i class=\"fa-solid fa-spinner fa-spin\"></i> Google Gemini sunucusu ile bağlantı test ediliyor...";
 
-    const testModels = ["gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-1.5-pro"];
     let success = false;
     let successfulModel = "";
     let lastErrStatus = 0;
     let lastErrMsg = "";
+    let candidateModels = ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.8-flash", "gemini-1.5-flash", "gemini-2.5-flash", "gemini-1.5-pro"];
 
-    for (const m of testModels) {
+    // 1. First, attempt dynamic model discovery for this exact key
+    try {
+        const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(testKey)}`, {
+            method: "GET",
+            headers: {
+                "x-goog-api-key": testKey
+            }
+        });
+        if (listRes.ok) {
+            const listData = await listRes.json();
+            if (listData && listData.models && listData.models.length > 0) {
+                const availableNames = listData.models
+                    .filter(m => !m.supportedGenerationMethods || m.supportedGenerationMethods.includes("generateContent"))
+                    .map(m => m.name.replace(/^models\//, ''));
+                if (availableNames.length > 0) {
+                    // Place discovered models at front of candidates
+                    candidateModels = [...new Set([...availableNames, ...candidateModels])];
+                }
+            }
+        } else {
+            lastErrStatus = listRes.status;
+            const errBody = await listRes.text();
+            try {
+                const j = JSON.parse(errBody);
+                if (j.error && j.error.message) lastErrMsg = j.error.message;
+            } catch (ex) {}
+            if (!lastErrMsg) lastErrMsg = errBody;
+        }
+    } catch (e) {
+        lastErrMsg = e.message;
+    }
+
+    // If key itself was rejected with 400 (Invalid key), stop immediately
+    if (lastErrStatus === 400 && lastErrMsg && lastErrMsg.toLowerCase().includes("api key not valid")) {
+        const turkishError = translateGeminiErrorToTurkish(lastErrStatus, lastErrMsg);
+        resultBox.style.background = "rgba(239, 68, 68, 0.15)";
+        resultBox.style.border = "1px solid rgba(239, 68, 68, 0.4)";
+        resultBox.style.color = "#f87171";
+        resultBox.innerHTML = turkishError;
+        if (btnTest) btnTest.disabled = false;
+        return;
+    }
+
+    // 2. Perform test generateContent call
+    for (const m of candidateModels) {
         try {
             const payload = {
                 contents: [{ parts: [{ text: "ping: sporcu koçu bağlantı testi" }] }]
@@ -8253,10 +8297,11 @@ async function testGeminiApiKeyInline() {
         resultBox.style.color = "#34d399";
         resultBox.innerHTML = `<i class="fa-solid fa-circle-check"></i> <strong>Bağlantı Başarılı!</strong> Google Gemini (${successfulModel}) canlı ve aktif.`;
         localStorage.setItem("OMAR_GEMINI_API_KEY", testKey);
+        localStorage.setItem("OMAR_GEMINI_MODEL", successfulModel);
         const settingsInput = document.getElementById("setting-gemini-key");
         if (settingsInput) settingsInput.value = testKey;
         checkGeminiApiKeyStatus();
-        showToast("✅ Canlı Gemini bağlantısı başarılı!");
+        showToast(`✅ Canlı Gemini bağlantısı başarılı! (${successfulModel})`);
     } else {
         const turkishError = translateGeminiErrorToTurkish(lastErrStatus, lastErrMsg);
         resultBox.style.background = "rgba(239, 68, 68, 0.15)";
@@ -8605,7 +8650,9 @@ Biçimlendirme Kuralları:
         generationConfig: { temperature: 0.85, maxOutputTokens: 1000 }
     };
 
-    const models = ["gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-1.5-pro"];
+    const savedModel = localStorage.getItem("OMAR_GEMINI_MODEL") || "gemini-3.6-flash";
+    const candidateModels = [savedModel, "gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.8-flash", "gemini-1.5-flash", "gemini-2.5-flash", "gemini-1.5-pro"];
+    const models = [...new Set(candidateModels)];
     let data = null;
     let lastError = null;
 
