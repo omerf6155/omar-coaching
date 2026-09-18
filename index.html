@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="style.css?v=2.8.0">
+    <link rel="stylesheet" href="style.css?v=3.2.0">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
@@ -1902,7 +1902,7 @@
 
                 <div id="gemini-key-test-result" style="display:none; font-size:0.75rem; padding:8px 10px; border-radius:8px; margin-bottom:12px;"></div>
 
-                <div style="display:flex; gap:8px;">
+                <div style="display:flex; gap:8px; margin-bottom:8px;">
                     <button type="button" class="btn btn-outline btn-block" onclick="testGeminiApiKeyInline()" id="btn-test-gemini-key">
                         <i class="fa-solid fa-vial"></i> Test Et
                     </button>
@@ -1910,6 +1910,9 @@
                         <i class="fa-solid fa-check"></i> Kaydet & Başlat
                     </button>
                 </div>
+                <button type="button" class="btn btn-danger btn-block" onclick="clearGeminiApiKey()" id="btn-delete-gemini-key" style="font-size:0.78rem;">
+                    <i class="fa-solid fa-trash-can"></i> Kayıtlı API Anahtarını Sil (Çevrimdışı Mod)
+                </button>
             </div>
         </div>
     </div>
@@ -2320,6 +2323,6 @@
     <!-- Notification Toast -->
     <div id="toast" class="toast">Kaydedildi</div>
 
-    <script src="app.js?v=2.8.0"></script>
+    <script src="app.js?v=3.2.0"></script>
 </body>
 </html>

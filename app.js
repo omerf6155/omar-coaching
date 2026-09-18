@@ -2205,12 +2205,13 @@ function saveCustomTargets() {
 
     const geminiInput = document.getElementById("setting-gemini-key");
     if (geminiInput) {
-        const keyVal = geminiInput.value.trim();
-        if (keyVal) {
+        const keyVal = typeof sanitizeGeminiApiKey === "function" ? sanitizeGeminiApiKey(geminiInput.value) : geminiInput.value.trim();
+        if (keyVal && keyVal.length > 10) {
             localStorage.setItem("OMAR_GEMINI_API_KEY", keyVal);
         } else {
             localStorage.removeItem("OMAR_GEMINI_API_KEY");
         }
+        if (typeof checkGeminiApiKeyStatus === "function") checkGeminiApiKeyStatus();
     }
 
     saveDataToStorage();
@@ -8028,19 +8029,25 @@ const ASSISTANT_PERSONAS = {
 
 // ==================== GEMINI API KEY & REAL-TIME CONNECTION STATUS ====================
 
+function sanitizeGeminiApiKey(key) {
+    if (!key) return "";
+    return key.toString().trim().replace(/^["'`]|["'`]$/g, '').trim();
+}
+
 function checkGeminiApiKeyStatus() {
-    const apiKey = localStorage.getItem("OMAR_GEMINI_API_KEY");
+    const rawKey = localStorage.getItem("OMAR_GEMINI_API_KEY");
+    const apiKey = sanitizeGeminiApiKey(rawKey);
     const modeDot = document.getElementById("ai-mode-dot");
     const modeText = document.getElementById("ai-mode-text");
     const modeBadge = document.getElementById("ai-active-mode-badge");
     const hdrApiKeyText = document.getElementById("btn-hdr-apikey-text");
 
-    if (apiKey && apiKey.trim().length > 10) {
+    if (apiKey && apiKey.length > 10) {
         if (modeDot) {
             modeDot.className = "ai-mode-dot online";
         }
         if (modeText) {
-            modeText.innerHTML = `🟢 <strong>Gemini 2.5 Flash Online</strong> • Canlı Bağlantı`;
+            modeText.innerHTML = `🟢 <strong>Gemini Canlı AI Online</strong> • Aktif`;
         }
         if (modeBadge) {
             modeBadge.innerHTML = `<i class="fa-solid fa-bolt" style="color:#10b981;"></i> Canlı Gemini`;
@@ -8069,7 +8076,7 @@ function checkGeminiApiKeyStatus() {
 function openApiKeyModal() {
     const keyInput = document.getElementById("modal-input-gemini-key");
     if (keyInput) {
-        keyInput.value = localStorage.getItem("OMAR_GEMINI_API_KEY") || "";
+        keyInput.value = sanitizeGeminiApiKey(localStorage.getItem("OMAR_GEMINI_API_KEY") || "");
     }
     const resultBox = document.getElementById("gemini-key-test-result");
     if (resultBox) {
@@ -8095,20 +8102,56 @@ function toggleApiKeyVisibility() {
 function saveGeminiApiKeyFromModal() {
     const keyInput = document.getElementById("modal-input-gemini-key");
     if (!keyInput) return;
-    const val = keyInput.value.trim();
-    if (val) {
+    const val = sanitizeGeminiApiKey(keyInput.value);
+    if (val && val.length > 10) {
         localStorage.setItem("OMAR_GEMINI_API_KEY", val);
         const settingsInput = document.getElementById("setting-gemini-key");
         if (settingsInput) settingsInput.value = val;
         showToast("✅ Gemini API Anahtarı başarıyla kaydedildi! 🧠");
+    } else if (!val) {
+        clearGeminiApiKey();
+        return;
     } else {
-        localStorage.removeItem("OMAR_GEMINI_API_KEY");
-        const settingsInput = document.getElementById("setting-gemini-key");
-        if (settingsInput) settingsInput.value = "";
-        showToast("ℹ️ API Anahtarı kaldırıldı. Çevrimdışı moda geçildi.");
+        showToast("⚠️ Lütfen geçerli bir Gemini API anahtarı girin.");
+        return;
     }
     checkGeminiApiKeyStatus();
     closeModal('modal-gemini-key');
+}
+
+function clearGeminiApiKey() {
+    localStorage.removeItem("OMAR_GEMINI_API_KEY");
+    localStorage.removeItem("GEMINI_API_KEY");
+    localStorage.removeItem("LEAN_BULK_GEMINI_KEY");
+    
+    const keyInput = document.getElementById("modal-input-gemini-key");
+    if (keyInput) keyInput.value = "";
+    
+    const settingsInput = document.getElementById("setting-gemini-key");
+    if (settingsInput) settingsInput.value = "";
+
+    const resultBox = document.getElementById("gemini-key-test-result");
+    if (resultBox) {
+        resultBox.style.display = "block";
+        resultBox.style.background = "rgba(239, 68, 68, 0.12)";
+        resultBox.style.border = "1px solid rgba(239, 68, 68, 0.3)";
+        resultBox.style.color = "#fca5a5";
+        resultBox.innerHTML = "<i class=\"fa-solid fa-trash-can\"></i> API Anahtarı silindi. Enes Abi çevrimdışı akıllı motoru devrede.";
+    }
+
+    checkGeminiApiKeyStatus();
+    showToast("🗑️ API Anahtarı silindi. Çevrimdışı akıllı moda geçildi.");
+}
+
+function clearGeminiApiKeyAndSwitchOffline() {
+    clearGeminiApiKey();
+    if (!assistantChatHistory.enes) assistantChatHistory.enes = [];
+    assistantChatHistory.enes.push({
+        sender: "assistant",
+        text: `Aslanım hatalı API anahtarını tamamen sildim! 🦍<br><br>Artık sunucu hatası yok; <strong>Enes Abi Yerleşik Akıllı Motoru</strong> tam kapasite devrede. Salonda alet mi dolu, omuzun mu batıyor, pratik yemek veya takviye mi lazım; ne istersen sorabilirsin!`,
+        time: getCurrentTimeStr()
+    });
+    renderAssistantMessages();
 }
 
 async function testGeminiApiKeyInline() {
@@ -8117,13 +8160,15 @@ async function testGeminiApiKeyInline() {
     const btnTest = document.getElementById("btn-test-gemini-key");
     if (!keyInput || !resultBox) return;
 
-    const testKey = keyInput.value.trim();
-    if (!testKey) {
+    const testKey = sanitizeGeminiApiKey(keyInput.value);
+    keyInput.value = testKey; // Clean up input box for user immediately
+
+    if (!testKey || testKey.length < 10) {
         resultBox.style.display = "block";
         resultBox.style.background = "rgba(239, 68, 68, 0.15)";
         resultBox.style.border = "1px solid rgba(239, 68, 68, 0.4)";
         resultBox.style.color = "#f87171";
-        resultBox.innerHTML = "<i class=\"fa-solid fa-circle-exclamation\"></i> Lütfen önce geçerli bir API anahtarı yapıştırın.";
+        resultBox.innerHTML = "<i class=\"fa-solid fa-circle-exclamation\"></i> Lütfen geçerli bir Gemini API anahtarı yapıştırın (Örn: AIzaSy...).";
         return;
     }
 
@@ -8134,8 +8179,9 @@ async function testGeminiApiKeyInline() {
     resultBox.style.color = "#38bdf8";
     resultBox.innerHTML = "<i class=\"fa-solid fa-spinner fa-spin\"></i> Google Gemini sunucusu ile bağlantı test ediliyor...";
 
-    const testModels = ["gemini-1.5-flash", "gemini-2.5-flash"];
+    const testModels = ["gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-pro"];
     let success = false;
+    let successfulModel = "";
     let lastErr = "";
 
     for (const m of testModels) {
@@ -8143,20 +8189,18 @@ async function testGeminiApiKeyInline() {
             const payload = {
                 contents: [{ parts: [{ text: "ping: sporcu koçu bağlantı testi" }] }]
             };
-            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${testKey}`, {
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${encodeURIComponent(testKey)}`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: { 
+                    "Content-Type": "application/json",
+                    "x-goog-api-key": testKey
+                },
                 body: JSON.stringify(payload)
             });
 
             if (res.ok) {
                 success = true;
-                resultBox.style.background = "rgba(16, 185, 129, 0.15)";
-                resultBox.style.border = "1px solid rgba(16, 185, 129, 0.4)";
-                resultBox.style.color = "#34d399";
-                resultBox.innerHTML = `<i class="fa-solid fa-circle-check"></i> <strong>Bağlantı Başarılı!</strong> Google Gemini (${m}) canlı ve aktif.`;
-                localStorage.setItem("OMAR_GEMINI_API_KEY", testKey);
-                checkGeminiApiKeyStatus();
+                successfulModel = m;
                 break;
             } else {
                 const errText = await res.text();
@@ -8172,11 +8216,21 @@ async function testGeminiApiKeyInline() {
         }
     }
 
-    if (!success) {
+    if (success) {
+        resultBox.style.background = "rgba(16, 185, 129, 0.15)";
+        resultBox.style.border = "1px solid rgba(16, 185, 129, 0.4)";
+        resultBox.style.color = "#34d399";
+        resultBox.innerHTML = `<i class="fa-solid fa-circle-check"></i> <strong>Bağlantı Başarılı!</strong> Google Gemini (${successfulModel}) canlı ve aktif.`;
+        localStorage.setItem("OMAR_GEMINI_API_KEY", testKey);
+        const settingsInput = document.getElementById("setting-gemini-key");
+        if (settingsInput) settingsInput.value = testKey;
+        checkGeminiApiKeyStatus();
+        showToast("✅ Canlı Gemini bağlantısı başarılı!");
+    } else {
         resultBox.style.background = "rgba(239, 68, 68, 0.15)";
         resultBox.style.border = "1px solid rgba(239, 68, 68, 0.4)";
         resultBox.style.color = "#f87171";
-        resultBox.innerHTML = `<i class="fa-solid fa-circle-xmark"></i> <strong>Hata:</strong> ${lastErr}`;
+        resultBox.innerHTML = `<i class="fa-solid fa-circle-xmark"></i> <strong>Bağlantı Kurulamadı:</strong><br><small style="line-height:1.4; display:block; margin-top:4px;">${lastErr}</small><br><small style="color:var(--text-muted);">💡 Anahtarın başında/sonunda tırnak veya boşluk kalmadığından ve <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#ffd60a; text-decoration:underline;">Google AI Studio</a>'da anahtarın aktif olduğundan emin olun.</small>`;
     }
 
     if (btnTest) btnTest.disabled = false;
@@ -8361,12 +8415,13 @@ async function sendAssistantMessage() {
     }
 
     const startTime = Date.now();
-    const apiKey = localStorage.getItem("OMAR_GEMINI_API_KEY");
+    const rawApiKey = localStorage.getItem("OMAR_GEMINI_API_KEY");
+    const apiKey = typeof sanitizeGeminiApiKey === "function" ? sanitizeGeminiApiKey(rawApiKey) : (rawApiKey || "").trim();
     let aiResponse = null;
     let geminiFailedError = null;
 
     // 3. Process with Online Gemini API or Deep Offline Engine
-    if (apiKey && apiKey.trim().length > 10 && navigator.onLine) {
+    if (apiKey && apiKey.length > 10 && navigator.onLine) {
         try {
             aiResponse = await callGeminiAssistantApi("enes", userText, apiKey);
         } catch (e) {
@@ -8378,11 +8433,16 @@ async function sendAssistantMessage() {
     if (!aiResponse) {
         if (geminiFailedError) {
             aiResponse = {
-                text: `⚠️ <strong>Gemini Bağlantı Uyarısı:</strong> ${geminiFailedError}<br><br>Canlı yapay zeka bağlantısı kurulamadı. Aşağıdaki butondan API anahtarını kontrol edebilir veya güncelleyebilirsin:`,
+                text: `⚠️ <strong>Gemini Bağlantı Uyarısı:</strong> ${geminiFailedError}<br><br>Canlı yapay zeka bağlantısında sorun oluştu. Yeni bir anahtar girebilir veya anahtarı temizleyerek Enes Abi'nin yerleşik zekasıyla anında devam edebilirsin:`,
                 actionHtml: `
-                    <button class="ai-action-btn btn-swap" onclick="openApiKeyModal()">
-                        <i class="fa-solid fa-key"></i> 🔑 Gemini API Anahtarını Yönet / Test Et
-                    </button>
+                    <div style="display:flex; flex-direction:column; gap:6px; margin-top:6px;">
+                        <button class="ai-action-btn btn-swap" onclick="openApiKeyModal()">
+                            <i class="fa-solid fa-key"></i> 🔑 Yeni API Key Gir / Test Et
+                        </button>
+                        <button class="ai-action-btn btn-swap" style="background:rgba(239,68,68,0.15); border-color:rgba(239,68,68,0.4); color:#fca5a5;" onclick="clearGeminiApiKeyAndSwitchOffline()">
+                            <i class="fa-solid fa-trash-can"></i> 🗑️ Hatalı API Key'i Sil & Çevrimdışı Devam Et
+                        </button>
+                    </div>
                 `
             };
         } else {
@@ -8414,6 +8474,7 @@ async function sendAssistantMessage() {
 // ==================== ONLINE GEMINI MULTI-TURN API ENGINE ====================
 
 async function callGeminiAssistantApi(personaKey, userText, apiKey) {
+    const cleanKey = typeof sanitizeGeminiApiKey === "function" ? sanitizeGeminiApiKey(apiKey) : (apiKey || "").trim();
     const currentPlan = appData.customWorkoutPlan[currentActiveDay] || DEFAULT_WORKOUT_PLAN[currentActiveDay] || { title: "Antrenman", exercises: [] };
     const consumed = appData.todayNutrition || {};
     const target = appData.targets || DEFAULT_TARGETS;
@@ -8511,17 +8572,20 @@ Biçimlendirme Kuralları:
         generationConfig: { temperature: 0.85, maxOutputTokens: 1000 }
     };
 
-    const models = ["gemini-1.5-flash", "gemini-2.5-flash", "gemini-1.5-pro", "gemini-1.5-flash-8b"];
+    const models = ["gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-pro"];
     let data = null;
     let lastError = null;
 
     for (const model of models) {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(cleanKey)}`;
         
         try {
             const res = await fetch(url, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: { 
+                    "Content-Type": "application/json",
+                    "x-goog-api-key": cleanKey
+                },
                 body: JSON.stringify(payloadWithSys)
             });
             if (res.ok) {
@@ -8538,7 +8602,10 @@ Biçimlendirme Kuralları:
         try {
             const resSnake = await fetch(url, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: { 
+                    "Content-Type": "application/json",
+                    "x-goog-api-key": cleanKey
+                },
                 body: JSON.stringify(payloadWithSysSnake)
             });
             if (resSnake.ok) {
@@ -8550,7 +8617,10 @@ Biçimlendirme Kuralları:
         try {
             const res2 = await fetch(url, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: { 
+                    "Content-Type": "application/json",
+                    "x-goog-api-key": cleanKey
+                },
                 body: JSON.stringify(payloadSimple)
             });
             if (res2.ok) {
