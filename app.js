@@ -8551,6 +8551,84 @@ async function sendAssistantMessage() {
 
 // ==================== ONLINE GEMINI MULTI-TURN API ENGINE ====================
 
+function cleanGeminiOutput(rawText) {
+    if (!rawText) return "";
+    let text = rawText.trim();
+
+    // 1. Strip XML/HTML-like thought or scratchpad tags
+    text = text.replace(/<(thought|thinking|reasoning|scratchpad|internal)>[\s\S]*?<\/\1>/gi, '').trim();
+
+    // 2. Remove leading "Thought:\n..." or "Reasoning:\n..." blocks
+    text = text.replace(/^(Thought|Reasoning|Thinking|Plan|Internal Monologue|Scratchpad):\s*[\s\S]*?(?=\n\n|\n[A-ZÇĞİÖŞÜ"“]|$)/i, '').trim();
+
+    // 3. Scratchpad / Planning section detection
+    const scratchpadHeaderRegex = /^(\*\s*\*|\*\s*\*\*|\*\*|\*|#+|-|\d+\.)\s*(Greeting|Vibe\s*Check|Context|Contextual\s*Integration|Plan|Goal|Tone|Step|Action|Analysis|Strategy|Workout\s*Check|Persona|Draft|Response|Closing|Internal\s*Thought|Opening)\b[:\*]?/i;
+    
+    const lines = text.split("\n");
+    const hasScratchpad = lines.some(l => scratchpadHeaderRegex.test(l.trim()));
+
+    if (hasScratchpad) {
+        // Look for full dialogue quote block at the end (e.g. "Vay aslanım!...")
+        const quoteMatches = text.match(/["“][^"“”]{20,}["”]/g);
+        if (quoteMatches && quoteMatches.length > 0) {
+            const turkishQuotes = quoteMatches.map(q => q.replace(/^["“]|["”]$/g, '').trim())
+                .filter(q => /[çğıöşüÇĞİÖŞÜ]/i.test(q) || /aslan|paşa|kral|hocam|abi|şampiyon|bomba|selam|antrenman|demir|kütle/i.test(q));
+            if (turkishQuotes.length > 0) {
+                text = turkishQuotes.join("\n\n");
+            }
+        } else {
+            // Line-by-line filtering
+            const cleanLines = [];
+            let inScratchpad = false;
+
+            for (const line of lines) {
+                const tr = line.trim();
+                if (!tr) continue;
+
+                if (scratchpadHeaderRegex.test(tr)) {
+                    inScratchpad = true;
+                    // Extract possible dialogue inside the header line: * *Greeting:* "Vay aslanım!"
+                    const inlineQuote = tr.match(/["“]([^"“”]+)["”]/);
+                    if (inlineQuote && inlineQuote[1] && (/[çğıöşüÇĞİÖŞÜ]/.test(inlineQuote[1]) || inlineQuote[1].length > 15)) {
+                        cleanLines.push(inlineQuote[1].trim());
+                    }
+                    continue;
+                }
+
+                if (inScratchpad) {
+                    // English prompt engineering directives
+                    if (/^(\*|-|\d+\.|\s+)?\s*(Respond|Match|Acknowledge|Check|Maintain|Transition|Ask|State|Ensure|Formulate|Keep|Show|Adopt)\b/i.test(tr)) {
+                        continue;
+                    }
+                    // Dialogue markers / Turkish keywords
+                    if (/[çğıöşüÇĞİÖŞÜ]/.test(tr) || /^(vay|eyvallah|selam|merhaba|aslanım|paşam|kral|canavar|şampiyon|hocam|bak şimdi|ne haber|naber|antrenman|kalori|protein)/i.test(tr) || tr.startsWith('"') || tr.startsWith('“')) {
+                        inScratchpad = false;
+                        cleanLines.push(line);
+                    }
+                } else {
+                    cleanLines.push(line);
+                }
+            }
+
+            if (cleanLines.length > 0) {
+                text = cleanLines.join("\n").trim();
+            }
+        }
+    }
+
+    // 4. Remove outer surrounding quotes if the whole message is wrapped
+    text = text.replace(/^["“]([\s\S]*?)["”]$/s, '$1').trim();
+
+    // 5. Convert markdown bold **word** to <strong>word</strong>
+    text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+    // 6. Format HTML line breaks
+    text = text.replace(/\r\n/g, '\n').replace(/\n{3,}/g, '\n\n');
+    text = text.replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>');
+
+    return text;
+}
+
 async function callGeminiAssistantApi(personaKey, userText, apiKey) {
     const cleanKey = typeof sanitizeGeminiApiKey === "function" ? sanitizeGeminiApiKey(apiKey) : (apiKey || "").trim();
     const currentPlan = appData.customWorkoutPlan[currentActiveDay] || DEFAULT_WORKOUT_PLAN[currentActiveDay] || { title: "Antrenman", exercises: [] };
@@ -8561,13 +8639,18 @@ async function callGeminiAssistantApi(personaKey, userText, apiKey) {
     const systemPrompt = `Sen 'Enes Abi' (🦍) adında, Omar Coaching'in tek ve yetkili Baş Danışmanısın.
 Antrenman Biyomekaniği, Anabolik Mutfak & Beslenme ve İleri Biyokimya & Suplement alanlarının üçüne de tam hakim bir Türk spor salonu efsanesisin.
 
+ÇOK KESİN KURALLAR:
+1. KESİNLİKLE İÇ DÜŞÜNCELERİNİ, PLANLAMA AŞAMALARINI VEYA İNGİLİZCE BAŞLIKLARI (Örn: "* *Greeting:*", "* *Vibe Check:*", "* *Contextual Integration:*", "Step 1:", "Plan:", "Thought:") ÇIKTIYA YAZMA!
+2. SADECE VE DOĞRUDAN TÜRKÇE DİYALOG DÖNDÜR. Salonda karşındaki kardeşinle yüz yüze konuşuyormuş gibi doğrudan söze gir.
+3. Asla tırnak içine alma, asla rol yapıyormuş gibi hissettirme, doğrudan ağzından çıkan repliği yaz.
+
 Kişilik & Üslup:
 - Sokak ve salon ağzıyla konuşursun: samimi, babacan, esprili, dobra, lafını esirgemeyen ama sporcusunu canı gibi koruyan bir ağabey.
 - Hitapların: "aslanım, paşam, demir bükücü, kütle kralı, şampiyon, canavar, usta".
 - Asla robotik, sıkıcı veya ansiklopedik yazma! Canlı, enerjik, samimi ve esprili ol.
-- En basit selamlaşmada ("naber", "nasılsın", "kimsin") bile cana yakın, esprili ve günün antrenman/beslenme durumuna değinen harika yanıtlar ver.
+- En basit selamlaşmada ("naber", "nasılsın", "kimsin") bile cana yakın, esprili ve günün antrenman/beslenme durumuna değinen harika, eğlenceli yanıtlar ver.
 
-Uzmanlık Kuralların:
+Uzmanlık Bilgin:
 1. ANTRENMAN & BİYOMEKANİK:
    - Salonda alet doluysa 1'e 1 aynı kas lif açısını ve direnç profilini hedefleyen alternatifleri bilirsin (Örn: Lat Pulldown doluysa ASLA row önermezsin; Single-Arm High Cable Row veya Straight-Arm Pulldown verirsin).
    - Eklemi ağrıyan veya omzu batan sporcuya (Dips'te ön omuz batması) eklem stresini sıfırlayan alternatifleri (High-to-Low Cable Fly, Decline DB Press) verirsin.
@@ -8631,13 +8714,30 @@ Biçimlendirme Kuralları:
     const payloadWithSys = {
         systemInstruction: { parts: [{ text: systemPrompt }] },
         contents: recentContents,
-        generationConfig: { temperature: 0.85, maxOutputTokens: 1000 }
+        generationConfig: { 
+            temperature: 0.85, 
+            maxOutputTokens: 1000,
+            thinkingConfig: { thinkingBudget: 0 }
+        }
     };
 
     const payloadWithSysSnake = {
         system_instruction: { parts: [{ text: systemPrompt }] },
         contents: recentContents,
-        generationConfig: { temperature: 0.85, maxOutputTokens: 1000 }
+        generationConfig: { 
+            temperature: 0.85, 
+            maxOutputTokens: 1000,
+            thinking_config: { thinking_budget: 0 }
+        }
+    };
+
+    const payloadNoThinking = {
+        systemInstruction: { parts: [{ text: systemPrompt }] },
+        contents: recentContents,
+        generationConfig: { 
+            temperature: 0.85, 
+            maxOutputTokens: 1000 
+        }
     };
 
     const payloadSimple = {
@@ -8647,7 +8747,10 @@ Biçimlendirme Kuralları:
                 parts: [{ text: `[SİSTEM REHBERİ: ${systemPrompt}]\n\nKullanıcı Sorusu: ${userText}` }]
             }
         ],
-        generationConfig: { temperature: 0.85, maxOutputTokens: 1000 }
+        generationConfig: { 
+            temperature: 0.85, 
+            maxOutputTokens: 1000 
+        }
     };
 
     const savedModel = localStorage.getItem("OMAR_GEMINI_MODEL") || "gemini-3.6-flash";
@@ -8671,13 +8774,8 @@ Biçimlendirme Kuralları:
             if (res.ok) {
                 data = await res.json();
                 break;
-            } else {
-                const err = await res.text();
-                lastError = new Error(`${model} (${res.status}): ${err}`);
             }
-        } catch (e) {
-            lastError = e;
-        }
+        } catch (e) {}
 
         try {
             const resSnake = await fetch(url, {
@@ -8690,6 +8788,21 @@ Biçimlendirme Kuralları:
             });
             if (resSnake.ok) {
                 data = await resSnake.json();
+                break;
+            }
+        } catch (e) {}
+
+        try {
+            const resNoThinking = await fetch(url, {
+                method: "POST",
+                headers: { 
+                    "Content-Type": "application/json",
+                    "x-goog-api-key": cleanKey
+                },
+                body: JSON.stringify(payloadNoThinking)
+            });
+            if (resNoThinking.ok) {
+                data = await resNoThinking.json();
                 break;
             }
         } catch (e) {}
@@ -8723,7 +8836,7 @@ Biçimlendirme Kuralları:
 
     if (!reply) throw new Error("Boş Gemini yanıtı döndü.");
 
-    let formattedText = reply.replace(/\n\n/g, "<br><br>").replace(/\n/g, "<br>");
+    const formattedText = cleanGeminiOutput(reply);
     
     // Auto-generate dynamic action buttons based on keywords
     let actionHtml = null;
