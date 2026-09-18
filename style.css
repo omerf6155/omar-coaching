@@ -544,6 +544,52 @@ body {
     color: #ffffff;
 }
 
+.set-type-select {
+    width: 100%;
+    padding: 5px 2px;
+    font-size: 0.68rem;
+    font-weight: 800;
+    text-align: center;
+    border-radius: var(--radius-sm);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.06);
+    color: #ffffff;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.set-type-select.tag-top {
+    background: rgba(255, 214, 10, 0.18);
+    border-color: rgba(255, 214, 10, 0.5);
+    color: #ffd60a;
+}
+
+.set-type-select.tag-back {
+    background: rgba(96, 165, 250, 0.18);
+    border-color: rgba(96, 165, 250, 0.5);
+    color: #60a5fa;
+}
+
+.set-type-select.tag-warm {
+    background: rgba(251, 191, 36, 0.18);
+    border-color: rgba(251, 191, 36, 0.5);
+    color: #fbbf24;
+}
+
+.set-type-select.tag-drop {
+    background: rgba(239, 68, 68, 0.18);
+    border-color: rgba(239, 68, 68, 0.5);
+    color: #ef4444;
+}
+
+.set-type-select option {
+    background: #181920;
+    color: #ffffff;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
 .set-input {
     background: var(--bg-input);
     border: 1px solid var(--border-subtle);

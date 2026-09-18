@@ -4938,15 +4938,25 @@ function renderWorkoutView(dayKey) {
         `;
 
         for (let i = 1; i <= totalSets; i++) {
-            const prevSet = lastLog[i - 1] || { weight: "-", reps: "-", rir: "" };
-            const isTop = (i === 1 && ex.isTopSet);
+            const prevSet = lastLog[i - 1] || { weight: "-", reps: "-", rir: "", setType: "" };
+            const defaultTag = (i === 1 && ex.isTopSet) ? "TOP" : (i > 1 && ex.isTopSet) ? "BACK" : "S" + i;
+            const currentSetType = prevSet.setType || defaultTag;
             const savedW = prevSet.weight !== '-' ? prevSet.weight : '';
             const savedR = prevSet.reps !== '-' ? prevSet.reps : '';
             const savedRir = prevSet.rir || '';
+            const tagClass = currentSetType === 'TOP' ? 'tag-top' : currentSetType === 'BACK' ? 'tag-back' : currentSetType === 'ISINMA' ? 'tag-warm' : currentSetType === 'DROP' ? 'tag-drop' : 'tag-normal';
 
             html += `
                 <tr class="set-row">
-                    <td><span class="set-tag ${isTop ? 'top-set' : ''}">${isTop ? 'TOP' : 'S' + i}</span></td>
+                    <td>
+                        <select class="set-type-select ${tagClass}" id="type_${ex.id}_${i}" onchange="autoSaveSet('${ex.id}', ${i})" title="Set Tipi Seç">
+                            <option value="TOP" ${currentSetType === 'TOP' ? 'selected' : ''}>🔥 TOP</option>
+                            <option value="BACK" ${currentSetType === 'BACK' ? 'selected' : ''}>⚡ BACK</option>
+                            <option value="S${i}" ${currentSetType === 'S' + i ? 'selected' : ''}>S${i}</option>
+                            <option value="ISINMA" ${currentSetType === 'ISINMA' ? 'selected' : ''}>🟡 ISINMA</option>
+                            <option value="DROP" ${currentSetType === 'DROP' ? 'selected' : ''}>💥 DROP</option>
+                        </select>
+                    </td>
                     <td style="font-size: 0.75rem; color: var(--text-muted);">${prevSet.weight}kg × ${prevSet.reps}</td>
                     <td>
                         <div style="display: flex; gap: 3px;">
@@ -4997,11 +5007,17 @@ function autoSaveSet(exId, setIndex) {
     const weightEl = document.getElementById(`w_${exId}_${setIndex}`);
     const repsEl = document.getElementById(`r_${exId}_${setIndex}`);
     const rirEl = document.getElementById(`rir_${exId}_${setIndex}`);
+    const typeEl = document.getElementById(`type_${exId}_${setIndex}`);
     if (!weightEl || !repsEl) return;
 
     const w = parseFloat(weightEl.value) || 0;
     const r = parseInt(repsEl.value) || 0;
     const rir = rirEl ? rirEl.value : "";
+    const setType = typeEl ? typeEl.value : `S${setIndex}`;
+
+    if (typeEl) {
+        typeEl.className = `set-type-select ${setType === 'TOP' ? 'tag-top' : setType === 'BACK' ? 'tag-back' : setType === 'ISINMA' ? 'tag-warm' : setType === 'DROP' ? 'tag-drop' : 'tag-normal'}`;
+    }
 
     if (!appData.workoutLogs) appData.workoutLogs = {};
     if (!appData.workoutLogs[exId]) appData.workoutLogs[exId] = [];
@@ -5010,13 +5026,14 @@ function autoSaveSet(exId, setIndex) {
         weight: w,
         reps: r,
         rir: rir,
+        setType: setType,
         date: new Date().toISOString().split('T')[0]
     };
 
     addRpgStatGain('power', 2, 25, 'Antrenman Seti');
     evaluateDailyStreak();
     saveDataToStorage();
-    showToast(`Set ${setIndex} Kaydedildi! 💪`);
+    showToast(`${setType} Kaydedildi! 💪`);
 }
 
 let currentLibraryMainMuscle = "chest";
@@ -5068,6 +5085,12 @@ const MUSCLE_SUBREGIONS_MAP = {
 };
 
 function openExerciseManagerModal() {
+    if (isAthleteUnderCoachControl()) {
+        showToast("⚠️ Antrenman planınız koçunuz tarafından yönetilmektedir. Değişiklik için talep iletebilirsiniz.", "warning");
+        openCoachChangeRequestModal('workout');
+        return;
+    }
+
     const plan = appData.customWorkoutPlan[currentActiveDay];
     if (!plan) return;
 
@@ -6450,21 +6473,12 @@ function saveRevisionsDB(db) {
 // ==================== COACH AUTHORITY LOCK & REQUEST/APPROVAL WORKFLOW ====================
 
 function isAthleteUnderCoachControl() {
+    if (currentPortalMode === "coach") return false;
     const activeUsername = (getActiveSessionUsername() || "").toLowerCase().trim();
-    if (!activeUsername) {
-        return !!(appData && (appData.coachControlled || appData.coachLinked));
-    }
-    
     const registry = getUsersRegistry();
-    const user = registry[activeUsername];
-    if (user) {
-        if (user.coachControlled === true || user.coachLinked === true) return true;
-        if (user.role === "athlete" && user.coachUsername) return true;
-    }
-    if (appData && (appData.coachControlled === true || appData.coachLinked === true)) {
-        return true;
-    }
-    return false;
+    const user = activeUsername && registry[activeUsername];
+    if (user && user.role === "coach") return false;
+    return true;
 }
 
 function isAthleteApprovedByCoach() {
@@ -8806,6 +8820,32 @@ function resetCoachWorkoutRevToOriginal() {
     showToast("Antrenman programı orijinal haline sıfırlandı.");
 }
 
+function getCleanCompactWorkoutPlan(rawPlan) {
+    if (!rawPlan) return {};
+    const clean = {};
+    const validDays = ["day1", "day2", "day3", "day4", "day5", "day6", "day7"];
+    validDays.forEach(d => {
+        if (rawPlan[d]) {
+            clean[d] = {
+                title: rawPlan[d].title || "",
+                desc: rawPlan[d].desc || "",
+                exercises: (rawPlan[d].exercises || []).map(ex => ({
+                    id: ex.id,
+                    name: ex.name,
+                    muscle: ex.muscle || "",
+                    sets: ex.sets || 3,
+                    repRange: ex.repRange || "8-12",
+                    rir: ex.rir || "RIR 1-2",
+                    target: ex.target || "",
+                    defaultSeat: ex.defaultSeat || "",
+                    isTopSet: !!ex.isTopSet
+                }))
+            };
+        }
+    });
+    return clean;
+}
+
 function submitCoachWorkoutPrescription() {
     const username = currentCoachSelectedAthlete;
     if (!username || !currentCoachWorkoutDrafts[username]) return;
@@ -8813,7 +8853,8 @@ function submitCoachWorkoutPrescription() {
     // Make sure latest input values are saved
     updateCoachRxDayMeta();
 
-    const planToSave = JSON.parse(JSON.stringify(currentCoachWorkoutDrafts[username]));
+    const rawDraft = currentCoachWorkoutDrafts[username];
+    const planToSave = getCleanCompactWorkoutPlan(rawDraft);
 
     // Update Registry
     const registry = getUsersRegistry();
@@ -9098,16 +9139,28 @@ function connectRealtimeChatCloud(targetAthleteUsername) {
             updateRealtimeConnectionUI("connected");
         };
 
-        sse.onmessage = (event) => {
+        sse.onmessage = async (event) => {
             try {
                 if (!event.data) return;
                 const data = JSON.parse(event.data);
-                if (data.event === "message" && data.message) {
+                if (data.event === "message") {
                     let innerPayload = null;
-                    try {
-                        innerPayload = JSON.parse(data.message);
-                    } catch (pe) {
-                        innerPayload = { text: data.message, sender: "cloud" };
+                    if (data.attachment && data.attachment.url) {
+                        try {
+                            const attachRes = await fetch(data.attachment.url);
+                            if (attachRes.ok) {
+                                innerPayload = await attachRes.json();
+                            }
+                        } catch (ae) {
+                            console.warn("SSE attachment fetch failed:", ae);
+                        }
+                    }
+                    if (!innerPayload && data.message) {
+                        try {
+                            innerPayload = JSON.parse(data.message);
+                        } catch (pe) {
+                            innerPayload = { text: data.message, sender: "cloud" };
+                        }
                     }
                     if (innerPayload) {
                         handleIncomingLiveEvent(innerPayload, "cloud");
@@ -9151,25 +9204,36 @@ async function syncCloudHistory(targetAthleteUsername, force = false) {
 
         const chatDb = getChatDB();
         if (!chatDb[cleanTarget]) chatDb[cleanTarget] = [];
-        let hasNewMessages = false;
 
-        lines.forEach(line => {
-            if (!line.trim()) return;
+        for (const line of lines) {
+            if (!line.trim()) continue;
             try {
                 const item = JSON.parse(line);
-                if (item.event === "message" && item.message) {
+                if (item.event === "message") {
                     let payload = null;
-                    try {
-                        payload = JSON.parse(item.message);
-                    } catch (pe) {
-                        payload = { type: "chat_msg", text: item.message, sender: "coach" };
+                    if (item.attachment && item.attachment.url) {
+                        try {
+                            const attachRes = await fetch(item.attachment.url);
+                            if (attachRes.ok) {
+                                payload = await attachRes.json();
+                            }
+                        } catch (ae) {
+                            console.warn("Cloud history attachment fetch failed:", ae);
+                        }
+                    }
+                    if (!payload && item.message) {
+                        try {
+                            payload = JSON.parse(item.message);
+                        } catch (pe) {
+                            payload = { type: "chat_msg", text: item.message, sender: "coach" };
+                        }
                     }
                     if (payload && payload.type) {
                         handleIncomingLiveEvent(payload, "history");
                     }
                 }
             } catch (e) {}
-        });
+        }
     } catch (e) {
         console.warn("Cloud history sync poll warning:", e);
     } finally {
