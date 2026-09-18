@@ -3952,6 +3952,11 @@ body.modal-open {
     box-shadow: 0 0 8px rgba(16, 185, 129, 0.8);
 }
 
+.ai-mode-dot.offline {
+    background: #ef4444;
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.7);
+}
+
 .btn-clear-ai-chat {
     background: rgba(255, 255, 255, 0.06);
     border: 1px solid var(--border-subtle);

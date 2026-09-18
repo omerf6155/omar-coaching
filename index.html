@@ -292,8 +292,9 @@
                     </button>
                     <button class="btn btn-xs btn-outline" onclick="openExerciseManagerModal()">
                         <i class="fa-solid fa-pen-to-square"></i> Düzenle
+                    </button>
                     <button class="btn btn-xs btn-outline" onclick="openAssistantModal('enes')" title="Enes Abi'ye Alternatif Sor">
-                        <i class="fa-solid fa-robot"></i> Enes
+                        <i class="fa-solid fa-robot"></i> 🦍 Enes Abi
                     </button>
                 </div>
 
@@ -317,8 +318,8 @@
                         <button class="btn btn-outline btn-block" onclick="openOnboardingWizard()">
                             <i class="fa-solid fa-wand-magic-sparkles"></i> Diyet Sihirbazı
                         </button>
-                        <button class="btn btn-outline" onclick="openAssistantModal('vedat')" title="Vedat Şef'e Sor" style="white-space:nowrap;">
-                            🍳 Vedat Şef
+                        <button class="btn btn-outline" onclick="openAssistantModal('enes')" title="Enes Abi'ye Sor (Tarif / Makro)" style="white-space:nowrap;">
+                            🦍 Enes Abi
                         </button>
                     </div>
                 </div>
@@ -355,7 +356,7 @@
                     <div class="card-header">
                         <h2>💊 SUPLEMENT PROTOKOLÜ</h2>
                         <div style="display:flex; gap:6px;">
-                            <button class="btn btn-xs btn-outline" onclick="openAssistantModal('kuray')">💊 Küray'a Danış</button>
+                            <button class="btn btn-xs btn-outline" onclick="openAssistantModal('enes')" title="Enes Abi'ye Suplement & Biyokimya Danış">🦍 Enes Abi</button>
                             <button class="btn btn-xs btn-primary" onclick="openModal('modal-supplement-catalog')">
                                 <i class="fa-solid fa-layer-group"></i> 50+ Katalog
                             </button>
@@ -1806,7 +1807,7 @@
         </div>
     </div>
 
-    <!-- ==================== 12. HİBRİT YAPAY ZEKA ASİSTANLARI MODALİ ==================== -->
+    <!-- ==================== 12. ENES ABİ (TEK UNIFIED YAPAY ZEKA BAŞ DANIŞMANI) ==================== -->
     <div id="modal-ai-assistant" class="modal-overlay">
         <div class="modal-card ai-assistant-modal-card">
             <!-- Assistant Modal Header -->
@@ -1816,14 +1817,14 @@
                     <div>
                         <div class="ai-name-wrap">
                             <h3 id="ai-active-name">Enes Abi</h3>
-                            <span class="ai-status-indicator" id="ai-active-mode-badge"><i class="fa-solid fa-bolt"></i> Hibrit Motor</span>
+                            <span class="ai-status-indicator" id="ai-active-mode-badge"><i class="fa-solid fa-bolt"></i> Baş Danışman</span>
                         </div>
-                        <span class="ai-role-text" id="ai-active-role">Salon Kıdemlisi & Biyomekanik Uzmanı</span>
+                        <span class="ai-role-text" id="ai-active-role">Antrenman, Beslenme & Biyokimya Rehberi</span>
                     </div>
                 </div>
                 <div class="ai-header-actions">
-                    <button class="ai-switch-persona-btn" onclick="togglePersonaSwitcher()" title="Karakter Değiştir">
-                        <i class="fa-solid fa-arrows-rotate"></i> Karakter
+                    <button type="button" class="btn btn-xs btn-outline" onclick="openApiKeyModal()" title="Gemini API Anahtarını Yönet" style="font-size:0.72rem; padding:4px 8px;">
+                        <i class="fa-solid fa-key" style="color:#ffd60a;"></i> <span id="btn-hdr-apikey-text">API Key</span>
                     </button>
                     <button class="modal-close-btn" onclick="closeModal('modal-ai-assistant')">&times;</button>
                 </div>
@@ -1831,31 +1832,18 @@
 
             <!-- Sleek AI Engine Status Bar & Quick Actions -->
             <div class="ai-mode-status-bar" id="ai-mode-status-bar">
-                <div class="ai-mode-status-info" id="ai-mode-status-info">
-                    <span class="ai-mode-dot online" id="ai-mode-dot"></span>
-                    <span id="ai-mode-text">🟢 Omar AI Canlı Asistan • %100 Hazır</span>
+                <div class="ai-mode-status-info" id="ai-mode-status-info" onclick="openApiKeyModal()" style="cursor:pointer;" title="Canlı Yapay Zeka Durumu (Tıkla ve Yönet)">
+                    <span class="ai-mode-dot" id="ai-mode-dot"></span>
+                    <span id="ai-mode-text">Bağlantı kontrol ediliyor...</span>
                 </div>
                 <button type="button" class="btn-clear-ai-chat" onclick="clearAssistantChat()" title="Mevcut Sohbeti Temizle">
-                    <i class="fa-solid fa-rotate-left"></i> Sohbeti Temizle
+                    <i class="fa-solid fa-rotate-left"></i> Temizle
                 </button>
             </div>
 
-            <!-- Persona Switcher Bar -->
-            <div class="ai-persona-switcher" id="ai-persona-switcher" style="display:none;">
-                <button type="button" class="persona-tab-btn active" id="tab-persona-enes" onclick="switchActiveAssistant('enes')">
-                    🦍 Enes Abi (Antrenman)
-                </button>
-                <button type="button" class="persona-tab-btn" id="tab-persona-vedat" onclick="switchActiveAssistant('vedat')">
-                    🍳 Vedat Dübür (Beslenme)
-                </button>
-                <button type="button" class="persona-tab-btn" id="tab-persona-kuray" onclick="switchActiveAssistant('kuray')">
-                    💊 Küray (Suplement)
-                </button>
-            </div>
-
-            <!-- Quick Topic Pills Bar inside Chat -->
+            <!-- Quick Topic Pills Bar inside Chat (All 3 Domains Unified) -->
             <div class="ai-quick-topics-bar" id="ai-quick-topics-bar">
-                <!-- Populated dynamically based on active persona -->
+                <!-- Populated dynamically -->
             </div>
 
             <!-- Chat Dialogue Messages Container -->
@@ -1866,14 +1854,61 @@
             <!-- Chat Input Bar -->
             <div class="ai-chat-input-container">
                 <div class="ai-input-row">
-                    <input type="text" id="ai-user-input" class="ai-text-input" placeholder="Bir soru sor veya dert yan..." onkeydown="if(event.key==='Enter') sendAssistantMessage()">
+                    <input type="text" id="ai-user-input" class="ai-text-input" placeholder="Enes Abi'ye antrenman, yemek veya takviye sor..." onkeydown="if(event.key==='Enter') sendAssistantMessage()">
                     <button type="button" class="ai-send-btn" onclick="sendAssistantMessage()" id="ai-send-btn">
                         <i class="fa-solid fa-paper-plane"></i>
                     </button>
                 </div>
                 <div class="ai-input-footer-note">
-                    <span>💡 <span id="ai-footer-hint">1'e 1 anatomik biyomekanik eşleştirme ve anında program revizesi</span></span>
-                    <span class="ai-badge-ready"><i class="fa-solid fa-bolt"></i> Canlı & Hazır</span>
+                    <span>💡 <span id="ai-footer-hint">Biyomekanik, anabolik tarifler ve kanıtlanmış takviyeler tek çatı altında</span></span>
+                    <span class="ai-badge-ready" id="ai-input-status-tag"><i class="fa-solid fa-bolt"></i> Enes Abi Canlı</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- GEMINI API KEY SETUP & VERIFICATION MODAL -->
+    <div id="modal-gemini-key" class="modal-overlay">
+        <div class="modal-card" style="max-width:420px;">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-brain" style="color:#38bdf8;"></i> Google Gemini Canlı AI Bağlantısı</h3>
+                <button class="modal-close-btn" onclick="closeModal('modal-gemini-key')">&times;</button>
+            </div>
+            <div class="modal-body" style="padding:16px 14px;">
+                <p class="text-secondary" style="font-size:0.78rem; line-height:1.45; margin-bottom:12px;">
+                    Enes Abi'nin ezbere kalıpları bırakıp **ChatGPT / Gemini gibi sınırsız, esprili ve canlı bir yapay zeka** olarak seninle konuşması için Google Gemini API anahtarını buraya yapıştır:
+                </p>
+
+                <div class="form-group" style="margin-bottom:10px;">
+                    <label style="font-size:0.74rem; font-weight:700; color:#ffffff;">Gemini API Anahtarınız (AI Studio):</label>
+                    <div style="position:relative; display:flex; align-items:center;">
+                        <input type="password" id="modal-input-gemini-key" placeholder="AIzaSy..." style="font-size:0.82rem; padding-right:38px;">
+                        <button type="button" onclick="toggleApiKeyVisibility()" style="position:absolute; right:8px; background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:0.85rem;">
+                            <i class="fa-solid fa-eye" id="toggle-key-eye"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div style="background:rgba(56, 189, 248, 0.08); border:1px solid rgba(56, 189, 248, 0.2); border-radius:10px; padding:10px; margin-bottom:14px;">
+                    <div style="font-size:0.74rem; color:#38bdf8; font-weight:700; margin-bottom:4px;">
+                        <i class="fa-solid fa-circle-info"></i> Ücretsiz API Key Nasıl Alınır? (30 Saniye)
+                    </div>
+                    <ol style="font-size:0.7rem; color:var(--text-secondary); margin:0; padding-left:16px; line-height:1.4;">
+                        <li><a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#ffd60a; text-decoration:underline;">Google AI Studio API Key Sayfası</a>'na tıkla.</li>
+                        <li>Google hesabınla giriş yap ve <strong>"Create API key"</strong> butonuna bas.</li>
+                        <li>Oluşan anahtarı kopyalayıp yukarıdaki kutuya yapıştır ve kaydet.</li>
+                    </ol>
+                </div>
+
+                <div id="gemini-key-test-result" style="display:none; font-size:0.75rem; padding:8px 10px; border-radius:8px; margin-bottom:12px;"></div>
+
+                <div style="display:flex; gap:8px;">
+                    <button type="button" class="btn btn-outline btn-block" onclick="testGeminiApiKeyInline()" id="btn-test-gemini-key">
+                        <i class="fa-solid fa-vial"></i> Test Et
+                    </button>
+                    <button type="button" class="btn btn-primary btn-block" onclick="saveGeminiApiKeyFromModal()">
+                        <i class="fa-solid fa-check"></i> Kaydet & Başlat
+                    </button>
                 </div>
             </div>
         </div>
@@ -2271,105 +2306,15 @@
         </div>
     </div>
 
-    <!-- FLOATING AI ASSISTANT CLOUD DOCK -->
+    <!-- FLOATING AI ASSISTANT (ENES ABİ) -->
     <div class="floating-ai-cloud-dock" id="floating-ai-cloud-dock">
-        <button type="button" class="ai-cloud-main-btn" id="ai-cloud-main-btn" onclick="toggleFloatingAiCloud(event)" title="AI Koçluk & Asistan Bulutu">
+        <button type="button" class="ai-cloud-main-btn" id="ai-cloud-main-btn" onclick="openAssistantModal('enes')" title="Enes Abi 🦍 (Omar AI Baş Danışmanı)">
             <div class="ai-cloud-anim-wrap">
-                <span class="cloud-icon">☁️</span>
+                <span class="cloud-icon">🦍</span>
                 <span class="sparkle-icon">✨</span>
             </div>
-            <span class="ai-cloud-label">AI Asistan</span>
+            <span class="ai-cloud-label">Enes Abi (AI)</span>
         </button>
-        <div class="ai-cloud-flyout" id="ai-cloud-flyout" style="display:none;">
-            <div class="ai-cloud-flyout-header">
-                <div class="flyout-title"><i class="fa-solid fa-cloud"></i> AI Asistan Ekibi</div>
-                <button type="button" class="flyout-close-btn" onclick="toggleFloatingAiCloud(event)">&times;</button>
-            </div>
-            <div class="ai-cloud-flyout-list">
-                <div class="flyout-item enes" onclick="openAssistantModal('enes'); toggleFloatingAiCloud(event);">
-                    <div class="flyout-retro-logo">
-                        <svg class="retro-avatar-svg enes" viewBox="0 0 40 40" width="34" height="34">
-                            <defs>
-                                <linearGradient id="flyEnesGrad" x1="0" y1="0" x2="1" y2="1">
-                                    <stop offset="0%" stop-color="#a855f7"/>
-                                    <stop offset="100%" stop-color="#6b21a8"/>
-                                </linearGradient>
-                            </defs>
-                            <rect x="2" y="2" width="36" height="36" rx="8" fill="#181824" stroke="#a855f7" stroke-width="2"/>
-                            <rect x="14" y="8" width="12" height="10" rx="3" fill="url(#flyEnesGrad)"/>
-                            <rect x="11" y="11" width="3" height="4" fill="#c084fc"/>
-                            <rect x="26" y="11" width="3" height="4" fill="#c084fc"/>
-                            <rect x="16" y="12" width="2" height="2" fill="#fff"/>
-                            <rect x="22" y="12" width="2" height="2" fill="#fff"/>
-                            <rect x="17" y="15" width="6" height="2" fill="#e9d5ff"/>
-                            <line x1="6" y1="26" x2="34" y2="26" stroke="#fbbf24" stroke-width="3" stroke-linecap="round"/>
-                            <rect x="6" y="20" width="4" height="12" rx="1.5" fill="#f59e0b" stroke="#78350f" stroke-width="1"/>
-                            <rect x="30" y="20" width="4" height="12" rx="1.5" fill="#f59e0b" stroke="#78350f" stroke-width="1"/>
-                            <path d="M12 24 Q10 18 15 17" fill="none" stroke="url(#flyEnesGrad)" stroke-width="3" stroke-linecap="round"/>
-                            <path d="M28 24 Q30 18 25 17" fill="none" stroke="url(#flyEnesGrad)" stroke-width="3" stroke-linecap="round"/>
-                            <polygon points="34,7 35,9 37,10 35,11 34,13 33,11 31,10 33,9" fill="#ffd60a"/>
-                        </svg>
-                    </div>
-                    <div class="flyout-info">
-                        <strong>Enes Abi</strong>
-                        <small>Biyomekanik & Alternatif Hareket</small>
-                    </div>
-                    <i class="fa-solid fa-chevron-right flyout-arrow"></i>
-                </div>
-                <div class="flyout-item vedat" onclick="openAssistantModal('vedat'); toggleFloatingAiCloud(event);">
-                    <div class="flyout-retro-logo">
-                        <svg class="retro-avatar-svg vedat" viewBox="0 0 40 40" width="34" height="34">
-                            <defs>
-                                <linearGradient id="flyVedatGrad" x1="0" y1="0" x2="1" y2="1">
-                                    <stop offset="0%" stop-color="#f97316"/>
-                                    <stop offset="100%" stop-color="#dc2626"/>
-                                </linearGradient>
-                            </defs>
-                            <rect x="2" y="2" width="36" height="36" rx="8" fill="#1c1917" stroke="#f97316" stroke-width="2"/>
-                            <path d="M14 14 Q12 7 17 6 Q20 4 23 6 Q28 7 26 14 Z" fill="#ffffff"/>
-                            <rect x="14" y="13" width="12" height="3" fill="#e2e8f0"/>
-                            <ellipse cx="19" cy="24" rx="10" ry="4" fill="#292524" stroke="#78716c" stroke-width="1.5"/>
-                            <rect x="28" y="22" width="8" height="3" rx="1" fill="#78716c" transform="rotate(15 28 22)"/>
-                            <ellipse cx="18" cy="24" rx="6" ry="2.5" fill="url(#flyVedatGrad)"/>
-                            <polygon points="12,20 14,16 16,19" fill="#fbbf24"/>
-                            <polygon points="18,19 20,15 22,19" fill="#ef4444"/>
-                            <polygon points="23,20 25,17 26,20" fill="#f97316"/>
-                            <polygon points="8,9 9,11 11,12 9,13 8,15 7,13 5,12 7,11" fill="#fbbf24"/>
-                        </svg>
-                    </div>
-                    <div class="flyout-info">
-                        <strong>Vedat Dübür</strong>
-                        <small>Makro Gurmesi & Kütle Şefi</small>
-                    </div>
-                    <i class="fa-solid fa-chevron-right flyout-arrow"></i>
-                </div>
-                <div class="flyout-item kuray" onclick="openAssistantModal('kuray'); toggleFloatingAiCloud(event);">
-                    <div class="flyout-retro-logo">
-                        <svg class="retro-avatar-svg kuray" viewBox="0 0 40 40" width="34" height="34">
-                            <defs>
-                                <linearGradient id="flyKurayGrad" x1="0" y1="0" x2="1" y2="1">
-                                    <stop offset="0%" stop-color="#06b6d4"/>
-                                    <stop offset="100%" stop-color="#3b82f6"/>
-                                </linearGradient>
-                            </defs>
-                            <rect x="2" y="2" width="36" height="36" rx="8" fill="#0f172a" stroke="#06b6d4" stroke-width="2"/>
-                            <path d="M17 9 L23 9 L23 15 L28 26 Q29 29 26 31 L14 31 Q11 29 12 26 L17 15 Z" fill="#1e293b" stroke="#38bdf8" stroke-width="1.5"/>
-                            <path d="M14 25 L26 25 L27 28 Q27 30 25 30 L15 30 Q13 30 13 28 Z" fill="url(#flyKurayGrad)"/>
-                            <rect x="17" y="18" width="6" height="3" rx="1.5" fill="#f43f5e" transform="rotate(-30 20 19)"/>
-                            <circle cx="18" cy="27" r="1.5" fill="#e0f2fe"/>
-                            <circle cx="22" cy="28" r="1" fill="#e0f2fe"/>
-                            <circle cx="20" cy="22" r="1.5" fill="#38bdf8"/>
-                            <polygon points="32,8 33,10 35,11 33,12 32,14 31,12 29,11 31,10" fill="#38bdf8"/>
-                        </svg>
-                    </div>
-                    <div class="flyout-info">
-                        <strong>Küray</strong>
-                        <small>Suplement Rehberi & Biyokimya</small>
-                    </div>
-                    <i class="fa-solid fa-chevron-right flyout-arrow"></i>
-                </div>
-            </div>
-        </div>
     </div>
 
     <!-- Notification Toast -->
