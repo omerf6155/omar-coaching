@@ -6851,19 +6851,19 @@ function initCoachFoodCalc() {
     if (!selectEl) return;
 
     if (selectEl.options.length === 0) {
-        const carbFoods = RAW_FOODS_DATABASE.filter(f => f.c > f.p && f.c > f.f);
         const protFoods = RAW_FOODS_DATABASE.filter(f => f.p >= f.c && f.p >= f.f);
+        const carbFoods = RAW_FOODS_DATABASE.filter(f => f.c > f.p && f.c > f.f);
         const fatFoods = RAW_FOODS_DATABASE.filter(f => f.f > f.p && f.f > f.c);
         const otherFoods = RAW_FOODS_DATABASE.filter(f => !carbFoods.includes(f) && !protFoods.includes(f) && !fatFoods.includes(f));
 
         let html = `
-            <optgroup label="🍚 Karbonhidrat Kaynakları">
-                ${carbFoods.map(f => `<option value="${f.id}">${f.name}</option>`).join('')}
-            </optgroup>
             <optgroup label="🍗 Protein Kaynakları">
                 ${protFoods.map(f => `<option value="${f.id}">${f.name}</option>`).join('')}
             </optgroup>
-            <optgroup label="🥑 Sağlıklı Yağlar">
+            <optgroup label="🍚 Karbonhidrat Kaynakları">
+                ${carbFoods.map(f => `<option value="${f.id}">${f.name}</option>`).join('')}
+            </optgroup>
+            <optgroup label="🥑 Sağlıklı Yağ Kaynakları">
                 ${fatFoods.map(f => `<option value="${f.id}">${f.name}</option>`).join('')}
             </optgroup>
         `;
