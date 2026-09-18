@@ -1273,6 +1273,8 @@ body.modal-open {
     flex-direction: column;
     gap: 5px;
     margin-bottom: 10px;
+    min-width: 0;
+    width: 100%;
 }
 
 .form-group label {
@@ -1283,16 +1285,19 @@ body.modal-open {
     letter-spacing: 0.4px;
 }
 
-.form-group input, .form-group select {
+.form-group input, .form-group select, .form-group textarea {
     background: var(--bg-input);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-sm);
     color: #ffffff;
     padding: 10px 12px;
     font-size: 0.85rem;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
 }
 
-.form-group input:focus, .form-group select:focus {
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
     outline: none;
     border-color: #ffffff;
 }
@@ -1301,12 +1306,16 @@ body.modal-open {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 8px;
+    width: 100%;
+    min-width: 0;
 }
 
 .form-row-3 {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
     gap: 6px;
+    width: 100%;
+    min-width: 0;
 }
 
 .calc-result-banner {
