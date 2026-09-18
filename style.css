@@ -2357,6 +2357,9 @@ body.modal-open {
 .prof-macro-col.cal-col span { color: var(--status-blue); }
 .prof-macro-col.cal-col strong { color: #ffffff; }
 
+.prof-macro-col.s-col span { color: #f472b6; }
+.prof-macro-col.s-col strong { color: #f472b6; }
+
 /* ==================== ROLE SELECTOR IN AUTH MODAL ==================== */
 .role-selector-wrap {
     margin-bottom: 14px;

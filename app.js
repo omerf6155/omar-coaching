@@ -14,41 +14,41 @@ const DEFAULT_TARGETS = {
 
 // ==================== RAW & WHOLE FOODS DATABASE (100g BAŞINA DEĞERLER) ====================
 const RAW_FOODS_DATABASE = [
-    // KARBONHİDRAT KAYNAKLARI (ÇİĞ AĞIRLIK)
-    { id: "cig_pirinc", name: "Çiğ Beyaz Pirinç (Basmati / Yasemin)", unit: "g", p: 7.5, c: 78.0, f: 0.5, cal: 350 },
-    { id: "pirinc_unu", name: "Çiğ Pirinç Unu", unit: "g", p: 6.0, c: 80.0, f: 1.0, cal: 360 },
-    { id: "cig_yulaf", name: "Çiğ Yulaf Ezmesi", unit: "g", p: 13.0, c: 60.0, f: 7.0, cal: 370 },
-    { id: "cig_makarna", name: "Çiğ Makarna / Spagetti", unit: "g", p: 12.0, c: 72.0, f: 1.5, cal: 355 },
-    { id: "cig_patates", name: "Çiğ Patates", unit: "g", p: 2.0, c: 17.0, f: 0.1, cal: 77 },
-    { id: "cig_tatli_patates", name: "Çiğ Tatlı Patates", unit: "g", p: 1.6, c: 20.0, f: 0.1, cal: 86 },
-    { id: "cig_karabugday", name: "Çiğ Karabuğday (Greçka)", unit: "g", p: 13.0, c: 71.0, f: 3.0, cal: 343 },
-    { id: "muz", name: "Muz (Taze)", unit: "g", p: 1.1, c: 23.0, f: 0.3, cal: 89 },
-    { id: "bal", name: "Süzme Ham Bal (Çiçek/Çam)", unit: "g", p: 0.3, c: 82.4, f: 0.0, cal: 304 },
-    { id: "pekmez", name: "Pekmez (Üzüm / Dut / Keçiboynuzu)", unit: "g", p: 0.8, c: 70.0, f: 0.1, cal: 280 },
-    { id: "hurma", name: "Hurma (Medjool / Cennet)", unit: "g", p: 2.0, c: 75.0, f: 0.4, cal: 280 },
-    { id: "pirinc_patlagi", name: "Pirinç Patlağı (Rice Cake)", unit: "g", p: 8.0, c: 82.0, f: 2.0, cal: 380 },
-
     // PROTEİN KAYNAKLARI (ÇİĞ AĞIRLIK)
-    { id: "tavuk_gogsu", name: "Çiğ Tavuk Göğsü (Derisiz)", unit: "g", p: 23.0, c: 0.0, f: 1.5, cal: 110 },
-    { id: "hindi_gogsu", name: "Çiğ Hindi Göğsü", unit: "g", p: 24.0, c: 0.0, f: 1.0, cal: 105 },
-    { id: "dana_kiyma", name: "Çiğ Dana Kıyma (%10-12 Yağ)", unit: "g", p: 21.0, c: 0.0, f: 10.0, cal: 175 },
-    { id: "dana_biftek", name: "Çiğ Dana Biftek (Yağsız)", unit: "g", p: 22.0, c: 0.0, f: 6.0, cal: 145 },
-    { id: "yumurta_butun", name: "Bütün Yumurta (1 Adet = 50g)", unit: "g", p: 13.0, c: 1.0, f: 10.0, cal: 145 },
-    { id: "yumurta_beyazi", name: "Yumurta Beyazı (Sıvı)", unit: "g", p: 11.0, c: 0.7, f: 0.2, cal: 52 },
-    { id: "somon", name: "Çiğ Somon Balığı", unit: "g", p: 20.0, c: 0.0, f: 13.0, cal: 208 },
-    { id: "ton_baligi", name: "Ton Balığı (Konserve Süzme)", unit: "g", p: 26.0, c: 0.0, f: 1.0, cal: 115 },
-    { id: "lor_peyniri", name: "Lor Peyniri (Yağsız Diyet)", unit: "g", p: 17.0, c: 3.0, f: 1.0, cal: 90 },
-    { id: "quark_yogurt", name: "Süzme Yoğurt / Quark / Protein Yoğurt", unit: "g", p: 10.0, c: 4.0, f: 0.5, cal: 60 },
-    { id: "whey_toz", name: "Whey Protein Tozu (1 Ölçek = 30g)", unit: "g", p: 80.0, c: 5.0, f: 3.0, cal: 370 },
+    { id: "tavuk_gogsu", name: "Çiğ Tavuk Göğsü (Derisiz)", unit: "g", p: 23.0, c: 0.0, f: 1.5, sugar: 0.0, cal: 110 },
+    { id: "hindi_gogsu", name: "Çiğ Hindi Göğsü", unit: "g", p: 24.0, c: 0.0, f: 1.0, sugar: 0.0, cal: 105 },
+    { id: "dana_kiyma", name: "Çiğ Dana Kıyma (%10-12 Yağ)", unit: "g", p: 21.0, c: 0.0, f: 10.0, sugar: 0.0, cal: 175 },
+    { id: "dana_biftek", name: "Çiğ Dana Biftek (Yağsız)", unit: "g", p: 22.0, c: 0.0, f: 6.0, sugar: 0.0, cal: 145 },
+    { id: "yumurta_butun", name: "Bütün Yumurta (1 Adet = 50g)", unit: "g", p: 13.0, c: 1.0, f: 10.0, sugar: 0.4, cal: 145 },
+    { id: "yumurta_beyazi", name: "Yumurta Beyazı (Sıvı)", unit: "g", p: 11.0, c: 0.7, f: 0.2, sugar: 0.7, cal: 52 },
+    { id: "somon", name: "Çiğ Somon Balığı", unit: "g", p: 20.0, c: 0.0, f: 13.0, sugar: 0.0, cal: 208 },
+    { id: "ton_baligi", name: "Ton Balığı (Konserve Süzme)", unit: "g", p: 26.0, c: 0.0, f: 1.0, sugar: 0.0, cal: 115 },
+    { id: "lor_peyniri", name: "Lor Peyniri (Yağsız Diyet)", unit: "g", p: 17.0, c: 3.0, f: 1.0, sugar: 2.5, cal: 90 },
+    { id: "quark_yogurt", name: "Süzme Yoğurt / Quark / Protein Yoğurt", unit: "g", p: 10.0, c: 4.0, f: 0.5, sugar: 3.8, cal: 60 },
+    { id: "whey_toz", name: "Whey Protein Tozu (1 Ölçek = 30g)", unit: "g", p: 80.0, c: 5.0, f: 3.0, sugar: 2.5, cal: 370 },
+
+    // KARBONHİDRAT KAYNAKLARI (ÇİĞ AĞIRLIK)
+    { id: "cig_pirinc", name: "Çiğ Beyaz Pirinç (Basmati / Yasemin)", unit: "g", p: 7.5, c: 78.0, f: 0.5, sugar: 0.2, cal: 350 },
+    { id: "pirinc_unu", name: "Çiğ Pirinç Unu", unit: "g", p: 6.0, c: 80.0, f: 1.0, sugar: 0.1, cal: 360 },
+    { id: "cig_yulaf", name: "Çiğ Yulaf Ezmesi", unit: "g", p: 13.0, c: 60.0, f: 7.0, sugar: 1.0, cal: 370 },
+    { id: "cig_makarna", name: "Çiğ Makarna / Spagetti", unit: "g", p: 12.0, c: 72.0, f: 1.5, sugar: 2.5, cal: 355 },
+    { id: "cig_patates", name: "Çiğ Patates", unit: "g", p: 2.0, c: 17.0, f: 0.1, sugar: 0.8, cal: 77 },
+    { id: "cig_tatli_patates", name: "Çiğ Tatlı Patates", unit: "g", p: 1.6, c: 20.0, f: 0.1, sugar: 4.2, cal: 86 },
+    { id: "cig_karabugday", name: "Çiğ Karabuğday (Greçka)", unit: "g", p: 13.0, c: 71.0, f: 3.0, sugar: 0.0, cal: 343 },
+    { id: "muz", name: "Muz (Taze)", unit: "g", p: 1.1, c: 23.0, f: 0.3, sugar: 12.2, cal: 89 },
+    { id: "bal", name: "Süzme Ham Bal (Çiçek/Çam)", unit: "g", p: 0.3, c: 82.4, f: 0.0, sugar: 82.1, cal: 304 },
+    { id: "pekmez", name: "Pekmez (Üzüm / Dut / Keçiboynuzu)", unit: "g", p: 0.8, c: 70.0, f: 0.1, sugar: 55.0, cal: 280 },
+    { id: "hurma", name: "Hurma (Medjool / Cennet)", unit: "g", p: 2.0, c: 75.0, f: 0.4, sugar: 66.5, cal: 280 },
+    { id: "pirinc_patlagi", name: "Pirinç Patlağı (Rice Cake)", unit: "g", p: 8.0, c: 82.0, f: 2.0, sugar: 0.5, cal: 380 },
 
     // SAĞLIKLI YAĞ KAYNAKLARI
-    { id: "zeytinyagi", name: "Zeytinyağı (Sızma)", unit: "g", p: 0.0, c: 0.0, f: 100.0, cal: 884 },
-    { id: "hindistan_cevizi_yagi", name: "Hindistan Cevizi Yağı", unit: "g", p: 0.0, c: 0.0, f: 100.0, cal: 890 },
-    { id: "fistik_ezmesi", name: "Fıstık Ezmesi (%100 Şekersiz)", unit: "g", p: 25.0, c: 20.0, f: 50.0, cal: 588 },
-    { id: "cig_badem", name: "Çiğ Badem", unit: "g", p: 21.0, c: 15.0, f: 50.0, cal: 600 },
-    { id: "cig_ceviz", name: "Çiğ Ceviz", unit: "g", p: 15.0, c: 14.0, f: 65.0, cal: 654 },
-    { id: "avokado", name: "Avokado", unit: "g", p: 2.0, c: 9.0, f: 15.0, cal: 160 },
-    { id: "tereyagi", name: "Tereyağı / Sade Yağ (Ghee)", unit: "g", p: 0.5, c: 0.5, f: 82.0, cal: 740 }
+    { id: "zeytinyagi", name: "Zeytinyağı (Sızma)", unit: "g", p: 0.0, c: 0.0, f: 100.0, sugar: 0.0, cal: 884 },
+    { id: "hindistan_cevizi_yagi", name: "Hindistan Cevizi Yağı", unit: "g", p: 0.0, c: 0.0, f: 100.0, sugar: 0.0, cal: 890 },
+    { id: "fistik_ezmesi", name: "Fıstık Ezmesi (%100 Şekersiz)", unit: "g", p: 25.0, c: 20.0, f: 50.0, sugar: 4.0, cal: 588 },
+    { id: "cig_badem", name: "Çiğ Badem", unit: "g", p: 21.0, c: 15.0, f: 50.0, sugar: 4.2, cal: 600 },
+    { id: "cig_ceviz", name: "Çiğ Ceviz", unit: "g", p: 15.0, c: 14.0, f: 65.0, sugar: 2.6, cal: 654 },
+    { id: "avokado", name: "Avokado", unit: "g", p: 2.0, c: 9.0, f: 15.0, sugar: 0.7, cal: 160 },
+    { id: "tereyagi", name: "Tereyağı / Sade Yağ (Ghee)", unit: "g", p: 0.5, c: 0.5, f: 82.0, sugar: 0.5, cal: 740 }
 ];
 
 // Default Preset Meals with Ingredients
@@ -6981,7 +6981,7 @@ function loadCoachCalcPreset(presetKey) {
 }
 
 function getCoachCalcTotals() {
-    let totP = 0, totC = 0, totF = 0, totCal = 0;
+    let totP = 0, totC = 0, totF = 0, totSugar = 0, totCal = 0;
     coachCalcItems.forEach(item => {
         const food = RAW_FOODS_DATABASE.find(f => f.id === item.foodId);
         if (food && item.amount > 0) {
@@ -6989,6 +6989,7 @@ function getCoachCalcTotals() {
             totP += food.p * factor;
             totC += food.c * factor;
             totF += food.f * factor;
+            totSugar += (food.sugar || 0) * factor;
             totCal += food.cal * factor;
         }
     });
@@ -6996,6 +6997,7 @@ function getCoachCalcTotals() {
         p: Math.round(totP),
         c: Math.round(totC),
         f: Math.round(totF),
+        sugar: parseFloat(totSugar.toFixed(1)),
         cal: Math.round(totCal)
     };
 }
@@ -7006,11 +7008,13 @@ function renderCoachCalcTotalsOnly() {
     const totPEl = document.getElementById("coach-calc-tot-p");
     const totCEl = document.getElementById("coach-calc-tot-c");
     const totFEl = document.getElementById("coach-calc-tot-f");
+    const totSEl = document.getElementById("coach-calc-tot-s");
 
     if (totCalEl) totCalEl.innerText = `${totals.cal.toLocaleString('tr-TR')} kcal`;
     if (totPEl) totPEl.innerText = `${totals.p}g`;
     if (totCEl) totCEl.innerText = `${totals.c}g`;
     if (totFEl) totFEl.innerText = `${totals.f}g`;
+    if (totSEl) totSEl.innerText = `${totals.sugar}g`;
 }
 
 function renderCoachCalcItems() {
@@ -7028,11 +7032,12 @@ function renderCoachCalcItems() {
     }
 
     container.innerHTML = coachCalcItems.map((item, idx) => {
-        const food = RAW_FOODS_DATABASE.find(f => f.id === item.foodId) || { name: item.foodId, p:0, c:0, f:0, cal:0 };
+        const food = RAW_FOODS_DATABASE.find(f => f.id === item.foodId) || { name: item.foodId, p:0, c:0, f:0, sugar:0, cal:0 };
         const factor = (item.amount || 0) / 100;
         const rowP = (food.p * factor).toFixed(1);
         const rowC = (food.c * factor).toFixed(1);
         const rowF = (food.f * factor).toFixed(1);
+        const rowSugar = ((food.sugar || 0) * factor).toFixed(1);
         const rowCal = Math.round(food.cal * factor);
 
         return `
@@ -7042,10 +7047,11 @@ function renderCoachCalcItems() {
                         <strong style="color:#ffffff; font-size:0.75rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${food.name.split(' (')[0]}</strong>
                         <span class="badge-role" style="font-size:0.6rem; padding:1px 4px;">${rowCal} kcal</span>
                     </div>
-                    <div style="font-size:0.65rem; color:var(--text-secondary); margin-top:2px; display:flex; gap:6px;">
+                    <div style="font-size:0.65rem; color:var(--text-secondary); margin-top:2px; display:flex; gap:6px; flex-wrap:wrap;">
                         <span style="color:#ef4444;">🍗 <strong>${rowP}P</strong></span>
                         <span style="color:#3b82f6;">🍚 <strong>${rowC}C</strong></span>
                         <span style="color:#eab308;">🥑 <strong>${rowF}F</strong></span>
+                        <span style="color:#f472b6;">🍬 <strong>${rowSugar}g Şeker</strong></span>
                     </div>
                 </div>
                 <div style="display:flex; align-items:center; gap:6px;">
@@ -7096,7 +7102,7 @@ function applyCoachCalcToTargets() {
         const dietPrefix = `🥗 Günlük Beslenme Planı: ${foodBreakdownList}.`;
         const currentNote = noteEl.value.trim();
         if (!currentNote || currentNote.startsWith("Kalori ve makro") || currentNote.startsWith("🥗 Günlük Beslenme Planı:")) {
-            noteEl.value = `${dietPrefix} Hedeflenen günlük kalori: ${totals.cal} kcal (${totals.p}P / ${totals.c}C / ${totals.f}F).`;
+            noteEl.value = `${dietPrefix} Hedeflenen günlük kalori: ${totals.cal} kcal (${totals.p}P / ${totals.c}C / ${totals.f}F - ${totals.sugar}g Doğal Şeker).`;
         } else {
             noteEl.value = `${currentNote}\n${dietPrefix}`;
         }
