@@ -655,6 +655,25 @@
                             </select>
                         </div>
 
+                        <!-- ATHLETE'S CURRENT / PREVIOUS MEALS & INGREDIENTS CARD -->
+                        <div class="card" id="rx-athlete-current-diet-card" style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,214,10,0.3); padding:12px; margin-bottom:14px; border-radius:var(--radius-md);">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                                <h4 style="font-size:0.82rem; color:#ffd60a; font-weight:800; display:flex; align-items:center; gap:6px; margin:0;">
+                                    <i class="fa-solid fa-utensils"></i>
+                                    <span>SPORCUNUN MEVCUT / ÖNCEKİ BESLENME PLANI</span>
+                                </h4>
+                                <button type="button" class="btn btn-xs btn-primary" onclick="importAthleteMealsToCoachCalc()" style="background:#ffd60a; color:#000; font-weight:800; font-size:0.68rem; padding:5px 10px;">
+                                    <i class="fa-solid fa-file-import"></i> Bu Planı Hesaplayıcıya Yükle
+                                </button>
+                            </div>
+                            <p class="text-secondary" style="font-size:0.72rem; line-height:1.35; margin-bottom:10px;">
+                                Sporcunun kayıtlı öğünleri ve içerdiği tüm çiğ gramajlar aşağıdadır. <strong>"Bu Planı Hesaplayıcıya Yükle"</strong> butonuna basarak tüm besinleri hesaplama masasına aktarabilir ve dilediğiniz gramajı kolayca güncelleyebilirsiniz.
+                            </p>
+                            <div id="rx-athlete-meals-list" style="display:flex; flex-direction:column; gap:6px; max-height:240px; overflow-y:auto;">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+
                         <!-- SMART FOOD & GRAM MACRO CALCULATOR WIZARD -->
                         <div class="card" style="background:var(--bg-card-subtle); border:1px solid rgba(255,214,10,0.3); padding:12px; margin-bottom:14px; border-radius:var(--radius-md);">
                             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; cursor:pointer;" onclick="toggleCoachFoodCalcCollapse()">

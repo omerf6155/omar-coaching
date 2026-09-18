@@ -7298,6 +7298,7 @@ function renderCoachPrescriptions(username) {
 
     updateRxCalculatedCals();
     initCoachFoodCalc();
+    renderAthleteCurrentDietInPrescription(username);
 
     // Render Past Revisions
     const revDb = getRevisionsDB();
@@ -7307,6 +7308,27 @@ function renderCoachPrescriptions(username) {
         if (!athRev) {
             historyContainer.innerHTML = `<p class="text-secondary" style="font-size:0.75rem; text-align:center; padding:12px;">Bu sporcuya ait henüz geçmiş bir revizyon bulunmuyor.</p>`;
         } else {
+            let foodsBreakdownHtml = "";
+            if (athRev.calcItems && Array.isArray(athRev.calcItems) && athRev.calcItems.length > 0) {
+                foodsBreakdownHtml = `
+                    <div style="margin-top:8px; padding-top:8px; border-top:1px dashed rgba(255,255,255,0.1);">
+                        <div style="font-size:0.68rem; color:#ffd60a; font-weight:700; margin-bottom:4px; display:flex; justify-content:space-between; align-items:center;">
+                            <span><i class="fa-solid fa-bowl-food"></i> Yazılan Besin Dağılımı:</span>
+                            <button type="button" class="btn btn-xs" onclick='loadPastRevCalcItems(${JSON.stringify(athRev.calcItems).replace(/'/g, "&apos;")})' style="background:rgba(255,214,10,0.15); color:#ffd60a; border:1px solid rgba(255,214,10,0.3); font-size:0.62rem; padding:2px 6px;">
+                                <i class="fa-solid fa-arrow-up-right-from-square"></i> Bu Dağılımı Masaya Yükle
+                            </button>
+                        </div>
+                        <div style="display:flex; flex-wrap:wrap; gap:4px;">
+                            ${athRev.calcItems.map(it => {
+                                const f = RAW_FOODS_DATABASE.find(x => x.id === it.foodId);
+                                const name = f ? f.name.split(' (')[0] : it.foodId;
+                                return `<span style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); border-radius:4px; padding:2px 6px; font-size:0.65rem; color:#e0e0e0;"><strong>${it.amount}g</strong> ${name}</span>`;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
             historyContainer.innerHTML = `
                 <div class="deep-meal-item" style="border-left:3px solid var(--coach-gold);">
                     <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
@@ -7316,16 +7338,153 @@ function renderCoachPrescriptions(username) {
                         </span>
                     </div>
                     <p style="font-size:0.75rem; color:#ffffff; margin-bottom:6px;">"${athRev.coachNote}"</p>
-                    <div style="font-size:0.68rem; color:var(--text-secondary); display:flex; gap:8px;">
+                    <div style="font-size:0.68rem; color:var(--text-secondary); display:flex; gap:8px; flex-wrap:wrap;">
                         <span>🎯 <strong>${athRev.calories} kcal</strong></span>
                         <span>🍗 <strong>${athRev.protein}P</strong></span>
                         <span>🍚 <strong>${athRev.carbs}C</strong></span>
                         <span>🥑 <strong>${athRev.fat}F</strong></span>
+                        ${athRev.steps ? `<span>👟 <strong>${athRev.steps} Adım</strong></span>` : ''}
+                        ${athRev.water ? `<span>💧 <strong>${athRev.water}L Su</strong></span>` : ''}
                     </div>
+                    ${foodsBreakdownHtml}
                 </div>
             `;
         }
     }
+}
+
+function loadPastRevCalcItems(items) {
+    if (!items || !Array.isArray(items) || items.length === 0) return;
+    coachCalcItems = JSON.parse(JSON.stringify(items));
+    isCoachFoodCalcCollapsed = false;
+    const body = document.getElementById("coach-calc-body");
+    const icon = document.getElementById("coach-calc-toggle-icon");
+    if (body) body.style.display = "block";
+    if (icon) icon.className = "fa-solid fa-chevron-up";
+    renderCoachCalcItems();
+    showToast("Geçmiş revizyon besinleri hesaplama masasına yüklendi! 📋");
+}
+
+function renderAthleteCurrentDietInPrescription(username) {
+    const listEl = document.getElementById("rx-athlete-meals-list");
+    if (!listEl) return;
+
+    const registry = getUsersRegistry();
+    const ath = registry[username];
+    if (!ath) {
+        listEl.innerHTML = `<p class="text-secondary" style="font-size:0.72rem; text-align:center; padding:8px;">Sporcu verisi bulunamadı.</p>`;
+        return;
+    }
+
+    const uData = ath.data || {};
+    const presets = uData.customPresets || DEFAULT_PRESET_MEALS;
+    const mealKeys = Object.keys(presets);
+
+    if (mealKeys.length === 0) {
+        listEl.innerHTML = `<p class="text-secondary" style="font-size:0.72rem; text-align:center; padding:8px;">Kayıtlı öğün planı bulunmuyor.</p>`;
+        return;
+    }
+
+    let html = "";
+    mealKeys.forEach((key, idx) => {
+        const meal = presets[key];
+        if (!meal) return;
+
+        let ingredientsHtml = "";
+        if (meal.ingredients && Array.isArray(meal.ingredients) && meal.ingredients.length > 0) {
+            ingredientsHtml = meal.ingredients.map(ing => {
+                const food = RAW_FOODS_DATABASE.find(f => f.id === ing.foodId);
+                const foodName = food ? food.name.split(' (')[0] : ing.foodId;
+                return `
+                    <span style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); border-radius:4px; padding:2px 6px; font-size:0.65rem; color:#f0f0f0;">
+                        <strong>${ing.amount}g</strong> ${foodName}
+                    </span>
+                `;
+            }).join('');
+        } else if (meal.desc) {
+            ingredientsHtml = `<span style="font-size:0.65rem; color:var(--text-secondary);">${meal.desc}</span>`;
+        }
+
+        html += `
+            <div style="background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.08); border-radius:6px; padding:8px; display:flex; flex-direction:column; gap:4px;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <strong style="color:#ffffff; font-size:0.75rem;">
+                        <span style="color:#ffd60a; margin-right:4px;">${idx + 1}.</span>${meal.name || key}
+                    </strong>
+                    <div style="font-size:0.65rem; color:var(--text-secondary); display:flex; gap:6px;">
+                        <span style="color:#ffd60a; font-weight:700;">${meal.cal || 0} kcal</span>
+                        <span style="color:#ef4444;">${meal.p || 0}P</span>
+                        <span style="color:#3b82f6;">${meal.c || 0}C</span>
+                        <span style="color:#eab308;">${meal.f || 0}F</span>
+                    </div>
+                </div>
+                <div style="display:flex; flex-wrap:wrap; gap:4px; margin-top:2px;">
+                    ${ingredientsHtml}
+                </div>
+            </div>
+        `;
+    });
+
+    listEl.innerHTML = html;
+}
+
+function importAthleteMealsToCoachCalc(targetUsername) {
+    const selectEl = document.getElementById("rx-athlete-select");
+    const username = targetUsername || (selectEl ? selectEl.value : currentCoachSelectedAthlete);
+    if (!username) {
+        showToast("Lütfen önce bir sporcu seçin! ⚠️");
+        return;
+    }
+
+    const registry = getUsersRegistry();
+    const ath = registry[username];
+    if (!ath) {
+        showToast("Sporcu verisi bulunamadı! ⚠️");
+        return;
+    }
+
+    const uData = ath.data || {};
+    const presets = uData.customPresets || DEFAULT_PRESET_MEALS;
+    const mealKeys = Object.keys(presets);
+
+    coachCalcItems = [];
+    let count = 0;
+
+    mealKeys.forEach(key => {
+        const meal = presets[key];
+        if (meal && meal.ingredients && Array.isArray(meal.ingredients)) {
+            meal.ingredients.forEach(ing => {
+                if (ing && ing.foodId && ing.amount > 0) {
+                    const existing = coachCalcItems.find(i => i.foodId === ing.foodId);
+                    if (existing) {
+                        existing.amount += Number(ing.amount);
+                    } else {
+                        coachCalcItems.push({
+                            id: `calc_${Date.now()}_${Math.random().toString(36).substr(2, 4)}_${count}`,
+                            foodId: ing.foodId,
+                            amount: Number(ing.amount)
+                        });
+                    }
+                    count++;
+                }
+            });
+        }
+    });
+
+    if (coachCalcItems.length === 0) {
+        showToast("Sporcunun kayıtlı malzeme detayları bulunamadı. ⚠️");
+        return;
+    }
+
+    // Expand calculator if collapsed
+    isCoachFoodCalcCollapsed = false;
+    const body = document.getElementById("coach-calc-body");
+    const icon = document.getElementById("coach-calc-toggle-icon");
+    if (body) body.style.display = "block";
+    if (icon) icon.className = "fa-solid fa-chevron-up";
+
+    renderCoachCalcItems();
+    showToast(`✅ Sporcunun tüm öğünleri ve ${count} adet çiğ malzemesi hesaplayıcıya aktarıldı! 🌾`);
 }
 
 // ==================== COACH SMART FOOD MACRO CALCULATOR WIZARD ====================
@@ -7636,6 +7795,7 @@ function submitCoachPrescription() {
     revDb[username] = {
         calories, protein, carbs, fat, water, steps, gainMin, gainMax,
         coachNote,
+        calcItems: coachCalcItems && coachCalcItems.length > 0 ? JSON.parse(JSON.stringify(coachCalcItems)) : [],
         date: new Date().toISOString().split('T')[0],
         applied: false
     };
