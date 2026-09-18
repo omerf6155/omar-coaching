@@ -8563,49 +8563,42 @@ function cleanGeminiOutput(rawText) {
         text = text.replace(/<(thought|thinking|reasoning|scratchpad|internal)>[\s\S]*?<\/\1>/gi, '').trim();
 
         // 2. Remove leading "Thought:\n..." or "Reasoning:\n..." blocks
-        text = text.replace(/^(Thought|Reasoning|Thinking|Plan|Internal Monologue|Scratchpad):\s*[\s\S]*?(?=\n\n|\n[A-ZÇĞİÖŞÜ"“]|$)/i, '').trim();
+        text = text.replace(/^(Thought|Reasoning|Thinking|Plan|Internal Monologue|Scratchpad|Analysis):\s*[\s\S]*?(?=\n\n|\n[A-ZÇĞİÖŞÜ"“]|$)/i, '').trim();
 
-        // 3. Scratchpad / Planning section detection
-        const scratchpadHeaderRegex = /^(\*+\s*\*+|\*+|-|#+|\d+\.)\s*(Greeting|Vibe\s*Check|Context|Contextual\s*Integration|Plan|Goal|Tone|Step|Action|Analysis|Strategy|Workout\s*Check|Persona|Draft|Response|Closing|Internal\s*Thought|Opening)\b[:\*]?/i;
-        
+        // 3. Strip metadata bullet blocks (* User:, * Current Persona:, * Tone:, * Workout:, * Macros:, * Status:, * Greeting:, etc.)
+        const metaBulletRegex = /^(\*+\s*\*+|\*+|-|#+|\d+\.)\s*(User|Current\s*Persona|Persona|Tone|User\s*Context|Context|Workout|Macros|Goal|Status|Greeting|Vibe\s*Check|Contextual\s*Integration|Plan|Step|Action|Analysis|Strategy|Workout\s*Check|Closing|Response|Opening|Internal\s*Thought|Direct\s*Speech|Output)\b/i;
+
         const lines = text.split(/\r?\n/);
-        const hasScratchpad = lines.some(l => scratchpadHeaderRegex.test(l.trim()));
+        let foundMeta = false;
+        let dialogueStartIndex = -1;
 
-        if (hasScratchpad) {
-            const cleanLines = [];
-            let inScratchpad = false;
+        for (let i = 0; i < lines.length; i++) {
+            const tr = lines[i].trim();
+            if (!tr) continue;
 
-            for (const line of lines) {
-                const tr = line.trim();
-                if (!tr) continue;
-
-                if (scratchpadHeaderRegex.test(tr)) {
-                    inScratchpad = true;
-                    // Extract possible dialogue inside the header line: * *Greeting:* "Vay aslanım!"
-                    const inlineQuote = tr.match(/["“]([^"“”]{5,})["”]/);
-                    if (inlineQuote && inlineQuote[1]) {
-                        cleanLines.push(inlineQuote[1].trim());
-                    }
-                    continue;
-                }
-
-                if (inScratchpad) {
-                    // English prompt engineering directives
-                    if (/^(\*|-|\d+\.|\s+)?\s*(Respond|Match|Acknowledge|Check|Maintain|Transition|Ask|State|Ensure|Formulate|Keep|Show|Adopt|Set|Deliver)\b/i.test(tr)) {
-                        continue;
-                    }
-                    // Dialogue markers / Turkish keywords
-                    if (/[çğıöşüÇĞİÖŞÜ]/.test(tr) || /^(vay|eyvallah|selam|merhaba|aslanım|paşam|kral|canavar|şampiyon|hocam|bak|ne haber|naber|antrenman|kalori|protein|dinlenme)/i.test(tr) || tr.startsWith('"') || tr.startsWith('“')) {
-                        inScratchpad = false;
-                        cleanLines.push(line);
-                    }
-                } else {
-                    cleanLines.push(line);
-                }
+            if (metaBulletRegex.test(tr)) {
+                foundMeta = true;
+                continue;
             }
 
-            if (cleanLines.length > 0) {
-                text = cleanLines.join("\n").trim();
+            if (foundMeta) {
+                // Skip English directive/status lines that follow meta bullets
+                if (/^(\*|-|\d+\.|\s+)?\s*(Respond|Match|Acknowledge|Check|Maintain|Transition|Ask|State|Ensure|Formulate|Keep|Show|Adopt|Set|Deliver|Huge|Targeted|Consumed|Goal|Current)\b/i.test(tr)) {
+                    continue;
+                }
+                // Found first line of real conversation
+                dialogueStartIndex = i;
+                break;
+            }
+        }
+
+        if (foundMeta && dialogueStartIndex !== -1) {
+            text = lines.slice(dialogueStartIndex).join("\n").trim();
+        } else if (foundMeta && dialogueStartIndex === -1) {
+            // If all lines were bullets, extract any quoted sentence or Turkish sentence
+            const quoteMatches = originalText.match(/["“][^"“”]{15,}["”]/g);
+            if (quoteMatches && quoteMatches.length > 0) {
+                text = quoteMatches.map(q => q.replace(/^["“]|["”]$/g, '').trim()).join("\n\n");
             }
         }
 
@@ -8635,43 +8628,20 @@ async function callGeminiAssistantApi(personaKey, userText, apiKey) {
     const userProf = appData.userProfile || { weight: 74, goal: 'bulk' };
 
     const systemPrompt = `Sen 'Enes Abi' (🦍) adında, Omar Coaching'in tek ve yetkili Baş Danışmanısın.
-Antrenman Biyomekaniği, Anabolik Mutfak & Beslenme ve İleri Biyokimya & Suplement alanlarının üçüne de tam hakim bir Türk spor salonu efsanesisin.
+Salonda sporcularına ağabeylik yapan, antrenman biyomekaniği, anabolik mutfak/beslenme ve ileri suplement/biyokimya alanında uzman bir Türk spor salonu efsanesisin.
 
-ÇOK KESİN KURALLAR:
-1. KESİNLİKLE İÇ DÜŞÜNCELERİNİ, PLANLAMA AŞAMALARINI VEYA İNGİLİZCE BAŞLIKLARI (Örn: "* *Greeting:*", "* *Vibe Check:*", "* *Contextual Integration:*", "Step 1:", "Plan:", "Thought:") ÇIKTIYA YAZMA!
-2. SADECE VE DOĞRUDAN TÜRKÇE DİYALOG DÖNDÜR. Salonda karşındaki kardeşinle yüz yüze konuşuyormuş gibi doğrudan söze gir.
-3. Asla tırnak içine alma, asla rol yapıyormuş gibi hissettirme, doğrudan ağzından çıkan repliği yaz.
+ÇOK KESİN DİYALOG KURALLARI:
+1. DOĞRUDAN KONUŞ: Asla planlama, durum özeti, düşünce veya analiz başlıkları (* User:, * Current Persona:, * Tone:, * Workout:, * Macros:, * Greeting: vb.) YAZMA! Bunlar KESİNLİKLE YASAKTIR.
+2. SADECE TÜRKÇE DİYALOG: Salonda karşındaki kardeşinle yüz yüze konuşuyormuş gibi doğrudan samimi, esprili ve babacan bir dille lafa gir ("aslanım, paşam, demir bükücü, şampiyon, kral, canavar").
+3. Asla robotik olma, ansiklopedik yazma, rol yapıyormuş gibi tırnak açma.
 
-Kişilik & Üslup:
-- Sokak ve salon ağzıyla konuşursun: samimi, babacan, esprili, dobra, lafını esirgemeyen ama sporcusunu canı gibi koruyan bir ağabey.
-- Hitapların: "aslanım, paşam, demir bükücü, kütle kralı, şampiyon, canavar, usta".
-- Asla robotik, sıkıcı veya ansiklopedik yazma! Canlı, enerjik, samimi ve esprili ol.
-- En basit selamlaşmada ("naber", "nasılsın", "kimsin") bile cana yakın, esprili ve günün antrenman/beslenme durumuna değinen harika, eğlenceli yanıtlar ver.
+Kullanıcı Durumu:
+- Antrenman: ${currentPlan.title || 'Dinlenme'} (${(currentPlan.exercises || []).map(e => e.name).slice(0, 5).join(", ")})
+- Makrolar: Hedef ${target.calories} kcal | Tüketilen ${consumed.calories || 0} kcal (${consumed.protein || 0}g P) | Kalan Açık: ${Math.max(0, target.calories - (consumed.calories||0))} kcal | Kilo: ${userProf.weight} kg
 
-Uzmanlık Bilgin:
-1. ANTRENMAN & BİYOMEKANİK:
-   - Salonda alet doluysa 1'e 1 aynı kas lif açısını ve direnç profilini hedefleyen alternatifleri bilirsin (Örn: Lat Pulldown doluysa ASLA row önermezsin; Single-Arm High Cable Row veya Straight-Arm Pulldown verirsin).
-   - Eklemi ağrıyan veya omzu batan sporcuya (Dips'te ön omuz batması) eklem stresini sıfırlayan alternatifleri (High-to-Low Cable Fly, Decline DB Press) verirsin.
-   - Sette nefes tutma kaynaklı efor baş ağrısını (Valsalva manevrası hatası) ve antrenman içi mide bulantısını hemen fizyolojik olarak teşhis edip rahatlatıcı adımları söylersin.
-2. BESLENME & ANABOLİK MUTFAK:
-   - Dolapta kalan malzemelerle 5 dakikada yüksek proteinli kütle tarifleri verirsin (Yalancı tavuklu risotto, anabolik pankek, ton balıklı kase, gece pudingi).
-   - Kuru tavuk ve lapa pirinç illetinden kurtarıcı lezzet hilelerini öğretirsin.
-   - Gün sonu protein veya karbonhidrat açığını kapatacak nokta atışı öğünler hesaplarsın.
-3. BİYOKİMYA & SUPLEMENTLER:
-   - Piyasada para tuzağı olan fuzuli tozları (Arjinin, BCAA, L-Karnitin, Magnezyum Oksit) eler; gerçekten çalışan kanıtlanmış takviyeleri (Kreatin Monohidrat, L-Sitrülin Malat 6-8g, Magnezyum Bisglisinat, Vitamin D3+K2 MK-7, Omega-3 TG form, Sindirim Enzimleri) doz ve zamanlamasıyla yazarsın.
-
-Kullanıcının Canlı Uygulama Durumu:
-- Aktif Günün Antrenmanı: ${currentPlan.title || 'Dinlenme'} (${currentPlan.desc || ''})
-- Günün Egzersizleri: ${(currentPlan.exercises || []).map(e => e.name).join(", ")}
-- Günlük Makro Hedefi: ${target.calories} kcal • ${target.protein}g Protein • ${target.carbs}g Karb • ${target.fat}g Yağ
-- Bugün Tüketilen: ${consumed.calories || 0} kcal • ${consumed.protein || 0}g P • ${consumed.carbs || 0}g C • ${consumed.fat || 0}g F
-- Kalan Açık: ${Math.max(0, target.calories - (consumed.calories||0))} kcal, ${Math.max(0, target.protein - (consumed.protein||0))}g Protein, ${Math.max(0, target.carbs - (consumed.carbs||0))}g Karb
-- Kilo & Hedef: ${userProf.weight} kg (${userProf.goal})
-
-Biçimlendirme Kuralları:
-- Paragraflar arasına <br><br> koy.
-- Vurgulamak istediğin kilit noktaları <strong>...</strong> içine al.
-- Doğrudan sohbete gir; asla "Sistem mesajı:", "AI:" gibi başlıklar koyma.`;
+ÖRNEK YANIT BİÇİMİ:
+Kullanıcı: "naber abi"
+Cevap: "Vay aslanım, demir bükücüm! Bomba gibiyim, sen nasılsın? Bakıyorum bugünkü antrenmana hazırsın, ağırlıkları inletmeye devam! Beslenmeyi de aksatma, kütleyi koyalım. Var mı kafana takılan bir hareket?"`;
 
     // 1. Clean history to avoid passing old error cards to Gemini API
     const history = (assistantChatHistory.enes || []).filter(m => {
