@@ -23,7 +23,8 @@ const RAW_FOODS_DATABASE = [
     { id: "cig_tatli_patates", name: "Çiğ Tatlı Patates", unit: "g", p: 1.6, c: 20.0, f: 0.1, cal: 86 },
     { id: "cig_karabugday", name: "Çiğ Karabuğday (Greçka)", unit: "g", p: 13.0, c: 71.0, f: 3.0, cal: 343 },
     { id: "muz", name: "Muz (Taze)", unit: "g", p: 1.1, c: 23.0, f: 0.3, cal: 89 },
-    { id: "bal", name: "Bal / Pekmez", unit: "g", p: 0.3, c: 82.0, f: 0.0, cal: 304 },
+    { id: "bal", name: "Süzme Ham Bal (Çiçek/Çam)", unit: "g", p: 0.3, c: 82.4, f: 0.0, cal: 304 },
+    { id: "pekmez", name: "Pekmez (Üzüm / Dut / Keçiboynuzu)", unit: "g", p: 0.8, c: 70.0, f: 0.1, cal: 280 },
     { id: "hurma", name: "Hurma (Medjool / Cennet)", unit: "g", p: 2.0, c: 75.0, f: 0.4, cal: 280 },
     { id: "pirinc_patlagi", name: "Pirinç Patlağı (Rice Cake)", unit: "g", p: 8.0, c: 82.0, f: 2.0, cal: 380 },
 
@@ -5065,7 +5066,8 @@ const WIZARD_FOOD_CATEGORIES = {
         { id: "cig_tatli_patates", name: "🍠 Çiğ Tatlı Patates" },
         { id: "cig_karabugday", name: "🌱 Çiğ Karabuğday" },
         { id: "muz", name: "🍌 Muz" },
-        { id: "bal", name: "🍯 Bal / Pekmez" },
+        { id: "bal", name: "🍯 Süzme Ham Bal" },
+        { id: "pekmez", name: "🍇 Pekmez (Üzüm / Dut / Keçiboynuzu)" },
         { id: "hurma", name: "🌴 Hurma" },
         { id: "pirinc_patlagi", name: "🍘 Pirinç Patlağı" }
     ],
