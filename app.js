@@ -8154,6 +8154,28 @@ function clearGeminiApiKeyAndSwitchOffline() {
     renderAssistantMessages();
 }
 
+function translateGeminiErrorToTurkish(status, rawErrorMsg) {
+    const err = (rawErrorMsg || "").toString();
+    const lower = err.toLowerCase();
+
+    if (lower.includes("api key not valid") || lower.includes("api_key_invalid") || lower.includes("invalid api key") || status === 400) {
+        return `❌ <strong>Geçersiz API Anahtarı (Hata 400):</strong><br>Girdiğiniz anahtar Google Gemini API formatına uymuyor.<br><br>📌 <strong>Önemli Bilgi:</strong> Google AI Studio anahtarları <strong>her zaman <code>AIzaSy...</code></strong> ile başlar ve 39 karakterdir (Örn: <code>AIzaSyD5x...</code>).<br><br>👉 <strong>Nasıl Alınır?</strong> <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#ffd60a; text-decoration:underline; font-weight:700;">Google AI Studio API Key Sayfası</a>'na girip <em>'Create API key'</em> butonuna tıklayın ve <code>AIzaSy</code> ile başlayan anahtarı kopyalayıp buraya yapıştırın.`;
+    }
+    if (lower.includes("permission_denied") || status === 403) {
+        return "❌ <strong>Erişim İzni / Yetki Hatası (Hata 403):</strong><br>Bu API anahtarının Gemini modelini çağırma yetkisi yok veya hesabınız kısıtlanmış.<br><br>💡 <strong>Çözüm:</strong> Google AI Studio'da yeni bir API anahtarı oluşturun.";
+    }
+    if (lower.includes("not found") || lower.includes("no longer available") || status === 404) {
+        return "❌ <strong>Model Bulunamadı (Hata 404):</strong><br>İstenen model Google tarafından güncellenmiş veya erişilemiyor. Sistem en stabil <code>gemini-1.5-flash</code> modelini kullanmaktadır.";
+    }
+    if (lower.includes("quota") || lower.includes("resource_exhausted") || status === 429) {
+        return "❌ <strong>Kullanım Kotası / Hız Sınırı Aşıldı (Hata 429):</strong><br>Kısa sürede çok fazla istek gönderildi veya ücretsiz API kotası doldu.<br><br>💡 <strong>Çözüm:</strong> 1 dakika bekleyip tekrar deneyin veya yeni bir ücretsiz anahtar oluşturun.";
+    }
+    if (lower.includes("failed to fetch") || lower.includes("networkerror")) {
+        return "❌ <strong>İnternet Bağlantı Hatası:</strong><br>Google Gemini sunucularına ulaşılamadı. Lütfen internet bağlantınızı kontrol edip tekrar deneyin.";
+    }
+    return `❌ <strong>Bağlantı Hatası (${status || 'Sunucu'}):</strong> ${err}`;
+}
+
 async function testGeminiApiKeyInline() {
     const keyInput = document.getElementById("modal-input-gemini-key");
     const resultBox = document.getElementById("gemini-key-test-result");
@@ -8168,7 +8190,16 @@ async function testGeminiApiKeyInline() {
         resultBox.style.background = "rgba(239, 68, 68, 0.15)";
         resultBox.style.border = "1px solid rgba(239, 68, 68, 0.4)";
         resultBox.style.color = "#f87171";
-        resultBox.innerHTML = "<i class=\"fa-solid fa-circle-exclamation\"></i> Lütfen geçerli bir Gemini API anahtarı yapıştırın (Örn: AIzaSy...).";
+        resultBox.innerHTML = "<i class=\"fa-solid fa-circle-exclamation\"></i> Lütfen geçerli bir Gemini API anahtarı yapıştırın (Örn: <code>AIzaSy...</code>).";
+        return;
+    }
+
+    if (!testKey.startsWith("AIzaSy")) {
+        resultBox.style.display = "block";
+        resultBox.style.background = "rgba(239, 68, 68, 0.15)";
+        resultBox.style.border = "1px solid rgba(239, 68, 68, 0.4)";
+        resultBox.style.color = "#f87171";
+        resultBox.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> <strong>Geçersiz Anahtar Formatı:</strong><br>Girdiğiniz anahtar <code>AIzaSy</code> ile başlamıyor (<code>${testKey.substring(0, 10)}...</code>).<br><br>Google AI Studio'dan alınan Gemini anahtarları istisnasız <strong><code>AIzaSy</code></strong> ile başlar ve 39 karakterdir.<br><br>👉 <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#ffd60a; text-decoration:underline; font-weight:bold;">Google AI Studio API Key Sayfası</a>'na gidip <em>'Create API Key'</em> butonuna tıklayarak yeni anahtarınızı alabilirsiniz.`;
         return;
     }
 
@@ -8179,10 +8210,11 @@ async function testGeminiApiKeyInline() {
     resultBox.style.color = "#38bdf8";
     resultBox.innerHTML = "<i class=\"fa-solid fa-spinner fa-spin\"></i> Google Gemini sunucusu ile bağlantı test ediliyor...";
 
-    const testModels = ["gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-pro"];
+    const testModels = ["gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-1.5-pro"];
     let success = false;
     let successfulModel = "";
-    let lastErr = "";
+    let lastErrStatus = 0;
+    let lastErrMsg = "";
 
     for (const m of testModels) {
         try {
@@ -8203,16 +8235,21 @@ async function testGeminiApiKeyInline() {
                 successfulModel = m;
                 break;
             } else {
+                lastErrStatus = res.status;
                 const errText = await res.text();
                 let parsedMsg = errText;
                 try {
                     const j = JSON.parse(errText);
                     if (j.error && j.error.message) parsedMsg = j.error.message;
                 } catch (ex) {}
-                lastErr = `${m} (${res.status}): ${parsedMsg}`;
+                lastErrMsg = parsedMsg;
+
+                if (res.status === 400 && parsedMsg.toLowerCase().includes("api key not valid")) {
+                    break;
+                }
             }
         } catch (e) {
-            lastErr = e.message;
+            lastErrMsg = e.message;
         }
     }
 
@@ -8227,10 +8264,11 @@ async function testGeminiApiKeyInline() {
         checkGeminiApiKeyStatus();
         showToast("✅ Canlı Gemini bağlantısı başarılı!");
     } else {
+        const turkishError = translateGeminiErrorToTurkish(lastErrStatus, lastErrMsg);
         resultBox.style.background = "rgba(239, 68, 68, 0.15)";
         resultBox.style.border = "1px solid rgba(239, 68, 68, 0.4)";
         resultBox.style.color = "#f87171";
-        resultBox.innerHTML = `<i class="fa-solid fa-circle-xmark"></i> <strong>Bağlantı Kurulamadı:</strong><br><small style="line-height:1.4; display:block; margin-top:4px;">${lastErr}</small><br><small style="color:var(--text-muted);">💡 Anahtarın başında/sonunda tırnak veya boşluk kalmadığından ve <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#ffd60a; text-decoration:underline;">Google AI Studio</a>'da anahtarın aktif olduğundan emin olun.</small>`;
+        resultBox.innerHTML = turkishError;
     }
 
     if (btnTest) btnTest.disabled = false;
@@ -8432,8 +8470,9 @@ async function sendAssistantMessage() {
 
     if (!aiResponse) {
         if (geminiFailedError) {
+            const trError = typeof translateGeminiErrorToTurkish === "function" ? translateGeminiErrorToTurkish(0, geminiFailedError) : geminiFailedError;
             aiResponse = {
-                text: `⚠️ <strong>Gemini Bağlantı Uyarısı:</strong> ${geminiFailedError}<br><br>Canlı yapay zeka bağlantısında sorun oluştu. Yeni bir anahtar girebilir veya anahtarı temizleyerek Enes Abi'nin yerleşik zekasıyla anında devam edebilirsin:`,
+                text: `⚠️ <strong>Gemini Bağlantı Uyarısı:</strong><br><br>${trError}<br><br>Yeni bir API anahtarı girebilir veya anahtarı silerek Enes Abi'nin yerleşik akıllı motoruyla kesintisiz devam edebilirsin:`,
                 actionHtml: `
                     <div style="display:flex; flex-direction:column; gap:6px; margin-top:6px;">
                         <button class="ai-action-btn btn-swap" onclick="openApiKeyModal()">
@@ -8572,7 +8611,7 @@ Biçimlendirme Kuralları:
         generationConfig: { temperature: 0.85, maxOutputTokens: 1000 }
     };
 
-    const models = ["gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-pro"];
+    const models = ["gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-1.5-pro"];
     let data = null;
     let lastError = null;
 
