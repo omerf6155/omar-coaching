@@ -8347,8 +8347,6 @@ function submitCoachPrescription() {
 // ==================== COACH WORKOUT REVISION ENGINE ====================
 
 let currentCoachRxTab = "diet"; // "diet" or "workout"
-let currentCoachWorkoutRevDay = "pzt"; // "pzt", "sal", "car", "per", "cum", "cmt", "paz"
-let currentCoachWorkoutDrafts = {}; // { [username]: { pzt: {...}, sal: {...}, ... } }
 let currentCoachRxLibCategory = "chest";
 let currentCoachRxLibSearch = "";
 let isCoachRxAddDrawerOpen = false;
