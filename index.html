@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="style.css?v=3.9.0">
+    <link rel="stylesheet" href="style.css?v=3.10.0">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
@@ -585,12 +585,15 @@
                     </div>
 
                     <!-- Action shortcuts for selected athlete -->
-                    <div class="adh-actions-row">
+                    <div class="adh-actions-row" style="grid-template-columns: 1fr 1fr 1fr;">
                         <button class="btn btn-xs btn-primary" onclick="goToPrescriptionForCurrentAthlete()">
-                            <i class="fa-solid fa-file-pen"></i> Hedef / Kalori Revize Et
+                            <i class="fa-solid fa-utensils"></i> Diyet Revize
+                        </button>
+                        <button class="btn btn-xs btn-primary" onclick="goToWorkoutPrescriptionForCurrentAthlete()" style="background:linear-gradient(135deg, #ffd60a, #ff9f0a); color:#000; font-weight:700; border-color:#ffd60a;">
+                            <i class="fa-solid fa-dumbbell"></i> Antrenman Revize
                         </button>
                         <button class="btn btn-xs btn-outline" onclick="goToChatForCurrentAthlete()">
-                            <i class="fa-solid fa-comments"></i> Sporcuyla Chat
+                            <i class="fa-solid fa-comments"></i> Chat
                         </button>
                     </div>
                 </div>
@@ -609,93 +612,263 @@
                 </div>
             </section>
 
-            <!-- COACH VIEW 3: HEDEF & KALORİ REVİZYONU (PRESCRIPTION) -->
+            <!-- COACH VIEW 3: HEDEF & ANTRENMAN REVİZYONU (PRESCRIPTION) -->
             <section id="view-coach-prescriptions" class="tab-view">
-                <div class="card">
-                    <div class="card-header">
-                        <h2><i class="fa-solid fa-file-pen"></i> HEDEF & DİYET REVİZYON MASASI</h2>
-                    </div>
-                    <p class="text-secondary" style="font-size:0.75rem; line-height:1.4; margin-bottom:12px;">
-                        Sporcunun haftalık kilo değişimine göre kalori, makro veya adım hedeflerini revize et. Sporcu uygulamayı açtığında yeni hedefleri görecektir.
-                    </p>
-
-                    <div class="form-group">
-                        <label><i class="fa-solid fa-user-check"></i> Revizyon Yapılacak Sporcu</label>
-                        <select id="rx-athlete-select" onchange="loadAthleteForPrescription(this.value)" class="form-select">
-                            <!-- Populated dynamically -->
-                        </select>
-                    </div>
-
-                    <!-- Macro Target Editor Form -->
-                    <div class="card" style="background:var(--bg-input); border:1px solid var(--border-subtle); padding:12px; margin-bottom:12px;">
-                        <h4 style="font-size:0.8rem; color:#ffffff; margin-bottom:10px; display:flex; justify-content:space-between;">
-                            <span>Yeni Günlük Hedefler</span>
-                            <span class="badge-role" style="font-size:0.65rem;" id="rx-calculated-cals">0 kcal</span>
-                        </h4>
-
-                        <div class="form-row-2">
-                            <div class="form-group">
-                                <label>Kalori Hedefi (kcal)</label>
-                                <input type="number" id="rx-calories" placeholder="2770">
-                            </div>
-                            <div class="form-group">
-                                <label>Protein Hedefi (g)</label>
-                                <input type="number" id="rx-protein" placeholder="167">
-                            </div>
-                        </div>
-
-                        <div class="form-row-2">
-                            <div class="form-group">
-                                <label>Karbonhidrat (g)</label>
-                                <input type="number" id="rx-carbs" placeholder="344">
-                            </div>
-                            <div class="form-group">
-                                <label>Yağ (g)</label>
-                                <input type="number" id="rx-fat" placeholder="77">
-                            </div>
-                        </div>
-
-                        <div class="form-row-2">
-                            <div class="form-group">
-                                <label>Su Hedefi (Litre)</label>
-                                <input type="number" step="0.1" id="rx-water" placeholder="3.5">
-                            </div>
-                            <div class="form-group">
-                                <label>Günlük Adım Hedefi</label>
-                                <input type="number" id="rx-steps" placeholder="7500">
-                            </div>
-                        </div>
-
-                        <div class="form-row-2">
-                            <div class="form-group">
-                                <label>Min Haftalık Kilo Artışı (kg)</label>
-                                <input type="number" step="0.05" id="rx-gain-min" placeholder="0.15">
-                            </div>
-                            <div class="form-group">
-                                <label>Maks Haftalık Kilo Artışı (kg)</label>
-                                <input type="number" step="0.05" id="rx-gain-max" placeholder="0.35">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Coach Directive / Note Area -->
-                    <div class="form-group">
-                        <label><i class="fa-solid fa-comment-dots"></i> Resmi Koç Direktifi & Açıklama Notu</label>
-                        <textarea id="rx-coach-note" rows="3" class="form-textarea" placeholder="Örn: Kilo artış hızın çok iyi, bu hafta kaloriyi 150 kcal artırdık. Karbonhidratı antrenman öncesi pirinçten al. Top setlerde RIR 0 tükenişe odaklan!"></textarea>
-                    </div>
-
-                    <button class="btn btn-primary btn-block" onclick="submitCoachPrescription()">
-                        <i class="fa-solid fa-paper-plane"></i> Revizyonu Gönder & Hedefleri Tanımla
+                <!-- Coach Revision Segment Switcher -->
+                <div class="coach-rx-segmented-tabs" style="display:flex; gap:6px; margin-bottom:14px; background:var(--bg-input); padding:4px; border-radius:var(--radius-md); border:1px solid var(--border-subtle);">
+                    <button type="button" class="coach-rx-tab-btn active" id="btn-coach-rx-diet" onclick="switchCoachRxTab('diet')" style="flex:1; padding:9px 6px; border:none; border-radius:var(--radius-sm); font-size:0.75rem; font-weight:700; cursor:pointer; transition:all 0.2s; background:#ffd60a; color:#000;">
+                        <i class="fa-solid fa-utensils"></i> Diyet & Hedef Revizyonu
+                    </button>
+                    <button type="button" class="coach-rx-tab-btn" id="btn-coach-rx-workout" onclick="switchCoachRxTab('workout')" style="flex:1; padding:9px 6px; border:none; border-radius:var(--radius-sm); font-size:0.75rem; font-weight:700; cursor:pointer; transition:all 0.2s; background:transparent; color:var(--text-secondary);">
+                        <i class="fa-solid fa-dumbbell"></i> Antrenman Programı Revizyonu
                     </button>
                 </div>
 
-                <!-- Past Revisions History -->
-                <div class="card" style="margin-top:14px;">
-                    <div class="card-header">
-                        <h2>GEÇMİŞ REVİZYONLAR & NOTLAR</h2>
+                <!-- SUB-PANEL 1: DIET & MACRO TARGETS -->
+                <div id="coach-rx-diet-panel">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2><i class="fa-solid fa-file-pen"></i> HEDEF & DİYET REVİZYON MASASI</h2>
+                        </div>
+                        <p class="text-secondary" style="font-size:0.75rem; line-height:1.4; margin-bottom:12px;">
+                            Sporcunun haftalık kilo değişimine göre kalori, makro veya adım hedeflerini revize et. Sporcu uygulamayı açtığında yeni hedefleri görecektir.
+                        </p>
+
+                        <div class="form-group">
+                            <label><i class="fa-solid fa-user-check"></i> Revizyon Yapılacak Sporcu</label>
+                            <select id="rx-athlete-select" onchange="loadAthleteForPrescription(this.value)" class="form-select">
+                                <!-- Populated dynamically -->
+                            </select>
+                        </div>
+
+                        <!-- Macro Target Editor Form -->
+                        <div class="card" style="background:var(--bg-input); border:1px solid var(--border-subtle); padding:12px; margin-bottom:12px;">
+                            <h4 style="font-size:0.8rem; color:#ffffff; margin-bottom:10px; display:flex; justify-content:space-between;">
+                                <span>Yeni Günlük Hedefler</span>
+                                <span class="badge-role" style="font-size:0.65rem;" id="rx-calculated-cals">0 kcal</span>
+                            </h4>
+
+                            <div class="form-row-2">
+                                <div class="form-group">
+                                    <label>Kalori Hedefi (kcal)</label>
+                                    <input type="number" id="rx-calories" placeholder="2770">
+                                </div>
+                                <div class="form-group">
+                                    <label>Protein Hedefi (g)</label>
+                                    <input type="number" id="rx-protein" placeholder="167">
+                                </div>
+                            </div>
+
+                            <div class="form-row-2">
+                                <div class="form-group">
+                                    <label>Karbonhidrat (g)</label>
+                                    <input type="number" id="rx-carbs" placeholder="344">
+                                </div>
+                                <div class="form-group">
+                                    <label>Yağ (g)</label>
+                                    <input type="number" id="rx-fat" placeholder="77">
+                                </div>
+                            </div>
+
+                            <div class="form-row-2">
+                                <div class="form-group">
+                                    <label>Su Hedefi (Litre)</label>
+                                    <input type="number" step="0.1" id="rx-water" placeholder="3.5">
+                                </div>
+                                <div class="form-group">
+                                    <label>Günlük Adım Hedefi</label>
+                                    <input type="number" id="rx-steps" placeholder="7500">
+                                </div>
+                            </div>
+
+                            <div class="form-row-2">
+                                <div class="form-group">
+                                    <label>Min Haftalık Kilo Artışı (kg)</label>
+                                    <input type="number" step="0.05" id="rx-gain-min" placeholder="0.15">
+                                </div>
+                                <div class="form-group">
+                                    <label>Maks Haftalık Kilo Artışı (kg)</label>
+                                    <input type="number" step="0.05" id="rx-gain-max" placeholder="0.35">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Coach Directive / Note Area -->
+                        <div class="form-group">
+                            <label><i class="fa-solid fa-comment-dots"></i> Resmi Koç Direktifi & Açıklama Notu</label>
+                            <textarea id="rx-coach-note" rows="3" class="form-textarea" placeholder="Örn: Kilo artış hızın çok iyi, bu hafta kaloriyi 150 kcal artırdık. Karbonhidratı antrenman öncesi pirinçten al. Top setlerde RIR 0 tükenişe odaklan!"></textarea>
+                        </div>
+
+                        <button class="btn btn-primary btn-block" onclick="submitCoachPrescription()">
+                            <i class="fa-solid fa-paper-plane"></i> Diyet Revizyonunu Gönder & Tanımla
+                        </button>
                     </div>
-                    <div id="rx-history-container">
-                        <!-- Populated dynamically -->
+
+                    <!-- Past Revisions History -->
+                    <div class="card" style="margin-top:14px;">
+                        <div class="card-header">
+                            <h2>GEÇMİŞ REVİZYONLAR & NOTLAR</h2>
+                        </div>
+                        <div id="rx-history-container">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SUB-PANEL 2: WORKOUT PROGRAM REVISION DESK -->
+                <div id="coach-rx-workout-panel" style="display:none;">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2><i class="fa-solid fa-dumbbell"></i> ANTRENMAN PROGRAMI REVİZYON MASASI</h2>
+                            <span class="badge-role" style="background:rgba(255,214,10,0.15); color:#ffd60a; font-size:0.65rem;">Canlı Düzenleyici</span>
+                        </div>
+                        <p class="text-secondary" style="font-size:0.75rem; line-height:1.4; margin-bottom:12px;">
+                            Sporcunun 7 günlük splitini, hareketlerini, hedef set/tekrar ve koltuk ayarlarını buradan doğrudan düzenleyin. Kaydettiğiniz an sporcunun Antrenman Defterine yansır.
+                        </p>
+
+                        <!-- Athlete Selector & Preset Template Bar -->
+                        <div class="form-row-2" style="margin-bottom:12px;">
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label><i class="fa-solid fa-user-check"></i> Revizyon Yapılacak Sporcu</label>
+                                <select id="rx-workout-athlete-select" onchange="changeCoachWorkoutAthlete(this.value)" class="form-select">
+                                    <!-- Populated dynamically -->
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label><i class="fa-solid fa-wand-magic-sparkles"></i> Hazır Split Şablonu Yükle</label>
+                                <select id="coach-rx-template-select" onchange="applyTemplateToCoachWorkout(this.value)" class="form-select">
+                                    <option value="">-- Şablon Seç (İsteğe Bağlı) --</option>
+                                    <option value="ppl_standard">PPL Hipertrofi Standart (6 Gün)</option>
+                                    <option value="arnold_split">Arnold Split (Göğüs/Sırt, Omuz/Kol, Bacak)</option>
+                                    <option value="upper_lower">Upper / Lower (Üst & Alt 4 Gün)</option>
+                                    <option value="push_pull_legs_4day">Push Pull Legs + Arms (4 Günlük)</option>
+                                    <option value="bro_split_5day">Klasik Bölgesel Bro Split (5 Gün)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- 7-Day Day Selector Tabs -->
+                        <div class="coach-rx-days-bar" id="coach-rx-days-bar" style="display:grid; grid-template-columns:repeat(7, 1fr); gap:4px; margin-bottom:14px;">
+                            <!-- Populated dynamically -->
+                        </div>
+
+                        <!-- Active Day Header Card -->
+                        <div class="card" style="background:var(--bg-input); border:1px solid var(--border-subtle); padding:12px; margin-bottom:14px;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
+                                <h4 style="font-size:0.82rem; color:#ffffff; font-weight:800; display:flex; align-items:center; gap:6px;" id="coach-rx-active-day-heading">
+                                    <span>Pazartesi Antrenmanı</span>
+                                </h4>
+                                <label style="display:flex; align-items:center; gap:6px; font-size:0.75rem; color:#ffd60a; cursor:pointer; background:rgba(255,214,10,0.08); padding:4px 8px; border-radius:var(--radius-sm);">
+                                    <input type="checkbox" id="coach-rx-day-is-off" onchange="toggleCoachRxDayRest(this.checked)" style="accent-color:#ffd60a; cursor:pointer;">
+                                    <strong>😴 Dinlenme Günü (OFF)</strong>
+                                </label>
+                            </div>
+
+                            <div class="form-row-2">
+                                <div class="form-group" style="margin-bottom:6px;">
+                                    <label>Gün Başlığı</label>
+                                    <input type="text" id="coach-rx-day-title" placeholder="Örn: Push 1 (İtiş + Triceps)" oninput="updateCoachRxDayMeta()">
+                                </div>
+                                <div class="form-group" style="margin-bottom:6px;">
+                                    <label>Odak & Açıklama</label>
+                                    <input type="text" id="coach-rx-day-desc" placeholder="Örn: Göğüs Gücü + Lateral Triceps" oninput="updateCoachRxDayMeta()">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Exercises List in Active Day -->
+                        <div style="margin-bottom:14px;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                                <h3 style="font-size:0.8rem; font-weight:800; color:#fff; text-transform:uppercase; letter-spacing:0.5px;">
+                                    <i class="fa-solid fa-list-check" style="color:var(--coach-gold);"></i> Günün Egzersizleri (<span id="coach-rx-ex-count">0</span>)
+                                </h3>
+                                <button type="button" class="btn btn-xs btn-outline" onclick="toggleCoachAddExDrawer()" style="border-color:#ffd60a; color:#ffd60a;">
+                                    <i class="fa-solid fa-plus"></i> Yeni Egzersiz Ekle
+                                </button>
+                            </div>
+
+                            <div id="coach-rx-exercises-container" class="coach-rx-ex-list">
+                                <!-- Populated dynamically with editable exercise cards -->
+                            </div>
+                        </div>
+
+                        <!-- Add Exercise Library Drawer / Panel -->
+                        <div id="coach-rx-add-drawer" class="card" style="display:none; background:var(--bg-card-subtle); border:1px solid #ffd60a; padding:12px; margin-bottom:14px;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                                <h4 style="font-size:0.8rem; color:#ffd60a;"><i class="fa-solid fa-book-bookmark"></i> EGZERSİZ KÜTÜPHANESİNDEN EKLE</h4>
+                                <button type="button" class="btn-chat-clear" onclick="toggleCoachAddExDrawer()" title="Kapat" style="color:var(--text-secondary);">&times;</button>
+                            </div>
+
+                            <!-- Library Muscle Filter Pills -->
+                            <div style="display:flex; gap:4px; overflow-x:auto; padding-bottom:6px; margin-bottom:8px;" id="coach-rx-muscle-pills">
+                                <button type="button" class="subregion-chip active" onclick="setCoachRxLibCategory('chest', this)">Göğüs</button>
+                                <button type="button" class="subregion-chip" onclick="setCoachRxLibCategory('back', this)">Sırt</button>
+                                <button type="button" class="subregion-chip" onclick="setCoachRxLibCategory('shoulders', this)">Omuz</button>
+                                <button type="button" class="subregion-chip" onclick="setCoachRxLibCategory('arms', this)">Kollar</button>
+                                <button type="button" class="subregion-chip" onclick="setCoachRxLibCategory('legs', this)">Bacak</button>
+                                <button type="button" class="subregion-chip" onclick="setCoachRxLibCategory('core', this)">Karın/Core</button>
+                            </div>
+
+                            <!-- Search input -->
+                            <div style="margin-bottom:10px;">
+                                <input type="text" id="coach-rx-lib-search" placeholder="Hareket adı ara (Örn: Incline, Row, Squat)..." oninput="filterCoachRxLibrary(this.value)" class="form-select" style="font-size:0.75rem; padding:6px 10px;">
+                            </div>
+
+                            <!-- Library Grid -->
+                            <div id="coach-rx-library-list" style="max-height:260px; overflow-y:auto; display:flex; flex-direction:column; gap:6px;">
+                                <!-- Populated dynamically -->
+                            </div>
+
+                            <!-- Custom Exercise Form Section -->
+                            <div style="margin-top:12px; border-top:1px solid var(--border-subtle); padding-top:12px;">
+                                <h5 style="font-size:0.76rem; color:#ffffff; margin-bottom:8px;"><i class="fa-solid fa-pen-nib"></i> Listede Yok mu? Özel Egzersiz Tanımla</h5>
+                                <div class="form-row-2">
+                                    <div class="form-group" style="margin-bottom:6px;">
+                                        <label style="font-size:0.68rem;">Egzersiz Adı</label>
+                                        <input type="text" id="coach-custom-ex-name" placeholder="Örn: Smith Machine Incline Press" style="font-size:0.75rem; padding:6px 8px;">
+                                    </div>
+                                    <div class="form-group" style="margin-bottom:6px;">
+                                        <label style="font-size:0.68rem;">Hedef Kas Grubu</label>
+                                        <input type="text" id="coach-custom-ex-muscle" placeholder="Örn: Üst Göğüs" style="font-size:0.75rem; padding:6px 8px;">
+                                    </div>
+                                </div>
+                                <div class="form-row-2">
+                                    <div class="form-group" style="margin-bottom:6px;">
+                                        <label style="font-size:0.68rem;">Hedef Tekrar & RIR</label>
+                                        <input type="text" id="coach-custom-ex-target" placeholder="Örn: 2 Set (6-9 Tekrar, RIR 0)" style="font-size:0.75rem; padding:6px 8px;">
+                                    </div>
+                                    <div class="form-group" style="margin-bottom:6px;">
+                                        <label style="font-size:0.68rem;">Sehpa / Koltuk Notu</label>
+                                        <input type="text" id="coach-custom-ex-seat" placeholder="Örn: Açı: 30° / Koltuk: 3" style="font-size:0.75rem; padding:6px 8px;">
+                                    </div>
+                                </div>
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
+                                    <label style="display:flex; align-items:center; gap:6px; font-size:0.72rem; color:#ffd60a; cursor:pointer;">
+                                        <input type="checkbox" id="coach-custom-ex-topset" style="accent-color:#ffd60a;">
+                                        <strong>🔥 Top Set Olarak İşaretle</strong>
+                                    </label>
+                                    <button type="button" class="btn btn-xs btn-primary" onclick="addCoachCustomExerciseToDay()" style="background:#ffd60a; color:#000; font-weight:700;">
+                                        <i class="fa-solid fa-plus"></i> Özel Hareketi Ekle
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Coach Revision Message / Note to Athlete -->
+                        <div class="form-group">
+                            <label><i class="fa-solid fa-comment-dots"></i> Sporcuya Antrenman Direktifi & Revizyon Notu</label>
+                            <textarea id="coach-rx-workout-note" rows="2" class="form-textarea" placeholder="Örn: Bu hafta üst göğüs ve arka omuz hacmini artırdık. Top setlerde RIR 0 tükenişe sadık kal, dinlenme günlerini beslenmeyle doldur!"></textarea>
+                        </div>
+
+                        <!-- Save and Push Actions -->
+                        <div style="display:flex; gap:8px;">
+                            <button type="button" class="btn btn-outline" onclick="resetCoachWorkoutRevToOriginal()" style="flex:1;">
+                                <i class="fa-solid fa-rotate-left"></i> Sıfırla
+                            </button>
+                            <button type="button" class="btn btn-primary" onclick="submitCoachWorkoutPrescription()" style="flex:2; background:linear-gradient(135deg, #ffd60a, #ff9f0a); color:#000; font-weight:800;">
+                                <i class="fa-solid fa-floppy-disk"></i> Antrenman Programını Kaydet & Sporcuya İlet
+                            </button>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -2320,6 +2493,6 @@
     <!-- Notification Toast -->
     <div id="toast" class="toast">Kaydedildi</div>
 
-    <script src="app.js?v=3.9.0"></script>
+    <script src="app.js?v=3.10.0"></script>
 </body>
 </html>

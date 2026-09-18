@@ -2882,6 +2882,43 @@ body.modal-open {
     margin-top: 4px;
 }
 
+/* Coach Workout Revision Desk Styles */
+.coach-rx-segmented-tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 14px;
+    background: var(--bg-input);
+    padding: 4px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-subtle);
+}
+
+.coach-rx-tab-btn {
+    flex: 1;
+    padding: 9px 6px;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.coach-rx-days-bar .deep-tab {
+    min-height: 48px;
+    justify-content: center;
+}
+
+.coach-rx-ex-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
 /* ==================== FORM SELECT & TEXTAREA ==================== */
 .form-select, .form-textarea {
     width: 100%;

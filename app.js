@@ -6766,14 +6766,23 @@ function renderCoachDetail(username) {
 function loadAthleteForPrescription(username) {
     currentCoachSelectedAthlete = username;
     navigateCoachTab("prescriptions");
+    switchCoachRxTab(currentCoachRxTab || "diet");
 }
 
 function renderCoachPrescriptions(username) {
     const registry = getUsersRegistry();
     const selectEl = document.getElementById("rx-athlete-select");
+    const workoutSelectEl = document.getElementById("rx-workout-athlete-select");
     if (selectEl) {
         const athletes = Object.values(registry).filter(u => u.role !== "coach");
-        selectEl.innerHTML = athletes.map(a => `<option value="${a.username}" ${a.username === username ? 'selected' : ''}>${a.displayName || a.username} (@${a.username})</option>`).join('');
+        const optionsHtml = athletes.map(a => `<option value="${a.username}" ${a.username === username ? 'selected' : ''}>${a.displayName || a.username} (@${a.username})</option>`).join('');
+        selectEl.innerHTML = optionsHtml;
+        if (workoutSelectEl) workoutSelectEl.innerHTML = optionsHtml;
+    }
+
+    if (currentCoachRxTab === "workout") {
+        initCoachWorkoutRev(username);
+        return;
     }
 
     const ath = registry[username];
@@ -6876,8 +6885,569 @@ function submitCoachPrescription() {
     });
     saveChatDB(chatDb);
 
-    showToast("Revizyon başarıyla sporcuya iletildi! 🚀");
+    showToast("Diyet revizyonu başarıyla sporcuya iletildi! 🚀");
     renderCoachPrescriptions(username);
+}
+
+// ==================== COACH WORKOUT REVISION ENGINE ====================
+
+let currentCoachRxTab = "diet"; // "diet" or "workout"
+let currentCoachWorkoutRevDay = "pzt"; // "pzt", "sal", "car", "per", "cum", "cmt", "paz"
+let currentCoachWorkoutDrafts = {}; // { [username]: { pzt: {...}, sal: {...}, ... } }
+let currentCoachRxLibCategory = "chest";
+let currentCoachRxLibSearch = "";
+let isCoachRxAddDrawerOpen = false;
+
+const COACH_DAY_NAMES = {
+    pzt: "Pazartesi",
+    sal: "Salı",
+    car: "Çarşamba",
+    per: "Perşembe",
+    cum: "Cuma",
+    cmt: "Cumartesi",
+    paz: "Pazar"
+};
+
+const COACH_DAY_SHORT_NAMES = {
+    pzt: "Pzt",
+    sal: "Sal",
+    car: "Çar",
+    per: "Per",
+    cum: "Cum",
+    cmt: "Cmt",
+    paz: "Paz"
+};
+
+function switchCoachRxTab(tab) {
+    currentCoachRxTab = tab || "diet";
+    const dietPanel = document.getElementById("coach-rx-diet-panel");
+    const workoutPanel = document.getElementById("coach-rx-workout-panel");
+    const btnDiet = document.getElementById("btn-coach-rx-diet");
+    const btnWorkout = document.getElementById("btn-coach-rx-workout");
+
+    if (currentCoachRxTab === "diet") {
+        if (dietPanel) dietPanel.style.display = "block";
+        if (workoutPanel) workoutPanel.style.display = "none";
+        if (btnDiet) {
+            btnDiet.classList.add("active");
+            btnDiet.style.background = "#ffd60a";
+            btnDiet.style.color = "#000000";
+        }
+        if (btnWorkout) {
+            btnWorkout.classList.remove("active");
+            btnWorkout.style.background = "transparent";
+            btnWorkout.style.color = "var(--text-secondary)";
+        }
+        renderCoachPrescriptions(currentCoachSelectedAthlete);
+    } else {
+        if (dietPanel) dietPanel.style.display = "none";
+        if (workoutPanel) workoutPanel.style.display = "block";
+        if (btnWorkout) {
+            btnWorkout.classList.add("active");
+            btnWorkout.style.background = "#ffd60a";
+            btnWorkout.style.color = "#000000";
+        }
+        if (btnDiet) {
+            btnDiet.classList.remove("active");
+            btnDiet.style.background = "transparent";
+            btnDiet.style.color = "var(--text-secondary)";
+        }
+        initCoachWorkoutRev(currentCoachSelectedAthlete);
+    }
+}
+
+function goToWorkoutPrescriptionForCurrentAthlete() {
+    navigateCoachTab("prescriptions");
+    switchCoachRxTab("workout");
+}
+
+function initCoachWorkoutRev(username) {
+    const registry = getUsersRegistry();
+    const athletes = Object.values(registry).filter(u => u.role !== "coach");
+    if (athletes.length === 0) return;
+
+    if (!username || !registry[username]) {
+        username = athletes[0].username;
+        currentCoachSelectedAthlete = username;
+    }
+
+    // Populate athlete dropdown
+    const selectEl = document.getElementById("rx-workout-athlete-select");
+    if (selectEl) {
+        selectEl.innerHTML = athletes.map(a => `<option value="${a.username}" ${a.username === username ? 'selected' : ''}>${a.displayName || a.username} (@${a.username})</option>`).join('');
+    }
+
+    // Load or initialize draft
+    if (!currentCoachWorkoutDrafts[username]) {
+        const ath = registry[username];
+        const uData = ath.data || {};
+        const sourcePlan = uData.customWorkoutPlan || DEFAULT_WORKOUT_PLAN;
+        currentCoachWorkoutDrafts[username] = JSON.parse(JSON.stringify(sourcePlan));
+    }
+
+    renderCoachWorkoutRevDaysBar();
+    renderCoachWorkoutRevDay();
+}
+
+function changeCoachWorkoutAthlete(username) {
+    currentCoachSelectedAthlete = username;
+    const dietSelect = document.getElementById("rx-athlete-select");
+    if (dietSelect) dietSelect.value = username;
+    const detailSelect = document.getElementById("coach-detail-athlete-select");
+    if (detailSelect) detailSelect.value = username;
+    initCoachWorkoutRev(username);
+}
+
+function selectCoachRxDay(dayKey) {
+    currentCoachWorkoutRevDay = dayKey;
+    renderCoachWorkoutRevDaysBar();
+    renderCoachWorkoutRevDay();
+}
+
+function renderCoachWorkoutRevDaysBar() {
+    const container = document.getElementById("coach-rx-days-bar");
+    if (!container) return;
+
+    const username = currentCoachSelectedAthlete;
+    const draft = currentCoachWorkoutDrafts[username] || DEFAULT_WORKOUT_PLAN;
+    const days = ['pzt', 'sal', 'car', 'per', 'cum', 'cmt', 'paz'];
+
+    container.innerHTML = days.map(dayKey => {
+        const isActive = currentCoachWorkoutRevDay === dayKey;
+        const dayPlan = draft[dayKey] || { title: COACH_DAY_NAMES[dayKey], exercises: [], isRest: false };
+        const exCount = (dayPlan.exercises && dayPlan.exercises.length) || 0;
+        const isOff = dayPlan.isRest || exCount === 0;
+
+        return `
+            <button type="button" class="deep-tab ${isActive ? 'active' : ''}" onclick="selectCoachRxDay('${dayKey}')" style="padding:6px 2px; display:flex; flex-direction:column; align-items:center; gap:2px; ${isActive ? 'background:#ffd60a; color:#000; border-color:#ffd60a;' : ''}">
+                <span style="font-weight:800; font-size:0.75rem;">${COACH_DAY_SHORT_NAMES[dayKey]}</span>
+                <span style="font-size:0.58rem; opacity:${isActive ? '0.9' : '0.75'}; font-weight:600;">
+                    ${isOff ? 'OFF' : `${exCount} Hrk`}
+                </span>
+            </button>
+        `;
+    }).join('');
+}
+
+function renderCoachWorkoutRevDay() {
+    const username = currentCoachSelectedAthlete;
+    if (!username || !currentCoachWorkoutDrafts[username]) return;
+
+    const draft = currentCoachWorkoutDrafts[username];
+    const dayKey = currentCoachWorkoutRevDay;
+    if (!draft[dayKey]) {
+        draft[dayKey] = {
+            title: `${COACH_DAY_NAMES[dayKey]} Antrenmanı`,
+            desc: "Hipertrofi & Kas Kazanımı",
+            exercises: [],
+            isRest: false
+        };
+    }
+    const dayPlan = draft[dayKey];
+    if (!dayPlan.exercises) dayPlan.exercises = [];
+
+    // Header inputs
+    const headingEl = document.getElementById("coach-rx-active-day-heading");
+    const isOffEl = document.getElementById("coach-rx-day-is-off");
+    const titleEl = document.getElementById("coach-rx-day-title");
+    const descEl = document.getElementById("coach-rx-day-desc");
+    const countEl = document.getElementById("coach-rx-ex-count");
+
+    if (headingEl) headingEl.innerHTML = `<i class="fa-solid fa-calendar-day" style="color:var(--coach-gold);"></i> ${COACH_DAY_NAMES[dayKey]} Programı`;
+    if (isOffEl) isOffEl.checked = Boolean(dayPlan.isRest);
+    if (titleEl) titleEl.value = dayPlan.title || "";
+    if (descEl) descEl.value = dayPlan.desc || "";
+    if (countEl) countEl.innerText = dayPlan.exercises.length;
+
+    // Render Exercises List
+    const listContainer = document.getElementById("coach-rx-exercises-container");
+    if (!listContainer) return;
+
+    if (dayPlan.isRest || dayPlan.exercises.length === 0) {
+        listContainer.innerHTML = `
+            <div style="text-align:center; padding:20px 10px; background:var(--bg-input); border:1px dashed var(--border-subtle); border-radius:var(--radius-md);">
+                <div style="font-size:1.8rem; margin-bottom:6px;">😴</div>
+                <strong style="color:#ffffff; font-size:0.82rem; display:block;">Bu Gün Dinlenme / OFF Olarak Ayarlı</strong>
+                <p style="color:var(--text-secondary); font-size:0.72rem; margin-top:3px; margin-bottom:10px;">
+                    Sporcu bu günde toparlanacak. Egzersiz eklemek için aşağıdaki butona basın.
+                </p>
+                <button type="button" class="btn btn-xs btn-primary" onclick="toggleCoachAddExDrawer()" style="background:#ffd60a; color:#000; font-weight:700;">
+                    <i class="fa-solid fa-plus"></i> Egzersiz Ekle (Günü Aktifleştir)
+                </button>
+            </div>
+        `;
+    } else {
+        listContainer.innerHTML = dayPlan.exercises.map((ex, idx) => {
+            const isFirst = idx === 0;
+            const isLast = idx === dayPlan.exercises.length - 1;
+
+            return `
+                <div class="card" style="background:var(--bg-input); border:1px solid var(--border-subtle); padding:10px; margin-bottom:8px; position:relative;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; flex-wrap:wrap; gap:4px;">
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <span class="badge-role" style="background:#ffd60a; color:#000; font-size:0.65rem; font-weight:800; padding:2px 6px;">#${idx + 1}</span>
+                            <span class="muscle-tag" style="font-size:0.68rem; color:#60a5fa; background:rgba(96,165,250,0.15); padding:2px 6px; border-radius:4px;">${ex.muscle || 'Genel'}</span>
+                            ${ex.isTopSet ? `<span class="top-set-badge" style="font-size:0.6rem; padding:1px 5px;"><i class="fa-solid fa-fire"></i> TOP SET</span>` : ''}
+                        </div>
+                        <div style="display:flex; align-items:center; gap:4px;">
+                            <button type="button" class="btn-chat-sync" onclick="moveCoachRxExercise(${idx}, -1)" ${isFirst ? 'disabled style="opacity:0.3; cursor:default;"' : ''} title="Yukarı Taşı" style="padding:2px 7px; font-size:0.65rem;">
+                                <i class="fa-solid fa-arrow-up"></i>
+                            </button>
+                            <button type="button" class="btn-chat-sync" onclick="moveCoachRxExercise(${idx}, 1)" ${isLast ? 'disabled style="opacity:0.3; cursor:default;"' : ''} title="Aşağı Taşı" style="padding:2px 7px; font-size:0.65rem;">
+                                <i class="fa-solid fa-arrow-down"></i>
+                            </button>
+                            <button type="button" class="btn-delete-item" onclick="removeCoachRxExercise(${idx})" title="Egzersizi Sil" style="padding:3px 7px; font-size:0.7rem; margin-left:4px;">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Row 1: Exercise Name & Top Set Toggle -->
+                    <div class="form-row-2" style="margin-bottom:6px;">
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label style="font-size:0.65rem;">Hareket Adı</label>
+                            <input type="text" value="${ex.name || ''}" onchange="updateCoachRxExField(${idx}, 'name', this.value)" placeholder="Egzersiz Adı" style="font-size:0.75rem; padding:5px 8px; font-weight:700;">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label style="font-size:0.65rem;">Hedef Tekrar & RIR</label>
+                            <input type="text" value="${ex.target || ''}" onchange="updateCoachRxExField(${idx}, 'target', this.value)" placeholder="Örn: 2-3 Set (6-9 Tekrar)" style="font-size:0.75rem; padding:5px 8px;">
+                        </div>
+                    </div>
+
+                    <!-- Row 2: Default Sets, Seat/Machine Setup, Top Set Checkbox -->
+                    <div style="display:grid; grid-template-columns: 80px 1fr auto; gap:6px; align-items:flex-end;">
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label style="font-size:0.65rem;">Set Sayısı</label>
+                            <input type="number" min="1" max="10" value="${ex.defaultSets || 2}" onchange="updateCoachRxExField(${idx}, 'defaultSets', parseInt(this.value)||2)" style="font-size:0.75rem; padding:5px 8px;">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label style="font-size:0.65rem;">Sehpa / Koltuk / Ekipman Ayarı</label>
+                            <input type="text" value="${ex.defaultSeat || ''}" onchange="updateCoachRxExField(${idx}, 'defaultSeat', this.value)" placeholder="Örn: Koltuk: 4, Açı: 30°" style="font-size:0.75rem; padding:5px 8px;">
+                        </div>
+                        <div style="padding-bottom:6px;">
+                            <label style="display:flex; align-items:center; gap:4px; font-size:0.68rem; color:#ffd60a; cursor:pointer; white-space:nowrap;">
+                                <input type="checkbox" ${ex.isTopSet ? 'checked' : ''} onchange="updateCoachRxExField(${idx}, 'isTopSet', this.checked)" style="accent-color:#ffd60a;">
+                                <span>Top Set</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    if (isCoachRxAddDrawerOpen) {
+        renderCoachRxLibExercises();
+    }
+}
+
+function updateCoachRxDayMeta() {
+    const username = currentCoachSelectedAthlete;
+    if (!username || !currentCoachWorkoutDrafts[username]) return;
+
+    const dayPlan = currentCoachWorkoutDrafts[username][currentCoachWorkoutRevDay];
+    if (!dayPlan) return;
+
+    dayPlan.title = document.getElementById("coach-rx-day-title").value.trim();
+    dayPlan.desc = document.getElementById("coach-rx-day-desc").value.trim();
+}
+
+function toggleCoachRxDayRest(isRest) {
+    const username = currentCoachSelectedAthlete;
+    if (!username || !currentCoachWorkoutDrafts[username]) return;
+
+    const dayPlan = currentCoachWorkoutDrafts[username][currentCoachWorkoutRevDay];
+    if (!dayPlan) return;
+
+    dayPlan.isRest = Boolean(isRest);
+    if (dayPlan.isRest) {
+        if (!dayPlan.title || dayPlan.title.includes("Antrenmanı")) {
+            dayPlan.title = "OFF (Tam Dinlenme)";
+        }
+        if (!dayPlan.desc) {
+            dayPlan.desc = "Kas Onarımı, Beslenme ve Su Alımına Devam";
+        }
+    } else {
+        if (dayPlan.title.includes("OFF")) {
+            dayPlan.title = `${COACH_DAY_NAMES[currentCoachWorkoutRevDay]} Antrenmanı`;
+        }
+    }
+
+    renderCoachWorkoutRevDaysBar();
+    renderCoachWorkoutRevDay();
+}
+
+function updateCoachRxExField(index, field, value) {
+    const username = currentCoachSelectedAthlete;
+    if (!username || !currentCoachWorkoutDrafts[username]) return;
+
+    const dayPlan = currentCoachWorkoutDrafts[username][currentCoachWorkoutRevDay];
+    if (!dayPlan || !dayPlan.exercises[index]) return;
+
+    dayPlan.exercises[index][field] = value;
+}
+
+function moveCoachRxExercise(index, direction) {
+    const username = currentCoachSelectedAthlete;
+    if (!username || !currentCoachWorkoutDrafts[username]) return;
+
+    const dayPlan = currentCoachWorkoutDrafts[username][currentCoachWorkoutRevDay];
+    if (!dayPlan || !dayPlan.exercises) return;
+
+    const targetIndex = index + direction;
+    if (targetIndex < 0 || targetIndex >= dayPlan.exercises.length) return;
+
+    const temp = dayPlan.exercises[index];
+    dayPlan.exercises[index] = dayPlan.exercises[targetIndex];
+    dayPlan.exercises[targetIndex] = temp;
+
+    renderCoachWorkoutRevDay();
+}
+
+function removeCoachRxExercise(index) {
+    const username = currentCoachSelectedAthlete;
+    if (!username || !currentCoachWorkoutDrafts[username]) return;
+
+    const dayPlan = currentCoachWorkoutDrafts[username][currentCoachWorkoutRevDay];
+    if (!dayPlan || !dayPlan.exercises[index]) return;
+
+    const removed = dayPlan.exercises.splice(index, 1)[0];
+    renderCoachWorkoutRevDaysBar();
+    renderCoachWorkoutRevDay();
+    showToast(`${removed.name} çıkarıldı.`);
+}
+
+function toggleCoachAddExDrawer() {
+    isCoachRxAddDrawerOpen = !isCoachRxAddDrawerOpen;
+    const drawer = document.getElementById("coach-rx-add-drawer");
+    if (drawer) {
+        drawer.style.display = isCoachRxAddDrawerOpen ? "block" : "none";
+        if (isCoachRxAddDrawerOpen) {
+            renderCoachRxLibExercises();
+            drawer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    }
+}
+
+function setCoachRxLibCategory(category, btn) {
+    currentCoachRxLibCategory = category || "chest";
+    const pillContainer = document.getElementById("coach-rx-muscle-pills");
+    if (pillContainer) {
+        pillContainer.querySelectorAll(".subregion-chip").forEach(b => b.classList.remove("active"));
+        if (btn) btn.classList.add("active");
+    }
+    renderCoachRxLibExercises();
+}
+
+function filterCoachRxLibrary(query) {
+    currentCoachRxLibSearch = (query || "").trim().toLowerCase();
+    renderCoachRxLibExercises();
+}
+
+function renderCoachRxLibExercises() {
+    const container = document.getElementById("coach-rx-library-list");
+    if (!container) return;
+
+    const username = currentCoachSelectedAthlete;
+    const dayPlan = currentCoachWorkoutDrafts[username] && currentCoachWorkoutDrafts[username][currentCoachWorkoutRevDay];
+    const currentExNames = dayPlan ? dayPlan.exercises.map(e => e.name) : [];
+    const q = currentCoachRxLibSearch;
+
+    const filtered = EXERCISE_LIBRARY.filter(ex => {
+        if (q && q.length > 0) {
+            return ex.name.toLowerCase().includes(q) ||
+                   ex.muscle.toLowerCase().includes(q) ||
+                   (ex.desc && ex.desc.toLowerCase().includes(q));
+        }
+        return ex.category === currentCoachRxLibCategory;
+    });
+
+    if (filtered.length === 0) {
+        container.innerHTML = `<p class="text-secondary" style="font-size:0.75rem; text-align:center; padding:12px;">Aradığınız kritere uygun egzersiz bulunamadı.</p>`;
+        return;
+    }
+
+    container.innerHTML = filtered.map(ex => {
+        const isAdded = currentExNames.includes(ex.name);
+
+        return `
+            <div class="deep-meal-item" style="display:flex; justify-content:space-between; align-items:center; padding:8px 10px; margin-bottom:4px;">
+                <div style="flex:1;">
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <strong style="color:#ffffff; font-size:0.78rem;">${ex.name}</strong>
+                        ${ex.isTopSet ? `<span class="top-set-badge" style="font-size:0.58rem; padding:1px 4px;"><i class="fa-solid fa-fire"></i> TOP SET</span>` : ''}
+                    </div>
+                    <div style="font-size:0.68rem; color:var(--text-secondary); margin-top:2px;">
+                        <span style="color:#60a5fa;">${ex.muscle}</span> • ${ex.defaultTarget} ${ex.defaultSeat ? `• <em>${ex.defaultSeat}</em>` : ''}
+                    </div>
+                </div>
+                <div>
+                    ${isAdded 
+                        ? `<button type="button" class="btn btn-xs btn-outline" style="color:var(--status-green); border-color:var(--status-green); cursor:default; font-size:0.65rem;" disabled><i class="fa-solid fa-check"></i> Ekli</button>`
+                        : `<button type="button" class="btn btn-xs btn-primary" onclick="addExerciseToCoachWorkoutRev('${ex.id}')" style="background:#ffd60a; color:#000; font-weight:700; font-size:0.68rem;"><i class="fa-solid fa-plus"></i> Ekle</button>`
+                    }
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function addExerciseToCoachWorkoutRev(libExId) {
+    const libEx = EXERCISE_LIBRARY.find(e => e.id === libExId);
+    if (!libEx) return;
+
+    const username = currentCoachSelectedAthlete;
+    if (!username || !currentCoachWorkoutDrafts[username]) return;
+
+    const dayPlan = currentCoachWorkoutDrafts[username][currentCoachWorkoutRevDay];
+    if (!dayPlan) return;
+
+    if (!dayPlan.exercises) dayPlan.exercises = [];
+
+    const newEx = {
+        id: `${currentCoachWorkoutRevDay}_${Date.now()}`,
+        name: libEx.name,
+        muscle: libEx.muscle,
+        target: libEx.defaultTarget,
+        defaultSets: libEx.defaultSets || 2,
+        defaultSeat: libEx.defaultSeat || "",
+        isTopSet: Boolean(libEx.isTopSet)
+    };
+
+    dayPlan.exercises.push(newEx);
+    dayPlan.isRest = false;
+
+    renderCoachWorkoutRevDaysBar();
+    renderCoachWorkoutRevDay();
+    showToast(`${libEx.name} programa eklendi! 💪`);
+}
+
+function addCoachCustomExerciseToDay() {
+    const nameEl = document.getElementById("coach-custom-ex-name");
+    const muscleEl = document.getElementById("coach-custom-ex-muscle");
+    const targetEl = document.getElementById("coach-custom-ex-target");
+    const seatEl = document.getElementById("coach-custom-ex-seat");
+    const topsetEl = document.getElementById("coach-custom-ex-topset");
+
+    const name = nameEl ? nameEl.value.trim() : "";
+    if (!name) {
+        showToast("Lütfen bir egzersiz adı girin! ⚠️");
+        return;
+    }
+
+    const username = currentCoachSelectedAthlete;
+    if (!username || !currentCoachWorkoutDrafts[username]) return;
+
+    const dayPlan = currentCoachWorkoutDrafts[username][currentCoachWorkoutRevDay];
+    if (!dayPlan) return;
+
+    if (!dayPlan.exercises) dayPlan.exercises = [];
+
+    const newEx = {
+        id: `${currentCoachWorkoutRevDay}_custom_${Date.now()}`,
+        name: name,
+        muscle: muscleEl && muscleEl.value.trim() ? muscleEl.value.trim() : "Özel Bölge",
+        target: targetEl && targetEl.value.trim() ? targetEl.value.trim() : "2-3 Set (8-10 Tekrar)",
+        defaultSets: 2,
+        defaultSeat: seatEl && seatEl.value.trim() ? seatEl.value.trim() : "",
+        isTopSet: topsetEl ? topsetEl.checked : false
+    };
+
+    dayPlan.exercises.push(newEx);
+    dayPlan.isRest = false;
+
+    // Reset inputs
+    if (nameEl) nameEl.value = "";
+    if (muscleEl) muscleEl.value = "";
+    if (targetEl) targetEl.value = "";
+    if (seatEl) seatEl.value = "";
+    if (topsetEl) topsetEl.checked = false;
+
+    renderCoachWorkoutRevDaysBar();
+    renderCoachWorkoutRevDay();
+    showToast(`${name} özel egzersiz olarak eklendi! ✨`);
+}
+
+function applyTemplateToCoachWorkout(templateId) {
+    if (!templateId) return;
+
+    const tmpl = MASTER_SPLIT_TEMPLATES.find(t => t.id === templateId);
+    if (!tmpl) return;
+
+    const confirmApply = confirm(`"${tmpl.name}" şablonunu bu sporcuya uygulamak istediğinize emin misiniz? Mevcut 7 günlük programın üzerine yazılacaktır.`);
+    if (!confirmApply) {
+        const selectEl = document.getElementById("coach-rx-template-select");
+        if (selectEl) selectEl.value = "";
+        return;
+    }
+
+    const username = currentCoachSelectedAthlete;
+    currentCoachWorkoutDrafts[username] = JSON.parse(JSON.stringify(tmpl.plan));
+
+    const selectEl = document.getElementById("coach-rx-template-select");
+    if (selectEl) selectEl.value = "";
+
+    renderCoachWorkoutRevDaysBar();
+    renderCoachWorkoutRevDay();
+    showToast(`"${tmpl.name}" şablonu başarıyla yüklendi! Kaydetmeyi unutmayın. 🚀`);
+}
+
+function resetCoachWorkoutRevToOriginal() {
+    const username = currentCoachSelectedAthlete;
+    if (!username) return;
+
+    const registry = getUsersRegistry();
+    const ath = registry[username];
+    const originalPlan = (ath && ath.data && ath.data.customWorkoutPlan) || DEFAULT_WORKOUT_PLAN;
+
+    currentCoachWorkoutDrafts[username] = JSON.parse(JSON.stringify(originalPlan));
+    renderCoachWorkoutRevDaysBar();
+    renderCoachWorkoutRevDay();
+    showToast("Antrenman programı orijinal haline sıfırlandı.");
+}
+
+function submitCoachWorkoutPrescription() {
+    const username = currentCoachSelectedAthlete;
+    if (!username || !currentCoachWorkoutDrafts[username]) return;
+
+    // Make sure latest input values are saved
+    updateCoachRxDayMeta();
+
+    const planToSave = JSON.parse(JSON.stringify(currentCoachWorkoutDrafts[username]));
+
+    // Update Registry
+    const registry = getUsersRegistry();
+    if (registry[username] && registry[username].data) {
+        registry[username].data.customWorkoutPlan = planToSave;
+        saveUsersRegistry(registry);
+    }
+
+    // If the active local app session is this athlete, sync appData as well
+    if (appData && appData.username === username) {
+        appData.customWorkoutPlan = JSON.parse(JSON.stringify(planToSave));
+        saveDataToStorage();
+        renderWorkoutDayTabs();
+        renderWorkoutView(currentActiveDay);
+    }
+
+    // Send notification in Coach Chat
+    const noteEl = document.getElementById("coach-rx-workout-note");
+    const coachNote = (noteEl && noteEl.value.trim()) || "Haftalık antrenman splitiniz ve hareketleriniz güncellendi.";
+
+    const chatDb = getChatDB();
+    if (!chatDb[username]) chatDb[username] = [];
+    chatDb[username].push({
+        sender: "coach",
+        text: `🏋️ [YENİ ANTRENMAN PROGRAMI]: Koçunuz haftalık antrenman splitinizi ve hareketlerinizi güncelledi! Antrenman Defteri sekmesinden yeni programınızı uygulayabilirsiniz.\nDirektif: "${coachNote}"`,
+        time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
+        date: new Date().toISOString().split('T')[0],
+        read: false
+    });
+    saveChatDB(chatDb);
+
+    showToast("Antrenman programı başarıyla sporcuya iletildi ve kaydedildi! 🏆");
+    renderCoachWorkoutRevDaysBar();
+    renderCoachWorkoutRevDay();
 }
 
 // ==================== REALTIME ONLINE CLOUD CHAT & LIVE PUBSUB ENGINE ====================
