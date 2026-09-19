@@ -5032,13 +5032,9 @@ function renderWorkoutView(dayKey) {
             html += `
                 <tr class="set-row ${isExtraBackOff ? 'set-row-extra' : ''}" style="${isExtraBackOff ? 'background:rgba(96,165,250,0.05);' : ''}">
                     <td>
-                        <select class="set-type-select ${tagClass}" id="type_${ex.id}_${i}" onchange="autoSaveSet('${ex.id}', ${i})" title="Set Tipi Seç">
-                            <option value="TOP" ${currentSetType === 'TOP' ? 'selected' : ''}>🔥 TOP</option>
-                            <option value="BACK" ${currentSetType === 'BACK' ? 'selected' : ''}>⚡ BACK</option>
-                            <option value="S${i}" ${currentSetType === 'S' + i ? 'selected' : ''}>S${i}</option>
-                            <option value="ISINMA" ${currentSetType === 'ISINMA' ? 'selected' : ''}>🟡 ISINMA</option>
-                            <option value="DROP" ${currentSetType === 'DROP' ? 'selected' : ''}>💥 DROP</option>
-                        </select>
+                        <span class="set-tag ${tagClass}" id="type_${ex.id}_${i}" data-set-type="${currentSetType}" title="Set Tipi: ${currentSetType}">
+                            ${currentSetType === 'TOP' ? '🔥 TOP' : currentSetType === 'BACK' ? '⚡ BACK' : currentSetType === 'ISINMA' ? '🟡 ISIN' : currentSetType === 'DROP' ? '💥 DROP' : currentSetType}
+                        </span>
                     </td>
                     <td style="font-size: 0.75rem; color: var(--text-muted); line-height:1.25;">
                         <div>${prevSet.weight !== '-' ? `<span style="color:#ffffff; font-weight:700;">${prevSet.weight}kg</span> × ${prevSet.reps}` : '<span style="opacity:0.35;">-</span>'}</div>
@@ -5116,7 +5112,7 @@ function autoSaveSet(exId, setIndex) {
     const w = parseFloat(weightEl.value) || 0;
     const r = parseInt(repsEl.value) || 0;
     const rir = rirEl ? rirEl.value : "";
-    const setType = typeEl ? typeEl.value : `S${setIndex}`;
+    const setType = typeEl ? (typeEl.getAttribute('data-set-type') || typeEl.value || `S${setIndex}`) : `S${setIndex}`;
 
     if (typeEl) {
         typeEl.className = `set-type-select ${setType === 'TOP' ? 'tag-top' : setType === 'BACK' ? 'tag-back' : setType === 'ISINMA' ? 'tag-warm' : setType === 'DROP' ? 'tag-drop' : 'tag-normal'}`;
@@ -9400,10 +9396,12 @@ function connectRealtimeChatCloud(targetAthleteUsername) {
                         try {
                             innerPayload = JSON.parse(data.message);
                         } catch (pe) {
-                            innerPayload = { text: data.message, sender: "cloud" };
+                            if (!data.message.includes("You received a file:") && !data.message.includes("attachment.json")) {
+                                innerPayload = { type: "chat_msg", text: data.message, sender: "coach" };
+                            }
                         }
                     }
-                    if (innerPayload) {
+                    if (innerPayload && innerPayload.type) {
                         handleIncomingLiveEvent(innerPayload, "cloud");
                     }
                 }
@@ -9466,7 +9464,9 @@ async function syncCloudHistory(targetAthleteUsername, force = false) {
                         try {
                             payload = JSON.parse(item.message);
                         } catch (pe) {
-                            payload = { type: "chat_msg", text: item.message, sender: "coach" };
+                            if (!item.message.includes("You received a file:") && !item.message.includes("attachment.json")) {
+                                payload = { type: "chat_msg", text: item.message, sender: "coach" };
+                            }
                         }
                     }
                     if (payload && payload.type) {
@@ -9750,6 +9750,90 @@ function hideLiveTypingIndicator(recipientRole) {
     }
 }
 
+function escapeHtml(str) {
+    if (!str) return "";
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+function formatChatMessage(text) {
+    if (!text) return "";
+    let clean = String(text).trim();
+
+    // Check for raw ntfy attachment notices or raw JSON
+    if (clean.includes("You received a file:") || clean.includes("attachment.json") || clean.startsWith('{"type":"workout_revision"') || clean.startsWith('{"type":"diet_revision"') || clean.startsWith('{"type":')) {
+        let note = "";
+        let isDiet = clean.includes("diet_revision");
+        try {
+            if (clean.startsWith("{")) {
+                const parsed = JSON.parse(clean);
+                if (parsed.coachNote) note = parsed.coachNote;
+                if (parsed.type === "diet_revision") isDiet = true;
+            }
+        } catch (e) {}
+
+        if (isDiet) {
+            return `
+                <div class="chat-rx-card" style="background:linear-gradient(135deg, rgba(52,199,89,0.12), rgba(48,209,88,0.06)); border:1px solid rgba(52,199,89,0.35); border-radius:10px; padding:10px 12px; margin:2px 0;">
+                    <div style="color:#34c759; font-weight:800; font-size:0.78rem; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
+                        <i class="fa-solid fa-utensils"></i> Yeni Diyet & Hedef Programı İletildi
+                    </div>
+                    <div style="font-size:0.72rem; color:var(--text-secondary); line-height:1.4;">
+                        Koçunuz günlük beslenme ve kalori makro hedeflerinizi güncelledi.
+                    </div>
+                    ${note ? `<div style="font-size:0.7rem; color:#ffffff; margin-top:6px; padding:4px 8px; background:rgba(0,0,0,0.3); border-radius:6px; border-left:2px solid #34c759;"><strong>Koç Direktifi:</strong> ${escapeHtml(note)}</div>` : ''}
+                </div>
+            `;
+        }
+
+        return `
+            <div class="chat-rx-card" style="background:linear-gradient(135deg, rgba(255,214,10,0.12), rgba(255,159,10,0.06)); border:1px solid rgba(255,214,10,0.35); border-radius:10px; padding:10px 12px; margin:2px 0;">
+                <div style="color:#ffd60a; font-weight:800; font-size:0.78rem; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
+                    <i class="fa-solid fa-dumbbell"></i> Yeni Antrenman Programı İletildi
+                </div>
+                <div style="font-size:0.72rem; color:var(--text-secondary); line-height:1.4;">
+                    Koçunuz haftalık antrenman splitinizi ve hareketlerinizi güncelledi. Antrenman Defteri sekmesinden yeni programınızı hemen uygulayabilirsiniz.
+                </div>
+                ${note ? `<div style="font-size:0.7rem; color:#ffffff; margin-top:6px; padding:4px 8px; background:rgba(0,0,0,0.3); border-radius:6px; border-left:2px solid #ffd60a;"><strong>Koç Direktifi:</strong> ${escapeHtml(note)}</div>` : ''}
+            </div>
+        `;
+    }
+
+    if (clean.includes("[YENİ ANTRENMAN PROGRAMI]") || clean.includes("[ANTRENMAN REVİZYONU]")) {
+        const parts = clean.split('\n');
+        const header = parts[0] || "Yeni Antrenman Programı";
+        const rest = parts.slice(1).join('<br>');
+        return `
+            <div class="chat-rx-card" style="background:linear-gradient(135deg, rgba(255,214,10,0.12), rgba(255,159,10,0.06)); border:1px solid rgba(255,214,10,0.35); border-radius:10px; padding:10px 12px; margin:2px 0;">
+                <div style="color:#ffd60a; font-weight:800; font-size:0.78rem; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
+                    <i class="fa-solid fa-dumbbell"></i> ${escapeHtml(header)}
+                </div>
+                ${rest ? `<div style="font-size:0.72rem; color:var(--text-secondary); line-height:1.4; margin-top:4px;">${rest}</div>` : ''}
+            </div>
+        `;
+    }
+
+    if (clean.includes("[DİYET & HEDEF REVİZYONU]")) {
+        const parts = clean.split('\n');
+        const header = parts[0] || "Diyet & Hedef Revizyonu";
+        const rest = parts.slice(1).join('<br>');
+        return `
+            <div class="chat-rx-card" style="background:linear-gradient(135deg, rgba(52,199,89,0.12), rgba(48,209,88,0.06)); border:1px solid rgba(52,199,89,0.35); border-radius:10px; padding:10px 12px; margin:2px 0;">
+                <div style="color:#34c759; font-weight:800; font-size:0.78rem; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
+                    <i class="fa-solid fa-utensils"></i> ${escapeHtml(header)}
+                </div>
+                ${rest ? `<div style="font-size:0.72rem; color:var(--text-secondary); line-height:1.4; margin-top:4px;">${rest}</div>` : ''}
+            </div>
+        `;
+    }
+
+    return escapeHtml(clean).replace(/\n/g, '<br>');
+}
+
 function selectCoachChatAthlete(username) {
     currentCoachSelectedAthlete = username;
     connectRealtimeChatCloud(username);
@@ -9805,7 +9889,7 @@ function renderCoachChat(username) {
             <div class="chat-msg-row ${isCoach ? 'sent' : 'received'}">
                 <div class="chat-bubble ${isCoach ? 'coach' : 'athlete'}">
                     <span class="chat-sender-tag">${isCoach ? '👑 Koç Ömer' : `@${cleanUsername}`}</span>
-                    <div class="chat-text">${m.text}</div>
+                    <div class="chat-text">${formatChatMessage(m.text)}</div>
                 </div>
                 <span class="chat-time">${m.time || ''}</span>
             </div>
@@ -10029,7 +10113,7 @@ function renderAthleteChatMessages(username) {
             <div class="chat-msg-row ${isMe ? 'sent' : 'received'}">
                 <div class="chat-bubble ${isMe ? 'athlete' : 'coach'}">
                     <span class="chat-sender-tag">${isMe ? 'Sen' : '👑 Koç Ömer'}</span>
-                    <div class="chat-text">${m.text}</div>
+                    <div class="chat-text">${formatChatMessage(m.text)}</div>
                 </div>
                 <span class="chat-time">${m.time || ''}</span>
             </div>
