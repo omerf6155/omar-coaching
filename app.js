@@ -535,6 +535,19 @@ const EXERCISE_LIBRARY = [
         desc: "Biceps gücünü tamamen sıfırlayarak kanat kaslarını saf omuz ekstansiyonu ile izole eder.",
         tips: "Kolları düz tutun, dirsekleri bükmeyin; barı kalçanıza doğru bastırın."
     },
+    {
+        id: "lib_low_row_mach",
+        name: "Low Row Makine (Plate-Loaded / Göğüs Destekli)",
+        category: "back",
+        subCategory: "lats",
+        muscle: "Alt & Orta Lat (Kanat Kalınlığı & V-Taper)",
+        defaultTarget: "2-3 Set (8-10 Rep, Dirsek Gövdeye Bitişik)",
+        defaultSets: 2,
+        defaultSeat: "Koltuk: 3, Göğüs Pedi: 2",
+        isTopSet: true,
+        desc: "Aşağıdan geriye doğru dar açılı çekişle alt lat liflerini ve sırt kalınlığını maksimum kasılma noktasına ulaştırır. Göğüs desteği sayesinde alt bele sıfır yük biner.",
+        tips: "Göğsü pede dayayın, dirsekleri vücudunuza yapışık tutarak kalça cebinize doğru çekin ve tepe noktada latları 1 saniye sıkın."
+    },
 
     // Orta Sırt & Rhomboid (Mid Back / Kalınlık)
     {
