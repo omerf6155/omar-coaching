@@ -4988,7 +4988,12 @@ function renderWorkoutView(dayKey) {
             <div class="exercise-card">
                 <div class="ex-header">
                     <div class="ex-title-group">
-                        <h3>${ex.name}</h3>
+                        <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                            <h3>${ex.name}</h3>
+                            <button type="button" class="btn-ex-form-check" onclick="openFormVisionModal('${(ex.name || '').replace(/'/g, "\\'")}')" title="Bu egzersiz için video/form analizi yap" style="background:rgba(168,85,247,0.12); border:1px solid rgba(168,85,247,0.35); color:#c084fc; font-size:0.65rem; font-weight:700; padding:2px 6px; border-radius:4px; cursor:pointer;">
+                                <i class="fa-solid fa-video"></i> Form Kontrolü
+                            </button>
+                        </div>
                         <span class="ex-target-badge"><span class="muscle-tag">${ex.muscle || 'Kas Grubu'}</span> ${ex.target}</span>
                     </div>
                     <input type="text" class="ex-seat-input" placeholder="Koltuk/Pim" 
@@ -10527,6 +10532,104 @@ function checkGeminiApiKeyStatus() {
     }
 }
 
+// ==================== 🦍 ENES ABİ ASSISTANT MODAL & MESSAGING CONTROLLERS ====================
+
+function openAssistantModal(personaId = "enes") {
+    activeAssistantPersona = personaId || "enes";
+    const persona = ASSISTANT_PERSONAS[activeAssistantPersona] || ASSISTANT_PERSONAS.enes;
+    
+    // Update modal header
+    const avatarEl = document.getElementById("ai-active-avatar");
+    const nameEl = document.getElementById("ai-active-name");
+    const roleEl = document.getElementById("ai-active-role");
+    
+    if (avatarEl) avatarEl.innerText = persona.avatar;
+    if (nameEl) nameEl.innerText = persona.name;
+    if (roleEl) roleEl.innerText = persona.role;
+
+    // Render topics & messages
+    renderAssistantQuickTopics();
+    renderAssistantMessages();
+    checkGeminiApiKeyStatus();
+
+    openModal('modal-ai-assistant');
+}
+
+function renderAssistantQuickTopics() {
+    const bar = document.getElementById("ai-quick-topics-bar");
+    if (!bar) return;
+    const persona = ASSISTANT_PERSONAS[activeAssistantPersona] || ASSISTANT_PERSONAS.enes;
+    bar.innerHTML = (persona.quickTopics || []).map(t => `
+        <button type="button" class="ai-topic-chip" onclick="triggerAssistantPrompt('${t.id}')">
+            ${t.label}
+        </button>
+    `).join("");
+}
+
+function triggerAssistantPrompt(topicId) {
+    const input = document.getElementById("ai-user-input");
+    const persona = ASSISTANT_PERSONAS[activeAssistantPersona] || ASSISTANT_PERSONAS.enes;
+    const topic = (persona.quickTopics || []).find(t => t.id === topicId);
+    if (!topic) return;
+
+    if (input) {
+        input.value = topic.label.replace(/^[^\w\sğüşıöçĞÜŞİÖÇ]+/, '').trim();
+    }
+    sendAssistantMessage();
+}
+
+function renderAssistantMessages() {
+    const container = document.getElementById("ai-chat-messages");
+    if (!container) return;
+
+    if (!assistantChatHistory.enes || assistantChatHistory.enes.length === 0) {
+        assistantChatHistory.enes = [{
+            sender: "assistant",
+            text: ASSISTANT_PERSONAS.enes.welcomeMsg,
+            time: getCurrentTimeStr()
+        }];
+    }
+
+    const persona = ASSISTANT_PERSONAS[activeAssistantPersona] || ASSISTANT_PERSONAS.enes;
+
+    container.innerHTML = assistantChatHistory.enes.map(msg => {
+        if (msg.sender === "user") {
+            return `
+                <div class="ai-msg-row user">
+                    <div class="ai-msg-bubble">
+                        ${msg.image ? `<img src="${msg.image}" class="ai-msg-img-attachment" alt="Görsel" style="max-width:100%; max-height:180px; border-radius:6px; margin-bottom:6px; display:block;">` : ''}
+                        <div class="ai-msg-text">${msg.text}</div>
+                        <span class="ai-msg-time">${msg.time || ''}</span>
+                    </div>
+                </div>
+            `;
+        } else {
+            return `
+                <div class="ai-msg-row assistant">
+                    <div class="ai-msg-avatar">${persona.avatar}</div>
+                    <div class="ai-msg-bubble">
+                        <div class="ai-msg-text">${msg.text}</div>
+                        ${msg.actionHtml ? `<div class="ai-msg-actions" style="margin-top:8px;">${msg.actionHtml}</div>` : ''}
+                        <span class="ai-msg-time">${msg.time || ''}</span>
+                    </div>
+                </div>
+            `;
+        }
+    }).join("");
+
+    container.scrollTop = container.scrollHeight;
+}
+
+function clearAssistantChat() {
+    assistantChatHistory.enes = [{
+        sender: "assistant",
+        text: ASSISTANT_PERSONAS.enes.welcomeMsg,
+        time: getCurrentTimeStr()
+    }];
+    renderAssistantMessages();
+    showToast("🧹 Enes Abi sohbet geçmişi temizlendi.");
+}
+
 // ==================== MULTI-ENGINE AI & VISION SYSTEM (GEMINI + NVIDIA NIM) ====================
 
 let currentAssistantPhotoBase64 = null;
@@ -11205,8 +11308,25 @@ function addDetectedMealToToday() {
 let currentFormVideoUrl = null;
 let currentFormVideoFrames = [];
 
-function openFormVisionModal() {
+function openFormVisionModal(exerciseName) {
     resetFormVisionUpload();
+    if (exerciseName) {
+        const select = document.getElementById("form-vision-exercise-select");
+        if (select) {
+            let matched = false;
+            for (let i = 0; i < select.options.length; i++) {
+                if (exerciseName.toLowerCase().includes(select.options[i].value.toLowerCase()) || 
+                    select.options[i].text.toLowerCase().includes(exerciseName.toLowerCase())) {
+                    select.selectedIndex = i;
+                    matched = true;
+                    break;
+                }
+            }
+            if (!matched) {
+                select.value = "General";
+            }
+        }
+    }
     openModal('modal-ai-form-vision');
 }
 
@@ -12426,7 +12546,7 @@ Cevap: "Vay aslanım, demir bükücüm! Bomba gibiyim, sen nasılsın? Bakıyoru
     
     // Auto-generate dynamic action buttons based on keywords
     let actionHtml = null;
-    const lowerReply = reply.toLowerCase();
+    const lowerReply = (rawReply || "").toLowerCase();
 
     if (lowerReply.includes("high-to-low") || lowerReply.includes("cable fly") || lowerReply.includes("decline dumbbell")) {
         actionHtml = `

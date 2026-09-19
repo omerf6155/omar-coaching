@@ -6319,6 +6319,180 @@ body.modal-open {
     margin-top: 6px;
 }
 
+/* ==================== FLOATING AI ASSISTANT CLOUD DOCK (ENES ABİ 🦍) ==================== */
+.floating-ai-cloud-dock {
+    position: fixed;
+    right: 18px;
+    bottom: 84px;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    pointer-events: auto;
+}
+
+.ai-cloud-main-btn {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    background: linear-gradient(135deg, rgba(30, 24, 45, 0.96), rgba(15, 12, 22, 0.98));
+    border: 1.5px solid rgba(168, 85, 247, 0.6);
+    border-radius: 9999px;
+    padding: 8px 16px 8px 10px;
+    color: #ffffff;
+    cursor: pointer;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 16px rgba(168, 85, 247, 0.4);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.ai-cloud-main-btn:hover {
+    transform: translateY(-3px) scale(1.04);
+    border-color: #c084fc;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.7), 0 0 24px rgba(168, 85, 247, 0.65);
+}
+
+.ai-cloud-main-btn:active {
+    transform: translateY(1px) scale(0.97);
+}
+
+.ai-cloud-anim-wrap {
+    position: relative;
+    width: 34px;
+    height: 34px;
+    background: linear-gradient(135deg, #a855f7, #6b21a8);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    box-shadow: 0 0 12px rgba(168, 85, 247, 0.6);
+    flex-shrink: 0;
+}
+
+.ai-cloud-anim-wrap .cloud-icon {
+    line-height: 1;
+}
+
+.ai-cloud-anim-wrap .sparkle-icon {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    font-size: 0.75rem;
+    animation: sparkleSpin 2.5s infinite linear;
+}
+
+@keyframes sparkleSpin {
+    0% { transform: rotate(0deg) scale(0.8); opacity: 0.7; }
+    50% { transform: rotate(180deg) scale(1.25); opacity: 1; }
+    100% { transform: rotate(360deg) scale(0.8); opacity: 0.7; }
+}
+
+.ai-cloud-label {
+    font-size: 0.82rem;
+    font-weight: 800;
+    letter-spacing: 0.3px;
+    background: linear-gradient(135deg, #ffffff, #e9d5ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    white-space: nowrap;
+}
+
+.ai-quick-topics-bar {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding: 10px 14px;
+    background: rgba(0, 0, 0, 0.25);
+    border-bottom: 1px solid var(--border-subtle);
+    scrollbar-width: none;
+}
+.ai-quick-topics-bar::-webkit-scrollbar {
+    display: none;
+}
+
+.ai-topic-chip {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: var(--text-secondary);
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+}
+
+.ai-topic-chip:hover, .ai-topic-chip:active {
+    background: rgba(168, 85, 247, 0.2);
+    border-color: #a855f7;
+    color: #fff;
+}
+
+/* Mobile Quick Upload Hub Cards */
+.quick-upload-hub-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.quick-upload-card {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01));
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+}
+
+.quick-upload-card:hover {
+    border-color: var(--border-active);
+    transform: translateY(-2px);
+}
+
+.quick-upload-card.card-checkin {
+    border-color: rgba(255, 214, 10, 0.35);
+    background: linear-gradient(135deg, rgba(255, 214, 10, 0.08), rgba(255, 159, 10, 0.03));
+}
+
+.quick-upload-card.card-form {
+    border-color: rgba(168, 85, 247, 0.35);
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.08), rgba(124, 58, 237, 0.03));
+}
+
+.quick-upload-card.card-food {
+    border-color: rgba(16, 185, 129, 0.35);
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(5, 150, 105, 0.03));
+}
+
+@media (max-width: 600px) {
+    .floating-ai-cloud-dock {
+        right: 12px;
+        bottom: 74px;
+    }
+    .ai-cloud-main-btn {
+        padding: 7px 14px 7px 9px;
+    }
+    .ai-cloud-anim-wrap {
+        width: 30px;
+        height: 30px;
+        font-size: 1.05rem;
+    }
+    .ai-cloud-label {
+        font-size: 0.76rem;
+    }
+}
+
 
 
 
