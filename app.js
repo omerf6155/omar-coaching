@@ -10668,7 +10668,7 @@ function getEffectiveAiConfig() {
     const geminiKey = sanitizeAiApiKey(localStorage.getItem("OMAR_GEMINI_API_KEY") || "");
     const nvidiaKey = sanitizeAiApiKey(localStorage.getItem("OMAR_NVIDIA_API_KEY") || "");
     const geminiModel = localStorage.getItem("OMAR_GEMINI_MODEL") || "gemini-2.5-flash";
-    const nvidiaModel = localStorage.getItem("OMAR_NVIDIA_MODEL") || "meta/llama-3.2-90b-vision-instruct";
+    const nvidiaModel = localStorage.getItem("OMAR_NVIDIA_MODEL") || "meta/llama-3.2-11b-vision-instruct";
 
     const hasGemini = Boolean(geminiKey && geminiKey.length > 10);
     const hasNvidia = Boolean(nvidiaKey && nvidiaKey.length > 10);
@@ -10700,7 +10700,7 @@ function openAiSettingsModal() {
     if (geminiInput) geminiInput.value = localStorage.getItem("OMAR_GEMINI_API_KEY") || "";
     if (nvidiaInput) nvidiaInput.value = localStorage.getItem("OMAR_NVIDIA_API_KEY") || "";
     if (geminiModelSelect) geminiModelSelect.value = localStorage.getItem("OMAR_GEMINI_MODEL") || "gemini-2.5-flash";
-    if (nvidiaModelSelect) nvidiaModelSelect.value = localStorage.getItem("OMAR_NVIDIA_MODEL") || "meta/llama-3.2-90b-vision-instruct";
+    if (nvidiaModelSelect) nvidiaModelSelect.value = localStorage.getItem("OMAR_NVIDIA_MODEL") || "meta/llama-3.2-11b-vision-instruct";
 
     const activeProvider = localStorage.getItem("OMAR_ACTIVE_AI_PROVIDER") || "gemini";
     switchAiProviderTab(activeProvider);
@@ -10991,13 +10991,12 @@ async function callUnifiedAiEngine({ prompt, systemPrompt = "", imageBase64 = nu
     }
 }
 
-async function callNvidiaNimApi({ apiKey, model = "meta/llama-3.3-70b-instruct", prompt, systemPrompt = "", imageBase64 = null, mimeType = "image/jpeg", temperature = 0.7, jsonMode = false }) {
+async function callNvidiaNimApi({ apiKey, model = "meta/llama-3.2-11b-vision-instruct", prompt, systemPrompt = "", imageBase64 = null, mimeType = "image/jpeg", temperature = 0.7, jsonMode = false }) {
     const cleanKey = sanitizeAiApiKey(apiKey);
     const messages = [];
 
-    if (systemPrompt) {
-        messages.push({ role: "system", content: systemPrompt });
-    }
+    // Vision and standard instruct models on NVIDIA NIM handle system prompt inside user content to avoid "error parsing body"
+    const fullTextPrompt = systemPrompt ? `[SİSTEM REHBERİ: ${systemPrompt}]\n\n${prompt}` : prompt;
 
     if (imageBase64) {
         const cleanB64 = imageBase64.replace(/^data:image\/\w+;base64,/, '');
@@ -11005,19 +11004,19 @@ async function callNvidiaNimApi({ apiKey, model = "meta/llama-3.3-70b-instruct",
         messages.push({
             role: "user",
             content: [
-                { type: "text", text: prompt },
+                { type: "text", text: fullTextPrompt },
                 { type: "image_url", image_url: { url: dataUrl } }
             ]
         });
     } else {
-        messages.push({ role: "user", content: prompt });
+        messages.push({ role: "user", content: fullTextPrompt });
     }
 
     const payload = {
-        model: imageBase64 && !model.includes("vision") ? "meta/llama-3.2-90b-vision-instruct" : model,
+        model: model,
         messages: messages,
-        temperature: temperature,
-        max_tokens: 2048
+        temperature: temperature || 0.6,
+        max_tokens: 1500
     };
 
     if (jsonMode) {
@@ -11025,7 +11024,7 @@ async function callNvidiaNimApi({ apiKey, model = "meta/llama-3.3-70b-instruct",
     }
 
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 3500);
+    const timer = setTimeout(() => controller.abort(), 12000);
 
     try {
         const res = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
@@ -11046,6 +11045,7 @@ async function callNvidiaNimApi({ apiKey, model = "meta/llama-3.3-70b-instruct",
                 const j = JSON.parse(errBody);
                 if (j.error && j.error.message) msg = j.error.message;
                 else if (j.message) msg = j.message;
+                else if (j.detail) msg = j.detail;
             } catch (e) {}
             throw new Error(`NVIDIA NIM (${res.status}): ${msg}`);
         }
