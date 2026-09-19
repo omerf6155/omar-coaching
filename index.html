@@ -477,6 +477,28 @@
                     </div>
                 </div>
 
+                <!-- FİZİK & FORM KASASI HERO BANNER -->
+                <div class="card" style="background:linear-gradient(135deg, rgba(255,214,10,0.12), rgba(16,185,129,0.06)); border:1px solid rgba(255,214,10,0.4); padding:14px; border-radius:var(--radius-md);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span style="font-size:1.2rem;">📸</span>
+                            <strong style="font-size:0.85rem; color:#ffd60a; text-transform:uppercase;">Fizik & Form Değişim Kasası</strong>
+                        </div>
+                        <span class="badge-role" id="scale-vault-badge" style="background:rgba(255,214,10,0.2); color:#ffd60a; font-size:0.68rem; font-weight:800;">4 Hafta</span>
+                    </div>
+                    <p style="font-size:0.73rem; color:var(--text-secondary); margin:0 0 10px 0; line-height:1.4;">
+                        Haftalık fizik fotoğraflarını güvenle depola, Before / After karşılaştırması yap ve Koç Ömer'in direktiflerini incele.
+                    </p>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
+                        <button type="button" class="btn btn-sm btn-primary" onclick="openPhysiqueVaultModal()" style="background:#ffd60a; color:#000; font-weight:800; font-size:0.75rem; padding:9px;">
+                            <i class="fa-solid fa-images"></i> Form Galerisini Aç
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline" onclick="openUploadPhysiqueModal()" style="border-color:#ffd60a; color:#ffd60a; font-weight:700; font-size:0.75rem; padding:9px;">
+                            <i class="fa-solid fa-camera"></i> + Yeni Form Ekle
+                        </button>
+                    </div>
+                </div>
+
                 <!-- 7-Day Average & Trends -->
                 <div class="card">
                     <div class="card-header">
@@ -2828,7 +2850,180 @@
             </div>
         </div>
     </div>
+
+    <!-- ==================== 📸 FİZİK & FORM KASASI (PHYSIQUE TIMELINE & VAULT) ==================== -->
+    <div id="modal-physique-vault" class="modal-overlay">
+        <div class="modal-card" style="max-width:620px; max-height:92vh; display:flex; flex-direction:column;">
+            <div class="modal-header" style="background:linear-gradient(135deg, rgba(255,214,10,0.18), rgba(255,159,10,0.06)); flex-shrink:0;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:1.3rem;">📸</span>
+                    <div>
+                        <h3 style="margin:0; font-size:0.95rem; color:#fff;">Fizik & Form Kasam</h3>
+                        <span style="font-size:0.68rem; color:var(--text-secondary);" id="vault-entries-count-badge">0 Hafta Kayıtlı</span>
+                    </div>
+                </div>
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <button type="button" class="btn btn-xs btn-primary" onclick="openUploadPhysiqueModal()" style="background:#ffd60a; color:#000; font-weight:800; font-size:0.72rem; padding:5px 10px;">
+                        <i class="fa-solid fa-camera"></i> + Yeni Form Ekle
+                    </button>
+                    <button class="modal-close-btn" onclick="closeModal('modal-physique-vault')">&times;</button>
+                </div>
             </div>
+
+            <!-- Vault Actions & Filter Bar -->
+            <div style="padding:10px 14px; background:rgba(0,0,0,0.3); border-bottom:1px solid var(--border-subtle); display:flex; justify-content:space-between; align-items:center; flex-shrink:0;">
+                <div style="display:flex; gap:6px;">
+                    <button type="button" class="btn btn-xs btn-outline" id="btn-vault-view-timeline" onclick="switchVaultTab('timeline')" style="font-size:0.7rem; border-color:#ffd60a; color:#ffd60a;">
+                        <i class="fa-solid fa-timeline"></i> Zaman Tüneli
+                    </button>
+                    <button type="button" class="btn btn-xs btn-outline" id="btn-vault-view-compare" onclick="switchVaultTab('compare')" style="font-size:0.7rem; color:var(--text-secondary);">
+                        <i class="fa-solid fa-code-compare"></i> Before / After
+                    </button>
+                </div>
+                <span style="font-size:0.68rem; color:var(--text-muted);"><i class="fa-solid fa-lock"></i> Sadece Koç Ömer ve Sen Görürsün</span>
+            </div>
+
+            <div class="modal-body" style="padding:14px; overflow-y:auto; flex:1;">
+                <!-- VIEW A: TIMELINE ALBUM -->
+                <div id="vault-timeline-tab-view">
+                    <div id="vault-timeline-container" style="display:flex; flex-direction:column; gap:12px;">
+                        <!-- Dynamically populated entries -->
+                    </div>
+                </div>
+
+                <!-- VIEW B: BEFORE / AFTER COMPARE VIEW -->
+                <div id="vault-compare-tab-view" style="display:none;">
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:14px;">
+                        <div>
+                            <label style="font-size:0.72rem; font-weight:700; color:#ffd60a;">1. Fotoğraf (Before):</label>
+                            <select id="compare-select-left" class="form-select" onchange="renderBeforeAfterComparison()" style="font-size:0.75rem;"></select>
+                        </div>
+                        <div>
+                            <label style="font-size:0.72rem; font-weight:700; color:#38bdf8;">2. Fotoğraf (After):</label>
+                            <select id="compare-select-right" class="form-select" onchange="renderBeforeAfterComparison()" style="font-size:0.75rem;"></select>
+                        </div>
+                    </div>
+                    <div id="compare-preview-container">
+                        <!-- Before & after cards -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== 📤 FORM & FİZİK YÜKLEME MODALİ ==================== -->
+    <div id="modal-upload-physique" class="modal-overlay">
+        <div class="modal-card" style="max-width:540px;">
+            <div class="modal-header" style="background:linear-gradient(135deg, rgba(255,214,10,0.18), rgba(255,159,10,0.06));">
+                <h3><i class="fa-solid fa-cloud-arrow-up" style="color:#ffd60a;"></i> Fizik Kasasına Yeni Form Ekle</h3>
+                <button class="modal-close-btn" onclick="closeModal('modal-upload-physique')">&times;</button>
+            </div>
+            <div class="modal-body" style="padding:16px 14px;">
+                <p class="text-secondary" style="font-size:0.75rem; line-height:1.45; margin-bottom:12px;">
+                    Haftalık form fotoğraflarını veya antrenman görüntülerini yükle. Koç Ömer'in masasına anlık bildirim olarak iletilir.
+                </p>
+
+                <!-- Category & Metrics -->
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:10px;">
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label style="font-size:0.72rem; font-weight:700;"><i class="fa-solid fa-weight-scale"></i> Güncel Kilo (kg):</label>
+                        <input type="number" id="vault-input-weight" step="0.1" class="form-select" style="font-size:0.82rem; font-weight:800; color:#ffd60a;">
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label style="font-size:0.72rem; font-weight:700;"><i class="fa-solid fa-ruler-horizontal"></i> Bel Çevresi (cm):</label>
+                        <input type="number" id="vault-input-waist" step="0.5" class="form-select" style="font-size:0.82rem; font-weight:800; color:#38bdf8;">
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom:12px;">
+                    <label style="font-size:0.72rem; font-weight:700;"><i class="fa-solid fa-tag"></i> Form Kategorisi:</label>
+                    <select id="vault-input-category" class="form-select" style="font-size:0.78rem;">
+                        <option value="weekly" selected>📋 Haftalık Genel Form (Ön, Yan, Sırt)</option>
+                        <option value="pump">🔥 Antrenman Sonrası Pump / Damarlanma</option>
+                        <option value="freestyle">⚡ Serbest Poz / Bacak & Kanat Gelişimi</option>
+                    </select>
+                </div>
+
+                <!-- 3 Photo Slots (Ön, Yan, Sırt) -->
+                <label style="font-size:0.74rem; font-weight:800; color:#ffd60a; margin-bottom:6px; display:block;">
+                    <i class="fa-solid fa-images"></i> Fotoğraf / Video Seçimi
+                </label>
+                <div class="checkin-angle-grid" style="margin-bottom:12px;">
+                    <!-- Front -->
+                    <div class="checkin-angle-box" id="vault-slot-box-front" onclick="triggerVaultMediaUpload('front')">
+                        <input type="file" id="vault-file-front" accept="image/*,video/*" style="display:none;" onchange="handleVaultMediaSelected('front', event)">
+                        <div id="vault-placeholder-front">
+                            <i class="fa-solid fa-camera" style="font-size:1.3rem; color:var(--text-muted); margin-bottom:4px;"></i>
+                            <span style="font-size:0.68rem; font-weight:700; color:#fff; display:block;">Ön Profil</span>
+                        </div>
+                        <div id="vault-preview-front" style="display:none; width:100%; position:relative;">
+                            <img id="vault-img-front" class="checkin-angle-preview" src="" alt="Ön">
+                            <button type="button" class="checkin-remove-btn" onclick="removeVaultMedia('front', event)">&times;</button>
+                        </div>
+                    </div>
+                    <!-- Side -->
+                    <div class="checkin-angle-box" id="vault-slot-box-side" onclick="triggerVaultMediaUpload('side')">
+                        <input type="file" id="vault-file-side" accept="image/*,video/*" style="display:none;" onchange="handleVaultMediaSelected('side', event)">
+                        <div id="vault-placeholder-side">
+                            <i class="fa-solid fa-camera" style="font-size:1.3rem; color:var(--text-muted); margin-bottom:4px;"></i>
+                            <span style="font-size:0.68rem; font-weight:700; color:#fff; display:block;">Yan Profil</span>
+                        </div>
+                        <div id="vault-preview-side" style="display:none; width:100%; position:relative;">
+                            <img id="vault-img-side" class="checkin-angle-preview" src="" alt="Yan">
+                            <button type="button" class="checkin-remove-btn" onclick="removeVaultMedia('side', event)">&times;</button>
+                        </div>
+                    </div>
+                    <!-- Back -->
+                    <div class="checkin-angle-box" id="vault-slot-box-back" onclick="triggerVaultMediaUpload('back')">
+                        <input type="file" id="vault-file-back" accept="image/*,video/*" style="display:none;" onchange="handleVaultMediaSelected('back', event)">
+                        <div id="vault-placeholder-back">
+                            <i class="fa-solid fa-camera" style="font-size:1.3rem; color:var(--text-muted); margin-bottom:4px;"></i>
+                            <span style="font-size:0.68rem; font-weight:700; color:#fff; display:block;">Sırt / Serbest</span>
+                        </div>
+                        <div id="vault-preview-back" style="display:none; width:100%; position:relative;">
+                            <img id="vault-img-back" class="checkin-angle-preview" src="" alt="Sırt">
+                            <button type="button" class="checkin-remove-btn" onclick="removeVaultMedia('back', event)">&times;</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Athlete Notes -->
+                <div class="form-group" style="margin-bottom:14px;">
+                    <label style="font-size:0.72rem; font-weight:700;"><i class="fa-solid fa-comment-dots"></i> Koça Özel Notun:</label>
+                    <textarea id="vault-input-notes" rows="2" class="form-textarea" placeholder="Hocam bu hafta trapez ve üst göğüs dolgunlaştı, bel sıkı kaldı..."></textarea>
+                </div>
+
+                <button type="button" class="btn btn-primary btn-block" onclick="saveNewPhysiqueEntry()" style="background:linear-gradient(135deg, #ffd60a, #ff9f0a); color:#000; font-weight:900; font-size:0.85rem; padding:11px;">
+                    <i class="fa-solid fa-check"></i> Formu Kasaya Kaydet & Koça İlet 🚀
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== 👑 KOÇ SPORCU FORM MASASI MODALİ ==================== -->
+    <div id="modal-coach-physique-review" class="modal-overlay">
+        <div class="modal-card" style="max-width:640px; max-height:92vh; display:flex; flex-direction:column;">
+            <div class="modal-header" style="background:linear-gradient(135deg, rgba(255,214,10,0.22), rgba(255,159,10,0.08)); flex-shrink:0;">
+                <div>
+                    <h3 style="margin:0; font-size:0.95rem; color:#ffd60a;"><i class="fa-solid fa-clipboard-user"></i> Sporcu Form Masası</h3>
+                    <span style="font-size:0.7rem; color:var(--text-secondary);" id="coach-review-athlete-sub">@omer • 4 Form Yüklendi</span>
+                </div>
+                <button class="modal-close-btn" onclick="closeModal('modal-coach-physique-review')">&times;</button>
+            </div>
+            <div class="modal-body" style="padding:14px; overflow-y:auto; flex:1;">
+                <div id="coach-physique-timeline-container" style="display:flex; flex-direction:column; gap:14px;">
+                    <!-- Populated dynamically with athlete's forms and coach feedback inputs -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== 🔍 TAM EKRAN FOTOĞRAF İNCELEME (LIGHTBOX) ==================== -->
+    <div id="modal-photo-lightbox" class="modal-overlay" onclick="closeModal('modal-photo-lightbox')" style="z-index:99999; background:rgba(0,0,0,0.92);">
+        <div style="position:relative; max-width:92vw; max-height:90vh; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+            <button class="modal-close-btn" onclick="closeModal('modal-photo-lightbox')" style="position:absolute; top:-36px; right:0; color:#fff; font-size:2rem;">&times;</button>
+            <img id="lightbox-img" src="" alt="Form Görseli" style="max-width:100%; max-height:85vh; border-radius:8px; object-fit:contain; box-shadow:0 0 30px rgba(0,0,0,0.9); border:1px solid rgba(255,255,255,0.2);">
+            <div id="lightbox-caption" style="font-size:0.75rem; color:#ffd60a; margin-top:8px; font-weight:700;"></div>
         </div>
     </div>
 

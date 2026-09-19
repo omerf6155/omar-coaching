@@ -12939,5 +12939,634 @@ function initModalBackdropHandlers() {
     });
 }
 
+// ==================== 📸 PHYSIQUE TIMELINE & FORM VAULT CONTROLLER ====================
+
+let vaultMediaData = {
+    front: null,
+    side: null,
+    back: null
+};
+
+function initPhysiqueVaultDefaults() {
+    if (!appData.physiqueGallery || appData.physiqueGallery.length === 0) {
+        appData.physiqueGallery = [
+            {
+                id: "form_init_1",
+                weekNumber: 1,
+                date: "01 Eylül 2026",
+                timestamp: Date.now() - (18 * 24 * 60 * 60 * 1000),
+                category: "weekly",
+                categoryLabel: "📋 1. Hafta Başlangıç Formu",
+                weight: 73.2,
+                waist: 82.5,
+                frontImg: "https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=500&auto=format&fit=crop&q=60",
+                sideImg: null,
+                backImg: null,
+                athleteNotes: "Hocam başlangıç formum bu şekilde. Bel çevresini koruyarak temiz kütle kazanmak istiyorum.",
+                coachReviewed: true,
+                coachReviewedAt: "02 Eylül 2026",
+                coachFeedback: "Başlangıç omurga ve omuz çatısı gayet iyi. Günlük 2.750 kcal ve 165g proteinle lean bulk sürecini başlatıyoruz. Formu bozmadan ağırlıkları progressive artıralım!",
+                coachRating: "🟢 Mükemmel Başlangıç"
+            },
+            {
+                id: "form_init_2",
+                weekNumber: 3,
+                date: "15 Eylül 2026",
+                timestamp: Date.now() - (4 * 24 * 60 * 60 * 1000),
+                category: "weekly",
+                categoryLabel: "📋 3. Hafta Gelişim Kontrolü",
+                weight: 74.8,
+                waist: 81.5,
+                frontImg: "https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=500&auto=format&fit=crop&q=60",
+                sideImg: null,
+                backImg: null,
+                athleteNotes: "Bu hafta Incline DB'de 80kg'a çıktım, belde daralma var, toparlanma çok iyi.",
+                coachReviewed: true,
+                coachReviewedAt: "16 Eylül 2026",
+                coachFeedback: "Harika gelişim! Kilo +1.6 kg artarken bel 1 cm incelmiş, bu saf kas kütlesi kazandığını gösterir. Aynen devam ediyoruz aslanım!",
+                coachRating: "🔥 Çok İyi Kütle"
+            }
+        ];
+    }
+}
+
+function openPhysiqueVaultModal() {
+    initPhysiqueVaultDefaults();
+    renderPhysiqueVaultTimeline();
+    updatePhysiqueVaultBadge();
+    switchVaultTab("timeline");
+    openModal("modal-physique-vault");
+}
+
+function updatePhysiqueVaultBadge() {
+    const list = appData.physiqueGallery || [];
+    const badge = document.getElementById("vault-entries-count-badge");
+    const scaleBadge = document.getElementById("scale-vault-badge");
+    if (badge) badge.innerText = `${list.length} Form Kayıtlı`;
+    if (scaleBadge) scaleBadge.innerText = `${list.length} Hafta`;
+}
+
+function switchVaultTab(tab) {
+    const btnTimeline = document.getElementById("btn-vault-view-timeline");
+    const btnCompare = document.getElementById("btn-vault-view-compare");
+    const viewTimeline = document.getElementById("vault-timeline-tab-view");
+    const viewCompare = document.getElementById("vault-compare-tab-view");
+
+    if (tab === "compare") {
+        if (btnCompare) {
+            btnCompare.style.borderColor = "#ffd60a";
+            btnCompare.style.color = "#ffd60a";
+        }
+        if (btnTimeline) {
+            btnTimeline.style.borderColor = "var(--border-subtle)";
+            btnTimeline.style.color = "var(--text-secondary)";
+        }
+        if (viewTimeline) viewTimeline.style.display = "none";
+        if (viewCompare) viewCompare.style.display = "block";
+        populateBeforeAfterSelects();
+        renderBeforeAfterComparison();
+    } else {
+        if (btnTimeline) {
+            btnTimeline.style.borderColor = "#ffd60a";
+            btnTimeline.style.color = "#ffd60a";
+        }
+        if (btnCompare) {
+            btnCompare.style.borderColor = "var(--border-subtle)";
+            btnCompare.style.color = "var(--text-secondary)";
+        }
+        if (viewTimeline) viewTimeline.style.display = "block";
+        if (viewCompare) viewCompare.style.display = "none";
+        renderPhysiqueVaultTimeline();
+    }
+}
+
+function renderPhysiqueVaultTimeline() {
+    const container = document.getElementById("vault-timeline-container");
+    if (!container) return;
+
+    const list = appData.physiqueGallery || [];
+    if (list.length === 0) {
+        container.innerHTML = `
+            <div class="card" style="text-align:center; padding:30px 16px;">
+                <i class="fa-solid fa-camera-retro" style="font-size:2.2rem; color:var(--text-muted); margin-bottom:10px;"></i>
+                <h4 style="color:#fff; margin:0 0 6px 0;">Henüz Form Fotoğrafı Eklenmedi</h4>
+                <p class="text-secondary" style="font-size:0.75rem; margin-bottom:14px;">Haftalık gelişimini takip etmek ve koçuna iletmek için ilk formunu yükle!</p>
+                <button type="button" class="btn btn-sm btn-primary" onclick="openUploadPhysiqueModal()" style="background:#ffd60a; color:#000; font-weight:800;">
+                    <i class="fa-solid fa-plus"></i> İlk Formu Yükle
+                </button>
+            </div>
+        `;
+        return;
+    }
+
+    const sorted = [...list].sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+    container.innerHTML = sorted.map(entry => {
+        const photos = [];
+        if (entry.frontImg) photos.push({ label: "Ön Cephe", src: entry.frontImg });
+        if (entry.sideImg) photos.push({ label: "Yan Profil", src: entry.sideImg });
+        if (entry.backImg) photos.push({ label: "Sırt / Serbest", src: entry.backImg });
+
+        return `
+            <div class="vault-entry-card" id="vault_card_${entry.id}">
+                <div class="vault-entry-header">
+                    <div class="vault-entry-meta">
+                        <strong style="color:#fff; font-size:0.84rem;">📅 ${entry.date || 'Tarihsiz'}</strong>
+                        ${entry.weight ? `<span class="vault-tag-metric vault-tag-weight">⚖️ ${entry.weight} kg</span>` : ''}
+                        ${entry.waist ? `<span class="vault-tag-metric vault-tag-waist">📏 ${entry.waist} cm</span>` : ''}
+                    </div>
+                    <div>
+                        ${entry.coachReviewed ? `
+                            <span class="badge-role" style="background:rgba(16,185,129,0.2); color:#10b981; font-size:0.65rem; font-weight:800; border:1px solid rgba(16,185,129,0.4);">
+                                <i class="fa-solid fa-circle-check"></i> Koç Değerlendirdi
+                            </span>
+                        ` : `
+                            <span class="badge-role" style="background:rgba(255,214,10,0.15); color:#ffd60a; font-size:0.65rem; font-weight:800; border:1px solid rgba(255,214,10,0.3);">
+                                <i class="fa-solid fa-clock"></i> Koç İnceliyor
+                            </span>
+                        `}
+                    </div>
+                </div>
+
+                ${photos.length > 0 ? `
+                    <div class="vault-photo-grid">
+                        ${photos.map(p => `
+                            <div class="vault-photo-box" onclick="openPhotoLightbox('${p.src}', '${entry.date || ''} • ${p.label}')">
+                                <img src="${p.src}" alt="${p.label}">
+                                <span class="vault-photo-badge">${p.label}</span>
+                            </div>
+                        `).join("")}
+                    </div>
+                ` : `
+                    <div style="font-size:0.75rem; color:var(--text-muted); padding:8px; text-align:center;">Görsel eklenmedi</div>
+                `}
+
+                ${entry.athleteNotes ? `
+                    <div style="font-size:0.74rem; color:var(--text-secondary); background:rgba(255,255,255,0.03); padding:8px 10px; border-radius:6px;">
+                        <strong style="color:#fff;">📝 Sporcu Notu:</strong> ${entry.athleteNotes}
+                    </div>
+                ` : ''}
+
+                ${entry.coachFeedback ? `
+                    <div class="vault-coach-feedback-box">
+                        <div class="vault-coach-header">
+                            <i class="fa-solid fa-crown"></i> Koç Ömer'in Değerlendirmesi
+                            ${entry.coachRating ? `<span style="font-size:0.65rem; margin-left:auto; color:#ffd60a;">${entry.coachRating}</span>` : ''}
+                        </div>
+                        <p class="vault-coach-text">${entry.coachFeedback}</p>
+                        ${entry.coachReviewedAt ? `<span style="font-size:0.6rem; color:var(--text-muted); margin-top:4px; display:block;">İncelenme: ${entry.coachReviewedAt}</span>` : ''}
+                    </div>
+                ` : ''}
+
+                <div style="display:flex; justify-content:flex-end; gap:6px; margin-top:2px;">
+                    <button type="button" class="btn btn-xs btn-outline" onclick="deletePhysiqueEntry('${entry.id}')" style="color:var(--status-red); border-color:rgba(239,68,68,0.3); font-size:0.65rem; padding:3px 8px;">
+                        <i class="fa-solid fa-trash-can"></i> Sil
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join("");
+}
+
+function populateBeforeAfterSelects() {
+    const selectL = document.getElementById("compare-select-left");
+    const selectR = document.getElementById("compare-select-right");
+    if (!selectL || !selectR) return;
+
+    const list = appData.physiqueGallery || [];
+    if (list.length === 0) return;
+
+    const sortedAsc = [...list].sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+
+    const optionsHtml = sortedAsc.map((e, idx) => `
+        <option value="${e.id}">${e.date || `Form #${idx+1}`} (${e.weight || '--'} kg)</option>
+    `).join("");
+
+    selectL.innerHTML = optionsHtml;
+    selectR.innerHTML = optionsHtml;
+
+    if (sortedAsc.length > 1) {
+        selectL.selectedIndex = 0;
+        selectR.selectedIndex = sortedAsc.length - 1;
+    }
+}
+
+function renderBeforeAfterComparison() {
+    const container = document.getElementById("compare-preview-container");
+    const selectL = document.getElementById("compare-select-left");
+    const selectR = document.getElementById("compare-select-right");
+    if (!container || !selectL || !selectR) return;
+
+    const list = appData.physiqueGallery || [];
+    const entryL = list.find(e => e.id === selectL.value) || list[0];
+    const entryR = list.find(e => e.id === selectR.value) || list[list.length - 1];
+
+    if (!entryL || !entryR) {
+        container.innerHTML = `<p class="text-secondary" style="font-size:0.75rem; text-align:center;">Karşılaştırma için en az 1 form kaydı gerekli.</p>`;
+        return;
+    }
+
+    const imgL = entryL.frontImg || entryL.sideImg || entryL.backImg || "https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=500&auto=format&fit=crop&q=60";
+    const imgR = entryR.frontImg || entryR.sideImg || entryR.backImg || "https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=500&auto=format&fit=crop&q=60";
+
+    const weightDelta = (entryR.weight && entryL.weight) ? (entryR.weight - entryL.weight).toFixed(1) : "0.0";
+    const waistDelta = (entryR.waist && entryL.waist) ? (entryR.waist - entryL.waist).toFixed(1) : "0.0";
+
+    container.innerHTML = `
+        <div style="background:rgba(255,214,10,0.08); border:1px solid rgba(255,214,10,0.3); border-radius:8px; padding:10px; margin-bottom:12px; display:flex; justify-content:space-around; text-align:center;">
+            <div>
+                <span style="font-size:0.65rem; color:var(--text-muted); display:block;">KİLO DEĞİŞİMİ</span>
+                <strong style="font-size:0.95rem; color:${parseFloat(weightDelta) >= 0 ? '#10b981' : '#ef4444'};">
+                    ${parseFloat(weightDelta) > 0 ? '+' : ''}${weightDelta} kg
+                </strong>
+            </div>
+            <div style="border-left:1px solid rgba(255,255,255,0.1); padding-left:14px;">
+                <span style="font-size:0.65rem; color:var(--text-muted); display:block;">BEL DEĞİŞİMİ</span>
+                <strong style="font-size:0.95rem; color:${parseFloat(waistDelta) <= 0 ? '#10b981' : '#f59e0b'};">
+                    ${parseFloat(waistDelta) > 0 ? '+' : ''}${waistDelta} cm
+                </strong>
+            </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+            <div class="compare-card-side">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <strong style="font-size:0.75rem; color:#ffd60a;">BEFORE</strong>
+                    <span style="font-size:0.65rem; color:var(--text-muted);">${entryL.date || ''}</span>
+                </div>
+                <img src="${imgL}" class="compare-photo-large" onclick="openPhotoLightbox('${imgL}', 'BEFORE: ${entryL.date || ''}')" alt="Before">
+                <div style="font-size:0.68rem; color:var(--text-secondary); text-align:center;">
+                    <strong>${entryL.weight || '--'} kg</strong> • <strong>${entryL.waist || '--'} cm</strong>
+                </div>
+            </div>
+
+            <div class="compare-card-side">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <strong style="font-size:0.75rem; color:#38bdf8;">AFTER</strong>
+                    <span style="font-size:0.65rem; color:var(--text-muted);">${entryR.date || ''}</span>
+                </div>
+                <img src="${imgR}" class="compare-photo-large" onclick="openPhotoLightbox('${imgR}', 'AFTER: ${entryR.date || ''}')" alt="After">
+                <div style="font-size:0.68rem; color:var(--text-secondary); text-align:center;">
+                    <strong>${entryR.weight || '--'} kg</strong> • <strong>${entryR.waist || '--'} cm</strong>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function openUploadPhysiqueModal() {
+    vaultMediaData = { front: null, side: null, back: null };
+
+    const wInput = document.getElementById("vault-input-weight");
+    const waistInput = document.getElementById("vault-input-waist");
+    const notesInput = document.getElementById("vault-input-notes");
+
+    if (wInput) wInput.value = (appData.userProfile && appData.userProfile.weight) || 74.5;
+    if (waistInput) waistInput.value = (appData.userProfile && appData.userProfile.waist) || 81.0;
+    if (notesInput) notesInput.value = "";
+
+    ["front", "side", "back"].forEach(angle => {
+        const box = document.getElementById(`vault-slot-box-${angle}`);
+        const placeholder = document.getElementById(`vault-placeholder-${angle}`);
+        const preview = document.getElementById(`vault-preview-${angle}`);
+        const fileInput = document.getElementById(`vault-file-${angle}`);
+        if (box) box.classList.remove("has-file");
+        if (placeholder) placeholder.style.display = "block";
+        if (preview) preview.style.display = "none";
+        if (fileInput) fileInput.value = "";
+    });
+
+    openModal("modal-upload-physique");
+}
+
+function triggerVaultMediaUpload(angle) {
+    const fileInput = document.getElementById(`vault-file-${angle}`);
+    if (fileInput) fileInput.click();
+}
+
+function handleVaultMediaSelected(angle, event) {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+
+    const box = document.getElementById(`vault-slot-box-${angle}`);
+    const placeholder = document.getElementById(`vault-placeholder-${angle}`);
+    const preview = document.getElementById(`vault-preview-${angle}`);
+    const img = document.getElementById(`vault-img-${angle}`);
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        vaultMediaData[angle] = e.target.result;
+        if (img) img.src = vaultMediaData[angle];
+        if (box) box.classList.add("has-file");
+        if (placeholder) placeholder.style.display = "none";
+        if (preview) preview.style.display = "block";
+    };
+    reader.readAsDataURL(file);
+}
+
+function removeVaultMedia(angle, event) {
+    if (event) {
+        event.stopPropagation();
+        event.preventDefault();
+    }
+    vaultMediaData[angle] = null;
+    const box = document.getElementById(`vault-slot-box-${angle}`);
+    const placeholder = document.getElementById(`vault-placeholder-${angle}`);
+    const preview = document.getElementById(`vault-preview-${angle}`);
+    const fileInput = document.getElementById(`vault-file-${angle}`);
+
+    if (box) box.classList.remove("has-file");
+    if (placeholder) placeholder.style.display = "block";
+    if (preview) preview.style.display = "none";
+    if (fileInput) fileInput.value = "";
+}
+
+function saveNewPhysiqueEntry() {
+    const wInput = document.getElementById("vault-input-weight");
+    const waistInput = document.getElementById("vault-input-waist");
+    const catSelect = document.getElementById("vault-input-category");
+    const notesInput = document.getElementById("vault-input-notes");
+
+    const weight = parseFloat(wInput ? wInput.value : "") || (appData.userProfile && appData.userProfile.weight) || 74.5;
+    const waist = parseFloat(waistInput ? waistInput.value : "") || 81.0;
+    const category = catSelect ? catSelect.value : "weekly";
+    const categoryLabel = catSelect ? catSelect.options[catSelect.selectedIndex].text : "Haftalık Form";
+    const athleteNotes = notesInput ? notesInput.value.trim() : "";
+
+    const hasPhotos = Boolean(vaultMediaData.front || vaultMediaData.side || vaultMediaData.back);
+    if (!hasPhotos) {
+        showToast("⚠️ Lütfen en az bir açıdan fotoğraf seçin.");
+        return;
+    }
+
+    const now = new Date();
+    const dateStr = `${now.getDate()} ${['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'][now.getMonth()]} ${now.getFullYear()}`;
+
+    const newEntry = {
+        id: `physique_${Date.now()}`,
+        date: dateStr,
+        timestamp: Date.now(),
+        category: category,
+        categoryLabel: categoryLabel,
+        weight: weight,
+        waist: waist,
+        frontImg: vaultMediaData.front,
+        sideImg: vaultMediaData.side,
+        backImg: vaultMediaData.back,
+        athleteNotes: athleteNotes,
+        coachReviewed: false,
+        coachFeedback: null,
+        coachRating: null
+    };
+
+    if (!appData.physiqueGallery) appData.physiqueGallery = [];
+    appData.physiqueGallery.unshift(newEntry);
+
+    if (appData.userProfile) {
+        appData.userProfile.weight = weight;
+        appData.userProfile.waist = waist;
+    }
+
+    if (!appData.scaleHistory) appData.scaleHistory = [];
+    appData.scaleHistory.push({
+        date: dateStr,
+        weight: weight,
+        waist: waist,
+        time: getCurrentTimeStr()
+    });
+
+    saveDataToStorage();
+
+    const username = (getActiveSessionUsername() || "omer").toLowerCase().trim();
+    if (mockUsers && mockUsers[username]) {
+        if (!mockUsers[username].data) mockUsers[username].data = {};
+        mockUsers[username].data.physiqueGallery = appData.physiqueGallery;
+        mockUsers[username].data.userProfile = appData.userProfile;
+        saveMockUsersToStorage();
+    }
+
+    try {
+        const chatCardHtml = `
+            <div class="checkin-chat-card" style="border-color:rgba(255,214,10,0.5);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                    <strong style="color:#ffd60a; font-size:0.8rem;">📸 Yeni Fizik Formu Yüklendi!</strong>
+                    <span style="font-size:0.65rem; color:var(--text-muted);">${dateStr}</span>
+                </div>
+                <div style="font-size:0.72rem; color:#fff; display:flex; gap:10px; margin-bottom:6px;">
+                    <span>⚖️ Kilo: <strong>${weight} kg</strong></span>
+                    <span>📏 Bel: <strong>${waist} cm</strong></span>
+                </div>
+                ${athleteNotes ? `<p style="font-size:0.7rem; color:var(--text-secondary); margin:0 0 6px 0;"><em>"${athleteNotes}"</em></p>` : ''}
+                <div style="display:flex; gap:4px; margin-bottom:6px;">
+                    ${vaultMediaData.front ? `<img src="${vaultMediaData.front}" style="width:50px; height:50px; object-fit:cover; border-radius:4px; border:1px solid #ffd60a;">` : ''}
+                    ${vaultMediaData.side ? `<img src="${vaultMediaData.side}" style="width:50px; height:50px; object-fit:cover; border-radius:4px; border:1px solid #ffd60a;">` : ''}
+                    ${vaultMediaData.back ? `<img src="${vaultMediaData.back}" style="width:50px; height:50px; object-fit:cover; border-radius:4px; border:1px solid #ffd60a;">` : ''}
+                </div>
+                <span style="font-size:0.65rem; color:#ffd60a;">👉 Koç Form Masasından detaylı değerlendirebilirsiniz.</span>
+            </div>
+        `;
+        sendLiveChatMessage("athlete", username, chatCardHtml);
+    } catch (e) {}
+
+    closeModal("modal-upload-physique");
+    renderPhysiqueVaultTimeline();
+    updatePhysiqueVaultBadge();
+    triggerLevelUpCelebration(30, "Yeni Form Yüklendi");
+    showToast("✅ Form başarıyla kasaya eklendi ve Koç Ömer'e iletildi! 🚀");
+}
+
+function deletePhysiqueEntry(entryId) {
+    if (!confirm("Bu form kaydını silmek istediğinize emin misiniz?")) return;
+    appData.physiqueGallery = (appData.physiqueGallery || []).filter(e => e.id !== entryId);
+    saveDataToStorage();
+
+    const username = (getActiveSessionUsername() || "omer").toLowerCase().trim();
+    if (mockUsers && mockUsers[username] && mockUsers[username].data) {
+        mockUsers[username].data.physiqueGallery = appData.physiqueGallery;
+        saveMockUsersToStorage();
+    }
+
+    renderPhysiqueVaultTimeline();
+    updatePhysiqueVaultBadge();
+    showToast("🗑️ Form kaydı silindi.");
+}
+
+function openPhotoLightbox(src, caption) {
+    const imgEl = document.getElementById("lightbox-img");
+    const capEl = document.getElementById("lightbox-caption");
+    if (imgEl) imgEl.src = src;
+    if (capEl) capEl.innerText = caption || "";
+    openModal("modal-photo-lightbox");
+}
+
+// ==================== 👑 COACH PHYSIQUE REVIEW DECK CONTROLLERS ====================
+
+let currentCoachReviewAthlete = null;
+
+function openCoachPhysiqueReviewModal(username) {
+    currentCoachReviewAthlete = username || "omer";
+    const subTitle = document.getElementById("coach-review-athlete-sub");
+    
+    const registry = getUsersRegistry();
+    const athlete = registry[currentCoachReviewAthlete] || { displayName: currentCoachReviewAthlete, username: currentCoachReviewAthlete };
+    
+    let gallery = [];
+    if (currentCoachReviewAthlete === (getActiveSessionUsername() || "omer")) {
+        gallery = appData.physiqueGallery || [];
+    } else if (mockUsers && mockUsers[currentCoachReviewAthlete] && mockUsers[currentCoachReviewAthlete].data) {
+        gallery = mockUsers[currentCoachReviewAthlete].data.physiqueGallery || [];
+    }
+
+    if (subTitle) {
+        subTitle.innerText = `${athlete.displayName || athlete.username} (@${athlete.username}) • ${gallery.length} Form Kayıtlı`;
+    }
+
+    renderCoachPhysiqueTimeline(currentCoachReviewAthlete, gallery);
+    openModal("modal-coach-physique-review");
+}
+
+function renderCoachPhysiqueTimeline(username, gallery) {
+    const container = document.getElementById("coach-physique-timeline-container");
+    if (!container) return;
+
+    if (!gallery || gallery.length === 0) {
+        container.innerHTML = `
+            <div class="card" style="text-align:center; padding:30px 16px;">
+                <i class="fa-solid fa-camera-retro" style="font-size:2rem; color:var(--text-muted); margin-bottom:8px;"></i>
+                <h4 style="color:#fff; margin:0 0 4px 0;">Henüz Yüklenmiş Form Yok</h4>
+                <p class="text-secondary" style="font-size:0.75rem; margin:0;">Bu sporcu henüz fizik kasasına form görseli yüklemedi.</p>
+            </div>
+        `;
+        return;
+    }
+
+    const sorted = [...gallery].sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+    container.innerHTML = sorted.map(entry => {
+        const photos = [];
+        if (entry.frontImg) photos.push({ label: "Ön Cephe", src: entry.frontImg });
+        if (entry.sideImg) photos.push({ label: "Yan Profil", src: entry.sideImg });
+        if (entry.backImg) photos.push({ label: "Sırt / Serbest", src: entry.backImg });
+
+        return `
+            <div class="vault-entry-card" id="coach_entry_${entry.id}" style="border-color:rgba(255,214,10,0.3);">
+                <div class="vault-entry-header">
+                    <div class="vault-entry-meta">
+                        <strong style="color:#ffd60a; font-size:0.84rem;">📅 ${entry.date || 'Tarihsiz'}</strong>
+                        <span class="vault-tag-metric vault-tag-weight">⚖️ ${entry.weight || '--'} kg</span>
+                        <span class="vault-tag-metric vault-tag-waist">📏 ${entry.waist || '--'} cm</span>
+                    </div>
+                    <div>
+                        ${entry.coachReviewed ? `
+                            <span class="badge-role" style="background:#10b981; color:#000; font-size:0.65rem; font-weight:800;">
+                                <i class="fa-solid fa-check"></i> Değerlendirildi
+                            </span>
+                        ` : `
+                            <span class="badge-role" style="background:#ffd60a; color:#000; font-size:0.65rem; font-weight:800;">
+                                ⚠️ İnceleme Bekliyor
+                            </span>
+                        `}
+                    </div>
+                </div>
+
+                ${photos.length > 0 ? `
+                    <div class="vault-photo-grid">
+                        ${photos.map(p => `
+                            <div class="vault-photo-box" onclick="openPhotoLightbox('${p.src}', '${entry.date || ''} • ${p.label}')">
+                                <img src="${p.src}" alt="${p.label}">
+                                <span class="vault-photo-badge">${p.label}</span>
+                            </div>
+                        `).join("")}
+                    </div>
+                ` : ''}
+
+                ${entry.athleteNotes ? `
+                    <div style="font-size:0.74rem; color:var(--text-secondary); background:rgba(255,255,255,0.03); padding:8px 10px; border-radius:6px;">
+                        <strong style="color:#fff;">📝 Sporcunun Notu:</strong> ${entry.athleteNotes}
+                    </div>
+                ` : ''}
+
+                <!-- Coach Evaluation Form Section -->
+                <div style="background:rgba(0,0,0,0.35); border:1px solid rgba(255,214,10,0.25); border-radius:8px; padding:10px; margin-top:6px;">
+                    <label style="font-size:0.72rem; font-weight:800; color:#ffd60a; display:flex; align-items:center; gap:6px; margin-bottom:6px;">
+                        <i class="fa-solid fa-feather-pointed"></i> Koç Değerlendirmesi & Direktifi:
+                    </label>
+                    <textarea id="coach_feedback_input_${entry.id}" rows="2" class="form-textarea" placeholder="Form değerlendirmeni yaz (örn: Sırt kalınlığı mükemmel, bel korundu, kaloriye +150 ekle)..." style="font-size:0.78rem;">${entry.coachFeedback || ''}</textarea>
+                    
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; flex-wrap:wrap; gap:6px;">
+                        <div style="display:flex; gap:4px; flex-wrap:wrap;">
+                            <button type="button" class="btn btn-xs btn-outline" onclick="applyCoachQuickFeedback('${entry.id}', '🔥 Mükemmel kütle kazanımı, bel tertemiz!')" style="font-size:0.62rem;">🔥 Mükemmel</button>
+                            <button type="button" class="btn btn-xs btn-outline" onclick="applyCoachQuickFeedback('${entry.id}', '⚡ Gelişim çok iyi, kaloriye +150 kcal ekliyoruz.')" style="font-size:0.62rem;">⚡ +150 kcal</button>
+                            <button type="button" class="btn btn-xs btn-outline" onclick="applyCoachQuickFeedback('${entry.id}', '⚠️ Belde hafif su tutulumu var, sodyum ve suyu düzenle.')" style="font-size:0.62rem;">⚠️ Su Uyarısı</button>
+                        </div>
+                        <button type="button" class="btn btn-xs btn-primary" onclick="saveCoachPhysiqueFeedback('${username}', '${entry.id}')" style="background:#ffd60a; color:#000; font-weight:800; font-size:0.72rem; padding:6px 12px;">
+                            <i class="fa-solid fa-floppy-disk"></i> Değerlendirmeyi İlet
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join("");
+}
+
+function applyCoachQuickFeedback(entryId, text) {
+    const input = document.getElementById(`coach_feedback_input_${entryId}`);
+    if (input) input.value = text;
+}
+
+function saveCoachPhysiqueFeedback(username, entryId) {
+    const input = document.getElementById(`coach_feedback_input_${entryId}`);
+    const feedbackText = input ? input.value.trim() : "";
+
+    if (!feedbackText) {
+        showToast("⚠️ Lütfen bir değerlendirme notu yazın.");
+        return;
+    }
+
+    const now = new Date();
+    const dateStr = `${now.getDate()} ${['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'][now.getMonth()]} ${now.getFullYear()}`;
+
+    let updated = false;
+    if (username === (getActiveSessionUsername() || "omer")) {
+        const item = (appData.physiqueGallery || []).find(e => e.id === entryId);
+        if (item) {
+            item.coachReviewed = true;
+            item.coachFeedback = feedbackText;
+            item.coachReviewedAt = dateStr;
+            item.coachRating = "👑 Koç Onayladı";
+            updated = true;
+        }
+        saveDataToStorage();
+    }
+
+    if (mockUsers && mockUsers[username] && mockUsers[username].data) {
+        const list = mockUsers[username].data.physiqueGallery || [];
+        const item = list.find(e => e.id === entryId);
+        if (item) {
+            item.coachReviewed = true;
+            item.coachFeedback = feedbackText;
+            item.coachReviewedAt = dateStr;
+            item.coachRating = "👑 Koç Onayladı";
+        }
+        saveMockUsersToStorage();
+    }
+
+    try {
+        const chatNotice = `
+            <div style="background:rgba(255,214,10,0.12); border:1px solid rgba(255,214,10,0.4); border-left:3px solid #ffd60a; border-radius:8px; padding:10px 12px; margin-top:4px;">
+                <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                    <strong style="color:#ffd60a; font-size:0.78rem;"><i class="fa-solid fa-crown"></i> Koç Ömer Formunu Değerlendirdi!</strong>
+                </div>
+                <p style="font-size:0.75rem; color:#fff; line-height:1.4; margin:0 0 6px 0;">"${feedbackText}"</p>
+                <span style="font-size:0.65rem; color:var(--text-muted);">Tarih: ${dateStr}</span>
+            </div>
+        `;
+        sendLiveChatMessage("coach", username, chatNotice);
+    } catch (e) {}
+
+    showToast(`✅ Değerlendirmeniz @${username} sporcusuna iletildi! 🚀`);
+    openCoachPhysiqueReviewModal(username);
+}
+
 
 
