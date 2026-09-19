@@ -201,6 +201,22 @@
                     </div>
                 </div>
 
+                <!-- WEEKLY CHECK-IN HERO BANNER -->
+                <div class="card" style="background:linear-gradient(135deg, rgba(255,214,10,0.14), rgba(255,159,10,0.06)); border:1px solid rgba(255,214,10,0.4); padding:12px 14px; margin-bottom:14px; border-radius:var(--radius-md); display:flex; justify-content:space-between; align-items:center; gap:10px;">
+                    <div>
+                        <div style="display:flex; align-items:center; gap:6px; margin-bottom:2px;">
+                            <span style="font-size:1rem;">📋</span>
+                            <strong style="font-size:0.82rem; color:#ffd60a; text-transform:uppercase;">Haftalık Check-in & Form Güncellemesi</strong>
+                        </div>
+                        <p style="font-size:0.7rem; color:var(--text-secondary); margin:0; line-height:1.35;">
+                            Kilonu, bel ölçünü ve form videonu yükle; yapay zeka analiz etsin ve anlık olarak Koç Ömer'e iletilsin!
+                        </p>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-primary" onclick="openWeeklyCheckinModal()" style="background:#ffd60a; color:#000; font-weight:800; font-size:0.75rem; padding:8px 12px; white-space:nowrap;">
+                        <i class="fa-solid fa-camera"></i> Form Gönder
+                    </button>
+                </div>
+
                 <!-- 4 Quick Meal Slots (Directly Connected with Nutrition) -->
                 <div class="card quick-actions-4slots-card">
                     <div class="card-header">
@@ -2228,6 +2244,7 @@
 
             <!-- Quick Question Chips for Athlete -->
             <div class="quick-chips-scroll" style="padding:8px 12px; background:var(--bg-card-subtle); border-bottom:1px solid var(--border-subtle);">
+                <button class="quick-chip" onclick="openWeeklyCheckinModal()" style="background:#ffd60a; color:#000; font-weight:800;"><i class="fa-solid fa-clipboard-check"></i> 📋 Haftalık Check-in Yap</button>
                 <button class="quick-chip" onclick="insertAthleteQuickMessage('Bugünkü öğünü değiştirebilir miyim?')">🍽️ Öğün Değişimi</button>
                 <button class="quick-chip" onclick="insertAthleteQuickMessage('Omuzumda hafif bir ağrı var, ne yapmalıyım?')">🩹 Sakatlık / Ağrı</button>
                 <button class="quick-chip" onclick="insertAthleteQuickMessage('Haftalık tartı sonucumu ve formumu güncelledim 📈')">📈 Tartı Güncellemesi</button>
@@ -2493,16 +2510,16 @@
         </div>
     </div>
 
-    <!-- ==================== BİYOMEKANİK EGZERSİZ FORM ANALİZİ MODALİ ==================== -->
+    <!-- ==================== BİYOMEKANİK EGZERSİZ FORM ANALİZİ MODALİ (VİDEO & FOTO) ==================== -->
     <div id="modal-ai-form-vision" class="modal-overlay">
         <div class="modal-card" style="max-width:560px;">
             <div class="modal-header" style="background:linear-gradient(135deg, rgba(168,85,247,0.15), rgba(124,58,237,0.05));">
-                <h3><i class="fa-solid fa-video" style="color:#a855f7;"></i> Biyomekanik Egzersiz Form Analizi</h3>
+                <h3><i class="fa-solid fa-video" style="color:#a855f7;"></i> Biyomekanik Video & Form Analizi</h3>
                 <button class="modal-close-btn" onclick="closeModal('modal-ai-form-vision')">&times;</button>
             </div>
             <div class="modal-body" style="padding:16px 14px;">
                 <p class="text-secondary" style="font-size:0.76rem; line-height:1.45; margin-bottom:12px;">
-                    Squat, Bench Press, Deadlift, RDL veya OHP yaparken çekilmiş fotoğrafını veya video karesini yükle. Yapay zeka <strong>eklem açılarını, omurga nötralliğini ve sakatlık riskini</strong> anında analiz etsin!
+                    Squat, Bench, Deadlift, RDL veya OHP yaparken çektiğin <strong>antrenman videonu veya fotoğrafını</strong> yükle. Yapay zeka tüm tekrar fazlarını (ekzantrik tempo, alt nokta açıları, bar yolu ve sakatlık riskini) anında incelesin!
                 </p>
 
                 <!-- Exercise Picker -->
@@ -2521,38 +2538,51 @@
                     </select>
                 </div>
 
-                <!-- Upload / Dropzone -->
+                <!-- Upload / Dropzone (Supports Video & Photo from Mobile Gallery) -->
                 <div id="form-vision-dropzone" class="ai-vision-dropzone" onclick="document.getElementById('form-vision-file-input').click()">
-                    <i class="fa-solid fa-camera" style="font-size:2rem; color:#a855f7; margin-bottom:8px;"></i>
-                    <h4 style="font-size:0.85rem; margin:0 0 4px 0; color:#fff;">Form Fotoğrafı veya Kare Yükle</h4>
-                    <p style="font-size:0.7rem; color:var(--text-muted); margin:0;">Yan (profil) veya çapraz açı en yüksek doğruluğu verir</p>
-                    <input type="file" id="form-vision-file-input" accept="image/*" style="display:none;" onchange="handleFormPhotoSelected(event)">
+                    <i class="fa-solid fa-file-video" style="font-size:2.2rem; color:#a855f7; margin-bottom:8px;"></i>
+                    <h4 style="font-size:0.88rem; margin:0 0 4px 0; color:#fff;">Antrenman Videosu veya Fotoğraf Seç</h4>
+                    <p style="font-size:0.72rem; color:var(--text-muted); margin:0;">MP4, MOV, WEBP, PNG galeriden tüm formatlar desteklenir</p>
+                    <input type="file" id="form-vision-file-input" accept="video/*,video/mp4,video/quicktime,video/webm,video/x-m4v,image/*" style="display:none;" onchange="handleFormMediaSelected(event)">
                 </div>
 
-                <!-- Image Preview Section -->
+                <!-- Media Preview Section (Video Player or Image with Frame Extraction) -->
                 <div id="form-vision-preview-section" style="display:none; margin-top:12px;">
-                    <div style="position:relative; max-height:260px; overflow:hidden; border-radius:10px; border:1px solid rgba(168,85,247,0.4); margin-bottom:10px;">
+                    <!-- Video Player Wrap -->
+                    <div id="form-vision-video-wrap" class="ai-video-preview-wrap" style="display:none;">
+                        <video id="form-vision-preview-video" controls playsinline></video>
+                        <div class="ai-video-badge"><i class="fa-solid fa-clapperboard"></i> Video Yüklendi</div>
+                    </div>
+
+                    <!-- Image Wrap -->
+                    <div id="form-vision-image-wrap" style="display:none; position:relative; max-height:260px; overflow:hidden; border-radius:10px; border:1px solid rgba(168,85,247,0.4); margin-bottom:10px;">
                         <img id="form-vision-preview-img" src="" alt="Form Fotoğrafı" style="width:100%; max-height:260px; object-fit:contain; background:#000; display:block;">
-                        <button type="button" class="btn btn-xs btn-danger" onclick="resetFormVisionUpload()" style="position:absolute; top:8px; right:8px; padding:4px 8px; border-radius:6px; font-size:0.7rem;">
-                            <i class="fa-solid fa-trash"></i> Değiştir
+                    </div>
+
+                    <!-- Extracted Keyframes Strip -->
+                    <div id="form-vision-keyframes-strip" class="ai-keyframes-strip" style="display:none;"></div>
+
+                    <div style="display:flex; justify-content:flex-end; margin-bottom:10px;">
+                        <button type="button" class="btn btn-xs btn-outline" onclick="resetFormVisionUpload()" style="color:#ff453a; border-color:rgba(255,69,58,0.4); font-size:0.7rem;">
+                            <i class="fa-solid fa-trash"></i> Videoyu / Fotoğrafı Değiştir
                         </button>
                     </div>
 
                     <div class="form-group" style="margin-bottom:10px;">
                         <label style="font-size:0.72rem; font-weight:700;"><i class="fa-solid fa-pen"></i> Hissiyat / Yaşanan Zorluk (Opsiyonel):</label>
-                        <input type="text" id="form-vision-custom-hint" placeholder="Örn: Alt sırtta batma oldu, dizlerim içeri kaçıyor gibi hissettim..." style="font-size:0.78rem;">
+                        <input type="text" id="form-vision-custom-hint" placeholder="Örn: Alt sırtta batma oldu, iniş temposu hızlıydı, kilitlenirken zorlandım..." style="font-size:0.78rem;">
                     </div>
 
                     <button type="button" class="btn btn-primary btn-block" id="btn-start-form-analysis" onclick="startFormVisionAnalysis()" style="background:linear-gradient(135deg, #a855f7, #7c3aed); border-color:#a855f7; color:#fff; font-weight:800; padding:10px; font-size:0.85rem;">
-                        <i class="fa-solid fa-wand-magic-sparkles"></i> 🤖 Biyomekanik Form Analizini Başlat
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> 🤖 Biyomekanik Video Form Analizini Başlat
                     </button>
                 </div>
 
                 <!-- Loading Spinner -->
                 <div id="form-vision-loading" style="display:none; padding:24px 14px; text-align:center;">
                     <i class="fa-solid fa-spinner fa-spin" style="font-size:2rem; color:#a855f7; margin-bottom:10px;"></i>
-                    <h4 style="font-size:0.85rem; color:#fff; margin:0 0 4px 0;">Biyomekanik Eklem Açıları İnceleniyor...</h4>
-                    <p style="font-size:0.72rem; color:var(--text-muted); margin:0;">Omurga hizası, diz vektörü ve sakatlık risk faktörleri taranıyor</p>
+                    <h4 style="font-size:0.85rem; color:#fff; margin:0 0 4px 0;">Video Kareleri ve Biyomekanik İnceleniyor...</h4>
+                    <p style="font-size:0.72rem; color:var(--text-muted); margin:0;">Ekzantrik tempo, alt nokta diz/kalça açıları ve omurga yükü taranıyor</p>
                 </div>
 
                 <!-- Analysis Results Section -->
@@ -2567,10 +2597,10 @@
                         <p style="font-size:0.74rem; color:var(--text-secondary); margin:0; line-height:1.4;" id="form-vision-summary-text"></p>
                     </div>
 
-                    <!-- Joint Breakdown List -->
+                    <!-- Joint & Tempo Breakdown List -->
                     <div class="card" style="background:rgba(255,255,255,0.02); border:1px solid var(--border-subtle); padding:10px; margin-bottom:12px;">
                         <h4 style="font-size:0.75rem; color:#c084fc; margin:0 0 8px 0; text-transform:uppercase; font-weight:800;">
-                            <i class="fa-solid fa-bone"></i> Eklem & Postür Analizi
+                            <i class="fa-solid fa-bone"></i> Eklem Açısı, Bar Yolu & Tempo
                         </h4>
                         <div id="form-vision-joints-list" style="display:flex; flex-direction:column; gap:6px;">
                             <!-- Populated dynamically -->
@@ -2593,10 +2623,165 @@
                             <i class="fa-solid fa-robot"></i> Enes Abi'ye Bu Form Hakkında Soru Sor
                         </button>
                         <button type="button" class="btn btn-outline btn-block" onclick="resetFormVisionUpload()" style="font-size:0.75rem;">
-                            <i class="fa-solid fa-rotate-left"></i> Başka Bir Hareket Analiz Et
+                            <i class="fa-solid fa-rotate-left"></i> Başka Bir Video / Hareket Analiz Et
                         </button>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== HAFTALIK CHECK-IN & AI BODY CHECK MERKEZİ ==================== -->
+    <div id="modal-weekly-checkin" class="modal-overlay">
+        <div class="modal-card" style="max-width:560px;">
+            <div class="modal-header" style="background:linear-gradient(135deg, rgba(255,214,10,0.18), rgba(255,159,10,0.06));">
+                <h3><i class="fa-solid fa-clipboard-check" style="color:#ffd60a;"></i> Haftalık Form & Check-in Raporu</h3>
+                <button class="modal-close-btn" onclick="closeModal('modal-weekly-checkin')">&times;</button>
+            </div>
+            <div class="modal-body" style="padding:16px 14px;">
+                <p class="text-secondary" style="font-size:0.76rem; line-height:1.45; margin-bottom:14px;">
+                    Haftalık form güncellemeni buradan yapabilirsin. Yapay zeka <strong>AI Body Check</strong> yaparak kas tanımını ve bel gelişimini tarar, tüm rapor anında <strong>Koç Ömer'e iletilir</strong>!
+                </p>
+
+                <!-- Checkin Form Inputs -->
+                <div id="checkin-input-form">
+                    <!-- Weight & Waist Grid -->
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:12px;">
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label style="font-size:0.74rem; font-weight:700;"><i class="fa-solid fa-weight-scale"></i> Güncel Kilo (kg):</label>
+                            <input type="number" id="checkin-weight-input" step="0.1" placeholder="74.5" class="form-select" style="font-size:0.85rem; font-weight:800; color:#ffd60a;">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label style="font-size:0.74rem; font-weight:700;"><i class="fa-solid fa-ruler-horizontal"></i> Bel Çevresi (cm):</label>
+                            <input type="number" id="checkin-waist-input" step="0.5" placeholder="81.0" class="form-select" style="font-size:0.85rem; font-weight:800; color:#38bdf8;">
+                        </div>
+                    </div>
+
+                    <!-- Energy & Sleep Rating Grid -->
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:14px;">
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label style="font-size:0.72rem; font-weight:700;"><i class="fa-solid fa-bolt"></i> Enerji & Antrenman Gücü:</label>
+                            <select id="checkin-energy-select" class="form-select" style="font-size:0.78rem;">
+                                <option value="5">⭐⭐⭐⭐⭐ Zirvede / Canavar</option>
+                                <option value="4" selected>⭐⭐⭐⭐ İyi / Güçlü</option>
+                                <option value="3">⭐⭐⭐ Normal / Ortalama</option>
+                                <option value="2">⭐⭐ Düşük / Yorgun</option>
+                                <option value="1">⭐ Çok Yorgun / Bitkin</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label style="font-size:0.72rem; font-weight:700;"><i class="fa-solid fa-bed"></i> Uyku & Toparlanma:</label>
+                            <select id="checkin-sleep-select" class="form-select" style="font-size:0.78rem;">
+                                <option value="5">⭐⭐⭐⭐⭐ 8+ Saat Derin Uyku</option>
+                                <option value="4" selected>⭐⭐⭐⭐ 7-8 Saat İyi</option>
+                                <option value="3">⭐⭐⭐ 6-7 Saat Kesintili</option>
+                                <option value="2">⭐⭐ 5-6 Saat Uykusuz</option>
+                                <option value="1">⭐ <5 Saat Kötü Uyku</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- 3 Posing Angles / Video Slots -->
+                    <label style="font-size:0.75rem; font-weight:800; color:#ffd60a; margin-bottom:6px; display:block; text-transform:uppercase;">
+                        <i class="fa-solid fa-images"></i> Form Görselleri veya Video Klibi
+                    </label>
+
+                    <div class="checkin-angle-grid">
+                        <!-- Front Pose Slot -->
+                        <div class="checkin-angle-box" id="checkin-box-front" onclick="triggerCheckinMediaUpload('front')">
+                            <input type="file" id="checkin-file-front" accept="video/*,video/mp4,video/quicktime,video/webm,image/*" style="display:none;" onchange="handleCheckinMediaSelected('front', event)">
+                            <div id="checkin-placeholder-front">
+                                <i class="fa-solid fa-camera" style="font-size:1.4rem; color:var(--text-muted); margin-bottom:4px;"></i>
+                                <span style="font-size:0.68rem; font-weight:700; color:#fff; display:block;">Ön Cephe</span>
+                                <small style="font-size:0.58rem; color:var(--text-muted);">Foto / Video</small>
+                            </div>
+                            <div id="checkin-preview-front" style="display:none; width:100%; position:relative;">
+                                <img id="checkin-img-front" class="checkin-angle-preview" src="" alt="Ön">
+                                <button type="button" class="checkin-remove-btn" onclick="removeCheckinMedia('front', event)">&times;</button>
+                            </div>
+                        </div>
+
+                        <!-- Side Pose Slot -->
+                        <div class="checkin-angle-box" id="checkin-box-side" onclick="triggerCheckinMediaUpload('side')">
+                            <input type="file" id="checkin-file-side" accept="video/*,video/mp4,video/quicktime,video/webm,image/*" style="display:none;" onchange="handleCheckinMediaSelected('side', event)">
+                            <div id="checkin-placeholder-side">
+                                <i class="fa-solid fa-camera" style="font-size:1.4rem; color:var(--text-muted); margin-bottom:4px;"></i>
+                                <span style="font-size:0.68rem; font-weight:700; color:#fff; display:block;">Yan Profil</span>
+                                <small style="font-size:0.58rem; color:var(--text-muted);">Foto / Video</small>
+                            </div>
+                            <div id="checkin-preview-side" style="display:none; width:100%; position:relative;">
+                                <img id="checkin-img-side" class="checkin-angle-preview" src="" alt="Yan">
+                                <button type="button" class="checkin-remove-btn" onclick="removeCheckinMedia('side', event)">&times;</button>
+                            </div>
+                        </div>
+
+                        <!-- Back Pose Slot -->
+                        <div class="checkin-angle-box" id="checkin-box-back" onclick="triggerCheckinMediaUpload('back')">
+                            <input type="file" id="checkin-file-back" accept="video/*,video/mp4,video/quicktime,video/webm,image/*" style="display:none;" onchange="handleCheckinMediaSelected('back', event)">
+                            <div id="checkin-placeholder-back">
+                                <i class="fa-solid fa-video" style="font-size:1.4rem; color:var(--text-muted); margin-bottom:4px;"></i>
+                                <span style="font-size:0.68rem; font-weight:700; color:#fff; display:block;">Sırt / 360°</span>
+                                <small style="font-size:0.58rem; color:var(--text-muted);">Foto / Video</small>
+                            </div>
+                            <div id="checkin-preview-back" style="display:none; width:100%; position:relative;">
+                                <img id="checkin-img-back" class="checkin-angle-preview" src="" alt="Sırt">
+                                <button type="button" class="checkin-remove-btn" onclick="removeCheckinMedia('back', event)">&times;</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Athlete Notes -->
+                    <div class="form-group" style="margin-bottom:14px;">
+                        <label style="font-size:0.74rem; font-weight:700;"><i class="fa-solid fa-message"></i> Koça Notun / Hafta Değerlendirmen:</label>
+                        <textarea id="checkin-athlete-notes" rows="3" class="form-textarea" placeholder="Hocam bu hafta antrenmanlar çok iyi geçti, omuz batması tamamen geçti. Kaloriyi rahat tamamlıyorum..."></textarea>
+                    </div>
+
+                    <button type="button" class="btn btn-primary btn-block" id="btn-submit-checkin" onclick="startWeeklyCheckinProcess()" style="background:linear-gradient(135deg, #ffd60a, #ff9f0a); color:#000; font-weight:900; font-size:0.85rem; padding:11px;">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> 🤖 AI Body Check Yap & Koça İlet 🚀
+                    </button>
+                </div>
+
+                <!-- Loading State -->
+                <div id="checkin-loading-state" style="display:none; padding:30px 14px; text-align:center;">
+                    <i class="fa-solid fa-spinner fa-spin" style="font-size:2.2rem; color:#ffd60a; margin-bottom:12px;"></i>
+                    <h4 style="font-size:0.9rem; color:#fff; margin:0 0 6px 0;">Yapay Zeka Vücut Kompozisyonunu Tarıyor...</h4>
+                    <p style="font-size:0.74rem; color:var(--text-muted); margin:0;">Kas definisyonu, bel sıkılığı ve haftalık değişim hesaplanıyor</p>
+                </div>
+
+                <!-- Results & Coach Dispatch Card -->
+                <div id="checkin-results-state" style="display:none; margin-top:14px;">
+                    <div class="ai-body-check-card">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                            <div style="display:flex; align-items:center; gap:6px;">
+                                <span style="font-size:1.1rem;">🧬</span>
+                                <strong style="font-size:0.82rem; color:#10b981; text-transform:uppercase;">AI Body Check Raporu</strong>
+                            </div>
+                            <span class="badge-role" id="checkin-ai-score-badge" style="background:#10b981; color:#fff; font-size:0.75rem; font-weight:800;">Skor: %92</span>
+                        </div>
+                        <h4 style="font-size:0.85rem; color:#ffd60a; margin:0 0 6px 0;" id="checkin-ai-summary-title">Harika Kütle Kazanımı</h4>
+                        <p style="font-size:0.74rem; color:var(--text-secondary); margin:0 0 10px 0; line-height:1.4;" id="checkin-ai-summary-text"></p>
+
+                        <div id="checkin-ai-insights-list" style="display:flex; flex-direction:column; gap:6px; margin-bottom:10px;">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Coach Confirmation Banner -->
+                    <div style="background:rgba(16,185,129,0.12); border:1px solid rgba(16,185,129,0.4); border-radius:8px; padding:10px; margin-bottom:12px; display:flex; align-items:center; gap:8px;">
+                        <i class="fa-solid fa-circle-check" style="font-size:1.2rem; color:#10b981;"></i>
+                        <div style="font-size:0.74rem; color:#fff; line-height:1.35;">
+                            <strong>Koç Ömer'e Canlı Olarak İletildi!</strong><br>
+                            <span style="color:var(--text-muted); font-size:0.68rem;">Raporun ve form görsellerin antrenör masasına işlendi.</span>
+                        </div>
+                    </div>
+
+                    <button type="button" class="btn btn-primary btn-block" onclick="closeModal('modal-weekly-checkin'); openAthleteChatModal();" style="background:#ffd60a; color:#000; font-weight:800; font-size:0.8rem; padding:9px;">
+                        <i class="fa-solid fa-comments"></i> Koç Sohbetine Git & Mesajı Gör
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
             </div>
         </div>
     </div>

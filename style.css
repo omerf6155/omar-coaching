@@ -6177,6 +6177,148 @@ body.modal-open {
     margin-bottom: 14px;
 }
 
+/* ==================== VIDEO FORM & BIOMECHANICS STYLES ==================== */
+.ai-video-preview-wrap {
+    position: relative;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background: #000000;
+    border: 1px solid rgba(168, 85, 247, 0.4);
+    margin-bottom: 10px;
+}
+
+.ai-video-preview-wrap video {
+    width: 100%;
+    max-height: 280px;
+    object-fit: contain;
+    display: block;
+}
+
+.ai-video-badge {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    background: rgba(168, 85, 247, 0.85);
+    backdrop-filter: blur(8px);
+    color: #ffffff;
+    font-size: 0.65rem;
+    font-weight: 800;
+    padding: 4px 8px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    letter-spacing: 0.4px;
+}
+
+.ai-keyframes-strip {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding: 6px 0;
+    margin-bottom: 10px;
+}
+
+.ai-keyframe-card {
+    flex: 0 0 80px;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: #111;
+    text-align: center;
+}
+
+.ai-keyframe-card img {
+    width: 100%;
+    height: 50px;
+    object-fit: cover;
+    display: block;
+}
+
+.ai-keyframe-card span {
+    font-size: 0.58rem;
+    color: var(--text-muted);
+    padding: 2px 0;
+    display: block;
+    background: rgba(0, 0, 0, 0.6);
+}
+
+/* ==================== WEEKLY CHECK-IN & BODY CHECK STYLES ==================== */
+.checkin-angle-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.checkin-angle-box {
+    background: var(--bg-card-subtle);
+    border: 1px dashed rgba(255, 214, 10, 0.35);
+    border-radius: var(--radius-sm);
+    padding: 10px 6px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    min-height: 110px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.checkin-angle-box:hover {
+    border-color: #ffd60a;
+    background: rgba(255, 214, 10, 0.06);
+}
+
+.checkin-angle-box.has-file {
+    border-style: solid;
+    border-color: #10b981;
+    background: rgba(16, 185, 129, 0.08);
+}
+
+.checkin-angle-preview {
+    width: 100%;
+    height: 90px;
+    object-fit: cover;
+    border-radius: 6px;
+    display: block;
+}
+
+.checkin-remove-btn {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background: rgba(239, 68, 68, 0.85);
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 22px;
+    height: 22px;
+    font-size: 0.65rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.ai-body-check-card {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(59, 130, 246, 0.08));
+    border: 1px solid rgba(16, 185, 129, 0.35);
+    border-radius: var(--radius-md);
+    padding: 14px;
+    margin-bottom: 14px;
+}
+
+.checkin-chat-card {
+    background: rgba(15, 23, 42, 0.85);
+    border: 1px solid rgba(255, 214, 10, 0.35);
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-top: 6px;
+}
+
 
 
 
