@@ -142,7 +142,8 @@
                             <i class="fa-solid fa-id-card-clip" style="color:#ffd60a;"></i> Karakter Merkezi <i class="fa-solid fa-chevron-right"></i>
                         </button>
                     </div>
-                </div>
+                <!-- Sunday Coach Report Banner (Appears on Sundays) -->
+                <div id="sunday-report-banner-container"></div>
 
                 <!-- Daily Macro Summary Card -->
                 <div class="card macro-overview-card">
@@ -214,7 +215,7 @@
                         Haftalık durum güncellemeni yap, antrenman setlerinin videosunu yükleyip biyomekanik analiz al veya tabağının makrosunu hesapla!
                     </p>
                     
-                    <div class="quick-upload-hub-grid" style="margin-bottom:0;">
+                    <div class="quick-upload-hub-grid" style="margin-bottom:0; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));">
                         <div class="quick-upload-card card-checkin" onclick="openWeeklyCheckinModal()">
                             <div>
                                 <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
@@ -242,6 +243,21 @@
                             </div>
                             <button type="button" class="btn btn-xs btn-primary" style="margin-top:8px; background:linear-gradient(135deg, #a855f7, #7c3aed); color:#fff; font-weight:800; font-size:0.7rem; border:none;">
                                 <i class="fa-solid fa-video"></i> Video Yükle
+                            </button>
+                        </div>
+
+                        <div class="quick-upload-card" onclick="openWeeklyDocReportModal()" style="border-color:rgba(56,189,248,0.4); background:rgba(56,189,248,0.06);">
+                            <div>
+                                <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                                    <span style="font-size:1rem;">📄</span>
+                                    <strong style="font-size:0.78rem; color:#38bdf8;">Word & Mail Raporu</strong>
+                                </div>
+                                <p style="font-size:0.67rem; color:var(--text-muted); margin:0; line-height:1.3;">
+                                    Tüm haftalık tartı & antrenman verini Word (.doc) yapıp koça e-posta at.
+                                </p>
+                            </div>
+                            <button type="button" class="btn btn-xs btn-primary" style="margin-top:8px; background:linear-gradient(135deg, #0284c7, #0369a1); color:#fff; font-weight:800; font-size:0.7rem; border:none;">
+                                <i class="fa-solid fa-file-word"></i> Word & Mail Raporu
                             </button>
                         </div>
                     </div>
@@ -2853,6 +2869,41 @@
                     <button type="button" class="btn btn-primary btn-block" onclick="closeModal('modal-weekly-checkin'); openAthleteChatModal();" style="background:#ffd60a; color:#000; font-weight:800; font-size:0.8rem; padding:9px;">
                         <i class="fa-solid fa-comments"></i> Koç Sohbetine Git & Mesajı Gör
                     </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== 📄 HAFTALIK KOÇ RAPORU (WORD & E-POSTA) MODALI ==================== -->
+    <div id="modal-weekly-doc-report" class="modal-overlay">
+        <div class="modal-card" style="max-width:620px; max-height:92vh; display:flex; flex-direction:column;">
+            <div class="modal-header" style="background:linear-gradient(135deg, rgba(56,189,248,0.18), rgba(59,130,246,0.08)); flex-shrink:0;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:1.3rem;">📄</span>
+                    <div>
+                        <h3 style="margin:0; font-size:0.95rem; color:#fff;">Haftalık Koç Raporu (Word & E-Posta)</h3>
+                        <span style="font-size:0.68rem; color:#38bdf8;">Tartı, Hacim (Tonaj), Makrolar & Biyomekanik Özet</span>
+                    </div>
+                </div>
+                <button class="modal-close-btn" onclick="closeModal('modal-weekly-doc-report')">&times;</button>
+            </div>
+            <div class="modal-body" style="padding:16px 14px; overflow-y:auto; flex:1;">
+                <!-- Quick Export Action Buttons -->
+                <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px; margin-bottom:14px;">
+                    <button type="button" class="btn btn-primary" onclick="downloadWeeklyWordDoc()" style="background:linear-gradient(135deg, #2b579a, #1b365d); color:#fff; font-weight:800; font-size:0.75rem; border:none; padding:10px 6px;">
+                        <i class="fa-solid fa-file-word"></i> Word (.doc) İndir
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="sendWeeklyReportByEmail()" style="background:linear-gradient(135deg, #0284c7, #0369a1); color:#fff; font-weight:800; font-size:0.75rem; border:none; padding:10px 6px;">
+                        <i class="fa-solid fa-envelope"></i> Koça E-Posta At
+                    </button>
+                    <button type="button" class="btn btn-outline" onclick="copyWeeklyReportToClipboard()" style="border-color:#38bdf8; color:#38bdf8; font-weight:700; font-size:0.75rem; padding:10px 6px;">
+                        <i class="fa-solid fa-copy"></i> Metni Kopyala
+                    </button>
+                </div>
+
+                <!-- Live Printable/Formatted Report Preview Container -->
+                <div id="weekly-report-preview-container" style="background:#0f172a; border:1px solid rgba(56,189,248,0.3); border-radius:10px; padding:16px; font-size:0.78rem; color:#e2e8f0; line-height:1.5;">
+                    <!-- Populated dynamically via JS -->
                 </div>
             </div>
         </div>

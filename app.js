@@ -2637,6 +2637,7 @@ function renderDashboard() {
     renderDashboardSupplementsSummary();
     renderRpgDashboardCard();
     evaluateDailyStreak();
+    if (typeof renderSundayReportBanner === "function") renderSundayReportBanner();
 }
 
 function getMealIcon(name) {
@@ -13730,6 +13731,317 @@ function saveCoachPhysiqueFeedback(username, entryId) {
     showToast(`✅ Değerlendirmeniz @${username} sporcusuna iletildi! 🚀`);
     openCoachPhysiqueReviewModal(username);
 }
+
+// ==================== HAFTALIK KOÇ RAPORU (WORD & E-POSTA) SİSTEMİ ====================
+
+function openWeeklyDocReportModal() {
+    renderWeeklyDocReportPreview();
+    openModal('modal-weekly-doc-report');
+}
+
+function generateWeeklyDocReportData() {
+    const today = new Date();
+    const dateStr = today.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
+    const username = getActiveSessionUsername() || "omer";
+    const userProf = appData.userProfile || { name: 'Omar', weight: 74, height: 178, goal: 'bulk' };
+    
+    // Weight & 7-day stats
+    const history = appData.weightHistory || [];
+    const currentWeight = history.length > 0 ? Number(history[0].weight || 74) : (userProf.weight || 74);
+    const prevWeight = history.length > 1 ? Number(history[1].weight || currentWeight) : currentWeight;
+    const weightDiff = (currentWeight - prevWeight).toFixed(1);
+    const weightDiffStr = weightDiff > 0 ? `+${weightDiff} kg` : `${weightDiff} kg`;
+
+    // 7-day weight average calculation
+    const last7Weights = history.slice(0, 7);
+    const avgWeight = last7Weights.length > 0 
+        ? (last7Weights.reduce((a, b) => a + Number(b.weight || 0), 0) / last7Weights.length).toFixed(1)
+        : currentWeight.toFixed(1);
+
+    // Workout tonnage & volume summary
+    let totalTonnage = 0;
+    let totalSets = 0;
+    const daysKeys = ["pzt", "sal", "car", "per", "cum", "cmt", "paz"];
+    daysKeys.forEach(dayKey => {
+        const plan = (appData.customWorkoutPlan && appData.customWorkoutPlan[dayKey]) || (DEFAULT_WORKOUT_PLAN && DEFAULT_WORKOUT_PLAN[dayKey]);
+        if (plan && plan.exercises) {
+            plan.exercises.forEach(ex => {
+                const logs = appData.workoutLogs ? appData.workoutLogs[ex.id] : null;
+                if (logs && Array.isArray(logs)) {
+                    logs.forEach(set => {
+                        const w = Number(set.weight || 0);
+                        const r = Number(set.reps || 0);
+                        if (w > 0 && r > 0) {
+                            totalTonnage += (w * r);
+                            totalSets++;
+                        }
+                    });
+                }
+            });
+        }
+    });
+
+    // Nutrition & Macro Averages
+    const consumed = appData.todayNutrition || {};
+    const target = appData.targets || DEFAULT_TARGETS;
+
+    // Checkin / Body measures
+    const waist = (appData.waistHistory && appData.waistHistory.length > 0) ? appData.waistHistory[0].waist : 81;
+
+    return {
+        dateStr,
+        username,
+        userProf,
+        currentWeight,
+        prevWeight,
+        weightDiffStr,
+        avgWeight,
+        last7Weights,
+        totalTonnage: Math.round(totalTonnage),
+        totalSets,
+        consumed,
+        target,
+        waist
+    };
+}
+
+function generateWeeklyDocHtml() {
+    const data = generateWeeklyDocReportData();
+    const daysTr = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
+    const dayKeys = ["pzt", "sal", "car", "per", "cum", "cmt", "paz"];
+
+    let weightRowsHtml = "";
+    dayKeys.forEach((k, idx) => {
+        const item = (data.last7Weights || [])[idx];
+        const val = item ? `${item.weight} kg` : "--";
+        weightRowsHtml += `
+            <tr>
+                <td style="padding:6px 10px; border:1px solid #cbd5e1; font-weight:bold;">${daysTr[idx]}</td>
+                <td style="padding:6px 10px; border:1px solid #cbd5e1; text-align:center;">${val}</td>
+            </tr>
+        `;
+    });
+
+    let workoutRowsHtml = "";
+    dayKeys.forEach((dayKey, idx) => {
+        const plan = (appData.customWorkoutPlan && appData.customWorkoutPlan[dayKey]) || (DEFAULT_WORKOUT_PLAN && DEFAULT_WORKOUT_PLAN[dayKey]);
+        if (plan) {
+            const exNames = (plan.exercises || []).map(e => e.name).slice(0, 4).join(", ");
+            workoutRowsHtml += `
+                <tr>
+                    <td style="padding:6px 10px; border:1px solid #cbd5e1; font-weight:bold;">${daysTr[idx]}</td>
+                    <td style="padding:6px 10px; border:1px solid #cbd5e1;">${plan.title || 'Dinlenme'}</td>
+                    <td style="padding:6px 10px; border:1px solid #cbd5e1; font-size:11px; color:#475569;">${exNames || 'OFF'}</td>
+                </tr>
+            `;
+        }
+    });
+
+    return `
+        <div style="font-family: Arial, sans-serif; color: #0f172a; max-width: 700px; margin: 0 auto; background:#ffffff; padding:20px; border-radius:8px;">
+            <div style="text-align: center; border-bottom: 3px solid #0284c7; padding-bottom: 12px; margin-bottom: 20px;">
+                <h1 style="color: #0284c7; margin: 0; font-size: 22px; text-transform: uppercase;">OMAR COACHING</h1>
+                <h3 style="color: #475569; margin: 4px 0 0 0; font-size: 14px; font-weight: normal;">Haftalık Sporcu Gelişim & Tartı Raporu</h3>
+                <p style="color: #64748b; font-size: 11px; margin: 4px 0 0 0;">Tarih: ${data.dateStr} | Sporcu: ${data.username.toUpperCase()}</p>
+            </div>
+
+            <!-- SPORCU ÖZET TABLOSU -->
+            <h4 style="color:#0284c7; border-left:4px solid #0284c7; padding-left:8px; margin:16px 0 8px 0; font-size:14px;">1. SPORCU ÖZETİ & TARTI DURUMU</h4>
+            <table style="width:100%; border-collapse:collapse; margin-bottom:16px; font-size:12px;">
+                <tr style="background:#f1f5f9;">
+                    <th style="padding:8px; border:1px solid #cbd5e1; text-align:left;">Metrik</th>
+                    <th style="padding:8px; border:1px solid #cbd5e1; text-align:left;">Değer</th>
+                </tr>
+                <tr>
+                    <td style="padding:6px 8px; border:1px solid #cbd5e1;">Güncel Kilo</td>
+                    <td style="padding:6px 8px; border:1px solid #cbd5e1; font-weight:bold; color:#0284c7;">${data.currentWeight} kg (${data.weightDiffStr})</td>
+                </tr>
+                <tr>
+                    <td style="padding:6px 8px; border:1px solid #cbd5e1;">Haftalık Ort. Kilo</td>
+                    <td style="padding:6px 8px; border:1px solid #cbd5e1; font-weight:bold;">${data.avgWeight} kg</td>
+                </tr>
+                <tr>
+                    <td style="padding:6px 8px; border:1px solid #cbd5e1;">Bel Çevresi</td>
+                    <td style="padding:6px 8px; border:1px solid #cbd5e1;">${data.waist} cm</td>
+                </tr>
+                <tr>
+                    <td style="padding:6px 8px; border:1px solid #cbd5e1;">Hedef Strateji</td>
+                    <td style="padding:6px 8px; border:1px solid #cbd5e1; text-transform:uppercase; font-weight:bold; color:#16a34a;">${data.userProf.goal || 'LEAN BULK'}</td>
+                </tr>
+            </table>
+
+            <!-- HAFTALIK TARTI DETAYLARI -->
+            <h4 style="color:#0284c7; border-left:4px solid #0284c7; padding-left:8px; margin:16px 0 8px 0; font-size:14px;">2. HAFTALIK TARTI LOGLARI</h4>
+            <table style="width:100%; border-collapse:collapse; margin-bottom:16px; font-size:12px;">
+                <tr style="background:#0284c7; color:#ffffff;">
+                    <th style="padding:6px 10px; border:1px solid #cbd5e1; text-align:left;">Gün</th>
+                    <th style="padding:6px 10px; border:1px solid #cbd5e1; text-align:center;">Kilo (kg)</th>
+                </tr>
+                ${weightRowsHtml}
+            </table>
+
+            <!-- ANTRENMAN HACMİ & İDMAN ÖZETİ -->
+            <h4 style="color:#0284c7; border-left:4px solid #0284c7; padding-left:8px; margin:16px 0 8px 0; font-size:14px;">3. ANTRENMAN HACMİ & İDMAN PROGRAMI</h4>
+            <div style="background:#f8fafc; border:1px solid #e2e8f0; padding:10px; border-radius:6px; margin-bottom:10px; font-size:12px;">
+                <strong>Haftalık Toplam Kaldırılan Hacim (Tonaj):</strong> <span style="color:#0284c7; font-weight:bold;">${data.totalTonnage > 0 ? (data.totalTonnage + ' kg') : 'Düzenli Loglandı'}</span> | 
+                <strong>Toplam İdman Seti:</strong> ${data.totalSets > 0 ? data.totalSets : 'Düzenli Tamamlandı'}
+            </div>
+            <table style="width:100%; border-collapse:collapse; margin-bottom:16px; font-size:12px;">
+                <tr style="background:#f1f5f9;">
+                    <th style="padding:6px 10px; border:1px solid #cbd5e1; text-align:left;">Gün</th>
+                    <th style="padding:6px 10px; border:1px solid #cbd5e1; text-align:left;">İdman Başlığı</th>
+                    <th style="padding:6px 10px; border:1px solid #cbd5e1; text-align:left;">Ana Hareketler</th>
+                </tr>
+                ${workoutRowsHtml}
+            </table>
+
+            <!-- BESLENME VE MAKRO ÖZETİ -->
+            <h4 style="color:#0284c7; border-left:4px solid #0284c7; padding-left:8px; margin:16px 0 8px 0; font-size:14px;">4. BESLENME VE MAKRO DİSİPLİNİ</h4>
+            <table style="width:100%; border-collapse:collapse; margin-bottom:20px; font-size:12px;">
+                <tr style="background:#f1f5f9;">
+                    <th style="padding:6px 8px; border:1px solid #cbd5e1;">Kalori (kcal)</th>
+                    <th style="padding:6px 8px; border:1px solid #cbd5e1;">Protein (g)</th>
+                    <th style="padding:6px 8px; border:1px solid #cbd5e1;">Karbonhidrat (g)</th>
+                    <th style="padding:6px 8px; border:1px solid #cbd5e1;">Yağ (g)</th>
+                </tr>
+                <tr>
+                    <td style="padding:8px; border:1px solid #cbd5e1; text-align:center; font-weight:bold;">${data.target.calories} kcal</td>
+                    <td style="padding:8px; border:1px solid #cbd5e1; text-align:center; font-weight:bold; color:#16a34a;">${data.target.protein}g</td>
+                    <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">${data.target.carbs}g</td>
+                    <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">${data.target.fat}g</td>
+                </tr>
+            </table>
+
+            <div style="border-top:2px dashed #cbd5e1; padding-top:12px; margin-top:20px; text-align:center; font-size:11px; color:#94a3b8;">
+                Omar Coaching • Biyomekanik & Anabolik Sporcu Sistemi • ODD Coaching Systems
+            </div>
+        </div>
+    `;
+}
+
+function renderWeeklyDocReportPreview() {
+    const container = document.getElementById("weekly-report-preview-container");
+    if (container) {
+        container.innerHTML = generateWeeklyDocHtml();
+    }
+}
+
+function downloadWeeklyWordDoc() {
+    const reportHtml = generateWeeklyDocHtml();
+    const header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' "+
+        "xmlns:w='urn:schemas-microsoft-com:office:word' "+
+        "xmlns='http://www.w3.org/TR/REC-html40'>"+
+        "<head><meta charset='utf-8'><title>Haftalık Koç Raporu</title></head><body>";
+    const footer = "</body></html>";
+    const sourceHTML = header + reportHtml + footer;
+    
+    const blob = new Blob(['\ufeff', sourceHTML], {
+        type: 'application/msword'
+    });
+    
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    const nowStr = new Date().toISOString().slice(0,10);
+    a.download = `Omar_Coaching_Haftalik_Rapor_${nowStr}.doc`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast("📄 Haftalık Word Raporu (.doc) indirildi!");
+}
+
+function sendWeeklyReportByEmail() {
+    const data = generateWeeklyDocReportData();
+    const subject = encodeURIComponent(`[Omar Coaching] Haftalık Tartı & Gelişim Raporu - ${data.username.toUpperCase()} (${data.dateStr})`);
+    
+    const bodyText = `Merhaba Koç Ömer,
+
+Omar Coaching haftalık gelişim ve tartı raporum hazır!
+
+📊 1. TARTI & KİLO DURUMU:
+- Güncel Kilo: ${data.currentWeight} kg (Fark: ${data.weightDiffStr})
+- Haftalık Ortalama Kilo: ${data.avgWeight} kg
+- Bel Çevresi: ${data.waist} cm
+
+🏋️ 2. ANTRENMAN & HACİM:
+- Haftalık Toplam Hacim (Tonaj): ${data.totalTonnage > 0 ? data.totalTonnage + ' kg' : 'Program eksiksiz uygulandı'}
+- Tamamlanan Set Sayısı: ${data.totalSets} set
+
+🥗 3. BESLENME & MAKROLAR:
+- Günlük Hedef: ${data.target.calories} kcal (${data.target.protein}g Protein)
+
+💬 4. NOTLARIM & HİSSİYATIM:
+Hocam antrenmanlar ve beslenme düzenli ilerliyor. Word raporu belgem bilgisayarıma indirildi, ekte bilgine sunuyorum.
+
+Sporcu: ${data.username.toUpperCase()}
+Tarih: ${data.dateStr}`;
+
+    const body = encodeURIComponent(bodyText);
+    
+    // Copy text to clipboard as well
+    try {
+        navigator.clipboard.writeText(bodyText);
+    } catch(e){}
+
+    const mailtoUrl = `mailto:omar@coaching.com?subject=${subject}&body=${body}`;
+    window.location.href = mailtoUrl;
+    showToast("✉️ E-Posta taslağı açıldı & metin panoya kopyalandı!");
+}
+
+function copyWeeklyReportToClipboard() {
+    const data = generateWeeklyDocReportData();
+    const bodyText = `📋 OMAR COACHING - HAFTALIK SPORCU RAPORU (${data.dateStr})
+
+👤 Sporcu: ${data.username.toUpperCase()}
+⚖️ Güncel Kilo: ${data.currentWeight} kg (${data.weightDiffStr})
+📈 Haftalık Ort. Kilo: ${data.avgWeight} kg
+📏 Bel Çevresi: ${data.waist} cm
+🏋️ Toplam İdman Hacmi: ${data.totalTonnage} kg
+🥗 Günlük Makro Hedefi: ${data.target.calories} kcal (${data.target.protein}g Protein)
+
+Koç Ömer'e iletilmiştir.`;
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(bodyText).then(() => {
+            showToast("📋 Haftalık rapor metni panoya kopyalandı!");
+        }).catch(() => {
+            showToast("📋 Rapor metni kopyalandı.");
+        });
+    } else {
+        showToast("📋 Rapor kopyalama hazır.");
+    }
+}
+
+function renderSundayReportBanner() {
+    const container = document.getElementById("sunday-report-banner-container");
+    if (!container) return;
+
+    const today = new Date();
+    const isSunday = (today.getDay() === 0);
+
+    if (isSunday) {
+        container.innerHTML = `
+            <div style="background:linear-gradient(135deg, rgba(255,214,10,0.18), rgba(2,132,199,0.12)); border:1.5px solid #ffd60a; border-radius:12px; padding:12px 14px; margin-bottom:14px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span style="font-size:1.4rem;">📅</span>
+                    <div>
+                        <strong style="color:#ffd60a; font-size:0.85rem;">BUGÜN PAZAR! HAFTALIK KOÇ RAPORUN HAZIR</strong>
+                        <p style="font-size:0.72rem; color:var(--text-secondary); margin:2px 0 0 0;">
+                            Haftalık tartı, hacim ve makro verilerini Word (.doc) belgesi yapıp Koç Ömer'e e-posta at.
+                        </p>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-sm btn-primary" onclick="openWeeklyDocReportModal()" style="background:#ffd60a; color:#000; font-weight:900; font-size:0.76rem; padding:8px 14px; border:none;">
+                    <i class="fa-solid fa-file-word"></i> 1-Tıkla Word Raporu Oluştur 🚀
+                </button>
+            </div>
+        `;
+    } else {
+        container.innerHTML = "";
+    }
+}
+
 
 
 
