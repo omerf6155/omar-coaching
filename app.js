@@ -11024,30 +11024,40 @@ async function callNvidiaNimApi({ apiKey, model = "meta/llama-3.3-70b-instruct",
         payload.response_format = { type: "json_object" };
     }
 
-    const res = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${cleanKey}`
-        },
-        body: JSON.stringify(payload)
-    });
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 3500);
 
-    if (!res.ok) {
-        const errBody = await res.text();
-        let msg = errBody;
-        try {
-            const j = JSON.parse(errBody);
-            if (j.error && j.error.message) msg = j.error.message;
-            else if (j.message) msg = j.message;
-        } catch (e) {}
-        throw new Error(`NVIDIA NIM (${res.status}): ${msg}`);
+    try {
+        const res = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${cleanKey}`
+            },
+            body: JSON.stringify(payload),
+            signal: controller.signal
+        });
+        clearTimeout(timer);
+
+        if (!res.ok) {
+            const errBody = await res.text();
+            let msg = errBody;
+            try {
+                const j = JSON.parse(errBody);
+                if (j.error && j.error.message) msg = j.error.message;
+                else if (j.message) msg = j.message;
+            } catch (e) {}
+            throw new Error(`NVIDIA NIM (${res.status}): ${msg}`);
+        }
+
+        const data = await res.json();
+        const reply = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+        if (!reply) throw new Error("NVIDIA NIM boş yanıt döndürdü.");
+        return reply;
+    } catch (err) {
+        clearTimeout(timer);
+        throw err;
     }
-
-    const data = await res.json();
-    const reply = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
-    if (!reply) throw new Error("NVIDIA NIM boş yanıt döndürdü.");
-    return reply;
 }
 
 async function callGoogleGeminiApi({ apiKey, model = "gemini-2.5-flash", prompt, systemPrompt = "", imageBase64 = null, mimeType = "image/jpeg", temperature = 0.7, jsonMode = false }) {
@@ -11085,6 +11095,9 @@ async function callGoogleGeminiApi({ apiKey, model = "gemini-2.5-flash", prompt,
             payload.generationConfig.responseMimeType = "application/json";
         }
 
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 3500);
+
         try {
             const res = await fetch(url, {
                 method: "POST",
@@ -11092,8 +11105,10 @@ async function callGoogleGeminiApi({ apiKey, model = "gemini-2.5-flash", prompt,
                     "Content-Type": "application/json",
                     "x-goog-api-key": cleanKey
                 },
-                body: JSON.stringify(payload)
+                body: JSON.stringify(payload),
+                signal: controller.signal
             });
+            clearTimeout(timer);
 
             if (res.ok) {
                 const data = await res.json();
@@ -11108,6 +11123,7 @@ async function callGoogleGeminiApi({ apiKey, model = "gemini-2.5-flash", prompt,
                 lastError = new Error(`Gemini (${res.status}): ${errText}`);
             }
         } catch (err) {
+            clearTimeout(timer);
             lastError = err;
         }
     }
