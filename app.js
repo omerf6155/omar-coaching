@@ -12013,12 +12013,10 @@ async function generateCoachSmartAiPrescription(username) {
     }
 
     let parsed = null;
+    const config = getEffectiveAiConfig();
 
-    // 1. Try Gemini Online if key is configured
-    const rawApiKey = localStorage.getItem("OMAR_GEMINI_API_KEY") || "";
-    const cleanKey = typeof sanitizeGeminiApiKey === "function" ? sanitizeGeminiApiKey(rawApiKey) : rawApiKey.trim();
-
-    if (cleanKey && cleanKey.length > 10) {
+    // 1. Try Live AI (Gemini) if key is configured
+    if (config.isOnline) {
         try {
             const prompt = `Sen dünya şampiyonu elit bir Vücut Geliştirme, Hipertrofi ve Biyokimya Baş Antrenörüsün.
 Sporcu: ${user.name || username} (@${username})
@@ -12027,7 +12025,7 @@ Mevcut Hedefler: ${currentTargets.calories} kcal (P: ${currentTargets.protein}g,
 Son Tartı Değişimi: ${weightDelta > 0 ? '+' + weightDelta : weightDelta} kg
 Son Günlük Kalori Alımı: ${recentNutrition.calories || 'Bilinmiyor'} kcal
 
-Aşağıdaki JSON formatında yanıt üret (yalnızca saf JSON döndür):
+Aşağıdaki JSON formatında yanıt üret (yalnızca saf ve geçerli bir JSON nesnesi döndür):
 {
   "athlete": "${username}",
   "statusTitle": "Haftalık Form & Kalori Optimizasyonu",
@@ -12044,30 +12042,20 @@ Aşağıdaki JSON formatında yanıt üret (yalnızca saf JSON döndür):
   "coachMessage": "Sporcuya motivasyon ve direktif mesajı"
 }`;
 
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(cleanKey)}`;
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 4000);
-
-            const res = await fetch(url, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    contents: [{ role: "user", parts: [{ text: prompt }] }],
-                    generationConfig: { temperature: 0.3, maxOutputTokens: 800 }
-                }),
-                signal: controller.signal
+            const rawReply = await callUnifiedAiEngine({
+                prompt: prompt,
+                systemPrompt: "Sen sadece saf JSON döndüren uzman bir vücut geliştirme ve biyokimya baş antrenörüsün.",
+                temperature: 0.3,
+                jsonMode: true
             });
-            clearTimeout(timeoutId);
 
-            if (res.ok) {
-                const data = await res.json();
-                const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
-                const cleanStr = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
+            if (rawReply) {
+                const cleanStr = rawReply.replace(/```json/gi, '').replace(/```/g, '').trim();
                 const match = cleanStr.match(/\{[\s\S]*\}/);
                 if (match) parsed = JSON.parse(match[0]);
             }
         } catch (e) {
-            console.warn("Online AI prescription failed, using built-in scientific engine:", e);
+            console.warn("Live AI prescription failed, using built-in scientific engine:", e);
         }
     }
 
