@@ -8298,17 +8298,9 @@ function submitCoachPrescription() {
         initSettingsForm();
     }
 
-    // Send automated chat note
-    const chatDb = getChatDB();
-    if (!chatDb[username]) chatDb[username] = [];
-    chatDb[username].push({
-        sender: "coach",
-        text: `📋 [YENİ HEDEF & REVİZYON]: Günlük ${calories} kcal (${protein}P / ${carbs}C / ${fat}F / ${steps} Adım / ${water}L Su). Not: "${coachNote}"`,
-        time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
-        date: new Date().toISOString().split('T')[0],
-        read: false
-    });
-    saveChatDB(chatDb);
+    // Send automated chat note to athlete and cloud
+    const revisionChatText = `🥗 [DİYET & HEDEF REVİZYONU]: Günlük ${calories} kcal (${protein}P / ${carbs}C / ${fat}F / ${steps.toLocaleString('tr-TR')} Adım / ${water}L Su) olarak güncellendi.\nDirektif: "${coachNote}"`;
+    sendLiveChatMessage("coach", username, revisionChatText);
 
     // Broadcast live event via local bus and cloud
     const dietPayload = {
@@ -8336,7 +8328,7 @@ function submitCoachPrescription() {
         body: JSON.stringify(dietPayload)
     }).catch(err => console.warn("Cloud diet revision send notice:", err));
 
-    showToast("Diyet revizyonu başarıyla sporcuya iletildi! 🚀");
+    showToast("Diyet ve hedef revizyonu başarıyla sporcuya iletildi! 🚀");
     renderCoachPrescriptions(username);
 }
 
@@ -9110,20 +9102,12 @@ function submitCoachWorkoutPrescription() {
         updateDateDisplay();
     }
 
-    // Send notification in Coach Chat
+    // Send notification in Coach Chat and broadcast to athlete
     const noteEl = document.getElementById("coach-rx-workout-note");
     const coachNote = (noteEl && noteEl.value.trim()) || "Haftalık antrenman splitiniz ve hareketleriniz güncellendi.";
 
-    const chatDb = getChatDB();
-    if (!chatDb[username]) chatDb[username] = [];
-    chatDb[username].push({
-        sender: "coach",
-        text: `🏋️ [YENİ ANTRENMAN PROGRAMI]: Koçunuz haftalık antrenman splitinizi ve hareketlerinizi güncelledi! Antrenman Defteri sekmesinden yeni programınızı uygulayabilirsiniz.\nDirektif: "${coachNote}"`,
-        time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
-        date: new Date().toISOString().split('T')[0],
-        read: false
-    });
-    saveChatDB(chatDb);
+    const revisionChatText = `🏋️ [YENİ ANTRENMAN PROGRAMI]: Koçunuz haftalık antrenman splitinizi ve hareketlerinizi güncelledi! Antrenman Defteri sekmesinden yeni programınızı uygulayabilirsiniz.\nDirektif: "${coachNote}"`;
+    sendLiveChatMessage("coach", username, revisionChatText);
 
     // Save revision record to revisionsDB
     const revDb = getRevisionsDB();
@@ -9584,14 +9568,22 @@ function handleIncomingLiveEvent(payload, source) {
     } else if (payload.type === "workout_revision") {
         const athleteUsername = (payload.athleteUsername || "omer").toLowerCase().trim();
         const activeUsername = (getActiveSessionUsername() || "omer").toLowerCase().trim();
-        if (activeUsername === athleteUsername || activeUsername === "omer") {
+        if (activeUsername === athleteUsername || activeUsername === "omer" || !activeUsername) {
             if (payload.plan) {
                 appData.customWorkoutPlan = JSON.parse(JSON.stringify(payload.plan));
                 saveDataToStorage();
+
+                const registry = getUsersRegistry();
+                if (registry[athleteUsername] && registry[athleteUsername].data) {
+                    registry[athleteUsername].data.customWorkoutPlan = JSON.parse(JSON.stringify(payload.plan));
+                    saveUsersRegistry(registry);
+                }
+
                 renderWorkoutDayTabs();
                 renderWorkoutView(currentActiveDay);
                 updateDateDisplay();
                 if (source !== "history") {
+                    playLiveChatTone(false);
                     showToast("🏋️ Koçunuz antrenman programınızı güncelledi! 🏆");
                 }
             }
@@ -9599,14 +9591,36 @@ function handleIncomingLiveEvent(payload, source) {
     } else if (payload.type === "diet_revision") {
         const athleteUsername = (payload.athleteUsername || "omer").toLowerCase().trim();
         const activeUsername = (getActiveSessionUsername() || "omer").toLowerCase().trim();
-        if (activeUsername === athleteUsername || activeUsername === "omer") {
+        if (activeUsername === athleteUsername || activeUsername === "omer" || !activeUsername) {
             if (payload.targets) {
                 appData.targets = { ...DEFAULT_TARGETS, ...payload.targets };
                 saveDataToStorage();
+
+                const registry = getUsersRegistry();
+                if (registry[athleteUsername] && registry[athleteUsername].data) {
+                    registry[athleteUsername].data.targets = { ...DEFAULT_TARGETS, ...payload.targets };
+                    saveUsersRegistry(registry);
+                }
+
+                const revDb = getRevisionsDB();
+                if (!revDb[athleteUsername]) revDb[athleteUsername] = {};
+                revDb[athleteUsername] = {
+                    ...payload.targets,
+                    coachNote: payload.coachNote || "",
+                    date: new Date().toISOString().split('T')[0],
+                    applied: true
+                };
+                saveRevisionsDB(revDb);
+
+                recalculateDailyTotals();
                 renderDashboard();
                 initSettingsForm();
+                updateDateDisplay();
+
                 if (source !== "history") {
-                    showToast("🥗 Koçunuz diyet ve hedef revizyonunuzu güncelledi! 🎯");
+                    playLiveChatTone(false);
+                    const stepsFormatted = (payload.targets.steps || 7500).toLocaleString('tr-TR');
+                    showToast(`🥗 Koçunuz hedeflerinizi güncelledi! (Adım: ${stepsFormatted}) 🎯`);
                 }
             }
         }
@@ -9767,12 +9781,18 @@ function formatChatMessage(text) {
     // Check for raw ntfy attachment notices or raw JSON
     if (clean.includes("You received a file:") || clean.includes("attachment.json") || clean.startsWith('{"type":"workout_revision"') || clean.startsWith('{"type":"diet_revision"') || clean.startsWith('{"type":')) {
         let note = "";
-        let isDiet = clean.includes("diet_revision");
+        let isDiet = clean.includes("diet_revision") || clean.includes("target") || clean.includes("kcal") || clean.includes("Adım");
+        let stepsInfo = "";
         try {
             if (clean.startsWith("{")) {
                 const parsed = JSON.parse(clean);
                 if (parsed.coachNote) note = parsed.coachNote;
-                if (parsed.type === "diet_revision") isDiet = true;
+                if (parsed.type === "diet_revision") {
+                    isDiet = true;
+                    if (parsed.targets && parsed.targets.steps) {
+                        stepsInfo = `Günlük ${parsed.targets.calories || 2770} kcal • ${(parsed.targets.steps).toLocaleString('tr-TR')} Adım • ${parsed.targets.protein || 167}g Protein`;
+                    }
+                }
             }
         } catch (e) {}
 
@@ -9783,7 +9803,7 @@ function formatChatMessage(text) {
                         <i class="fa-solid fa-utensils"></i> Yeni Diyet & Hedef Programı İletildi
                     </div>
                     <div style="font-size:0.72rem; color:var(--text-secondary); line-height:1.4;">
-                        Koçunuz günlük beslenme ve kalori makro hedeflerinizi güncelledi.
+                        ${stepsInfo || 'Koçunuz günlük beslenme, adım ve kalori makro hedeflerinizi güncelledi.'}
                     </div>
                     ${note ? `<div style="font-size:0.7rem; color:#ffffff; margin-top:6px; padding:4px 8px; background:rgba(0,0,0,0.3); border-radius:6px; border-left:2px solid #34c759;"><strong>Koç Direktifi:</strong> ${escapeHtml(note)}</div>` : ''}
                 </div>
@@ -9817,7 +9837,7 @@ function formatChatMessage(text) {
         `;
     }
 
-    if (clean.includes("[DİYET & HEDEF REVİZYONU]")) {
+    if (clean.includes("[DİYET & HEDEF REVİZYONU]") || clean.includes("[YENİ HEDEF & REVİZYON]")) {
         const parts = clean.split('\n');
         const header = parts[0] || "Diyet & Hedef Revizyonu";
         const rest = parts.slice(1).join('<br>');
