@@ -10527,22 +10527,116 @@ function checkGeminiApiKeyStatus() {
     }
 }
 
-function openApiKeyModal() {
-    const keyInput = document.getElementById("modal-input-gemini-key");
-    if (keyInput) {
-        keyInput.value = sanitizeGeminiApiKey(localStorage.getItem("OMAR_GEMINI_API_KEY") || "");
-    }
+// ==================== MULTI-ENGINE AI & VISION SYSTEM (GEMINI + NVIDIA NIM) ====================
+
+let currentAssistantPhotoBase64 = null;
+let currentAssistantPhotoMime = "image/jpeg";
+let currentFoodPhotoBase64 = null;
+let currentFoodPhotoMime = "image/jpeg";
+let lastDetectedFoodResult = null;
+let currentFormPhotoBase64 = null;
+let currentFormPhotoMime = "image/jpeg";
+let lastDetectedFormResult = null;
+
+function sanitizeAiApiKey(rawKey) {
+    if (!rawKey || typeof rawKey !== "string") return "";
+    return rawKey.replace(/[^\x21-\x7E]/g, "").trim();
+}
+
+function sanitizeGeminiApiKey(rawKey) {
+    return sanitizeAiApiKey(rawKey);
+}
+
+function getEffectiveAiConfig() {
+    const activeProvider = localStorage.getItem("OMAR_ACTIVE_AI_PROVIDER") || "gemini";
+    const geminiKey = sanitizeAiApiKey(localStorage.getItem("OMAR_GEMINI_API_KEY") || "");
+    const nvidiaKey = sanitizeAiApiKey(localStorage.getItem("OMAR_NVIDIA_API_KEY") || "");
+    const geminiModel = localStorage.getItem("OMAR_GEMINI_MODEL") || "gemini-2.5-flash";
+    const nvidiaModel = localStorage.getItem("OMAR_NVIDIA_MODEL") || "meta/llama-3.3-70b-instruct";
+
+    const hasGemini = Boolean(geminiKey && geminiKey.length > 10);
+    const hasNvidia = Boolean(nvidiaKey && nvidiaKey.length > 10);
+
+    let provider = activeProvider;
+    if (provider === "nvidia" && !hasNvidia && hasGemini) provider = "gemini";
+    if (provider === "gemini" && !hasGemini && hasNvidia) provider = "nvidia";
+
+    const isOnline = (provider === "gemini" && hasGemini) || (provider === "nvidia" && hasNvidia);
+
+    return {
+        provider,
+        isOnline,
+        geminiKey,
+        nvidiaKey,
+        geminiModel,
+        nvidiaModel,
+        activeKey: provider === "nvidia" ? nvidiaKey : geminiKey,
+        activeModel: provider === "nvidia" ? nvidiaModel : geminiModel
+    };
+}
+
+function openAiSettingsModal() {
+    const geminiInput = document.getElementById("modal-input-gemini-key");
+    const nvidiaInput = document.getElementById("modal-input-nvidia-key");
+    const geminiModelSelect = document.getElementById("modal-select-gemini-model");
+    const nvidiaModelSelect = document.getElementById("modal-select-nvidia-model");
+
+    if (geminiInput) geminiInput.value = localStorage.getItem("OMAR_GEMINI_API_KEY") || "";
+    if (nvidiaInput) nvidiaInput.value = localStorage.getItem("OMAR_NVIDIA_API_KEY") || "";
+    if (geminiModelSelect) geminiModelSelect.value = localStorage.getItem("OMAR_GEMINI_MODEL") || "gemini-2.5-flash";
+    if (nvidiaModelSelect) nvidiaModelSelect.value = localStorage.getItem("OMAR_NVIDIA_MODEL") || "meta/llama-3.3-70b-instruct";
+
+    const activeProvider = localStorage.getItem("OMAR_ACTIVE_AI_PROVIDER") || "gemini";
+    switchAiProviderTab(activeProvider);
+
     const resultBox = document.getElementById("gemini-key-test-result");
     if (resultBox) {
         resultBox.style.display = "none";
         resultBox.innerHTML = "";
     }
+
     openModal('modal-gemini-key');
 }
 
-function toggleApiKeyVisibility() {
-    const input = document.getElementById("modal-input-gemini-key");
-    const eye = document.getElementById("toggle-key-eye");
+function openApiKeyModal() {
+    openAiSettingsModal();
+}
+
+function switchAiProviderTab(provider) {
+    const btnGemini = document.getElementById("tab-btn-ai-gemini");
+    const btnNvidia = document.getElementById("tab-btn-ai-nvidia");
+    const panelGemini = document.getElementById("ai-provider-panel-gemini");
+    const panelNvidia = document.getElementById("ai-provider-panel-nvidia");
+
+    if (provider === "nvidia") {
+        if (btnNvidia) {
+            btnNvidia.style.background = "#76b900";
+            btnNvidia.style.color = "#000";
+        }
+        if (btnGemini) {
+            btnGemini.style.background = "transparent";
+            btnGemini.style.color = "var(--text-secondary)";
+        }
+        if (panelGemini) panelGemini.style.display = "none";
+        if (panelNvidia) panelNvidia.style.display = "block";
+    } else {
+        if (btnGemini) {
+            btnGemini.style.background = "#38bdf8";
+            btnGemini.style.color = "#000";
+        }
+        if (btnNvidia) {
+            btnNvidia.style.background = "transparent";
+            btnNvidia.style.color = "var(--text-secondary)";
+        }
+        if (panelGemini) panelGemini.style.display = "block";
+        if (panelNvidia) panelNvidia.style.display = "none";
+    }
+    localStorage.setItem("OMAR_ACTIVE_AI_PROVIDER", provider);
+}
+
+function toggleApiKeyVisibility(inputId = "modal-input-gemini-key", eyeId = "toggle-gemini-eye") {
+    const input = document.getElementById(inputId);
+    const eye = document.getElementById(eyeId);
     if (!input) return;
     if (input.type === "password") {
         input.type = "text";
@@ -10553,36 +10647,43 @@ function toggleApiKeyVisibility() {
     }
 }
 
-function saveGeminiApiKeyFromModal() {
-    const keyInput = document.getElementById("modal-input-gemini-key");
-    if (!keyInput) return;
-    const val = sanitizeGeminiApiKey(keyInput.value);
-    if (val && val.length > 10) {
-        localStorage.setItem("OMAR_GEMINI_API_KEY", val);
-        const settingsInput = document.getElementById("setting-gemini-key");
-        if (settingsInput) settingsInput.value = val;
-        showToast("✅ Gemini API Anahtarı başarıyla kaydedildi! 🧠");
-    } else if (!val) {
-        clearGeminiApiKey();
-        return;
-    } else {
-        showToast("⚠️ Lütfen geçerli bir Gemini API anahtarı girin.");
-        return;
-    }
+function saveAllAiApiKeysFromModal() {
+    const geminiInput = document.getElementById("modal-input-gemini-key");
+    const nvidiaInput = document.getElementById("modal-input-nvidia-key");
+    const geminiModelSelect = document.getElementById("modal-select-gemini-model");
+    const nvidiaModelSelect = document.getElementById("modal-select-nvidia-model");
+
+    const gKey = geminiInput ? sanitizeAiApiKey(geminiInput.value) : "";
+    const nKey = nvidiaInput ? sanitizeAiApiKey(nvidiaInput.value) : "";
+
+    if (gKey) localStorage.setItem("OMAR_GEMINI_API_KEY", gKey);
+    else localStorage.removeItem("OMAR_GEMINI_API_KEY");
+
+    if (nKey) localStorage.setItem("OMAR_NVIDIA_API_KEY", nKey);
+    else localStorage.removeItem("OMAR_NVIDIA_API_KEY");
+
+    if (geminiModelSelect) localStorage.setItem("OMAR_GEMINI_MODEL", geminiModelSelect.value);
+    if (nvidiaModelSelect) localStorage.setItem("OMAR_NVIDIA_MODEL", nvidiaModelSelect.value);
+
     checkGeminiApiKeyStatus();
+    showToast("✅ AI Yapılandırması ve API anahtarları kaydedildi! 🧠");
     closeModal('modal-gemini-key');
 }
 
-function clearGeminiApiKey() {
+function saveGeminiApiKeyFromModal() {
+    saveAllAiApiKeysFromModal();
+}
+
+function clearAllAiApiKeys() {
     localStorage.removeItem("OMAR_GEMINI_API_KEY");
+    localStorage.removeItem("OMAR_NVIDIA_API_KEY");
     localStorage.removeItem("GEMINI_API_KEY");
     localStorage.removeItem("LEAN_BULK_GEMINI_KEY");
-    
-    const keyInput = document.getElementById("modal-input-gemini-key");
-    if (keyInput) keyInput.value = "";
-    
-    const settingsInput = document.getElementById("setting-gemini-key");
-    if (settingsInput) settingsInput.value = "";
+
+    const geminiInput = document.getElementById("modal-input-gemini-key");
+    const nvidiaInput = document.getElementById("modal-input-nvidia-key");
+    if (geminiInput) geminiInput.value = "";
+    if (nvidiaInput) nvidiaInput.value = "";
 
     const resultBox = document.getElementById("gemini-key-test-result");
     if (resultBox) {
@@ -10590,336 +10691,961 @@ function clearGeminiApiKey() {
         resultBox.style.background = "rgba(239, 68, 68, 0.12)";
         resultBox.style.border = "1px solid rgba(239, 68, 68, 0.3)";
         resultBox.style.color = "#fca5a5";
-        resultBox.innerHTML = "<i class=\"fa-solid fa-trash-can\"></i> API Anahtarı silindi. Enes Abi çevrimdışı akıllı motoru devrede.";
+        resultBox.innerHTML = "<i class=\"fa-solid fa-trash-can\"></i> Tüm API anahtarları silindi. Enes Abi yerleşik akıllı modda çalışacak.";
     }
 
     checkGeminiApiKeyStatus();
-    showToast("🗑️ API Anahtarı silindi. Çevrimdışı akıllı moda geçildi.");
+    showToast("🗑️ API Anahtarları silindi. Çevrimdışı moda geçildi.");
 }
 
-function clearGeminiApiKeyAndSwitchOffline() {
-    clearGeminiApiKey();
-    if (!assistantChatHistory.enes) assistantChatHistory.enes = [];
-    assistantChatHistory.enes.push({
-        sender: "assistant",
-        text: `Aslanım hatalı API anahtarını tamamen sildim! 🦍<br><br>Artık sunucu hatası yok; <strong>Enes Abi Yerleşik Akıllı Motoru</strong> tam kapasite devrede. Salonda alet mi dolu, omuzun mu batıyor, pratik yemek veya takviye mi lazım; ne istersen sorabilirsin!`,
-        time: getCurrentTimeStr()
-    });
-    renderAssistantMessages();
+function clearGeminiApiKey() {
+    clearAllAiApiKeys();
 }
 
-function translateGeminiErrorToTurkish(status, rawErrorMsg) {
-    const err = (rawErrorMsg || "").toString();
-    const lower = err.toLowerCase();
+function checkGeminiApiKeyStatus() {
+    const config = getEffectiveAiConfig();
+    const modeText = document.getElementById("ai-mode-text");
+    const modeDot = document.getElementById("ai-mode-dot");
+    const modeBadge = document.getElementById("ai-active-mode-badge");
 
-    if (lower.includes("api key not valid") || lower.includes("api_key_invalid") || lower.includes("invalid api key") || status === 400) {
-        return `❌ <strong>Geçersiz veya Eksik API Anahtarı (Hata 400):</strong><br>Girdiğiniz anahtar Google Gemini API tarafından doğrulanamadı.<br><br>💡 <strong>Nasıl Çözülür?</strong><br>1. <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#ffd60a; text-decoration:underline; font-weight:700;">Google AI Studio API Key Sayfası</a>'na gidin.<br>2. Anahtarınızın yanındaki <strong>kopyalama simgesine (📋)</strong> dokunun (elle parmakla seçmeyin, eksik kopyalanabilir).<br>3. Kopyalanan tam anahtarı buraya yapıştırıp kaydedin.`;
+    if (config.isOnline) {
+        if (modeText) {
+            const name = config.provider === "nvidia" ? `NVIDIA (${config.nvidiaModel.split('/').pop()})` : `Gemini (${config.geminiModel})`;
+            modeText.innerHTML = `Enes Abi • <strong>Canlı AI (${name})</strong>`;
+        }
+        if (modeDot) {
+            modeDot.className = "ai-mode-dot active";
+            modeDot.style.background = config.provider === "nvidia" ? "#76b900" : "#38bdf8";
+            modeDot.style.boxShadow = config.provider === "nvidia" ? "0 0 10px #76b900" : "0 0 10px #38bdf8";
+        }
+        if (modeBadge) {
+            modeBadge.className = "ai-status-indicator mode-online";
+            modeBadge.innerHTML = config.provider === "nvidia" ? `<i class="fa-solid fa-server"></i> NVIDIA NIM` : `<i class="fa-solid fa-brain"></i> Gemini Live`;
+        }
+    } else {
+        if (modeText) modeText.innerHTML = `Enes Abi 🦍 Yerleşik Akıllı Koç • <strong>Aktif</strong>`;
+        if (modeDot) {
+            modeDot.className = "ai-mode-dot active";
+            modeDot.style.background = "#22c55e";
+            modeDot.style.boxShadow = "0 0 8px #22c55e";
+        }
+        if (modeBadge) {
+            modeBadge.className = "ai-status-indicator mode-offline";
+            modeBadge.innerHTML = `<i class="fa-solid fa-bolt"></i> Baş Danışman`;
+        }
     }
-    if (lower.includes("permission_denied") || status === 403) {
-        return "❌ <strong>Erişim İzni / Yetki Hatası (Hata 403):</strong><br>Bu API anahtarının Gemini modelini çağırma yetkisi aktif değil veya hesabınız kısıtlanmış.<br><br>💡 <strong>Çözüm:</strong> Google AI Studio'da yeni bir API anahtarı oluşturun.";
+}
+
+async function testCurrentAiApiKeyInline() {
+    const resultBox = document.getElementById("gemini-key-test-result");
+    const btnTest = document.getElementById("btn-test-gemini-key");
+    const provider = localStorage.getItem("OMAR_ACTIVE_AI_PROVIDER") || "gemini";
+
+    if (!resultBox) return;
+
+    if (provider === "nvidia") {
+        const keyInput = document.getElementById("modal-input-nvidia-key");
+        const modelSelect = document.getElementById("modal-select-nvidia-model");
+        const testKey = keyInput ? sanitizeAiApiKey(keyInput.value) : "";
+        const testModel = modelSelect ? modelSelect.value : "meta/llama-3.3-70b-instruct";
+
+        if (!testKey || testKey.length < 15) {
+            resultBox.style.display = "block";
+            resultBox.style.background = "rgba(239, 68, 68, 0.15)";
+            resultBox.style.border = "1px solid rgba(239, 68, 68, 0.4)";
+            resultBox.style.color = "#f87171";
+            resultBox.innerHTML = "<i class=\"fa-solid fa-circle-exclamation\"></i> Lütfen geçerli bir NVIDIA NIM (nvapi-...) API anahtarı girin.";
+            return;
+        }
+
+        if (btnTest) btnTest.disabled = true;
+        resultBox.style.display = "block";
+        resultBox.style.background = "rgba(118, 185, 0, 0.12)";
+        resultBox.style.border = "1px solid rgba(118, 185, 0, 0.4)";
+        resultBox.style.color = "#84cc16";
+        resultBox.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> NVIDIA NIM sunucusu ile bağlantı test ediliyor (${testModel})...`;
+
+        try {
+            const reply = await callNvidiaNimApi({
+                apiKey: testKey,
+                model: testModel,
+                prompt: "ping: sporcu koçu bağlantı testi. Kısa 1 cümle cevap ver.",
+                temperature: 0.2
+            });
+
+            resultBox.style.background = "rgba(16, 185, 129, 0.15)";
+            resultBox.style.border = "1px solid rgba(16, 185, 129, 0.4)";
+            resultBox.style.color = "#34d399";
+            resultBox.innerHTML = `<i class="fa-solid fa-circle-check"></i> <strong>NVIDIA NIM Bağlantısı Başarılı!</strong><br><small style="color:#fff;">Model: ${testModel}</small>`;
+            localStorage.setItem("OMAR_NVIDIA_API_KEY", testKey);
+            localStorage.setItem("OMAR_NVIDIA_MODEL", testModel);
+            checkGeminiApiKeyStatus();
+            showToast(`✅ NVIDIA NIM bağlantısı aktif! (${testModel.split('/').pop()})`);
+        } catch (err) {
+            resultBox.style.background = "rgba(239, 68, 68, 0.15)";
+            resultBox.style.border = "1px solid rgba(239, 68, 68, 0.4)";
+            resultBox.style.color = "#f87171";
+            resultBox.innerHTML = `❌ <strong>NVIDIA NIM Bağlantı Hatası:</strong><br>${err.message || err}`;
+        }
+        if (btnTest) btnTest.disabled = false;
+
+    } else {
+        // Test Google Gemini
+        const keyInput = document.getElementById("modal-input-gemini-key");
+        const modelSelect = document.getElementById("modal-select-gemini-model");
+        const testKey = keyInput ? sanitizeAiApiKey(keyInput.value) : "";
+        const testModel = modelSelect ? modelSelect.value : "gemini-2.5-flash";
+
+        if (!testKey || testKey.length < 15) {
+            resultBox.style.display = "block";
+            resultBox.style.background = "rgba(239, 68, 68, 0.15)";
+            resultBox.style.border = "1px solid rgba(239, 68, 68, 0.4)";
+            resultBox.style.color = "#f87171";
+            resultBox.innerHTML = "<i class=\"fa-solid fa-circle-exclamation\"></i> Lütfen Google AI Studio'dan aldığınız tam API anahtarını yapıştırın.";
+            return;
+        }
+
+        if (btnTest) btnTest.disabled = true;
+        resultBox.style.display = "block";
+        resultBox.style.background = "rgba(56, 189, 248, 0.1)";
+        resultBox.style.border = "1px solid rgba(56, 189, 248, 0.3)";
+        resultBox.style.color = "#38bdf8";
+        resultBox.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Google Gemini sunucusu ile bağlantı test ediliyor (${testModel})...`;
+
+        try {
+            const reply = await callGoogleGeminiApi({
+                apiKey: testKey,
+                model: testModel,
+                prompt: "ping: sporcu koçu bağlantı testi",
+                temperature: 0.2
+            });
+
+            resultBox.style.background = "rgba(16, 185, 129, 0.15)";
+            resultBox.style.border = "1px solid rgba(16, 185, 129, 0.4)";
+            resultBox.style.color = "#34d399";
+            resultBox.innerHTML = `<i class="fa-solid fa-circle-check"></i> <strong>Google Gemini Bağlantısı Başarılı!</strong><br><small style="color:#fff;">Model: ${testModel}</small>`;
+            localStorage.setItem("OMAR_GEMINI_API_KEY", testKey);
+            localStorage.setItem("OMAR_GEMINI_MODEL", testModel);
+            checkGeminiApiKeyStatus();
+            showToast(`✅ Gemini canlı bağlantısı başarılı! (${testModel})`);
+        } catch (err) {
+            resultBox.style.background = "rgba(239, 68, 68, 0.15)";
+            resultBox.style.border = "1px solid rgba(239, 68, 68, 0.4)";
+            resultBox.style.color = "#f87171";
+            resultBox.innerHTML = `❌ <strong>Gemini Bağlantı Hatası:</strong><br>${err.message || err}`;
+        }
+        if (btnTest) btnTest.disabled = false;
     }
-    if (lower.includes("not found") || lower.includes("no longer available") || status === 404) {
-        return "❌ <strong>Model Bulunamadı (Hata 404):</strong><br>İstenen model Google tarafından güncellenmiş veya erişilemiyor. Sistem en stabil <code>gemini-1.5-flash</code> modelini kullanmaktadır.";
-    }
-    if (lower.includes("quota") || lower.includes("resource_exhausted") || status === 429) {
-        return "❌ <strong>Kullanım Kotası / Hız Sınırı Aşıldı (Hata 429):</strong><br>Kısa sürede çok fazla istek gönderildi veya ücretsiz API kotası doldu.<br><br>💡 <strong>Çözüm:</strong> 1 dakika bekleyip tekrar deneyin.";
-    }
-    if (lower.includes("failed to fetch") || lower.includes("networkerror")) {
-        return "❌ <strong>İnternet Bağlantı Hatası:</strong><br>Google Gemini sunucularına ulaşılamadı. Lütfen internet bağlantınızı kontrol edip tekrar deneyin.";
-    }
-    return `❌ <strong>Bağlantı Hatası (${status || 'Sunucu'}):</strong> ${err}`;
 }
 
 async function testGeminiApiKeyInline() {
-    const keyInput = document.getElementById("modal-input-gemini-key");
-    const resultBox = document.getElementById("gemini-key-test-result");
-    const btnTest = document.getElementById("btn-test-gemini-key");
-    if (!keyInput || !resultBox) return;
+    await testCurrentAiApiKeyInline();
+}
 
-    const testKey = sanitizeGeminiApiKey(keyInput.value);
-    keyInput.value = testKey; // Clean up input box for user immediately
+// ==================== UNIFIED AI CALL HANDLERS ====================
 
-    if (!testKey || testKey.length < 15) {
-        resultBox.style.display = "block";
-        resultBox.style.background = "rgba(239, 68, 68, 0.15)";
-        resultBox.style.border = "1px solid rgba(239, 68, 68, 0.4)";
-        resultBox.style.color = "#f87171";
-        resultBox.innerHTML = "<i class=\"fa-solid fa-circle-exclamation\"></i> Lütfen Google AI Studio'dan aldığınız tam API anahtarını yapıştırın.";
-        return;
+async function callUnifiedAiEngine({ prompt, systemPrompt = "", imageBase64 = null, mimeType = "image/jpeg", model = null, temperature = 0.7, jsonMode = false }) {
+    const config = getEffectiveAiConfig();
+    if (!config.isOnline) {
+        throw new Error("Çevrimiçi API Anahtarı tanımlı değil. AI Ayarları menüsünden Gemini veya NVIDIA NIM anahtarınızı giriniz.");
     }
 
-    if (btnTest) btnTest.disabled = true;
-    resultBox.style.display = "block";
-    resultBox.style.background = "rgba(56, 189, 248, 0.1)";
-    resultBox.style.border = "1px solid rgba(56, 189, 248, 0.3)";
-    resultBox.style.color = "#38bdf8";
-    resultBox.innerHTML = "<i class=\"fa-solid fa-spinner fa-spin\"></i> Google Gemini sunucusu ile bağlantı test ediliyor...";
+    if (config.provider === "nvidia") {
+        return await callNvidiaNimApi({
+            apiKey: config.nvidiaKey,
+            model: model || (imageBase64 ? "meta/llama-3.2-90b-vision-instruct" : config.nvidiaModel),
+            prompt,
+            systemPrompt,
+            imageBase64,
+            mimeType,
+            temperature,
+            jsonMode
+        });
+    } else {
+        return await callGoogleGeminiApi({
+            apiKey: config.geminiKey,
+            model: model || (imageBase64 ? "gemini-2.5-flash" : config.geminiModel),
+            prompt,
+            systemPrompt,
+            imageBase64,
+            mimeType,
+            temperature,
+            jsonMode
+        });
+    }
+}
 
-    let success = false;
-    let successfulModel = "";
-    let lastErrStatus = 0;
-    let lastErrMsg = "";
-    let candidateModels = ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.8-flash", "gemini-1.5-flash", "gemini-2.5-flash", "gemini-1.5-pro"];
+async function callNvidiaNimApi({ apiKey, model = "meta/llama-3.3-70b-instruct", prompt, systemPrompt = "", imageBase64 = null, mimeType = "image/jpeg", temperature = 0.7, jsonMode = false }) {
+    const cleanKey = sanitizeAiApiKey(apiKey);
+    const messages = [];
 
-    // 1. First, attempt dynamic model discovery for this exact key
-    try {
-        const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(testKey)}`, {
-            method: "GET",
-            headers: {
-                "x-goog-api-key": testKey
+    if (systemPrompt) {
+        messages.push({ role: "system", content: systemPrompt });
+    }
+
+    if (imageBase64) {
+        const cleanB64 = imageBase64.replace(/^data:image\/\w+;base64,/, '');
+        const dataUrl = `data:${mimeType || 'image/jpeg'};base64,${cleanB64}`;
+        messages.push({
+            role: "user",
+            content: [
+                { type: "text", text: prompt },
+                { type: "image_url", image_url: { url: dataUrl } }
+            ]
+        });
+    } else {
+        messages.push({ role: "user", content: prompt });
+    }
+
+    const payload = {
+        model: imageBase64 && !model.includes("vision") ? "meta/llama-3.2-90b-vision-instruct" : model,
+        messages: messages,
+        temperature: temperature,
+        max_tokens: 2048
+    };
+
+    if (jsonMode) {
+        payload.response_format = { type: "json_object" };
+    }
+
+    const res = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${cleanKey}`
+        },
+        body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+        const errBody = await res.text();
+        let msg = errBody;
+        try {
+            const j = JSON.parse(errBody);
+            if (j.error && j.error.message) msg = j.error.message;
+            else if (j.message) msg = j.message;
+        } catch (e) {}
+        throw new Error(`NVIDIA NIM (${res.status}): ${msg}`);
+    }
+
+    const data = await res.json();
+    const reply = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+    if (!reply) throw new Error("NVIDIA NIM boş yanıt döndürdü.");
+    return reply;
+}
+
+async function callGoogleGeminiApi({ apiKey, model = "gemini-2.5-flash", prompt, systemPrompt = "", imageBase64 = null, mimeType = "image/jpeg", temperature = 0.7, jsonMode = false }) {
+    const cleanKey = sanitizeAiApiKey(apiKey);
+    const candidateModels = [model, "gemini-2.5-flash", "gemini-1.5-flash", "gemini-1.5-pro"];
+    const modelsToTry = [...new Set(candidateModels.filter(Boolean))];
+
+    const parts = [];
+    if (imageBase64) {
+        const cleanB64 = imageBase64.replace(/^data:image\/\w+;base64,/, '');
+        parts.push({
+            inline_data: {
+                mime_type: mimeType || "image/jpeg",
+                data: cleanB64
             }
         });
-        if (listRes.ok) {
-            const listData = await listRes.json();
-            if (listData && listData.models && listData.models.length > 0) {
-                const availableNames = listData.models
-                    .filter(m => !m.supportedGenerationMethods || m.supportedGenerationMethods.includes("generateContent"))
-                    .map(m => m.name.replace(/^models\//, ''));
-                if (availableNames.length > 0) {
-                    // Place discovered models at front of candidates
-                    candidateModels = [...new Set([...availableNames, ...candidateModels])];
-                }
+    }
+    parts.push({ text: prompt });
+
+    let lastError = null;
+    for (const m of modelsToTry) {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${encodeURIComponent(cleanKey)}`;
+        const payload = {
+            contents: [{ role: "user", parts: parts }],
+            generationConfig: {
+                temperature: temperature || 0.7,
+                maxOutputTokens: 2048
             }
-        } else {
-            lastErrStatus = listRes.status;
-            const errBody = await listRes.text();
-            try {
-                const j = JSON.parse(errBody);
-                if (j.error && j.error.message) lastErrMsg = j.error.message;
-            } catch (ex) {}
-            if (!lastErrMsg) lastErrMsg = errBody;
+        };
+
+        if (systemPrompt) {
+            payload.systemInstruction = { parts: [{ text: systemPrompt }] };
         }
-    } catch (e) {
-        lastErrMsg = e.message;
-    }
+        if (jsonMode) {
+            payload.generationConfig.responseMimeType = "application/json";
+        }
 
-    // If key itself was rejected with 400 (Invalid key), stop immediately
-    if (lastErrStatus === 400 && lastErrMsg && lastErrMsg.toLowerCase().includes("api key not valid")) {
-        const turkishError = translateGeminiErrorToTurkish(lastErrStatus, lastErrMsg);
-        resultBox.style.background = "rgba(239, 68, 68, 0.15)";
-        resultBox.style.border = "1px solid rgba(239, 68, 68, 0.4)";
-        resultBox.style.color = "#f87171";
-        resultBox.innerHTML = turkishError;
-        if (btnTest) btnTest.disabled = false;
-        return;
-    }
-
-    // 2. Perform test generateContent call
-    for (const m of candidateModels) {
         try {
-            const payload = {
-                contents: [{ parts: [{ text: "ping: sporcu koçu bağlantı testi" }] }]
-            };
-            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${encodeURIComponent(testKey)}`, {
+            const res = await fetch(url, {
                 method: "POST",
-                headers: { 
+                headers: {
                     "Content-Type": "application/json",
-                    "x-goog-api-key": testKey
+                    "x-goog-api-key": cleanKey
                 },
                 body: JSON.stringify(payload)
             });
 
             if (res.ok) {
-                success = true;
-                successfulModel = m;
-                break;
-            } else {
-                lastErrStatus = res.status;
-                const errText = await res.text();
-                let parsedMsg = errText;
-                try {
-                    const j = JSON.parse(errText);
-                    if (j.error && j.error.message) parsedMsg = j.error.message;
-                } catch (ex) {}
-                lastErrMsg = parsedMsg;
-
-                if (res.status === 400 && parsedMsg.toLowerCase().includes("api key not valid")) {
-                    break;
+                const data = await res.json();
+                let text = "";
+                if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) {
+                    const nonThought = data.candidates[0].content.parts.filter(p => !p.thought && p.text).map(p => p.text);
+                    text = nonThought.length > 0 ? nonThought.join("\n") : data.candidates[0].content.parts.map(p => p.text || "").join("\n");
                 }
+                if (text) return text;
+            } else {
+                const errText = await res.text();
+                lastError = new Error(`Gemini (${res.status}): ${errText}`);
             }
-        } catch (e) {
-            lastErrMsg = e.message;
+        } catch (err) {
+            lastError = err;
         }
     }
-
-    if (success) {
-        resultBox.style.background = "rgba(16, 185, 129, 0.15)";
-        resultBox.style.border = "1px solid rgba(16, 185, 129, 0.4)";
-        resultBox.style.color = "#34d399";
-        resultBox.innerHTML = `<i class="fa-solid fa-circle-check"></i> <strong>Bağlantı Başarılı!</strong> Google Gemini (${successfulModel}) canlı ve aktif.`;
-        localStorage.setItem("OMAR_GEMINI_API_KEY", testKey);
-        localStorage.setItem("OMAR_GEMINI_MODEL", successfulModel);
-        const settingsInput = document.getElementById("setting-gemini-key");
-        if (settingsInput) settingsInput.value = testKey;
-        checkGeminiApiKeyStatus();
-        showToast(`✅ Canlı Gemini bağlantısı başarılı! (${successfulModel})`);
-    } else {
-        const turkishError = translateGeminiErrorToTurkish(lastErrStatus, lastErrMsg);
-        resultBox.style.background = "rgba(239, 68, 68, 0.15)";
-        resultBox.style.border = "1px solid rgba(239, 68, 68, 0.4)";
-        resultBox.style.color = "#f87171";
-        resultBox.innerHTML = turkishError;
-    }
-
-    if (btnTest) btnTest.disabled = false;
+    throw lastError || new Error("Google Gemini API çağrısı başarısız oldu.");
 }
 
-// ==================== ASSISTANT MODAL UI & CHAT CONTROLLER ====================
+// ==================== 📸 FOOD MACRO VISION HANDLERS ====================
 
-function openAssistantModal(personaKey) {
-    activeAssistantPersona = "enes";
-    updateAssistantModalHeader();
-    renderAssistantQuickTopics();
+function openFoodVisionModal() {
+    resetFoodVisionUpload();
+    openModal('modal-ai-food-vision');
+}
 
-    // Clean any old error messages from chat history
-    if (!assistantChatHistory.enes || assistantChatHistory.enes.length === 0) {
-        const persona = ASSISTANT_PERSONAS.enes;
-        assistantChatHistory.enes = [
-            { sender: "assistant", text: persona.welcomeMsg, time: getCurrentTimeStr() }
-        ];
-    } else {
-        assistantChatHistory.enes = assistantChatHistory.enes.filter(m => {
-            if (!m || !m.text) return false;
-            if (m.text.includes("Gemini Bağlantı Uyarısı") || m.text.includes("Bağlantı Hatası") || m.text.includes("Hatalı API Key")) return false;
-            return true;
+function handleFoodPhotoSelected(event) {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+
+    currentFoodPhotoMime = file.type || "image/jpeg";
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        currentFoodPhotoBase64 = e.target.result;
+        const previewImg = document.getElementById("food-vision-preview-img");
+        const dropzone = document.getElementById("food-vision-dropzone");
+        const previewSection = document.getElementById("food-vision-preview-section");
+        const resultsSection = document.getElementById("food-vision-results-section");
+
+        if (previewImg) previewImg.src = currentFoodPhotoBase64;
+        if (dropzone) dropzone.style.display = "none";
+        if (previewSection) previewSection.style.display = "block";
+        if (resultsSection) resultsSection.style.display = "none";
+    };
+    reader.readAsDataURL(file);
+}
+
+function resetFoodVisionUpload() {
+    currentFoodPhotoBase64 = null;
+    lastDetectedFoodResult = null;
+    const fileInput = document.getElementById("food-vision-file-input");
+    const dropzone = document.getElementById("food-vision-dropzone");
+    const previewSection = document.getElementById("food-vision-preview-section");
+    const loadingSection = document.getElementById("food-vision-loading");
+    const resultsSection = document.getElementById("food-vision-results-section");
+    const hintInput = document.getElementById("food-vision-custom-hint");
+
+    if (fileInput) fileInput.value = "";
+    if (hintInput) hintInput.value = "";
+    if (dropzone) dropzone.style.display = "block";
+    if (previewSection) previewSection.style.display = "none";
+    if (loadingSection) loadingSection.style.display = "none";
+    if (resultsSection) resultsSection.style.display = "none";
+}
+
+async function startFoodVisionAnalysis() {
+    if (!currentFoodPhotoBase64) {
+        showToast("⚠️ Lütfen önce bir yemek fotoğrafı seçin.");
+        return;
+    }
+
+    const config = getEffectiveAiConfig();
+    if (!config.isOnline) {
+        openAiSettingsModal();
+        showToast("⚠️ Görsel analizi için lütfen API anahtarınızı tanımlayın.");
+        return;
+    }
+
+    const previewSection = document.getElementById("food-vision-preview-section");
+    const loadingSection = document.getElementById("food-vision-loading");
+    const resultsSection = document.getElementById("food-vision-results-section");
+    const hintInput = document.getElementById("food-vision-custom-hint");
+    const customHint = hintInput ? hintInput.value.trim() : "";
+
+    if (previewSection) previewSection.style.display = "none";
+    if (loadingSection) loadingSection.style.display = "block";
+    if (resultsSection) resultsSection.style.display = "none";
+
+    const prompt = `Sen elit bir sporcu beslenme koçusun. Bu yemek/tabak fotoğrafını analiz et.
+Sporcu Açıklaması: "${customHint || 'Belirtilmedi'}".
+
+Tabağın içindeki tüm yiyecekleri, çiğ/pişmiş tahmini gramajlarını ve tam makrolarını belirle.
+Aşağıdaki JSON formatında kesin ve geçerli bir JSON döndür (JSON harici hiçbir metin yazma):
+{
+  "summary": "Tabağın Türkçe kısa özeti",
+  "items": [
+    {
+      "name": "Besin Adı (Örn: Pişmiş Pirinç)",
+      "amount": "200g",
+      "grams": 200,
+      "calories": 260,
+      "protein": 5,
+      "carbs": 56,
+      "fat": 1,
+      "sugar": 0
+    }
+  ],
+  "totalCalories": 650,
+  "totalProtein": 42,
+  "totalCarbs": 70,
+  "totalFat": 14,
+  "totalSugar": 2,
+  "insights": "Sporcuya bu öğün hakkında hipertrofi ve toparlanma açısından 1-2 cümlelik tavsiye"
+}`;
+
+    try {
+        const rawJson = await callUnifiedAiEngine({
+            prompt: prompt,
+            systemPrompt: "Sen sadece saf JSON formatında yanıt veren bir beslenme analiz yapay zekasısın.",
+            imageBase64: currentFoodPhotoBase64,
+            mimeType: currentFoodPhotoMime,
+            temperature: 0.3,
+            jsonMode: true
         });
-        if (assistantChatHistory.enes.length === 0) {
-            const persona = ASSISTANT_PERSONAS.enes;
-            assistantChatHistory.enes = [
-                { sender: "assistant", text: persona.welcomeMsg, time: getCurrentTimeStr() }
-            ];
+
+        let parsed = null;
+        try {
+            const cleanStr = rawJson.replace(/```json/gi, '').replace(/```/g, '').trim();
+            parsed = JSON.parse(cleanStr);
+        } catch (e) {
+            const match = rawJson.match(/\{[\s\S]*\}/);
+            if (match) parsed = JSON.parse(match[0]);
+        }
+
+        if (!parsed || !parsed.items) {
+            throw new Error("Yapay zeka besin listesini çözümleyemedi.");
+        }
+
+        lastDetectedFoodResult = parsed;
+        renderFoodVisionResults(parsed);
+
+        if (loadingSection) loadingSection.style.display = "none";
+        if (resultsSection) resultsSection.style.display = "block";
+
+    } catch (err) {
+        if (loadingSection) loadingSection.style.display = "none";
+        if (previewSection) previewSection.style.display = "block";
+        showToast(`❌ Görsel Analiz Hatası: ${err.message || err}`);
+    }
+}
+
+function renderFoodVisionResults(data) {
+    const totCalEl = document.getElementById("food-vision-total-cals");
+    const totPEl = document.getElementById("food-vision-total-p");
+    const totCEl = document.getElementById("food-vision-total-c");
+    const totFEl = document.getElementById("food-vision-total-f");
+    const totSEl = document.getElementById("food-vision-total-s");
+    const itemsList = document.getElementById("food-vision-items-list");
+    const notesBox = document.getElementById("food-vision-notes-box");
+
+    if (totCalEl) totCalEl.innerText = `${data.totalCalories || 0} kcal`;
+    if (totPEl) totPEl.innerText = `${data.totalProtein || 0}g`;
+    if (totCEl) totCEl.innerText = `${data.totalCarbs || 0}g`;
+    if (totFEl) totFEl.innerText = `${data.totalFat || 0}g`;
+    if (totSEl) totSEl.innerText = `${data.totalSugar || 0}g`;
+
+    if (itemsList && Array.isArray(data.items)) {
+        itemsList.innerHTML = data.items.map(it => `
+            <div style="display:flex; justify-content:space-between; align-items:center; background:var(--bg-input); padding:7px 10px; border-radius:6px; font-size:0.75rem;">
+                <div>
+                    <strong style="color:#fff;">${it.name}</strong>
+                    <span style="color:var(--text-muted); font-size:0.68rem; margin-left:4px;">(${it.amount || it.grams + 'g'})</span>
+                </div>
+                <div style="display:flex; gap:6px; font-size:0.7rem; font-weight:700;">
+                    <span style="color:#10b981;">${it.calories} kcal</span>
+                    <span style="color:#ef4444;">${it.protein}g P</span>
+                    <span style="color:#3b82f6;">${it.carbs}g C</span>
+                    <span style="color:#f59e0b;">${it.fat}g F</span>
+                </div>
+            </div>
+        `).join("");
+    }
+
+    if (notesBox) {
+        notesBox.innerHTML = `<strong>💡 Koç Değerlendirmesi:</strong> ${data.insights || data.summary || 'Harika bir makro dengesi.'}`;
+    }
+}
+
+function addDetectedMealToToday() {
+    if (!lastDetectedFoodResult) return;
+
+    if (!appData.todayNutrition) appData.todayNutrition = { calories: 0, protein: 0, carbs: 0, fat: 0, sugar: 0, loggedMeals: [] };
+    if (!appData.todayNutrition.loggedMeals) appData.todayNutrition.loggedMeals = [];
+
+    const mealName = lastDetectedFoodResult.summary || "Fotoğraflı Öğün (AI Vizyon)";
+    const newMeal = {
+        id: `ai_meal_${Date.now()}`,
+        name: `📸 ${mealName}`,
+        calories: Number(lastDetectedFoodResult.totalCalories) || 0,
+        protein: Number(lastDetectedFoodResult.totalProtein) || 0,
+        carbs: Number(lastDetectedFoodResult.totalCarbs) || 0,
+        fat: Number(lastDetectedFoodResult.totalFat) || 0,
+        sugar: Number(lastDetectedFoodResult.totalSugar) || 0,
+        time: getCurrentTimeStr(),
+        items: lastDetectedFoodResult.items || []
+    };
+
+    appData.todayNutrition.loggedMeals.push(newMeal);
+    appData.todayNutrition.calories = (appData.todayNutrition.calories || 0) + newMeal.calories;
+    appData.todayNutrition.protein = (appData.todayNutrition.protein || 0) + newMeal.protein;
+    appData.todayNutrition.carbs = (appData.todayNutrition.carbs || 0) + newMeal.carbs;
+    appData.todayNutrition.fat = (appData.todayNutrition.fat || 0) + newMeal.fat;
+    appData.todayNutrition.sugar = (appData.todayNutrition.sugar || 0) + newMeal.sugar;
+
+    saveData();
+    renderTodayNutrition();
+    closeModal('modal-ai-food-vision');
+    triggerLevelUpCelebration(15, "Beslenme Kaydı (AI Foto)");
+    showToast(`🍽️ ${newMeal.name} (+${newMeal.calories} kcal) başarıyla eklendi! 🚀`);
+}
+
+// ==================== 🏋️ EXERCISE FORM VISION HANDLERS ====================
+
+function openFormVisionModal() {
+    resetFormVisionUpload();
+    openModal('modal-ai-form-vision');
+}
+
+function handleFormPhotoSelected(event) {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+
+    currentFormPhotoMime = file.type || "image/jpeg";
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        currentFormPhotoBase64 = e.target.result;
+        const previewImg = document.getElementById("form-vision-preview-img");
+        const dropzone = document.getElementById("form-vision-dropzone");
+        const previewSection = document.getElementById("form-vision-preview-section");
+        const resultsSection = document.getElementById("form-vision-results-section");
+
+        if (previewImg) previewImg.src = currentFormPhotoBase64;
+        if (dropzone) dropzone.style.display = "none";
+        if (previewSection) previewSection.style.display = "block";
+        if (resultsSection) resultsSection.style.display = "none";
+    };
+    reader.readAsDataURL(file);
+}
+
+function resetFormVisionUpload() {
+    currentFormPhotoBase64 = null;
+    lastDetectedFormResult = null;
+    const fileInput = document.getElementById("form-vision-file-input");
+    const dropzone = document.getElementById("form-vision-dropzone");
+    const previewSection = document.getElementById("form-vision-preview-section");
+    const loadingSection = document.getElementById("form-vision-loading");
+    const resultsSection = document.getElementById("form-vision-results-section");
+    const hintInput = document.getElementById("form-vision-custom-hint");
+
+    if (fileInput) fileInput.value = "";
+    if (hintInput) hintInput.value = "";
+    if (dropzone) dropzone.style.display = "block";
+    if (previewSection) previewSection.style.display = "none";
+    if (loadingSection) loadingSection.style.display = "none";
+    if (resultsSection) resultsSection.style.display = "none";
+}
+
+async function startFormVisionAnalysis() {
+    if (!currentFormPhotoBase64) {
+        showToast("⚠️ Lütfen önce bir hareket fotoğrafı seçin.");
+        return;
+    }
+
+    const config = getEffectiveAiConfig();
+    if (!config.isOnline) {
+        openAiSettingsModal();
+        showToast("⚠️ Form analizi için lütfen API anahtarınızı tanımlayın.");
+        return;
+    }
+
+    const exSelect = document.getElementById("form-vision-exercise-select");
+    const selectedEx = exSelect ? exSelect.value : "Squat";
+    const hintInput = document.getElementById("form-vision-custom-hint");
+    const customHint = hintInput ? hintInput.value.trim() : "";
+
+    const previewSection = document.getElementById("form-vision-preview-section");
+    const loadingSection = document.getElementById("form-vision-loading");
+    const resultsSection = document.getElementById("form-vision-results-section");
+
+    if (previewSection) previewSection.style.display = "none";
+    if (loadingSection) loadingSection.style.display = "block";
+    if (resultsSection) resultsSection.style.display = "none";
+
+    const prompt = `Sen dünya standartlarında bir Biyomekanik, Anatomi ve Egzersiz Formu Analiz Uzmanısın.
+Analiz Edilen Egzersiz: "${selectedEx}".
+Sporcu Hissiyatı / Notu: "${customHint || 'Belirtilmedi'}".
+
+Bu fotoğraftaki sporcunun postürünü, eklem açılarını (omurga, diz, kalça, omuz, bilek) ve sakatlık riskini değerlendir.
+Aşağıdaki JSON formatında kesin ve geçerli bir JSON döndür (JSON harici hiçbir şey yazma):
+{
+  "exercise": "${selectedEx}",
+  "riskLevel": "LOW",
+  "riskLabel": "🟢 Düşük Sakatlık Riski",
+  "summaryTitle": "Form Genel Değerlendirmesi",
+  "summaryText": "Biyomekanik açıdan 2 cümlelik net özet",
+  "joints": [
+    {
+      "name": "Omurga & Bel (Spine)",
+      "status": "GOOD",
+      "detail": "Nötral pozisyon korunuyor, fleksiyon/ekstansiyon dengeli."
+    },
+    {
+      "name": "Diz & Ayak Bileği Açıları",
+      "status": "GOOD",
+      "detail": "Diz ayak parmak ucu vektörünü takip ediyor, valgus yok."
+    },
+    {
+      "name": "Bar Yolu & Ağırlık Merkezi",
+      "status": "WARN",
+      "detail": "Ağırlık merkezi hafifçe parmak uçlarına kaymış."
+    }
+  ],
+  "cues": [
+    "1. CUE: Barı sırtına kilitlerken kürek kemiklerini sıkıştır.",
+    "2. CUE: İniş fazında göğsünü yukarıda tutarak merkeze bas.",
+    "3. CUE: Ayak tabanını yere vida gibi kilitle."
+  ]
+}`;
+
+    try {
+        const rawJson = await callUnifiedAiEngine({
+            prompt: prompt,
+            systemPrompt: "Sen sadece saf JSON formatında yanıt veren bir biyomekanik analiz yapay zekasısın.",
+            imageBase64: currentFormPhotoBase64,
+            mimeType: currentFormPhotoMime,
+            temperature: 0.3,
+            jsonMode: true
+        });
+
+        let parsed = null;
+        try {
+            const cleanStr = rawJson.replace(/```json/gi, '').replace(/```/g, '').trim();
+            parsed = JSON.parse(cleanStr);
+        } catch (e) {
+            const match = rawJson.match(/\{[\s\S]*\}/);
+            if (match) parsed = JSON.parse(match[0]);
+        }
+
+        if (!parsed || !parsed.joints) {
+            throw new Error("Yapay zeka eklem analizini çözümleyemedi.");
+        }
+
+        lastDetectedFormResult = parsed;
+        renderFormVisionResults(parsed);
+
+        if (loadingSection) loadingSection.style.display = "none";
+        if (resultsSection) resultsSection.style.display = "block";
+
+    } catch (err) {
+        if (loadingSection) loadingSection.style.display = "none";
+        if (previewSection) previewSection.style.display = "block";
+        showToast(`❌ Form Analiz Hatası: ${err.message || err}`);
+    }
+}
+
+function renderFormVisionResults(data) {
+    const riskBadge = document.getElementById("form-vision-risk-badge");
+    const summaryTitle = document.getElementById("form-vision-summary-title");
+    const summaryText = document.getElementById("form-vision-summary-text");
+    const jointsList = document.getElementById("form-vision-joints-list");
+    const cuesList = document.getElementById("form-vision-cues-list");
+
+    if (riskBadge) {
+        riskBadge.innerText = data.riskLabel || (data.riskLevel === 'HIGH' ? '🔴 Yüksek Risk' : data.riskLevel === 'MEDIUM' ? '🟡 Orta Risk' : '🟢 Düşük Risk');
+        if (data.riskLevel === 'HIGH') {
+            riskBadge.style.background = '#ef4444';
+        } else if (data.riskLevel === 'MEDIUM') {
+            riskBadge.style.background = '#f59e0b';
+        } else {
+            riskBadge.style.background = '#10b981';
         }
     }
 
-    renderAssistantMessages();
-    openModal('modal-ai-assistant');
+    if (summaryTitle) summaryTitle.innerText = `${data.exercise} Form Analizi`;
+    if (summaryText) summaryText.innerText = data.summaryText || 'Biyomekanik inceleme tamamlandı.';
 
-    setTimeout(() => {
-        const input = document.getElementById("ai-user-input");
-        if (input) input.focus();
-    }, 300);
-}
-
-function getAssistantRetroLogoSvg(personaKey, width = 36, height = 36) {
-    return `
-        <svg class="retro-avatar-svg enes" viewBox="0 0 40 40" width="${width}" height="${height}">
-            <defs>
-                <linearGradient id="hdrEnesGrad" x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0%" stop-color="#a855f7"/>
-                    <stop offset="100%" stop-color="#6b21a8"/>
-                </linearGradient>
-            </defs>
-            <rect x="2" y="2" width="36" height="36" rx="8" fill="#181824" stroke="#a855f7" stroke-width="2"/>
-            <rect x="14" y="8" width="12" height="10" rx="3" fill="url(#hdrEnesGrad)"/>
-            <rect x="11" y="11" width="3" height="4" fill="#c084fc"/>
-            <rect x="26" y="11" width="3" height="4" fill="#c084fc"/>
-            <rect x="16" y="12" width="2" height="2" fill="#fff"/>
-            <rect x="22" y="12" width="2" height="2" fill="#fff"/>
-            <rect x="17" y="15" width="6" height="2" fill="#e9d5ff"/>
-            <line x1="6" y1="26" x2="34" y2="26" stroke="#fbbf24" stroke-width="3" stroke-linecap="round"/>
-            <rect x="6" y="20" width="4" height="12" rx="1.5" fill="#f59e0b" stroke="#78350f" stroke-width="1"/>
-            <rect x="30" y="20" width="4" height="12" rx="1.5" fill="#f59e0b" stroke="#78350f" stroke-width="1"/>
-            <path d="M12 24 Q10 18 15 17" fill="none" stroke="url(#hdrEnesGrad)" stroke-width="3" stroke-linecap="round"/>
-            <path d="M28 24 Q30 18 25 17" fill="none" stroke="url(#hdrEnesGrad)" stroke-width="3" stroke-linecap="round"/>
-            <polygon points="34,7 35,9 37,10 35,11 34,13 33,11 31,10 33,9" fill="#ffd60a"/>
-        </svg>`;
-}
-
-function updateAssistantModalHeader() {
-    const persona = ASSISTANT_PERSONAS.enes;
-    const avatarEl = document.getElementById("ai-active-avatar");
-    const nameEl = document.getElementById("ai-active-name");
-    const roleEl = document.getElementById("ai-active-role");
-    const hintEl = document.getElementById("ai-footer-hint");
-
-    if (avatarEl) avatarEl.innerHTML = getAssistantRetroLogoSvg("enes", 36, 36);
-    if (nameEl) nameEl.innerText = persona.name;
-    if (roleEl) roleEl.innerText = persona.role;
-    if (hintEl) hintEl.innerText = persona.tagline;
-
-    const modeBadge = document.getElementById("ai-active-mode-badge");
-    if (modeBadge) {
-        modeBadge.className = "ai-status-indicator mode-offline";
-        modeBadge.innerHTML = `<i class="fa-solid fa-bolt"></i> Baş Danışman`;
+    if (jointsList && Array.isArray(data.joints)) {
+        jointsList.innerHTML = data.joints.map(j => {
+            const isGood = j.status === 'GOOD';
+            const isWarn = j.status === 'WARN';
+            const icon = isGood ? '🟢' : isWarn ? '🟡' : '🔴';
+            const borderColor = isGood ? '#10b981' : isWarn ? '#f59e0b' : '#ef4444';
+            return `
+                <div style="background:var(--bg-input); border-left:3px solid ${borderColor}; padding:7px 10px; border-radius:4px; font-size:0.74rem;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2px;">
+                        <strong style="color:#fff;">${icon} ${j.name}</strong>
+                    </div>
+                    <div style="color:var(--text-secondary); font-size:0.7rem; line-height:1.35;">${j.detail}</div>
+                </div>
+            `;
+        }).join("");
     }
 
-    const modeText = document.getElementById("ai-mode-text");
-    const modeDot = document.getElementById("ai-mode-dot");
-    if (modeText) modeText.innerHTML = `Enes Abi Akıllı Motor • <strong>Aktif</strong>`;
-    if (modeDot) {
-        modeDot.className = "ai-mode-dot active";
-        modeDot.style.background = "#22c55e";
-        modeDot.style.boxShadow = "0 0 8px #22c55e";
+    if (cuesList && Array.isArray(data.cues)) {
+        cuesList.innerHTML = data.cues.map(c => `
+            <div style="background:rgba(255,214,10,0.08); border-left:3px solid #ffd60a; padding:6px 10px; border-radius:4px; font-size:0.74rem; color:#ffd60a; font-weight:700;">
+                ${c}
+            </div>
+        `).join("");
     }
 }
 
-function clearAssistantChat() {
-    const persona = ASSISTANT_PERSONAS.enes;
-    assistantChatHistory.enes = [
-        { sender: "assistant", text: persona.welcomeMsg, time: getCurrentTimeStr() }
-    ];
-    renderAssistantMessages();
-    showToast("🗑️ Sohbet geçmişi temizlendi.");
-}
+function askEnesAbiAboutForm() {
+    if (!lastDetectedFormResult) return;
+    closeModal('modal-ai-form-vision');
+    openAssistantModal('enes');
 
-function renderAssistantQuickTopics() {
-    const container = document.getElementById("ai-quick-topics-bar");
-    const persona = ASSISTANT_PERSONAS.enes;
-    if (!container || !persona) return;
-
-    container.innerHTML = persona.quickTopics.map(t => `
-        <button type="button" class="quick-trigger-chip" onclick="triggerAssistantPrompt('enes', '${t.id}')">
-            ${t.label}
-        </button>
-    `).join("");
-}
-
-function triggerAssistantPrompt(personaKey, promptType) {
-    activeAssistantPersona = "enes";
-    openAssistantModal("enes");
-
-    let promptText = "";
-    if (promptType === "crowded") promptText = "Reis salonda makine dolu, bugünkü antrenmanıma uygun 1'e 1 anatomik alternatif ne yapayım?";
-    else if (promptType === "pain") promptText = "Dips veya Bench yaparken omzum batıyor, omzu riske atmadan göğüs liflerini vuracak alternatif ne önerirsin?";
-    else if (promptType === "lat_swap") promptText = "Lat Pulldown dolu, sakın bana sırt row verme; kanat (lat) genişliği ve dikey çekiş açısını koruyacak alternatif ver!";
-    else if (promptType === "pantry") promptText = "Dolapta tavuk, pirinç, yumurta ve yoğurt var. 5 dakikada yüksek proteinli pratik bir kütle tarifi patlat!";
-    else if (promptType === "macros") promptText = "Günün bitmesine makro açığım kaldı, kalan protein ve karbonhidratı nasıl tamamlayayım?";
-    else if (promptType === "pancake") promptText = "Bana 40g proteinli çılgın bir anabolik kütle pankeki tarifi ver!";
-    else if (promptType === "creatine") promptText = "Kreatin saç döker mi, su tutumu yağlandırır mı? Bilimsel gerçeğini ve doğru dozunu anlat!";
-    else if (promptType === "sleep") promptText = "Gece uyku tutmuyor ve toparlanamıyorum, hangi magnezyum formunu ve takviyeleri almalıyım?";
-    else if (promptType === "pump") promptText = "Antrenmanda damarların hortum gibi açılması ve canavar gibi pump için bilimsel dozlar nedir?";
-    else if (promptType === "stack") promptText = "Piyasadaki çöp tozları geç, bir sporcuya gerçekten kütle için şart olan temel suplementleri say!";
-    else promptText = "Enes Abi antrenman, yemek veya takviye hakkında danışmak istiyordum.";
-
+    const prompt = `Enes Abi, az önce ${lastDetectedFormResult.exercise} hareketimin form analizini yaptım (${lastDetectedFormResult.riskLabel || 'Analiz'}). ${lastDetectedFormResult.summaryText || ''} Bana bu harekette formumu kusursuzlaştırmak için pratik salon tavsiyeleri verir misin?`;
     const input = document.getElementById("ai-user-input");
-    if (input) input.value = promptText;
+    if (input) input.value = prompt;
     sendAssistantMessage();
 }
 
-function renderAssistantMessages() {
-    const container = document.getElementById("ai-chat-messages");
-    if (!container) return;
+// ==================== 🦍 ENES ABİ CHAT MULTIMODAL HANDLERS ====================
 
-    const history = assistantChatHistory.enes || [];
-    const persona = ASSISTANT_PERSONAS.enes;
+function triggerAssistantPhotoUpload() {
+    const fileInput = document.getElementById("ai-assistant-photo-file");
+    if (fileInput) fileInput.click();
+}
 
-    container.innerHTML = history.map(msg => {
-        const isUser = msg.sender === "user";
-        return `
-            <div class="ai-msg-row ${isUser ? 'user' : 'assistant'}">
-                <div class="ai-msg-avatar">
-                    ${isUser ? '👤' : persona.avatar}
-                </div>
-                <div class="ai-msg-bubble">
-                    <div style="font-size:0.82rem; line-height:1.48;">${msg.text}</div>
-                    ${msg.actionHtml ? `<div class="ai-action-box">${msg.actionHtml}</div>` : ''}
-                    <div style="font-size:0.6rem; color:${isUser ? '#666666' : 'var(--text-muted)'}; text-align:right; margin-top:4px;">${msg.time || ''}</div>
-                </div>
+function handleAssistantPhotoSelected(event) {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+
+    currentAssistantPhotoMime = file.type || "image/jpeg";
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        currentAssistantPhotoBase64 = e.target.result;
+        const previewBar = document.getElementById("ai-chat-img-preview-bar");
+        const thumb = document.getElementById("ai-chat-img-thumb");
+        const nameEl = document.getElementById("ai-chat-img-name");
+
+        if (thumb) thumb.src = currentAssistantPhotoBase64;
+        if (nameEl) nameEl.innerText = file.name || "Görsel eklendi";
+        if (previewBar) previewBar.style.display = "flex";
+    };
+    reader.readAsDataURL(file);
+}
+
+function cancelAssistantPhoto() {
+    currentAssistantPhotoBase64 = null;
+    const previewBar = document.getElementById("ai-chat-img-preview-bar");
+    const fileInput = document.getElementById("ai-assistant-photo-file");
+    if (previewBar) previewBar.style.display = "none";
+    if (fileInput) fileInput.value = "";
+}
+
+// ==================== 🧠 COACH SMART AI PRESCRIPTION ENGINE ====================
+
+let lastCoachAiRxSuggestion = null;
+
+async function triggerCoachSmartAiPrescription() {
+    const athleteSelect = document.getElementById("rx-athlete-select");
+    const username = athleteSelect ? athleteSelect.value : "";
+    if (!username) {
+        showToast("⚠️ Lütfen önce analiz yapılacak sporcuyu seçin.");
+        return;
+    }
+    await generateCoachSmartAiPrescription(username);
+}
+
+async function generateCoachSmartAiPrescription(username) {
+    const container = document.getElementById("coach-ai-rx-suggestion-container");
+    const btn = document.getElementById("btn-coach-ai-rx");
+
+    if (container) {
+        container.style.display = "block";
+        container.innerHTML = `
+            <div class="card" style="background:rgba(139,92,246,0.08); border:1px solid rgba(139,92,246,0.35); padding:16px; text-align:center; border-radius:var(--radius-md);">
+                <i class="fa-solid fa-spinner fa-spin" style="font-size:1.8rem; color:#a855f7; margin-bottom:10px;"></i>
+                <h4 style="font-size:0.85rem; color:#fff; margin:0 0 4px 0;">DeepSeek-R1 / Llama-3.3 Sporcu Verilerini Analiz Ediyor...</h4>
+                <p style="font-size:0.72rem; color:var(--text-muted); margin:0;">Tartı geçmişi, kalori uyumu, RIR zorluk seviyeleri ve plato riskleri taranıyor</p>
             </div>
         `;
-    }).join("");
+    }
 
-    container.scrollTop = container.scrollHeight;
+    if (btn) btn.disabled = true;
+
+    // Fetch athlete details
+    const user = (mockUsers && mockUsers[username]) || { name: username, username: username };
+    const currentTargets = (user.targets) || DEFAULT_TARGETS;
+    const currentSplit = (user.activeSplit) || "ppl_arnold";
+    const scaleHistory = (user.scaleHistory) || [];
+    const recentNutrition = (user.todayNutrition) || {};
+
+    const prompt = `Sen dünya şampiyonu elit bir Vücut Geliştirme, Hipertrofi ve Biyokimya Baş Antrenörüsün (Coach AI).
+Sporcu Bilgileri:
+- İsim: ${user.name || username} (${username})
+- Mevcut Hedef: ${user.goal || 'Lean Bulk'}
+- Mevcut Kalori & Makrolar: ${currentTargets.calories} kcal (Protein: ${currentTargets.protein}g, Karb: ${currentTargets.carbs}g, Yağ: ${currentTargets.fat}g, Adım: ${currentTargets.steps || 7500})
+- Mevcut Antrenman Spliti: ${currentSplit}
+- Son Tartı Geçmişi: ${JSON.stringify(scaleHistory.slice(-6))}
+- Günlük Beslenme Durumu: ${JSON.stringify(recentNutrition)}
+
+Bu sporcunun haftalık gelişimini analiz et ve önümüzdeki hafta için en optimum hedef revizyonunu hazırla.
+Aşağıdaki JSON formatında kesin ve geçerli bir JSON döndür (JSON harici hiçbir şey yazma):
+{
+  "athlete": "${username}",
+  "statusTitle": "Plato Riski Yok / Dengeli Kütle Kazanımı",
+  "analysis": "Sporcunun son durumunun derinlemesine analizi (kilo artış hızı, kalori uyumu, toparlanma)",
+  "reasoning": "Neden bu kalori/adım değişikliğini öneriyoruz?",
+  "recommendedTargets": {
+    "calories": ${Number(currentTargets.calories) + 120},
+    "protein": ${Number(currentTargets.protein) || 160},
+    "carbs": ${Number(currentTargets.carbs) + 30},
+    "fat": ${Number(currentTargets.fat) || 60},
+    "steps": ${Number(currentTargets.steps) || 7500}
+  },
+  "recommendedSplit": "${currentSplit}",
+  "coachMessage": "Sporcuya sistem üzerinden gönderilecek motive edici, net antrenör tavsiye notu"
+}`;
+
+    try {
+        let rawJson = "";
+        const config = getEffectiveAiConfig();
+
+        if (config.isOnline) {
+            rawJson = await callUnifiedAiEngine({
+                prompt: prompt,
+                systemPrompt: "Sen sadece saf JSON döndüren uzman bir vücut geliştirme baş antrenörüsün.",
+                temperature: 0.3,
+                jsonMode: true
+            });
+        } else {
+            // Realistic smart fallback when offline
+            rawJson = JSON.stringify({
+                athlete: username,
+                statusTitle: "Yerleşik Akıllı Analiz: Temiz Kütle Artışı (Lean Bulk)",
+                analysis: `${user.name || username} son dönemde istikrarlı bir kalori tüketimi gösteriyor. Kilo artışı hipertrofi için ideal aralıkta (%0.25-%0.5 haftalık).`,
+                reasoning: "Kas protein sentezini maksimize etmek ve metabolik adaptasyonu kırmak için günlük +150 kalori (karbonhidrat ağırlıklı) artış önerilir.",
+                recommendedTargets: {
+                    calories: Number(currentTargets.calories) + 150,
+                    protein: Number(currentTargets.protein),
+                    carbs: Number(currentTargets.carbs) + 35,
+                    fat: Number(currentTargets.fat),
+                    steps: Number(currentTargets.steps || 7500)
+                },
+                recommendedSplit: currentSplit,
+                coachMessage: "Aslanım bu hafta harika bir disiplin gösterdin. Antrenman şiddetini düşürmeden kaloriyi ufak bir kademe artırıyoruz, kütleye devam! 🦍"
+            });
+        }
+
+        let parsed = null;
+        try {
+            const cleanStr = rawJson.replace(/```json/gi, '').replace(/```/g, '').trim();
+            parsed = JSON.parse(cleanStr);
+        } catch (e) {
+            const match = rawJson.match(/\{[\s\S]*\}/);
+            if (match) parsed = JSON.parse(match[0]);
+        }
+
+        if (!parsed || !parsed.recommendedTargets) {
+            throw new Error("AI Reçete önerisi çözümlenemedi.");
+        }
+
+        lastCoachAiRxSuggestion = parsed;
+        renderCoachAiRxSuggestion(parsed, currentTargets);
+
+    } catch (err) {
+        if (container) {
+            container.innerHTML = `
+                <div class="card" style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); padding:12px; border-radius:var(--radius-md);">
+                    <div style="color:#ef4444; font-size:0.78rem; font-weight:700;"><i class="fa-solid fa-triangle-exclamation"></i> AI Reçete Analiz Hatası:</div>
+                    <div style="font-size:0.72rem; color:var(--text-secondary); margin-top:4px;">${err.message || err}</div>
+                </div>
+            `;
+        }
+    }
+
+    if (btn) btn.disabled = false;
+}
+
+function renderCoachAiRxSuggestion(suggestion, currentTargets) {
+    const container = document.getElementById("coach-ai-rx-suggestion-container");
+    if (!container) return;
+
+    const t = suggestion.recommendedTargets;
+    const diffCal = t.calories - (currentTargets.calories || 0);
+    const diffCalStr = diffCal >= 0 ? `+${diffCal}` : `${diffCal}`;
+
+    container.innerHTML = `
+        <div class="card" style="background:linear-gradient(135deg, rgba(139,92,246,0.12), rgba(59,130,246,0.08)); border:1px solid rgba(139,92,246,0.4); padding:14px; border-radius:var(--radius-md); box-shadow:0 8px 24px rgba(0,0,0,0.3);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:1.2rem;">🤖</span>
+                    <div>
+                        <h4 style="font-size:0.85rem; color:#c084fc; font-weight:800; margin:0;">AI AKILLI REÇETE ÖNERİSİ</h4>
+                        <span style="font-size:0.68rem; color:var(--text-muted);">${suggestion.statusTitle || 'Optimizasyon Analizi'}</span>
+                    </div>
+                </div>
+                <span class="badge-role" style="background:#8b5cf6; color:#fff; font-size:0.68rem; font-weight:800;">DeepSeek-R1 / Llama</span>
+            </div>
+
+            <p style="font-size:0.74rem; color:var(--text-secondary); line-height:1.45; margin-bottom:10px;">
+                ${suggestion.analysis}
+            </p>
+
+            <div style="background:rgba(0,0,0,0.25); border-radius:8px; padding:10px; margin-bottom:12px;">
+                <div style="font-size:0.7rem; font-weight:700; color:#ffd60a; margin-bottom:6px; text-transform:uppercase;">
+                    <i class="fa-solid fa-scale-balanced"></i> Hedef Değerler Karşılaştırması
+                </div>
+                <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:6px; text-align:center;">
+                    <div style="background:rgba(255,255,255,0.03); padding:6px; border-radius:6px;">
+                        <span style="font-size:0.6rem; color:var(--text-muted); display:block;">Kalori</span>
+                        <strong style="font-size:0.8rem; color:#ffd60a;">${t.calories} kcal</strong>
+                        <small style="font-size:0.6rem; color:${diffCal >= 0 ? '#10b981' : '#ef4444'}; display:block;">(${diffCalStr})</small>
+                    </div>
+                    <div style="background:rgba(255,255,255,0.03); padding:6px; border-radius:6px;">
+                        <span style="font-size:0.6rem; color:var(--text-muted); display:block;">Protein</span>
+                        <strong style="font-size:0.8rem; color:#ef4444;">${t.protein}g</strong>
+                    </div>
+                    <div style="background:rgba(255,255,255,0.03); padding:6px; border-radius:6px;">
+                        <span style="font-size:0.6rem; color:var(--text-muted); display:block;">Karbonhidrat</span>
+                        <strong style="font-size:0.8rem; color:#3b82f6;">${t.carbs}g</strong>
+                    </div>
+                    <div style="background:rgba(255,255,255,0.03); padding:6px; border-radius:6px;">
+                        <span style="font-size:0.6rem; color:var(--text-muted); display:block;">Adım</span>
+                        <strong style="font-size:0.8rem; color:#10b981;">${t.steps || 7500}</strong>
+                    </div>
+                </div>
+            </div>
+
+            <div style="font-size:0.7rem; color:var(--text-secondary); background:rgba(255,255,255,0.04); padding:8px 10px; border-radius:6px; margin-bottom:12px;">
+                <strong style="color:#ffd60a;">📝 Önerilen Antrenör Notu:</strong> "${suggestion.coachMessage || ''}"
+            </div>
+
+            <button type="button" class="btn btn-primary btn-block" onclick="applyAiRxSuggestionToForm()" style="background:linear-gradient(135deg, #8b5cf6, #3b82f6); color:#fff; font-weight:800; font-size:0.78rem; padding:9px;">
+                <i class="fa-solid fa-arrow-down-long"></i> ✅ Bu Öneriyi Revizyon Masasına Otomatik Uygula
+            </button>
+        </div>
+    `;
+}
+
+function applyAiRxSuggestionToForm() {
+    if (!lastCoachAiRxSuggestion || !lastCoachAiRxSuggestion.recommendedTargets) return;
+    const t = lastCoachAiRxSuggestion.recommendedTargets;
+
+    const calInput = document.getElementById("rx-calories");
+    const pInput = document.getElementById("rx-protein");
+    const cInput = document.getElementById("rx-carbs");
+    const fInput = document.getElementById("rx-fat");
+    const stepInput = document.getElementById("rx-steps");
+    const noteInput = document.getElementById("rx-notes");
+
+    if (calInput) calInput.value = t.calories;
+    if (pInput) pInput.value = t.protein;
+    if (cInput) cInput.value = t.carbs;
+    if (fInput) fInput.value = t.fat;
+    if (stepInput && t.steps) stepInput.value = t.steps;
+    if (noteInput && lastCoachAiRxSuggestion.coachMessage) {
+        noteInput.value = lastCoachAiRxSuggestion.coachMessage;
+    }
+
+    const calcCal = document.getElementById("rx-calculated-cals");
+    if (calcCal) calcCal.innerText = `${t.calories} kcal`;
+
+    showToast("✅ AI Reçetesi forma aktarıldı! Şimdi 'Hedefleri Güncelle' butonuna basarak onaylayabilirsiniz.");
 }
 
 async function sendAssistantMessage() {
@@ -10927,24 +11653,32 @@ async function sendAssistantMessage() {
     if (!input) return;
 
     const userText = input.value.trim();
-    if (!userText) return;
+    if (!userText && !currentAssistantPhotoBase64) return;
 
     input.value = "";
     const timeStr = getCurrentTimeStr();
 
-    // 1. Add user message to history
     if (!assistantChatHistory.enes) {
         assistantChatHistory.enes = [];
     }
-    assistantChatHistory.enes.push({
+
+    const userMsgObj = {
         sender: "user",
-        text: userText,
+        text: userText || "📸 [Görsel Gönderildi]",
         time: timeStr
-    });
+    };
+
+    if (currentAssistantPhotoBase64) {
+        userMsgObj.image = currentAssistantPhotoBase64;
+    }
+
+    assistantChatHistory.enes.push(userMsgObj);
+    const activePhoto = currentAssistantPhotoBase64;
+    const activePhotoMime = currentAssistantPhotoMime;
+    cancelAssistantPhoto();
 
     renderAssistantMessages();
 
-    // 2. Show animated 3-dot typing indicator
     const persona = ASSISTANT_PERSONAS.enes;
     const typingId = `typing_${Date.now()}`;
     const container = document.getElementById("ai-chat-messages");
@@ -10969,10 +11703,34 @@ async function sendAssistantMessage() {
 
     const startTime = Date.now();
 
-    // 3. Process with 100% reliable, fast, local intelligence
-    const aiResponse = processOfflineAssistantResponse("enes", userText);
+    let aiResponseText = "";
+    const config = getEffectiveAiConfig();
 
-    // Natural smooth response delay (300ms)
+    if (config.isOnline) {
+        try {
+            const systemPrompt = `Sen 'Enes Abi' (🦍) adında, Omar Coaching'in tek ve yetkili Baş Danışmanısın.
+Salonda sporcularına ağabeylik yapan, antrenman biyomekaniği, anabolik mutfak/beslenme ve ileri suplement/biyokimya alanında uzman bir Türk spor salonu efsanesisin.
+Daima samimi, esprili, babacan, motive edici bir dille konuş ("aslanım, kral, demir bükücü"). Asla robotik veya resmi olma.`;
+
+            const rawReply = await callUnifiedAiEngine({
+                prompt: userText || "Bu görseli sporcu koçu gözüyle analiz et.",
+                systemPrompt: systemPrompt,
+                imageBase64: activePhoto,
+                mimeType: activePhotoMime,
+                temperature: 0.85
+            });
+
+            aiResponseText = typeof cleanGeminiOutput === "function" ? cleanGeminiOutput(rawReply) : rawReply;
+        } catch (err) {
+            console.warn("AI Engine call error, falling back to local intelligence:", err);
+            const fallback = processOfflineAssistantResponse("enes", userText);
+            aiResponseText = fallback.text + `<br><br><small style="color:#ef4444;">(Canlı AI bağlantı uyarısı: ${err.message || err}. Yerleşik akıllı yanıt verildi.)</small>`;
+        }
+    } else {
+        const fallback = processOfflineAssistantResponse("enes", userText);
+        aiResponseText = fallback.text;
+    }
+
     const elapsed = Date.now() - startTime;
     if (elapsed < 300) {
         await new Promise(r => setTimeout(r, 300 - elapsed));

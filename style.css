@@ -5977,6 +5977,207 @@ body.modal-open {
     gap: 4px;
 }
 
+/* ==================== AI VISION & MULTI-ENGINE STYLES ==================== */
+
+.ai-vision-dropzone {
+    border: 2px dashed rgba(255, 214, 10, 0.35);
+    background: rgba(255, 214, 10, 0.03);
+    border-radius: var(--radius-lg);
+    padding: 24px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    position: relative;
+    overflow: hidden;
+}
+
+.ai-vision-dropzone:hover, .ai-vision-dropzone.dragover {
+    border-color: #ffd60a;
+    background: rgba(255, 214, 10, 0.08);
+    transform: translateY(-2px);
+}
+
+.ai-vision-dropzone.has-image {
+    padding: 10px;
+    border-style: solid;
+    border-color: rgba(255, 214, 10, 0.5);
+    background: rgba(0, 0, 0, 0.4);
+}
+
+.ai-vision-preview-img {
+    max-width: 100%;
+    max-height: 240px;
+    border-radius: var(--radius-md);
+    object-fit: contain;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+}
+
+.ai-vision-btn-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+    width: 100%;
+}
+
+.ai-vision-result-card {
+    background: linear-gradient(135deg, rgba(20, 20, 26, 0.95), rgba(30, 30, 42, 0.95));
+    border: 1px solid rgba(255, 214, 10, 0.3);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+    margin-top: 14px;
+    animation: fadeInMsg 0.3s ease;
+}
+
+.ai-macro-pill-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    margin: 10px 0;
+}
+
+.ai-macro-pill {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-sm);
+    padding: 8px 4px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.ai-macro-pill .lbl {
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.ai-macro-pill .val {
+    font-size: 0.92rem;
+    font-weight: 800;
+}
+
+.ai-macro-pill.cal .val { color: #ffd60a; }
+.ai-macro-pill.p .val { color: #ef4444; }
+.ai-macro-pill.c .val { color: #3b82f6; }
+.ai-macro-pill.f .val { color: #eab308; }
+
+.ai-food-breakdown-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 10px 0;
+    max-height: 180px;
+    overflow-y: auto;
+}
+
+.ai-food-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 10px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 6px;
+    font-size: 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Biomechanical Form Analysis Badges */
+.biomech-risk-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    padding: 4px 10px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.biomech-risk-badge.low {
+    background: rgba(52, 199, 89, 0.15);
+    border: 1px solid rgba(52, 199, 89, 0.4);
+    color: #34c759;
+}
+
+.biomech-risk-badge.med {
+    background: rgba(255, 214, 10, 0.15);
+    border: 1px solid rgba(255, 214, 10, 0.4);
+    color: #ffd60a;
+}
+
+.biomech-risk-badge.high {
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    color: #ef4444;
+}
+
+.biomech-cue-box {
+    background: rgba(0, 0, 0, 0.35);
+    border-left: 3px solid #ffd60a;
+    border-radius: 0 8px 8px 0;
+    padding: 8px 12px;
+    margin: 8px 0;
+    font-size: 0.75rem;
+    line-height: 1.45;
+}
+
+.biomech-cue-box strong {
+    color: #ffd60a;
+}
+
+/* AI Engine Provider Pills in Settings */
+.ai-provider-pill-bar {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 12px;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 4px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.ai-provider-pill {
+    flex: 1;
+    text-align: center;
+    padding: 8px 6px;
+    border-radius: 8px;
+    font-size: 0.74rem;
+    font-weight: 800;
+    color: var(--text-secondary);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.ai-provider-pill.active {
+    background: #ffd60a;
+    color: #000000;
+    box-shadow: 0 2px 8px rgba(255, 214, 10, 0.3);
+}
+
+/* Coach Smart AI Prescription Card */
+.coach-smart-ai-card {
+    background: linear-gradient(135deg, rgba(30, 27, 75, 0.6), rgba(17, 24, 39, 0.8));
+    border: 1px solid rgba(168, 85, 247, 0.35);
+    border-radius: var(--radius-md);
+    padding: 14px;
+    margin-bottom: 14px;
+}
+
+
 
 
 

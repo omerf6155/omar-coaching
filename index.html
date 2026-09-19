@@ -290,6 +290,9 @@
                     <button class="btn btn-xs btn-primary btn-split-selector" onclick="openWorkoutSplitsModal()" title="Haftalık Split / Programını Değiştir">
                         <i class="fa-solid fa-shuffle"></i> 🔄 Split Seç
                     </button>
+                    <button class="btn btn-xs btn-primary" onclick="openFormVisionModal()" title="Fotoğraf veya Videodan Biyomekanik Form Analizi Yap" style="background:linear-gradient(135deg, #a855f7, #7c3aed); border-color:#a855f7; color:#fff; font-weight:700;">
+                        <i class="fa-solid fa-video"></i> 🏋️ Form Analizi
+                    </button>
                     <button class="btn btn-xs btn-outline" onclick="openStretchingModal()" style="border-color:rgba(192,132,252,0.4); color:#c084fc;">
                         <i class="fa-solid fa-person-praying"></i> 🧘 Esneme
                     </button>
@@ -317,10 +320,15 @@
             <section id="view-nutrition" class="tab-view">
                 <!-- Action Bar: Add custom meal -->
                 <div class="nutrition-top-actions">
-                    <button class="btn btn-primary btn-block" onclick="openNewRecipeBuilderModal()">
-                        <i class="fa-solid fa-plus"></i> 🍽️ Akıllı Beslenme & Öğün Planlayıcı
-                    </button>
-                    <div style="display:flex; gap:8px; margin-top:8px;">
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-bottom:8px;">
+                        <button class="btn btn-primary" onclick="openNewRecipeBuilderModal()" style="font-size:0.75rem; padding:10px 8px;">
+                            <i class="fa-solid fa-plus"></i> 🍽️ Öğün Planlayıcı
+                        </button>
+                        <button class="btn btn-primary" onclick="openFoodVisionModal()" style="background:linear-gradient(135deg, #10b981, #059669); border-color:#10b981; color:#fff; font-weight:700; font-size:0.75rem; padding:10px 8px;">
+                            <i class="fa-solid fa-camera"></i> 📸 Tabak / Foto Makro
+                        </button>
+                    </div>
+                    <div style="display:flex; gap:8px;">
                         <button class="btn btn-outline btn-block" onclick="openOnboardingWizard()">
                             <i class="fa-solid fa-wand-magic-sparkles"></i> Diyet Sihirbazı
                         </button>
@@ -654,12 +662,20 @@
                             Sporcunun haftalık kilo değişimine göre kalori, makro veya adım hedeflerini revize et. Sporcu uygulamayı açtığında yeni hedefleri görecektir.
                         </p>
 
-                        <div class="form-group">
-                            <label><i class="fa-solid fa-user-check"></i> Revizyon Yapılacak Sporcu</label>
-                            <select id="rx-athlete-select" onchange="loadAthleteForPrescription(this.value)" class="form-select">
-                                <!-- Populated dynamically -->
-                            </select>
+                        <div class="form-group" style="display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap;">
+                            <div style="flex:1; min-width:180px;">
+                                <label><i class="fa-solid fa-user-check"></i> Revizyon Yapılacak Sporcu</label>
+                                <select id="rx-athlete-select" onchange="loadAthleteForPrescription(this.value)" class="form-select">
+                                    <!-- Populated dynamically -->
+                                </select>
+                            </div>
+                            <button type="button" class="btn btn-primary" onclick="triggerCoachSmartAiPrescription()" id="btn-coach-ai-rx" style="background:linear-gradient(135deg, #8b5cf6, #3b82f6); border:1px solid #8b5cf6; color:#fff; font-weight:800; font-size:0.75rem; padding:9px 12px; white-space:nowrap; height:38px; display:flex; align-items:center; gap:6px;" title="DeepSeek-R1 / Llama-3.3 ile Sporcunun Kilo/Yemek/RIR Verilerini Analiz Et">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i> <span>🤖 AI ile Analiz Et & Reçete Öner</span>
+                            </button>
                         </div>
+
+                        <!-- AI SMART PRESCRIPTION SUGGESTION BOX (Hidden until triggered) -->
+                        <div id="coach-ai-rx-suggestion-container" style="display:none; margin-bottom:14px;"></div>
 
                         <!-- ATHLETE'S CURRENT / PREVIOUS MEALS & INGREDIENTS CARD -->
                         <div class="card" id="rx-athlete-current-diet-card" style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,214,10,0.3); padding:12px; margin-bottom:14px; border-radius:var(--radius-md);">
@@ -2317,7 +2333,10 @@
                         <span class="ai-role-text" id="ai-active-role">Antrenman, Beslenme & Biyokimya Rehberi</span>
                     </div>
                 </div>
-                <div class="ai-header-actions">
+                <div class="ai-header-actions" style="display:flex; gap:6px; align-items:center;">
+                    <button type="button" class="btn btn-xs btn-outline" onclick="openAiSettingsModal()" title="AI Motoru & API Key Ayarları" style="border-color:rgba(255,214,10,0.3); color:#ffd60a; padding:4px 8px; font-size:0.7rem;">
+                        <i class="fa-solid fa-gear"></i> AI Ayarları
+                    </button>
                     <button class="modal-close-btn" onclick="closeModal('modal-ai-assistant')">&times;</button>
                 </div>
             </div>
@@ -2328,9 +2347,17 @@
                     <span class="ai-mode-dot" id="ai-mode-dot" style="background:#22c55e; box-shadow:0 0 8px #22c55e;"></span>
                     <span id="ai-mode-text">Enes Abi 🦍 Yerleşik Akıllı Koç • <strong>Aktif</strong></span>
                 </div>
-                <button type="button" class="btn-clear-ai-chat" onclick="clearAssistantChat()" title="Mevcut Sohbeti Temizle">
-                    <i class="fa-solid fa-rotate-left"></i> Temizle
-                </button>
+                <div style="display:flex; gap:6px; align-items:center;">
+                    <button type="button" class="btn-clear-ai-chat" onclick="openFoodVisionModal()" title="Tabak Fotoğrafı Analizi" style="color:#34d399; font-size:0.68rem;">
+                        <i class="fa-solid fa-camera"></i> Yemek Foto
+                    </button>
+                    <button type="button" class="btn-clear-ai-chat" onclick="openFormVisionModal()" title="Form & Postür Analizi" style="color:#c084fc; font-size:0.68rem;">
+                        <i class="fa-solid fa-dumbbell"></i> Form Analizi
+                    </button>
+                    <button type="button" class="btn-clear-ai-chat" onclick="clearAssistantChat()" title="Mevcut Sohbeti Temizle">
+                        <i class="fa-solid fa-rotate-left"></i> Temizle
+                    </button>
+                </div>
             </div>
 
             <!-- Quick Topic Pills Bar inside Chat (All 3 Domains Unified) -->
@@ -2343,9 +2370,27 @@
                 <!-- Messages render here -->
             </div>
 
+            <!-- Selected Image Preview Bar (Appears when photo is attached) -->
+            <div id="ai-chat-img-preview-bar" style="display:none; padding:8px 14px; background:rgba(0,0,0,0.35); border-top:1px solid var(--border-subtle); align-items:center; gap:10px;">
+                <div style="position:relative; width:44px; height:44px; border-radius:6px; overflow:hidden; border:1px solid #ffd60a;">
+                    <img id="ai-chat-img-thumb" src="" alt="Yüklenen Görsel" style="width:100%; height:100%; object-fit:cover;">
+                </div>
+                <div style="flex:1; min-width:0;">
+                    <div style="font-size:0.75rem; font-weight:700; color:#ffd60a;" id="ai-chat-img-name">Görsel Eklendi</div>
+                    <div style="font-size:0.65rem; color:var(--text-muted);">Enes Abi görseli analiz etmeye hazır</div>
+                </div>
+                <button type="button" class="btn btn-xs btn-outline" onclick="cancelAssistantPhoto()" style="color:#ff453a; border-color:rgba(255,69,58,0.4); padding:4px 8px;">
+                    <i class="fa-solid fa-xmark"></i> Kaldır
+                </button>
+            </div>
+
             <!-- Chat Input Bar -->
             <div class="ai-chat-input-container">
                 <div class="ai-input-row">
+                    <input type="file" id="ai-assistant-photo-file" accept="image/*" style="display:none;" onchange="handleAssistantPhotoSelected(event)">
+                    <button type="button" class="ai-photo-btn" onclick="triggerAssistantPhotoUpload()" title="Görsel / Tabak / Form Ekle" style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15); color:#ffd60a; border-radius:8px; padding:0 10px; cursor:pointer; height:38px; display:flex; align-items:center; justify-content:center;">
+                        <i class="fa-solid fa-camera"></i>
+                    </button>
                     <input type="text" id="ai-user-input" class="ai-text-input" placeholder="Enes Abi'ye antrenman, yemek veya takviye sor..." onkeydown="if(event.key==='Enter') sendAssistantMessage()">
                     <button type="button" class="ai-send-btn" onclick="sendAssistantMessage()" id="ai-send-btn">
                         <i class="fa-solid fa-paper-plane"></i>
@@ -2359,51 +2404,300 @@
         </div>
     </div>
 
-    <!-- GEMINI API KEY SETUP & VERIFICATION MODAL -->
-    <div id="modal-gemini-key" class="modal-overlay">
-        <div class="modal-card" style="max-width:420px;">
-            <div class="modal-header">
-                <h3><i class="fa-solid fa-brain" style="color:#38bdf8;"></i> Google Gemini Canlı AI Bağlantısı</h3>
-                <button class="modal-close-btn" onclick="closeModal('modal-gemini-key')">&times;</button>
+    <!-- ==================== TABAK & BESİN FOTOĞRAFINDAN MAKRO HESAPLAMA MODALİ ==================== -->
+    <div id="modal-ai-food-vision" class="modal-overlay">
+        <div class="modal-card" style="max-width:560px;">
+            <div class="modal-header" style="background:linear-gradient(135deg, rgba(16,185,129,0.15), rgba(5,150,105,0.05));">
+                <h3><i class="fa-solid fa-camera-retro" style="color:#10b981;"></i> Tabaktan Otomatik Makro Analizi</h3>
+                <button class="modal-close-btn" onclick="closeModal('modal-ai-food-vision')">&times;</button>
             </div>
             <div class="modal-body" style="padding:16px 14px;">
-                <p class="text-secondary" style="font-size:0.79rem; line-height:1.5; margin-bottom:12px; color:var(--text-secondary);">
-                    Enes Abi ile antrenmandan beslenmeye, biyokimyadan hayata kadar <strong style="color:#ffffff;">her konuda sınırsız, canlı ve esprili sohbet etmek</strong> için Google Gemini API anahtarını buraya yapıştır:
+                <p class="text-secondary" style="font-size:0.76rem; line-height:1.45; margin-bottom:12px;">
+                    Öğününün veya tabağının fotoğrafını çek ya da yükle. <strong>Google Gemini / NVIDIA Vision AI</strong> tabaktaki tüm yiyecekleri, porsiyon gramajlarını ve tam makrolarını anında hesaplasın!
                 </p>
 
-                <div class="form-group" style="margin-bottom:10px;">
-                    <label style="font-size:0.74rem; font-weight:700; color:#ffffff;">Gemini API Anahtarınız (AI Studio):</label>
-                    <div style="position:relative; display:flex; align-items:center;">
-                        <input type="password" id="modal-input-gemini-key" placeholder="AIzaSy... veya AQ.Ab..." style="font-size:0.82rem; padding-right:38px;">
-                        <button type="button" onclick="toggleApiKeyVisibility()" style="position:absolute; right:8px; background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:0.85rem;">
-                            <i class="fa-solid fa-eye" id="toggle-key-eye"></i>
+                <!-- Upload / Dropzone -->
+                <div id="food-vision-dropzone" class="ai-vision-dropzone" onclick="document.getElementById('food-vision-file-input').click()">
+                    <i class="fa-solid fa-cloud-arrow-up" style="font-size:2rem; color:#10b981; margin-bottom:8px;"></i>
+                    <h4 style="font-size:0.85rem; margin:0 0 4px 0; color:#fff;">Fotoğraf Çek veya Galeriden Seç</h4>
+                    <p style="font-size:0.7rem; color:var(--text-muted); margin:0;">JPG, PNG, WEBP desteklenir</p>
+                    <input type="file" id="food-vision-file-input" accept="image/*" style="display:none;" onchange="handleFoodPhotoSelected(event)">
+                </div>
+
+                <!-- Image Preview Section (Hidden until uploaded) -->
+                <div id="food-vision-preview-section" style="display:none; margin-top:12px;">
+                    <div style="position:relative; max-height:260px; overflow:hidden; border-radius:10px; border:1px solid rgba(16,185,129,0.4); margin-bottom:10px;">
+                        <img id="food-vision-preview-img" src="" alt="Yemek Fotoğrafı" style="width:100%; max-height:260px; object-fit:cover; display:block;">
+                        <button type="button" class="btn btn-xs btn-danger" onclick="resetFoodVisionUpload()" style="position:absolute; top:8px; right:8px; padding:4px 8px; border-radius:6px; font-size:0.7rem;">
+                            <i class="fa-solid fa-trash"></i> Fotoğrafı Değiştir
+                        </button>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom:10px;">
+                        <label style="font-size:0.72rem; font-weight:700;"><i class="fa-solid fa-pen"></i> İsteğe Bağlı Not / Açıklama (Doğruluğu artırır):</label>
+                        <input type="text" id="food-vision-custom-hint" placeholder="Örn: 200g pirinç, 150g tavuk göğsü, zeytinyağlı salata..." style="font-size:0.78rem;">
+                    </div>
+
+                    <button type="button" class="btn btn-primary btn-block" id="btn-start-food-analysis" onclick="startFoodVisionAnalysis()" style="background:linear-gradient(135deg, #10b981, #059669); border-color:#10b981; color:#fff; font-weight:800; padding:10px; font-size:0.85rem;">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> 🤖 Tabaktaki Makroları Analiz Et
+                    </button>
+                </div>
+
+                <!-- Analysis Loading Spinner -->
+                <div id="food-vision-loading" style="display:none; padding:24px 14px; text-align:center;">
+                    <i class="fa-solid fa-spinner fa-spin" style="font-size:2rem; color:#10b981; margin-bottom:10px;"></i>
+                    <h4 style="font-size:0.85rem; color:#fff; margin:0 0 4px 0;">Yapay Zeka Tabağı İnceliyor...</h4>
+                    <p style="font-size:0.72rem; color:var(--text-muted); margin:0;">Porsiyon büyüklükleri ve besin değerleri hesaplanıyor</p>
+                </div>
+
+                <!-- Analysis Results Section -->
+                <div id="food-vision-results-section" style="display:none; margin-top:14px;">
+                    <!-- Macro Banner Summary -->
+                    <div class="card" style="background:var(--bg-input); border:1px solid #10b981; padding:12px; margin-bottom:12px; border-radius:var(--radius-sm);">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                            <span style="font-size:0.74rem; color:var(--text-secondary); font-weight:700;">TOPLAM HESAPLANAN BESİN DEĞERİ:</span>
+                            <span class="badge-role" style="background:#10b981; color:#fff; font-size:0.8rem; font-weight:900;" id="food-vision-total-cals">0 kcal</span>
+                        </div>
+                        <div class="profile-macro-banner" style="margin-bottom:0; grid-template-columns:repeat(4, 1fr); gap:4px;">
+                            <div class="prof-macro-col p-col" style="padding:6px 2px;"><span style="font-size:0.58rem;">Protein</span><strong id="food-vision-total-p" style="font-size:0.78rem;">0g</strong></div>
+                            <div class="prof-macro-col c-col" style="padding:6px 2px;"><span style="font-size:0.58rem;">Karb</span><strong id="food-vision-total-c" style="font-size:0.78rem;">0g</strong></div>
+                            <div class="prof-macro-col f-col" style="padding:6px 2px;"><span style="font-size:0.58rem;">Yağ</span><strong id="food-vision-total-f" style="font-size:0.78rem;">0g</strong></div>
+                            <div class="prof-macro-col s-col" style="padding:6px 2px;"><span style="font-size:0.58rem;">Şeker</span><strong id="food-vision-total-s" style="font-size:0.78rem;">0g</strong></div>
+                        </div>
+                    </div>
+
+                    <!-- Detected Items List -->
+                    <div class="card" style="background:rgba(255,255,255,0.02); border:1px solid var(--border-subtle); padding:10px; margin-bottom:12px;">
+                        <h4 style="font-size:0.75rem; color:#ffd60a; margin:0 0 8px 0; text-transform:uppercase; font-weight:800;">
+                            <i class="fa-solid fa-list-check"></i> Tespit Edilen Besinler & Porsiyonlar
+                        </h4>
+                        <div id="food-vision-items-list" style="display:flex; flex-direction:column; gap:6px;">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- AI Insights / Notes -->
+                    <div id="food-vision-notes-box" style="font-size:0.72rem; color:var(--text-secondary); background:rgba(16,185,129,0.08); border-left:3px solid #10b981; padding:8px 10px; border-radius:4px; margin-bottom:12px; line-height:1.4;"></div>
+
+                    <!-- Action Buttons -->
+                    <div style="display:flex; flex-direction:column; gap:8px;">
+                        <button type="button" class="btn btn-primary btn-block" onclick="addDetectedMealToToday()" style="background:linear-gradient(135deg, #10b981, #059669); color:#fff; font-weight:800; padding:10px; font-size:0.82rem;">
+                            <i class="fa-solid fa-plus"></i> Bu Öğünü Bugünkü Beslenmeme Ekle
+                        </button>
+                        <button type="button" class="btn btn-outline btn-block" onclick="resetFoodVisionUpload()" style="font-size:0.75rem;">
+                            <i class="fa-solid fa-rotate-left"></i> Yeni Bir Tabak Fotoğrafı Çek
                         </button>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
 
-                <div style="background:rgba(56, 189, 248, 0.08); border:1px solid rgba(56, 189, 248, 0.2); border-radius:10px; padding:10px; margin-bottom:14px;">
-                    <div style="font-size:0.74rem; color:#38bdf8; font-weight:700; margin-bottom:4px;">
-                        <i class="fa-solid fa-circle-info"></i> Ücretsiz API Key Nasıl Alınır? (30 Saniye)
+    <!-- ==================== BİYOMEKANİK EGZERSİZ FORM ANALİZİ MODALİ ==================== -->
+    <div id="modal-ai-form-vision" class="modal-overlay">
+        <div class="modal-card" style="max-width:560px;">
+            <div class="modal-header" style="background:linear-gradient(135deg, rgba(168,85,247,0.15), rgba(124,58,237,0.05));">
+                <h3><i class="fa-solid fa-video" style="color:#a855f7;"></i> Biyomekanik Egzersiz Form Analizi</h3>
+                <button class="modal-close-btn" onclick="closeModal('modal-ai-form-vision')">&times;</button>
+            </div>
+            <div class="modal-body" style="padding:16px 14px;">
+                <p class="text-secondary" style="font-size:0.76rem; line-height:1.45; margin-bottom:12px;">
+                    Squat, Bench Press, Deadlift, RDL veya OHP yaparken çekilmiş fotoğrafını veya video karesini yükle. Yapay zeka <strong>eklem açılarını, omurga nötralliğini ve sakatlık riskini</strong> anında analiz etsin!
+                </p>
+
+                <!-- Exercise Picker -->
+                <div class="form-group" style="margin-bottom:12px;">
+                    <label style="font-size:0.74rem; font-weight:700;"><i class="fa-solid fa-dumbbell"></i> Analiz Edilecek Hareket:</label>
+                    <select id="form-vision-exercise-select" class="form-select" style="font-size:0.8rem;">
+                        <option value="Squat">Barbell Back / Front Squat</option>
+                        <option value="Bench Press">Barbell / Dumbbell Bench Press</option>
+                        <option value="Deadlift">Conventional / Sumo Deadlift</option>
+                        <option value="Romanian Deadlift (RDL)">Romanian Deadlift (RDL)</option>
+                        <option value="Overhead Press">Overhead Press (OHP / Military Press)</option>
+                        <option value="Barbell Row">Bent-over Barbell Row</option>
+                        <option value="Lat Pulldown">Lat Pulldown / Pull-up</option>
+                        <option value="Dips">Weighted / Bodyweight Dips</option>
+                        <option value="General">Diğer / Genel Egzersiz</option>
+                    </select>
+                </div>
+
+                <!-- Upload / Dropzone -->
+                <div id="form-vision-dropzone" class="ai-vision-dropzone" onclick="document.getElementById('form-vision-file-input').click()">
+                    <i class="fa-solid fa-camera" style="font-size:2rem; color:#a855f7; margin-bottom:8px;"></i>
+                    <h4 style="font-size:0.85rem; margin:0 0 4px 0; color:#fff;">Form Fotoğrafı veya Kare Yükle</h4>
+                    <p style="font-size:0.7rem; color:var(--text-muted); margin:0;">Yan (profil) veya çapraz açı en yüksek doğruluğu verir</p>
+                    <input type="file" id="form-vision-file-input" accept="image/*" style="display:none;" onchange="handleFormPhotoSelected(event)">
+                </div>
+
+                <!-- Image Preview Section -->
+                <div id="form-vision-preview-section" style="display:none; margin-top:12px;">
+                    <div style="position:relative; max-height:260px; overflow:hidden; border-radius:10px; border:1px solid rgba(168,85,247,0.4); margin-bottom:10px;">
+                        <img id="form-vision-preview-img" src="" alt="Form Fotoğrafı" style="width:100%; max-height:260px; object-fit:contain; background:#000; display:block;">
+                        <button type="button" class="btn btn-xs btn-danger" onclick="resetFormVisionUpload()" style="position:absolute; top:8px; right:8px; padding:4px 8px; border-radius:6px; font-size:0.7rem;">
+                            <i class="fa-solid fa-trash"></i> Değiştir
+                        </button>
                     </div>
-                    <ol style="font-size:0.7rem; color:var(--text-secondary); margin:0; padding-left:16px; line-height:1.4;">
-                        <li><a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#ffd60a; text-decoration:underline;">Google AI Studio API Key Sayfası</a>'na tıkla.</li>
-                        <li>Google hesabınla giriş yap ve <strong>"Create API key"</strong> butonuna bas.</li>
-                        <li>Oluşan anahtarı kopyalayıp yukarıdaki kutuya yapıştır ve kaydet.</li>
-                    </ol>
+
+                    <div class="form-group" style="margin-bottom:10px;">
+                        <label style="font-size:0.72rem; font-weight:700;"><i class="fa-solid fa-pen"></i> Hissiyat / Yaşanan Zorluk (Opsiyonel):</label>
+                        <input type="text" id="form-vision-custom-hint" placeholder="Örn: Alt sırtta batma oldu, dizlerim içeri kaçıyor gibi hissettim..." style="font-size:0.78rem;">
+                    </div>
+
+                    <button type="button" class="btn btn-primary btn-block" id="btn-start-form-analysis" onclick="startFormVisionAnalysis()" style="background:linear-gradient(135deg, #a855f7, #7c3aed); border-color:#a855f7; color:#fff; font-weight:800; padding:10px; font-size:0.85rem;">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> 🤖 Biyomekanik Form Analizini Başlat
+                    </button>
+                </div>
+
+                <!-- Loading Spinner -->
+                <div id="form-vision-loading" style="display:none; padding:24px 14px; text-align:center;">
+                    <i class="fa-solid fa-spinner fa-spin" style="font-size:2rem; color:#a855f7; margin-bottom:10px;"></i>
+                    <h4 style="font-size:0.85rem; color:#fff; margin:0 0 4px 0;">Biyomekanik Eklem Açıları İnceleniyor...</h4>
+                    <p style="font-size:0.72rem; color:var(--text-muted); margin:0;">Omurga hizası, diz vektörü ve sakatlık risk faktörleri taranıyor</p>
+                </div>
+
+                <!-- Analysis Results Section -->
+                <div id="form-vision-results-section" style="display:none; margin-top:14px;">
+                    <!-- Risk Badge & Score Banner -->
+                    <div class="card" id="form-vision-risk-card" style="background:var(--bg-input); border:1px solid #a855f7; padding:12px; margin-bottom:12px; border-radius:var(--radius-sm);">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                            <span style="font-size:0.74rem; color:var(--text-secondary); font-weight:700;">SAKATLIK RİSK DEĞERLENDİRMESİ:</span>
+                            <span class="badge-role" id="form-vision-risk-badge" style="background:#10b981; color:#fff; font-size:0.75rem; font-weight:800;">🟢 Düşük Risk</span>
+                        </div>
+                        <h4 style="font-size:0.88rem; color:#ffd60a; margin:0 0 4px 0;" id="form-vision-summary-title">Form Değerlendirmesi</h4>
+                        <p style="font-size:0.74rem; color:var(--text-secondary); margin:0; line-height:1.4;" id="form-vision-summary-text"></p>
+                    </div>
+
+                    <!-- Joint Breakdown List -->
+                    <div class="card" style="background:rgba(255,255,255,0.02); border:1px solid var(--border-subtle); padding:10px; margin-bottom:12px;">
+                        <h4 style="font-size:0.75rem; color:#c084fc; margin:0 0 8px 0; text-transform:uppercase; font-weight:800;">
+                            <i class="fa-solid fa-bone"></i> Eklem & Postür Analizi
+                        </h4>
+                        <div id="form-vision-joints-list" style="display:flex; flex-direction:column; gap:6px;">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Corrective Cues -->
+                    <div class="card" style="background:rgba(255,214,10,0.04); border:1px solid rgba(255,214,10,0.3); padding:10px; margin-bottom:12px;">
+                        <h4 style="font-size:0.75rem; color:#ffd60a; margin:0 0 8px 0; text-transform:uppercase; font-weight:800;">
+                            <i class="fa-solid fa-bullseye"></i> Antrenör Düzeltici İpuçları (Cues)
+                        </h4>
+                        <div id="form-vision-cues-list" style="display:flex; flex-direction:column; gap:6px;">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div style="display:flex; flex-direction:column; gap:8px;">
+                        <button type="button" class="btn btn-outline btn-block" onclick="askEnesAbiAboutForm()" style="font-size:0.78rem; border-color:rgba(168,85,247,0.4); color:#c084fc;">
+                            <i class="fa-solid fa-robot"></i> Enes Abi'ye Bu Form Hakkında Soru Sor
+                        </button>
+                        <button type="button" class="btn btn-outline btn-block" onclick="resetFormVisionUpload()" style="font-size:0.75rem;">
+                            <i class="fa-solid fa-rotate-left"></i> Başka Bir Hareket Analiz Et
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== MULTI-ENGINE AI & API KEY SETTINGS MODAL ==================== -->
+    <div id="modal-gemini-key" class="modal-overlay">
+        <div class="modal-card" style="max-width:480px;">
+            <div class="modal-header" style="background:linear-gradient(135deg, rgba(56,189,248,0.15), rgba(168,85,247,0.1));">
+                <h3><i class="fa-solid fa-microchip" style="color:#38bdf8;"></i> AI Motoru & Canlı Bağlantı Ayarları</h3>
+                <button class="modal-close-btn" onclick="closeModal('modal-gemini-key')">&times;</button>
+            </div>
+            <div class="modal-body" style="padding:16px 14px;">
+                <p class="text-secondary" style="font-size:0.76rem; line-height:1.45; margin-bottom:12px;">
+                    Enes Abi, Yemek Makro Analizi ve Form Analizi için istediğin yapay zeka sağlayıcısını seçip ücretsiz API anahtarını tanımlayabilirsin.
+                </p>
+
+                <!-- Provider Tabs (Google Gemini vs NVIDIA NIM) -->
+                <div class="ai-provider-tabs" style="display:flex; gap:6px; margin-bottom:14px; background:var(--bg-input); padding:4px; border-radius:var(--radius-md); border:1px solid var(--border-subtle);">
+                    <button type="button" class="ai-provider-tab-btn active" id="tab-btn-ai-gemini" onclick="switchAiProviderTab('gemini')" style="flex:1; padding:8px 6px; border:none; border-radius:var(--radius-sm); font-size:0.72rem; font-weight:700; cursor:pointer; background:#38bdf8; color:#000; display:flex; align-items:center; justify-content:center; gap:6px;">
+                        <i class="fa-solid fa-brain"></i> Google Gemini
+                    </button>
+                    <button type="button" class="ai-provider-tab-btn" id="tab-btn-ai-nvidia" onclick="switchAiProviderTab('nvidia')" style="flex:1; padding:8px 6px; border:none; border-radius:var(--radius-sm); font-size:0.72rem; font-weight:700; cursor:pointer; background:transparent; color:var(--text-secondary); display:flex; align-items:center; justify-content:center; gap:6px;">
+                        <i class="fa-solid fa-server"></i> NVIDIA NIM (Llama / DeepSeek)
+                    </button>
+                </div>
+
+                <!-- TAB 1: GOOGLE GEMINI -->
+                <div id="ai-provider-panel-gemini">
+                    <div class="form-group" style="margin-bottom:10px;">
+                        <label style="font-size:0.74rem; font-weight:700; color:#fff;">Google Gemini API Anahtarınız:</label>
+                        <div style="position:relative; display:flex; align-items:center;">
+                            <input type="password" id="modal-input-gemini-key" placeholder="AIzaSy... veya AQ.Ab..." style="font-size:0.82rem; padding-right:38px;">
+                            <button type="button" onclick="toggleApiKeyVisibility('modal-input-gemini-key', 'toggle-gemini-eye')" style="position:absolute; right:8px; background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:0.85rem;">
+                                <i class="fa-solid fa-eye" id="toggle-gemini-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom:10px;">
+                        <label style="font-size:0.72rem; font-weight:700; color:var(--text-secondary);">Model Seçimi:</label>
+                        <select id="modal-select-gemini-model" class="form-select" style="font-size:0.78rem;">
+                            <option value="gemini-2.5-flash">Gemini 2.5 Flash (En Hızlı & Multimodal Vizyon)</option>
+                            <option value="gemini-1.5-flash">Gemini 1.5 Flash (Standart & Stabil)</option>
+                            <option value="gemini-1.5-pro">Gemini 1.5 Pro (Gelişmiş Mantık & Biyokimya)</option>
+                        </select>
+                    </div>
+
+                    <div style="background:rgba(56, 189, 248, 0.08); border:1px solid rgba(56, 189, 248, 0.2); border-radius:10px; padding:8px 10px; margin-bottom:12px;">
+                        <div style="font-size:0.72rem; color:#38bdf8; font-weight:700; margin-bottom:3px;">
+                            <i class="fa-solid fa-circle-info"></i> Ücretsiz Gemini API Key:
+                        </div>
+                        <p style="font-size:0.68rem; color:var(--text-secondary); margin:0; line-height:1.35;">
+                            <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#ffd60a; text-decoration:underline;">Google AI Studio</a>'dan saniyeler içinde ücretsiz oluşturup yapıştırabilirsiniz.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- TAB 2: NVIDIA NIM -->
+                <div id="ai-provider-panel-nvidia" style="display:none;">
+                    <div class="form-group" style="margin-bottom:10px;">
+                        <label style="font-size:0.74rem; font-weight:700; color:#fff;">NVIDIA NIM API Anahtarınız (nvapi-...):</label>
+                        <div style="position:relative; display:flex; align-items:center;">
+                            <input type="password" id="modal-input-nvidia-key" placeholder="nvapi-..." style="font-size:0.82rem; padding-right:38px;">
+                            <button type="button" onclick="toggleApiKeyVisibility('modal-input-nvidia-key', 'toggle-nvidia-eye')" style="position:absolute; right:8px; background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:0.85rem;">
+                                <i class="fa-solid fa-eye" id="toggle-nvidia-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom:10px;">
+                        <label style="font-size:0.72rem; font-weight:700; color:var(--text-secondary);">NVIDIA Modeli:</label>
+                        <select id="modal-select-nvidia-model" class="form-select" style="font-size:0.78rem;">
+                            <option value="meta/llama-3.3-70b-instruct">Meta Llama 3.3 70B Instruct (Mükemmel Türkçe & Koçluk)</option>
+                            <option value="deepseek-ai/deepseek-r1">DeepSeek R1 (İleri Seviye Düşünme & Reçete Optimizasyonu)</option>
+                            <option value="meta/llama-3.2-90b-vision-instruct">Meta Llama 3.2 90B Vision (Görsel & Tabak Analizi)</option>
+                            <option value="mistralai/mistral-large-2407">Mistral Large 2407 (Yüksek Hassasiyet)</option>
+                        </select>
+                    </div>
+
+                    <div style="background:rgba(118, 185, 0, 0.08); border:1px solid rgba(118, 185, 0, 0.3); border-radius:10px; padding:8px 10px; margin-bottom:12px;">
+                        <div style="font-size:0.72rem; color:#76b900; font-weight:700; margin-bottom:3px;">
+                            <i class="fa-solid fa-circle-info"></i> Ücretsiz NVIDIA NIM Key (1000 Kredi):
+                        </div>
+                        <p style="font-size:0.68rem; color:var(--text-secondary); margin:0; line-height:1.35;">
+                            <a href="https://build.nvidia.com/" target="_blank" style="color:#ffd60a; text-decoration:underline;">NVIDIA Build Catalog</a>'a gidin, istediğiniz modeli seçip <strong>"Get API Key"</strong> butonuna basın.
+                        </p>
+                    </div>
                 </div>
 
                 <div id="gemini-key-test-result" style="display:none; font-size:0.75rem; padding:8px 10px; border-radius:8px; margin-bottom:12px;"></div>
 
                 <div style="display:flex; gap:8px; margin-bottom:8px;">
-                    <button type="button" class="btn btn-outline btn-block" onclick="testGeminiApiKeyInline()" id="btn-test-gemini-key">
-                        <i class="fa-solid fa-vial"></i> Test Et
+                    <button type="button" class="btn btn-outline btn-block" onclick="testCurrentAiApiKeyInline()" id="btn-test-gemini-key">
+                        <i class="fa-solid fa-vial"></i> Bağlantıyı Test Et
                     </button>
-                    <button type="button" class="btn btn-primary btn-block" onclick="saveGeminiApiKeyFromModal()">
-                        <i class="fa-solid fa-check"></i> Kaydet & Başlat
+                    <button type="button" class="btn btn-primary btn-block" onclick="saveAllAiApiKeysFromModal()" style="background:linear-gradient(135deg, #38bdf8, #818cf8); color:#000; font-weight:800;">
+                        <i class="fa-solid fa-check"></i> Kaydet & Aktifleştir
                     </button>
                 </div>
-                <button type="button" class="btn btn-danger btn-block" onclick="clearGeminiApiKey()" id="btn-delete-gemini-key" style="font-size:0.78rem;">
-                    <i class="fa-solid fa-trash-can"></i> Kayıtlı API Anahtarını Sil (Çevrimdışı Mod)
+                <button type="button" class="btn btn-danger btn-block" onclick="clearAllAiApiKeys()" id="btn-delete-gemini-key" style="font-size:0.78rem;">
+                    <i class="fa-solid fa-trash-can"></i> API Anahtarlarını Temizle (Yerleşik Moda Geç)
                 </button>
             </div>
         </div>
