@@ -2610,12 +2610,15 @@
                     </select>
                 </div>
 
-                <!-- Upload / Dropzone (Supports Video & Photo from Mobile Gallery) -->
-                <div id="form-vision-dropzone" class="ai-vision-dropzone" onclick="document.getElementById('form-vision-file-input').click()">
+                <!-- Upload / Dropzone (Supports Video & Photo from Mobile Gallery & PC) -->
+                <input type="file" id="form-vision-file-input" accept="video/*,image/*,.mp4,.mov,.webm,.m4v,.mkv,.avi,.3gp,.jpg,.jpeg,.png,.webp" style="display:none;" onchange="handleFormMediaSelected(event)">
+                <div id="form-vision-dropzone" class="ai-vision-dropzone" onclick="triggerFormMediaPicker(event)" style="cursor:pointer; border:2px dashed #a855f7; border-radius:12px; padding:24px 16px; text-align:center; background:rgba(168,85,247,0.06); transition:all 0.2s ease;">
                     <i class="fa-solid fa-file-video" style="font-size:2.2rem; color:#a855f7; margin-bottom:8px;"></i>
                     <h4 style="font-size:0.88rem; margin:0 0 4px 0; color:#fff;">Antrenman Videosu veya Fotoğraf Seç</h4>
-                    <p style="font-size:0.72rem; color:var(--text-muted); margin:0;">MP4, MOV, WEBP, PNG galeriden tüm formatlar desteklenir</p>
-                    <input type="file" id="form-vision-file-input" accept="video/*,video/mp4,video/quicktime,video/webm,video/x-m4v,image/*" style="display:none;" onchange="handleFormMediaSelected(event)">
+                    <p style="font-size:0.72rem; color:var(--text-muted); margin:0 0 10px 0;">MP4, MOV, WEBM, MKV, AVI veya fotoğraf formatları</p>
+                    <button type="button" class="btn btn-xs btn-outline" style="border-color:#a855f7; color:#c084fc; pointer-events:none; font-size:0.75rem;">
+                        <i class="fa-solid fa-folder-open"></i> Videoyu Seçmek İçin Tıkla
+                    </button>
                 </div>
 
                 <!-- Media Preview Section (Video Player or Image with Frame Extraction) -->

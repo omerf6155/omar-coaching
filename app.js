@@ -2212,7 +2212,8 @@ function createDefaultAppData() {
 // Global App State
 let appData = createDefaultAppData();
 
-let currentActiveDay = "pzt";
+const _initialDayKeys = ["paz", "pzt", "sal", "car", "per", "cum", "cmt"];
+let currentActiveDay = _initialDayKeys[new Date().getDay()];
 let currentSuppCatalogCategory = "all";
 let currentRecipeIngredients = []; // [ { foodId, amount } ]
 
@@ -2456,6 +2457,7 @@ function updateDateDisplay() {
     const days = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"];
     const dayKeys = ["paz", "pzt", "sal", "car", "per", "cum", "cmt"];
     const currentDayKey = dayKeys[today.getDay()];
+    currentActiveDay = currentDayKey;
 
     const dateStr = today.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' });
     const latestWeight = (appData.weightHistory && appData.weightHistory.length > 0)
@@ -11359,6 +11361,17 @@ function openFormVisionModal(exerciseName) {
     openModal('modal-ai-form-vision');
 }
 
+function triggerFormMediaPicker(event) {
+    if (event) {
+        event.stopPropagation();
+    }
+    const input = document.getElementById("form-vision-file-input");
+    if (input) {
+        input.value = ""; // Reset to allow re-selecting same file
+        input.click();
+    }
+}
+
 function handleFormMediaSelected(event) {
     const file = event.target.files && event.target.files[0];
     if (!file) return;
@@ -11382,16 +11395,39 @@ function handleFormMediaSelected(event) {
 
     currentFormPhotoMime = file.type || "image/jpeg";
     currentFormVideoFrames = [];
+    currentFormPhotoBase64 = null;
 
-    if (file.type.startsWith("video/")) {
+    const isVideo = (file.type && file.type.startsWith("video/")) || /\.(mp4|mov|webm|mkv|m4v|avi|3gp)$/i.test(file.name || "");
+
+    if (isVideo) {
         if (videoWrap) videoWrap.style.display = "block";
         if (imageWrap) imageWrap.style.display = "none";
 
-        if (currentFormVideoUrl) URL.revokeObjectURL(currentFormVideoUrl);
+        if (currentFormVideoUrl) {
+            try { URL.revokeObjectURL(currentFormVideoUrl); } catch(e){}
+        }
         currentFormVideoUrl = URL.createObjectURL(file);
 
         if (videoEl) {
             videoEl.src = currentFormVideoUrl;
+            videoEl.muted = true;
+            videoEl.playsInline = true;
+            videoEl.onloadeddata = () => {
+                // Instantly capture an immediate frame as baseline
+                try {
+                    const c = document.createElement("canvas");
+                    c.width = Math.min(640, videoEl.videoWidth || 640);
+                    c.height = Math.min(480, videoEl.videoHeight || 480);
+                    const ctx = c.getContext("2d");
+                    ctx.drawImage(videoEl, 0, 0, c.width, c.height);
+                    const immediateData = c.toDataURL("image/jpeg", 0.8);
+                    if (!currentFormPhotoBase64) {
+                        currentFormPhotoBase64 = immediateData;
+                    }
+                } catch(e) {
+                    console.warn("Snapshot onloadeddata warning:", e);
+                }
+            };
             videoEl.load();
         }
 
@@ -11399,7 +11435,7 @@ function handleFormMediaSelected(event) {
         extractVideoKeyframes(currentFormVideoUrl, (frames) => {
             currentFormVideoFrames = frames;
             if (frames && frames.length > 0) {
-                // Set the primary analysis frame to the deepest inflection point
+                // Set primary analysis frame
                 currentFormPhotoBase64 = frames[Math.floor(frames.length / 2)].dataUrl;
                 if (keyframesStrip) {
                     keyframesStrip.style.display = "flex";
@@ -11431,38 +11467,61 @@ function extractVideoKeyframes(videoUrl, callback) {
     video.src = videoUrl;
     video.muted = true;
     video.playsInline = true;
-    video.crossOrigin = "anonymous";
 
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
     const frames = [];
+    let isFinished = false;
+
+    const finalize = () => {
+        if (isFinished) return;
+        isFinished = true;
+        if (callback) callback(frames);
+    };
+
+    // Timeout guard in case metadata loading or seeking hangs
+    const timeoutTimer = setTimeout(() => {
+        if (!isFinished) {
+            finalize();
+        }
+    }, 4000);
 
     video.onloadedmetadata = () => {
-        const duration = video.duration || 3;
+        const duration = (video.duration && !isNaN(video.duration) && isFinite(video.duration)) ? video.duration : 3;
         const timePoints = [
             { time: Math.min(0.5, duration * 0.2), label: "1. Başlangıç" },
-            { time: duration * 0.5, label: "2. Alt Nokta" },
-            { time: Math.max(duration - 0.5, duration * 0.8), label: "3. Kilitlenme" }
+            { time: Math.min(duration * 0.5, Math.max(0.6, duration - 0.5)), label: "2. Alt Nokta" },
+            { time: Math.max(duration - 0.4, duration * 0.85), label: "3. Kilitlenme" }
         ];
 
         let index = 0;
         const captureNext = () => {
             if (index >= timePoints.length) {
-                if (callback) callback(frames);
+                clearTimeout(timeoutTimer);
+                finalize();
                 return;
             }
-            video.currentTime = timePoints[index].time;
+            try {
+                video.currentTime = Math.min(timePoints[index].time, duration - 0.05);
+            } catch (e) {
+                index++;
+                captureNext();
+            }
         };
 
         video.onseeked = () => {
-            canvas.width = Math.min(640, video.videoWidth || 640);
-            canvas.height = Math.min(480, video.videoHeight || 480);
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            const dataUrl = canvas.toDataURL("image/jpeg", 0.75);
-            frames.push({
-                dataUrl: dataUrl,
-                label: timePoints[index].label
-            });
+            try {
+                canvas.width = Math.min(640, video.videoWidth || 640);
+                canvas.height = Math.min(480, video.videoHeight || 480);
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                const dataUrl = canvas.toDataURL("image/jpeg", 0.75);
+                frames.push({
+                    dataUrl: dataUrl,
+                    label: timePoints[index].label
+                });
+            } catch (e) {
+                console.warn("Canvas capture error on keyframe:", e);
+            }
             index++;
             captureNext();
         };
@@ -11471,15 +11530,20 @@ function extractVideoKeyframes(videoUrl, callback) {
     };
 
     video.onerror = () => {
-        if (callback) callback([]);
+        clearTimeout(timeoutTimer);
+        finalize();
     };
+
+    try {
+        video.load();
+    } catch(e){}
 }
 
 function resetFormVisionUpload() {
     currentFormPhotoBase64 = null;
     currentFormVideoFrames = [];
     if (currentFormVideoUrl) {
-        URL.revokeObjectURL(currentFormVideoUrl);
+        try { URL.revokeObjectURL(currentFormVideoUrl); } catch(e){}
         currentFormVideoUrl = null;
     }
     lastDetectedFormResult = null;
@@ -11509,6 +11573,23 @@ function resetFormVisionUpload() {
 }
 
 async function startFormVisionAnalysis() {
+    // Check if we need to grab frame from the DOM video element
+    if (!currentFormPhotoBase64) {
+        const videoEl = document.getElementById("form-vision-preview-video");
+        if (videoEl && videoEl.videoWidth > 0) {
+            try {
+                const c = document.createElement("canvas");
+                c.width = Math.min(640, videoEl.videoWidth || 640);
+                c.height = Math.min(480, videoEl.videoHeight || 480);
+                const ctx = c.getContext("2d");
+                ctx.drawImage(videoEl, 0, 0, c.width, c.height);
+                currentFormPhotoBase64 = c.toDataURL("image/jpeg", 0.8);
+            } catch(e) {
+                console.warn("DOM video frame capture:", e);
+            }
+        }
+    }
+
     if (!currentFormPhotoBase64 && (!currentFormVideoFrames || currentFormVideoFrames.length === 0)) {
         showToast("⚠️ Lütfen önce bir hareket videosu veya fotoğrafı seçin.");
         return;
@@ -12391,7 +12472,14 @@ function cleanGeminiOutput(rawText) {
 
 async function callGeminiAssistantApi(personaKey, userText, apiKey) {
     const cleanKey = typeof sanitizeGeminiApiKey === "function" ? sanitizeGeminiApiKey(apiKey) : (apiKey || "").trim();
-    const currentPlan = appData.customWorkoutPlan[currentActiveDay] || DEFAULT_WORKOUT_PLAN[currentActiveDay] || { title: "Antrenman", exercises: [] };
+    const now = new Date();
+    const dayNamesTr = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"];
+    const dayKeysList = ["paz", "pzt", "sal", "car", "per", "cum", "cmt"];
+    const realTodayKey = dayKeysList[now.getDay()];
+    const realTodayName = dayNamesTr[now.getDay()];
+    const todayWorkout = appData.customWorkoutPlan[realTodayKey] || DEFAULT_WORKOUT_PLAN[realTodayKey] || { title: "Dinlenme / Check-in", exercises: [] };
+    const activeViewPlan = appData.customWorkoutPlan[currentActiveDay] || DEFAULT_WORKOUT_PLAN[currentActiveDay] || { title: "Antrenman", exercises: [] };
+    const dateFormatted = now.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
     const consumed = appData.todayNutrition || {};
     const target = appData.targets || DEFAULT_TARGETS;
     const userProf = appData.userProfile || { weight: 74, goal: 'bulk' };
@@ -12399,18 +12487,22 @@ async function callGeminiAssistantApi(personaKey, userText, apiKey) {
     const systemPrompt = `Sen 'Enes Abi' (🦍) adında, Omar Coaching'in tek ve yetkili Baş Danışmanısın.
 Salonda sporcularına ağabeylik yapan, antrenman biyomekaniği, anabolik mutfak/beslenme ve ileri suplement/biyokimya alanında uzman bir Türk spor salonu efsanesisin.
 
-ÇOK KESİN DİYALOG KURALLARI:
-1. DOĞRUDAN KONUŞ: Asla planlama, durum özeti, düşünce veya analiz başlıkları (* User:, * Current Persona:, * Tone:, * Workout:, * Macros:, * Greeting: vb.) YAZMA! Bunlar KESİNLİKLE YASAKTIR.
-2. SADECE TÜRKÇE DİYALOG: Salonda karşındaki kardeşinle yüz yüze konuşuyormuş gibi doğrudan samimi, esprili ve babacan bir dille lafa gir ("aslanım, paşam, demir bükücü, şampiyon, kral, canavar").
-3. Asla robotik olma, ansiklopedik yazma, rol yapıyormuş gibi tırnak açma.
+ÇOK KESİN DİYALOG VE GÜN KURALLARI:
+1. GÜN VE TARİH BİLGİSİ: Bugünün gerçek takvim günü: ${dateFormatted} (${realTodayName}).
+Bugünün Takvim Antrenmanı: ${todayWorkout.title || 'Dinlenme'} (${(todayWorkout.exercises || []).map(e => e.name).slice(0, 5).join(", ")}).
+Kullanıcının şu an incelediği sekme: ${currentActiveDay.toUpperCase()} (${activeViewPlan.title}).
+ASLA kafana göre gün uydurma! Bugün hangi gün (${realTodayName}) ise onu bilerek konuş.
+2. DOĞRUDAN KONUŞ: Asla planlama, durum özeti, düşünce veya analiz başlıkları (* User:, * Current Persona:, * Tone:, * Workout:, * Macros:, * Greeting: vb.) YAZMA! Bunlar KESİNLİKLE YASAKTIR.
+3. SADECE TÜRKÇE DİYALOG: Salonda karşındaki kardeşinle yüz yüze konuşuyormuş gibi doğrudan samimi, esprili ve babacan bir dille lafa gir ("aslanım, paşam, demir bükücü, şampiyon, kral, canavar").
+4. Asla robotik olma, ansiklopedik yazma, rol yapıyormuş gibi tırnak açma.
 
 Kullanıcı Durumu:
-- Antrenman: ${currentPlan.title || 'Dinlenme'} (${(currentPlan.exercises || []).map(e => e.name).slice(0, 5).join(", ")})
+- Bugün (${realTodayName}): ${todayWorkout.title}
 - Makrolar: Hedef ${target.calories} kcal | Tüketilen ${consumed.calories || 0} kcal (${consumed.protein || 0}g P) | Kalan Açık: ${Math.max(0, target.calories - (consumed.calories||0))} kcal | Kilo: ${userProf.weight} kg
 
 ÖRNEK YANIT BİÇİMİ:
 Kullanıcı: "naber abi"
-Cevap: "Vay aslanım, demir bükücüm! Bomba gibiyim, sen nasılsın? Bakıyorum bugünkü antrenmana hazırsın, ağırlıkları inletmeye devam! Beslenmeyi de aksatma, kütleyi koyalım. Var mı kafana takılan bir hareket?"`;
+Cevap: "Vay aslanım, demir bükücüm! Bomba gibiyim, sen nasılsın? Bugün ${realTodayName}, programında ${todayWorkout.title} var. Ağırlıkları inletmeye hazır mısın? Beslenmeyi de aksatma, kütleyi koyalım. Var mı kafana takılan bir hareket?"`;
 
     // 1. Clean history to avoid passing old error cards to Gemini API
     const history = (assistantChatHistory.enes || []).filter(m => {
