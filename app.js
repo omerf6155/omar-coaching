@@ -10667,7 +10667,7 @@ function getEffectiveAiConfig() {
     const activeProvider = localStorage.getItem("OMAR_ACTIVE_AI_PROVIDER") || "gemini";
     const geminiKey = sanitizeAiApiKey(localStorage.getItem("OMAR_GEMINI_API_KEY") || "");
     const nvidiaKey = sanitizeAiApiKey(localStorage.getItem("OMAR_NVIDIA_API_KEY") || "");
-    const geminiModel = localStorage.getItem("OMAR_GEMINI_MODEL") || "gemini-1.5-flash";
+    const geminiModel = localStorage.getItem("OMAR_GEMINI_MODEL") || "gemini-3.6-flash";
     const nvidiaModel = localStorage.getItem("OMAR_NVIDIA_MODEL") || "meta/llama-3.2-11b-vision-instruct";
 
     const hasGemini = Boolean(geminiKey && geminiKey.length > 10);
@@ -10699,7 +10699,7 @@ function openAiSettingsModal() {
 
     if (geminiInput) geminiInput.value = localStorage.getItem("OMAR_GEMINI_API_KEY") || "";
     if (nvidiaInput) nvidiaInput.value = localStorage.getItem("OMAR_NVIDIA_API_KEY") || "";
-    if (geminiModelSelect) geminiModelSelect.value = localStorage.getItem("OMAR_GEMINI_MODEL") || "gemini-1.5-flash";
+    if (geminiModelSelect) geminiModelSelect.value = localStorage.getItem("OMAR_GEMINI_MODEL") || "gemini-3.6-flash";
     if (nvidiaModelSelect) nvidiaModelSelect.value = localStorage.getItem("OMAR_NVIDIA_MODEL") || "meta/llama-3.2-11b-vision-instruct";
 
     const activeProvider = localStorage.getItem("OMAR_ACTIVE_AI_PROVIDER") || "gemini";
@@ -10910,14 +10910,14 @@ async function testCurrentAiApiKeyInline() {
         const keyInput = document.getElementById("modal-input-gemini-key");
         const modelSelect = document.getElementById("modal-select-gemini-model");
         const testKey = keyInput ? sanitizeAiApiKey(keyInput.value) : "";
-        const testModel = modelSelect ? modelSelect.value : "gemini-1.5-flash";
+        const testModel = modelSelect ? modelSelect.value : "gemini-3.6-flash";
 
         if (!testKey || testKey.length < 15) {
             resultBox.style.display = "block";
             resultBox.style.background = "rgba(239, 68, 68, 0.15)";
             resultBox.style.border = "1px solid rgba(239, 68, 68, 0.4)";
             resultBox.style.color = "#f87171";
-            resultBox.innerHTML = "<i class=\"fa-solid fa-circle-exclamation\"></i> Lütfen Google AI Studio'dan aldığınız tam API anahtarını (AIzaSy...) yapıştırın.";
+            resultBox.innerHTML = "<i class=\"fa-solid fa-circle-exclamation\"></i> Lütfen geçerli bir Gemini API anahtarı yapıştırın.";
             return;
         }
 
@@ -10939,7 +10939,7 @@ async function testCurrentAiApiKeyInline() {
             resultBox.style.background = "rgba(16, 185, 129, 0.15)";
             resultBox.style.border = "1px solid rgba(16, 185, 129, 0.4)";
             resultBox.style.color = "#34d399";
-            resultBox.innerHTML = `<i class="fa-solid fa-circle-check"></i> <strong>Google Gemini Bağlantısı Başarılı!</strong><br><small style="color:#fff;">Model: ${testModel}</small>`;
+            resultBox.innerHTML = `<i class="fa-solid fa-circle-check"></i> <strong>Google Gemini Canlı Bağlantısı Başarılı!</strong><br><small style="color:#fff;">Model: ${testModel}</small>`;
             localStorage.setItem("OMAR_GEMINI_API_KEY", testKey);
             localStorage.setItem("OMAR_GEMINI_MODEL", testModel);
             checkGeminiApiKeyStatus();
@@ -10980,7 +10980,7 @@ async function callUnifiedAiEngine({ prompt, systemPrompt = "", imageBase64 = nu
     } else {
         return await callGoogleGeminiApi({
             apiKey: config.geminiKey,
-            model: model || (imageBase64 ? "gemini-1.5-flash" : config.geminiModel),
+            model: model || (imageBase64 ? "gemini-3.6-flash" : config.geminiModel),
             prompt,
             systemPrompt,
             imageBase64,
@@ -11060,9 +11060,9 @@ async function callNvidiaNimApi({ apiKey, model = "meta/llama-3.2-11b-vision-ins
     }
 }
 
-async function callGoogleGeminiApi({ apiKey, model = "gemini-1.5-flash", prompt, systemPrompt = "", imageBase64 = null, mimeType = "image/jpeg", temperature = 0.7, jsonMode = false }) {
+async function callGoogleGeminiApi({ apiKey, model = "gemini-3.6-flash", prompt, systemPrompt = "", imageBase64 = null, mimeType = "image/jpeg", temperature = 0.7, jsonMode = false }) {
     const cleanKey = sanitizeAiApiKey(apiKey);
-    const candidateModels = [model, "gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro"];
+    const candidateModels = [model, "gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.8-flash", "gemini-flash-latest", "gemini-2.0-flash", "gemini-1.5-flash"];
     const modelsToTry = [...new Set(candidateModels.filter(Boolean))];
 
     const parts = [];
