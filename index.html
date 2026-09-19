@@ -713,12 +713,15 @@
                     </div>
 
                     <!-- Action shortcuts for selected athlete -->
-                    <div class="adh-actions-row" style="grid-template-columns: 1fr 1fr 1fr;">
+                    <div class="adh-actions-row" style="grid-template-columns: 1fr 1fr 1fr 1fr; gap:6px;">
                         <button class="btn btn-xs btn-primary" onclick="goToPrescriptionForCurrentAthlete()">
-                            <i class="fa-solid fa-utensils"></i> Diyet Revize
+                            <i class="fa-solid fa-utensils"></i> Diyet
                         </button>
                         <button class="btn btn-xs btn-primary" onclick="goToWorkoutPrescriptionForCurrentAthlete()" style="background:linear-gradient(135deg, #ffd60a, #ff9f0a); color:#000; font-weight:700; border-color:#ffd60a;">
-                            <i class="fa-solid fa-dumbbell"></i> Antrenman Revize
+                            <i class="fa-solid fa-dumbbell"></i> İdman
+                        </button>
+                        <button class="btn btn-xs btn-primary" onclick="openCoachPhysiqueReviewModal(currentCoachSelectedAthlete)" style="background:linear-gradient(135deg, #a855f7, #7c3aed); color:#fff; font-weight:800; border:none;">
+                            <i class="fa-solid fa-camera"></i> Form Kasası
                         </button>
                         <button class="btn btn-xs btn-outline" onclick="goToChatForCurrentAthlete()">
                             <i class="fa-solid fa-comments"></i> Chat
@@ -729,7 +732,8 @@
                 <!-- Deep Dive Sub-tabs -->
                 <div class="deep-dive-nav">
                     <button class="deep-tab active" onclick="switchCoachDetailTab('nutrition', this)"><i class="fa-solid fa-utensils"></i> Beslenme</button>
-                    <button class="deep-tab" onclick="switchCoachDetailTab('workout', this)"><i class="fa-solid fa-dumbbell"></i> Antrenman Defteri</button>
+                    <button class="deep-tab" onclick="switchCoachDetailTab('workout', this)"><i class="fa-solid fa-dumbbell"></i> Antrenman</button>
+                    <button class="deep-tab" onclick="switchCoachDetailTab('physique', this)"><i class="fa-solid fa-camera"></i> Form & Fizik Kasası</button>
                     <button class="deep-tab" onclick="switchCoachDetailTab('supplements', this)"><i class="fa-solid fa-capsules"></i> Suplement</button>
                     <button class="deep-tab" onclick="switchCoachDetailTab('scale', this)"><i class="fa-solid fa-chart-line"></i> Tartı/Kilo</button>
                 </div>

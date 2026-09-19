@@ -7728,6 +7728,43 @@ function renderCoachDetail(username) {
                 </table>
             </div>
         `;
+    } else if (currentCoachDetailSubtab === "physique") {
+        let gallery = [];
+        if (username === (getActiveSessionUsername() || "omer")) {
+            gallery = appData.physiqueGallery || [];
+        } else if (mockUsers && mockUsers[username] && mockUsers[username].data) {
+            gallery = mockUsers[username].data.physiqueGallery || [];
+        }
+
+        if (gallery.length === 0) {
+            contentArea.innerHTML = `
+                <div class="deep-card" style="text-align:center; padding:30px 16px;">
+                    <i class="fa-solid fa-camera-retro" style="font-size:2rem; color:var(--text-muted); margin-bottom:8px;"></i>
+                    <h4 style="color:#fff; margin:0 0 4px 0;">Henüz Yüklenmiş Form Görseli Yok</h4>
+                    <p class="text-secondary" style="font-size:0.75rem; margin:0;">Sporcu henüz fizik kasasına form fotoğrafı veya video eklemedi.</p>
+                </div>
+            `;
+        } else {
+            contentArea.innerHTML = `
+                <div class="deep-card">
+                    <div class="card-header" style="margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;">
+                        <h2>📸 SPORCUNUN FİZİK & FORM KASASI (${gallery.length} Kayıt)</h2>
+                        <button type="button" class="btn btn-xs btn-primary" onclick="openCoachPhysiqueReviewModal('${username}')" style="background:#ffd60a; color:#000; font-weight:800; font-size:0.7rem;">
+                            <i class="fa-solid fa-expand"></i> İncele & Değerlendir
+                        </button>
+                    </div>
+                    <div id="coach-inline-physique-list"></div>
+                </div>
+            `;
+            setTimeout(() => {
+                renderCoachPhysiqueTimeline(username, gallery);
+                const targetEl = document.getElementById("coach-inline-physique-list");
+                const timelineContainer = document.getElementById("coach-physique-timeline-container");
+                if (targetEl && timelineContainer) {
+                    targetEl.innerHTML = timelineContainer.innerHTML;
+                }
+            }, 60);
+        }
     }
 }
 
@@ -13112,45 +13149,16 @@ let vaultMediaData = {
 };
 
 function initPhysiqueVaultDefaults() {
-    if (!appData.physiqueGallery || appData.physiqueGallery.length === 0) {
-        appData.physiqueGallery = [
-            {
-                id: "form_init_1",
-                weekNumber: 1,
-                date: "01 Eylül 2026",
-                timestamp: Date.now() - (18 * 24 * 60 * 60 * 1000),
-                category: "weekly",
-                categoryLabel: "📋 1. Hafta Başlangıç Formu",
-                weight: 73.2,
-                waist: 82.5,
-                frontImg: "https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=500&auto=format&fit=crop&q=60",
-                sideImg: null,
-                backImg: null,
-                athleteNotes: "Hocam başlangıç formum bu şekilde. Bel çevresini koruyarak temiz kütle kazanmak istiyorum.",
-                coachReviewed: true,
-                coachReviewedAt: "02 Eylül 2026",
-                coachFeedback: "Başlangıç omurga ve omuz çatısı gayet iyi. Günlük 2.750 kcal ve 165g proteinle lean bulk sürecini başlatıyoruz. Formu bozmadan ağırlıkları progressive artıralım!",
-                coachRating: "🟢 Mükemmel Başlangıç"
-            },
-            {
-                id: "form_init_2",
-                weekNumber: 3,
-                date: "15 Eylül 2026",
-                timestamp: Date.now() - (4 * 24 * 60 * 60 * 1000),
-                category: "weekly",
-                categoryLabel: "📋 3. Hafta Gelişim Kontrolü",
-                weight: 74.8,
-                waist: 81.5,
-                frontImg: "https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=500&auto=format&fit=crop&q=60",
-                sideImg: null,
-                backImg: null,
-                athleteNotes: "Bu hafta Incline DB'de 80kg'a çıktım, belde daralma var, toparlanma çok iyi.",
-                coachReviewed: true,
-                coachReviewedAt: "16 Eylül 2026",
-                coachFeedback: "Harika gelişim! Kilo +1.6 kg artarken bel 1 cm incelmiş, bu saf kas kütlesi kazandığını gösterir. Aynen devam ediyoruz aslanım!",
-                coachRating: "🔥 Çok İyi Kütle"
-            }
-        ];
+    if (!appData.physiqueGallery) {
+        appData.physiqueGallery = [];
+    } else {
+        // Filter out old stock unsplash demo entries
+        appData.physiqueGallery = appData.physiqueGallery.filter(item => {
+            if (!item) return false;
+            if (item.id === "form_init_1" || item.id === "form_init_2") return false;
+            if (typeof item.frontImg === "string" && item.frontImg.includes("images.unsplash.com")) return false;
+            return true;
+        });
     }
 }
 
