@@ -10668,7 +10668,7 @@ function getEffectiveAiConfig() {
     const geminiKey = sanitizeAiApiKey(localStorage.getItem("OMAR_GEMINI_API_KEY") || "");
     const nvidiaKey = sanitizeAiApiKey(localStorage.getItem("OMAR_NVIDIA_API_KEY") || "");
     const geminiModel = localStorage.getItem("OMAR_GEMINI_MODEL") || "gemini-2.5-flash";
-    const nvidiaModel = localStorage.getItem("OMAR_NVIDIA_MODEL") || "meta/llama-3.3-70b-instruct";
+    const nvidiaModel = localStorage.getItem("OMAR_NVIDIA_MODEL") || "meta/llama-3.2-90b-vision-instruct";
 
     const hasGemini = Boolean(geminiKey && geminiKey.length > 10);
     const hasNvidia = Boolean(nvidiaKey && nvidiaKey.length > 10);
@@ -10700,7 +10700,7 @@ function openAiSettingsModal() {
     if (geminiInput) geminiInput.value = localStorage.getItem("OMAR_GEMINI_API_KEY") || "";
     if (nvidiaInput) nvidiaInput.value = localStorage.getItem("OMAR_NVIDIA_API_KEY") || "";
     if (geminiModelSelect) geminiModelSelect.value = localStorage.getItem("OMAR_GEMINI_MODEL") || "gemini-2.5-flash";
-    if (nvidiaModelSelect) nvidiaModelSelect.value = localStorage.getItem("OMAR_NVIDIA_MODEL") || "meta/llama-3.3-70b-instruct";
+    if (nvidiaModelSelect) nvidiaModelSelect.value = localStorage.getItem("OMAR_NVIDIA_MODEL") || "meta/llama-3.2-90b-vision-instruct";
 
     const activeProvider = localStorage.getItem("OMAR_ACTIVE_AI_PROVIDER") || "gemini";
     switchAiProviderTab(activeProvider);
