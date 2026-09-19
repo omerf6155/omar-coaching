@@ -42,20 +42,24 @@ body {
     background-color: var(--bg-main);
     color: var(--text-primary);
     min-height: 100vh;
-    display: flex;
-    justify-content: center;
+    min-height: 100dvh;
+    width: 100%;
     overflow-x: hidden;
+    position: relative;
 }
 
 #app-container, .app-main-layout {
     width: 100%;
     max-width: 460px;
+    margin: 0 auto;
     min-height: 100vh;
+    min-height: 100dvh;
     display: flex;
     flex-direction: column;
     position: relative;
     background-color: var(--bg-main);
     padding-bottom: 84px;
+    overflow-x: hidden;
 }
 
 /* Header / Brand */
@@ -66,10 +70,13 @@ body {
     padding: 14px 18px;
     background-color: rgba(10, 10, 12, 0.94);
     backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     border-bottom: 1px solid var(--border-subtle);
     position: sticky;
     top: 0;
     z-index: 100;
+    width: 100%;
+    max-width: 100%;
 }
 
 .user-badge {
@@ -129,12 +136,18 @@ body {
     display: flex;
     flex-direction: column;
     gap: 14px;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
 }
 
 .tab-view {
     display: none;
     flex-direction: column;
     gap: 14px;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
     animation: fadeIn 0.2s ease-out;
 }
 
@@ -382,10 +395,24 @@ body {
 /* Workout Selector & Action Bar */
 .workout-action-bar {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    gap: 8px;
-    margin-bottom: 2px;
+    gap: 6px;
+    margin-bottom: 6px;
+    overflow-x: auto;
+    white-space: nowrap;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+    max-width: 100%;
+    padding: 2px 0 4px 0;
+}
+
+.workout-action-bar::-webkit-scrollbar {
+    display: none;
+}
+
+.workout-action-bar .btn {
+    flex-shrink: 0;
 }
 
 .day-selector-scroll {
@@ -394,6 +421,9 @@ body {
     overflow-x: auto;
     padding-bottom: 4px;
     scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+    max-width: 100%;
 }
 
 .day-selector-scroll::-webkit-scrollbar {
