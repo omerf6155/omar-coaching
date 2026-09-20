@@ -2735,7 +2735,7 @@
             </div>
             <div class="modal-body" style="padding:16px 14px;">
                 <p class="text-secondary" style="font-size:0.76rem; line-height:1.45; margin-bottom:14px;">
-                    Haftalık form güncellemeni buradan yapabilirsin. Yapay zeka <strong>AI Body Check</strong> yaparak kas tanımını ve bel gelişimini tarar, tüm rapor anında <strong>Koç Ömer'e iletilir</strong>!
+                    Haftalık form güncellemeni buradan yapabilirsin. Tartı, bel ve form fotoğrafların anında <strong>Koç Ömer'e iletilir</strong>!
                 </p>
 
                 <!-- Checkin Form Inputs -->
@@ -2832,7 +2832,7 @@
                     </div>
 
                     <button type="button" class="btn btn-primary btn-block" id="btn-submit-checkin" onclick="startWeeklyCheckinProcess()" style="background:linear-gradient(135deg, #ffd60a, #ff9f0a); color:#000; font-weight:900; font-size:0.85rem; padding:11px;">
-                        <i class="fa-solid fa-wand-magic-sparkles"></i> 🤖 AI Body Check Yap & Koça İlet 🚀
+                        <i class="fa-solid fa-paper-plane"></i> 🚀 Haftalık Form Raporunu Koç Ömer'e İlet ✉️
                     </button>
                 </div>
 
@@ -3583,15 +3583,26 @@
         </div>
     </div>
 
-    <!-- FLOATING AI ASSISTANT (ENES ABİ) -->
+    <!-- FLOATING AI ASSISTANT (ENES ABİ - MOVABLE & DISMISSIBLE) -->
     <div class="floating-ai-cloud-dock" id="floating-ai-cloud-dock">
-        <button type="button" class="ai-cloud-main-btn" id="ai-cloud-main-btn" onclick="openAssistantModal('enes')" title="Enes Abi 🦍 (Omar AI Baş Danışmanı)">
+        <div class="ai-dock-drag-handle" id="ai-dock-drag-handle" title="Enes Abi'yi Tut ve Sürükle 🖐️">
+            <i class="fa-solid fa-grip-vertical"></i>
+        </div>
+        <div class="ai-cloud-main-btn" id="ai-cloud-main-btn" role="button" tabindex="0" title="Enes Abi 🦍 (Omar AI Baş Danışmanı)">
             <div class="ai-cloud-anim-wrap">
                 <span class="cloud-icon">🦍</span>
                 <span class="sparkle-icon">✨</span>
             </div>
             <span class="ai-cloud-label">Enes Abi (AI)</span>
-        </button>
+        </div>
+        <div class="ai-dock-hide-btn" id="ai-dock-hide-btn" role="button" tabindex="0" ontouchstart="hideEnesDock(event)" onclick="hideEnesDock(event)" title="Gizle / Ekrandan Kaldır ✖">
+            <i class="fa-solid fa-xmark"></i>
+        </div>
+    </div>
+
+    <!-- RECOVERY PILL WHEN ENES ABİ DOCK IS HIDDEN -->
+    <div id="enes-dock-restore-bar" class="enes-dock-restore-bar" style="display:none;" ontouchstart="restoreEnesDock()" onclick="restoreEnesDock()" title="Enes Abi'yi Ekranına Geri Getir 🦍">
+        <span>🦍 Enes Abi (AI)</span>
     </div>
 
     <!-- Notification Toast -->

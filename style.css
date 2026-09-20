@@ -1577,23 +1577,30 @@ body.modal-open {
     color: #ffffff;
 }
 
-/* Toast */
+/* Toast (Top-Center Notification Banner) */
 .toast {
     position: fixed;
-    bottom: 74px;
+    top: 20px;
+    bottom: auto;
     left: 50%;
-    transform: translateX(-50%) translateY(20px);
-    background: #ffffff;
-    color: #000000;
-    font-size: 0.78rem;
-    font-weight: 700;
-    padding: 8px 16px;
-    border-radius: var(--radius-full);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    transform: translateX(-50%) translateY(-25px);
+    background: rgba(15, 23, 42, 0.96);
+    color: #ffffff;
+    border: 1px solid rgba(255, 214, 10, 0.4);
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 10px 18px;
+    border-radius: 14px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7), 0 0 15px rgba(255, 214, 10, 0.2);
     opacity: 0;
     visibility: hidden;
     transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-    z-index: 2000;
+    z-index: 99999;
+    max-width: 90vw;
+    width: max-content;
+    text-align: center;
+    backdrop-filter: blur(12px);
+    word-break: break-word;
 }
 
 .toast.show {
@@ -5593,7 +5600,87 @@ body.modal-open {
     position: fixed;
     bottom: 84px;
     right: 16px;
-    z-index: 999;
+    z-index: 999999 !important;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    touch-action: none !important;
+    -webkit-touch-callout: none;
+    user-select: none;
+    -webkit-user-select: none;
+    pointer-events: auto !important;
+}
+
+.ai-dock-drag-handle {
+    color: rgba(255, 255, 255, 0.65);
+    cursor: grab;
+    padding: 10px 8px;
+    font-size: 1.05rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s;
+    touch-action: none !important;
+}
+
+.ai-dock-drag-handle:hover,
+.ai-dock-drag-handle:active {
+    color: #38bdf8;
+    cursor: grabbing;
+}
+
+.ai-dock-hide-btn {
+    background: rgba(239, 68, 68, 0.25);
+    color: #fca5a5;
+    border: 1px solid rgba(239, 68, 68, 0.5);
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 0;
+    line-height: 1;
+    pointer-events: auto !important;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.ai-dock-hide-btn:hover,
+.ai-dock-hide-btn:active {
+    background: #ef4444;
+    color: #ffffff;
+    transform: scale(1.15);
+}
+
+.enes-dock-restore-bar {
+    position: fixed;
+    bottom: 84px;
+    right: 0;
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.98), rgba(15, 23, 42, 0.98));
+    color: #38bdf8;
+    border: 1.5px solid rgba(56, 189, 248, 0.6);
+    border-top-left-radius: 20px;
+    border-bottom-left-radius: 20px;
+    padding: 10px 18px;
+    font-size: 0.82rem;
+    font-weight: 800;
+    cursor: pointer;
+    z-index: 999999 !important;
+    box-shadow: -4px 6px 22px rgba(0, 0, 0, 0.7), 0 0 16px rgba(56, 189, 248, 0.35);
+    backdrop-filter: blur(12px);
+    transition: all 0.2s ease;
+    pointer-events: auto !important;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.enes-dock-restore-bar:hover {
+    transform: translateX(-4px);
+    border-color: rgba(255, 214, 10, 0.6);
+    color: #ffd60a;
 }
 
 .ai-cloud-main-btn {
@@ -5607,7 +5694,7 @@ body.modal-open {
     cursor: pointer;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 16px rgba(58, 134, 255, 0.25);
     backdrop-filter: blur(12px);
-    transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
 }
 
 .ai-cloud-main-btn:hover {
@@ -6349,86 +6436,7 @@ body.modal-open {
     margin-top: 6px;
 }
 
-/* ==================== FLOATING AI ASSISTANT CLOUD DOCK (ENES ABİ 🦍) ==================== */
-.floating-ai-cloud-dock {
-    position: fixed;
-    right: 18px;
-    bottom: 84px;
-    z-index: 9999;
-    display: flex;
-    align-items: center;
-    pointer-events: auto;
-}
-
-.ai-cloud-main-btn {
-    display: flex;
-    align-items: center;
-    gap: 9px;
-    background: linear-gradient(135deg, rgba(30, 24, 45, 0.96), rgba(15, 12, 22, 0.98));
-    border: 1.5px solid rgba(168, 85, 247, 0.6);
-    border-radius: 9999px;
-    padding: 8px 16px 8px 10px;
-    color: #ffffff;
-    cursor: pointer;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 16px rgba(168, 85, 247, 0.4);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    user-select: none;
-    -webkit-tap-highlight-color: transparent;
-}
-
-.ai-cloud-main-btn:hover {
-    transform: translateY(-3px) scale(1.04);
-    border-color: #c084fc;
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.7), 0 0 24px rgba(168, 85, 247, 0.65);
-}
-
-.ai-cloud-main-btn:active {
-    transform: translateY(1px) scale(0.97);
-}
-
-.ai-cloud-anim-wrap {
-    position: relative;
-    width: 34px;
-    height: 34px;
-    background: linear-gradient(135deg, #a855f7, #6b21a8);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.2rem;
-    box-shadow: 0 0 12px rgba(168, 85, 247, 0.6);
-    flex-shrink: 0;
-}
-
-.ai-cloud-anim-wrap .cloud-icon {
-    line-height: 1;
-}
-
-.ai-cloud-anim-wrap .sparkle-icon {
-    position: absolute;
-    top: -4px;
-    right: -4px;
-    font-size: 0.75rem;
-    animation: sparkleSpin 2.5s infinite linear;
-}
-
-@keyframes sparkleSpin {
-    0% { transform: rotate(0deg) scale(0.8); opacity: 0.7; }
-    50% { transform: rotate(180deg) scale(1.25); opacity: 1; }
-    100% { transform: rotate(360deg) scale(0.8); opacity: 0.7; }
-}
-
-.ai-cloud-label {
-    font-size: 0.82rem;
-    font-weight: 800;
-    letter-spacing: 0.3px;
-    background: linear-gradient(135deg, #ffffff, #e9d5ff);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    white-space: nowrap;
-}
+/* Floating AI Assistant Cloud Dock handled above */
 
 .ai-quick-topics-bar {
     display: flex;
@@ -6506,10 +6514,6 @@ body.modal-open {
 }
 
 @media (max-width: 600px) {
-    .floating-ai-cloud-dock {
-        right: 12px;
-        bottom: 74px;
-    }
     .ai-cloud-main-btn {
         padding: 7px 14px 7px 9px;
     }

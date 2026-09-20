@@ -2267,6 +2267,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     initModalBackdropHandlers();
     initRealtimeChatEngine();
+    initDraggableEnesDock();
 });
 
 // Storage Management
@@ -11100,9 +11101,9 @@ async function callNvidiaNimApi({ apiKey, model = "meta/llama-3.2-11b-vision-ins
     }
 }
 
-async function callGoogleGeminiApi({ apiKey, model = "gemini-3.6-flash", prompt, systemPrompt = "", imageBase64 = null, mimeType = "image/jpeg", temperature = 0.7, jsonMode = false }) {
+async function callGoogleGeminiApi({ apiKey, model = "gemini-2.5-flash", prompt, systemPrompt = "", imageBase64 = null, mimeType = "image/jpeg", temperature = 0.7, jsonMode = false }) {
     const cleanKey = sanitizeAiApiKey(apiKey);
-    const candidateModels = [model, "gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.8-flash", "gemini-flash-latest", "gemini-2.0-flash", "gemini-1.5-flash"];
+    const candidateModels = [model, "gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-2.5-pro", "gemini-1.5-pro"];
     const modelsToTry = [...new Set(candidateModels.filter(Boolean))];
 
     const parts = [];
@@ -11167,7 +11168,80 @@ async function callGoogleGeminiApi({ apiKey, model = "gemini-3.6-flash", prompt,
             lastError = err;
         }
     }
-    throw lastError || new Error("Google Gemini API çağrısı başarısız oldu.");
+    throw lastError || new Error("Google Gemini API yanıt veremedi.");
+}
+// ==================== ⚡ FAST CLIENT-SIDE IMAGE COMPRESSION (ICLOUD OPTIMIZER) ====================
+
+function compressImageFile(file, maxWidth = 1200, maxHeight = 1200, quality = 0.78) {
+    if (!file) return Promise.resolve(null);
+    const isImage = (file.type && file.type.startsWith("image/")) || /\.(jpg|jpeg|png|webp|heic|heif|gif)$/i.test(file.name || "");
+
+    if (!isImage) {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target.result);
+            reader.onerror = () => resolve(null);
+            reader.readAsDataURL(file);
+        });
+    }
+
+    return new Promise((resolve) => {
+        let objectUrl = null;
+        try {
+            objectUrl = URL.createObjectURL(file);
+        } catch(e) {}
+
+        const img = new Image();
+        const fallbackToReader = () => {
+            if (objectUrl) {
+                try { URL.revokeObjectURL(objectUrl); } catch(e){}
+            }
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target.result);
+            reader.onerror = () => resolve(null);
+            reader.readAsDataURL(file);
+        };
+
+        if (!objectUrl) {
+            fallbackToReader();
+            return;
+        }
+
+        img.onload = () => {
+            try { URL.revokeObjectURL(objectUrl); } catch(e){}
+            let width = img.width || 800;
+            let height = img.height || 600;
+
+            if (width > maxWidth || height > maxHeight) {
+                if (width > height) {
+                    height = Math.round((height * maxWidth) / width);
+                    width = maxWidth;
+                } else {
+                    width = Math.round((width * maxHeight) / height);
+                    height = maxHeight;
+                }
+            }
+
+            const canvas = document.createElement("canvas");
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0, width, height);
+
+            try {
+                const dataUrl = canvas.toDataURL("image/jpeg", quality);
+                resolve(dataUrl);
+            } catch (e) {
+                fallbackToReader();
+            }
+        };
+
+        img.onerror = () => {
+            fallbackToReader();
+        };
+
+        img.src = objectUrl;
+    });
 }
 
 // ==================== 📸 FOOD MACRO VISION HANDLERS ====================
@@ -11177,25 +11251,24 @@ function openFoodVisionModal() {
     openModal('modal-ai-food-vision');
 }
 
-function handleFoodPhotoSelected(event) {
+async function handleFoodPhotoSelected(event) {
     const file = event.target.files && event.target.files[0];
     if (!file) return;
 
-    currentFoodPhotoMime = file.type || "image/jpeg";
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        currentFoodPhotoBase64 = e.target.result;
-        const previewImg = document.getElementById("food-vision-preview-img");
-        const dropzone = document.getElementById("food-vision-dropzone");
-        const previewSection = document.getElementById("food-vision-preview-section");
-        const resultsSection = document.getElementById("food-vision-results-section");
+    currentFoodPhotoMime = "image/jpeg";
+    const compressedData = await compressImageFile(file, 1200, 1200, 0.78);
+    if (!compressedData) return;
 
-        if (previewImg) previewImg.src = currentFoodPhotoBase64;
-        if (dropzone) dropzone.style.display = "none";
-        if (previewSection) previewSection.style.display = "block";
-        if (resultsSection) resultsSection.style.display = "none";
-    };
-    reader.readAsDataURL(file);
+    currentFoodPhotoBase64 = compressedData;
+    const previewImg = document.getElementById("food-vision-preview-img");
+    const dropzone = document.getElementById("food-vision-dropzone");
+    const previewSection = document.getElementById("food-vision-preview-section");
+    const resultsSection = document.getElementById("food-vision-results-section");
+
+    if (previewImg) previewImg.src = currentFoodPhotoBase64;
+    if (dropzone) dropzone.style.display = "none";
+    if (previewSection) previewSection.style.display = "block";
+    if (resultsSection) resultsSection.style.display = "none";
 }
 
 function resetFoodVisionUpload() {
@@ -11491,12 +11564,10 @@ function handleFormMediaSelected(event) {
         if (videoWrap) videoWrap.style.display = "none";
         if (imageWrap) imageWrap.style.display = "block";
 
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            currentFormPhotoBase64 = e.target.result;
+        compressImageFile(file, 1200, 1200, 0.78).then(dataUrl => {
+            currentFormPhotoBase64 = dataUrl;
             if (imgEl) imgEl.src = currentFormPhotoBase64;
-        };
-        reader.readAsDataURL(file);
+        });
     }
 }
 
@@ -11841,15 +11912,13 @@ function handleCheckinMediaSelected(angle, event) {
             }
         });
     } else {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            checkinMediaData[angle] = e.target.result;
+        compressImageFile(file, 1200, 1200, 0.78).then(dataUrl => {
+            checkinMediaData[angle] = dataUrl;
             if (img) img.src = checkinMediaData[angle];
             if (box) box.classList.add("has-file");
             if (placeholder) placeholder.style.display = "none";
             if (previewWrap) previewWrap.style.display = "block";
-        };
-        reader.readAsDataURL(file);
+        });
     }
 }
 
@@ -11895,136 +11964,79 @@ async function startWeeklyCheckinProcess() {
     if (resArea) resArea.style.display = "none";
 
     const username = (getActiveSessionUsername() || "omer").toLowerCase().trim();
-    const config = getEffectiveAiConfig();
 
-    const prompt = `Sen dünya çapında profesyonel bir Vücut Geliştirme, Hipertrofi & Fizik Değerlendirme Uzmanısın (AI Body Check).
-Sporcu Bilgileri:
-- Sporcu: ${username}
-- Güncel Kilo: ${weight} kg
-- Güncel Bel: ${waist} cm
-- Enerji: ${energy}
-- Uyku: ${sleep}
-- Sporcu Notu: "${athleteNotes || 'Normal hafta'}"
+    const parsed = {
+        score: 95,
+        scoreBadge: "Form Gönderildi",
+        title: "Haftalık Form & Kontrol Raporu",
+        summary: `Kilo ${weight} kg ve bel ${waist} cm olarak Koç Ömer'e iletildi. Toparlanma parametreleri (Enerji: ${energy}, Uyku: ${sleep}) eklendi.`,
+        insights: [
+            `✅ Tartı & Bel: ${weight} kg / ${waist} cm`,
+            `⚡ Enerji & Uyku: ${energy} / ${sleep}`,
+            `📩 Rapor Koç Ömer'in paneline ve canlı sohbetine başarıyla iletildi.`
+        ],
+        coachDispatchText: `Haftalık Check-in Raporu: Kilo ${weight}kg, Bel ${waist}cm. Enerji: ${energy}, Uyku: ${sleep}.`
+    };
 
-Bu haftalık form fotoğrafı ve verilerini değerlendir.
-Aşağıdaki JSON formatında kesin ve geçerli bir JSON döndür (sadece JSON):
-{
-  "score": 92,
-  "scoreBadge": "Skor: %92 (Optimum Kütle Yanıtı)",
-  "title": "Kütle Artışı & Bel Kontrolü Harika",
-  "summary": "Sporcunun üst gövde v-taper çizgisi korunuyor. Bel ölçüsü stabil kalırken omuz/göğüs lif dolgunluğu artmış.",
-  "insights": [
-    "✅ Bel Sıkılığı: ${waist} cm ile yağlanma minimal düzeyde.",
-    "⚡ Omuz & Sırt Genişliği: V-taper illüzyonu belirginleşiyor.",
-    "🎯 Tavsiye: Kalori fazlasını koruyarak progressive overload'a devam."
-  ],
-  "coachDispatchText": "Haftalık Check-in Raporu: Kilo ${weight}kg, Bel ${waist}cm. Enerji: ${energy}. AI Body Check Skoru: %92."
-}`;
+    lastAiBodyCheckData = parsed;
 
-    try {
-        let parsed = null;
-        if (config.isOnline && primaryPhoto) {
-            const rawJson = await callUnifiedAiEngine({
-                prompt: prompt,
-                systemPrompt: "Sen sadece saf JSON döndüren profesyonel bir fizik ve vücut kompozisyonu analiz uzmanısın.",
-                imageBase64: primaryPhoto,
-                mimeType: primaryMime,
-                temperature: 0.3,
-                jsonMode: true
-            });
+    // 1. Update user profile weight & scale history
+    if (!appData.userProfile) appData.userProfile = {};
+    appData.userProfile.weight = weight;
+    appData.userProfile.waist = waist;
 
-            try {
-                const cleanStr = rawJson.replace(/```json/gi, '').replace(/```/g, '').trim();
-                parsed = JSON.parse(cleanStr);
-            } catch (e) {
-                const match = rawJson.match(/\{[\s\S]*\}/);
-                if (match) parsed = JSON.parse(match[0]);
-            }
-        }
+    if (!appData.scaleHistory) appData.scaleHistory = [];
+    appData.scaleHistory.push({
+        date: new Date().toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit' }),
+        weight: weight,
+        time: getCurrentTimeStr()
+    });
 
-        if (!parsed || !parsed.score) {
-            parsed = {
-                score: 91,
-                scoreBadge: "Skor: %91 (Yüksek Hipertrofi)",
-                title: "Dengeli ve Temiz Kütle Gelişimi",
-                summary: `Kilo ${weight} kg ve bel ${waist} cm olarak güncellendi. Toparlanma parametreleri ve kas dolgunluğu ideal seviyede.`,
-                insights: [
-                    `✅ Tartı & Bel: ${weight} kg / ${waist} cm (Hedefle uyumlu)`,
-                    `⚡ Enerji & Uyku: ${energy} / ${sleep}`,
-                    `🎯 Koçluk Önerisi: Mevcut antrenman şiddeti ve kalori hedefine aynen devam.`
-                ],
-                coachDispatchText: `Haftalık Check-in Raporu: Kilo ${weight}kg, Bel ${waist}cm. Enerji: ${energy}. AI Body Check Skoru: %91.`
-            };
-        }
+    // 2. Save check-in report to user history
+    if (!appData.checkinHistory) appData.checkinHistory = [];
+    appData.checkinHistory.push({
+        id: `checkin_${Date.now()}`,
+        date: new Date().toISOString(),
+        weight: weight,
+        waist: waist,
+        energy: energy,
+        sleep: sleep,
+        athleteNotes: athleteNotes,
+        aiScore: parsed.score,
+        aiSummary: parsed.summary,
+        hasPhoto: Boolean(primaryPhoto)
+    });
 
-        lastAiBodyCheckData = parsed;
+    saveData();
 
-        // 1. Update user profile weight & scale history
-        if (!appData.userProfile) appData.userProfile = {};
-        appData.userProfile.weight = weight;
-        appData.userProfile.waist = waist;
-
-        if (!appData.scaleHistory) appData.scaleHistory = [];
-        appData.scaleHistory.push({
-            date: new Date().toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit' }),
-            weight: weight,
-            time: getCurrentTimeStr()
-        });
-
-        // 2. Save check-in report to user history
-        if (!appData.checkinHistory) appData.checkinHistory = [];
-        appData.checkinHistory.push({
-            id: `checkin_${Date.now()}`,
-            date: new Date().toISOString(),
-            weight: weight,
-            waist: waist,
-            energy: energy,
-            sleep: sleep,
-            athleteNotes: athleteNotes,
-            aiScore: parsed.score,
-            aiSummary: parsed.summary,
-            hasPhoto: Boolean(primaryPhoto)
-        });
-
-        saveData();
-
-        // 3. Format interactive Check-in card and send to Coach Chat
-        const checkinChatCardHtml = `
-            <div class="checkin-chat-card">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                    <strong style="color:#ffd60a; font-size:0.8rem;"><i class="fa-solid fa-clipboard-check"></i> HAFTALIK CHECK-IN & FORM RAPORU</strong>
-                    <span class="badge-role" style="background:#10b981; color:#fff; font-size:0.65rem;">AI Skor: %${parsed.score}</span>
-                </div>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:0.72rem; margin-bottom:6px; color:#fff;">
-                    <div><strong>Kilo:</strong> <span style="color:#ffd60a;">${weight} kg</span></div>
-                    <div><strong>Bel:</strong> <span style="color:#38bdf8;">${waist} cm</span></div>
-                    <div><strong>Enerji:</strong> <span>${energy}</span></div>
-                    <div><strong>Uyku:</strong> <span>${sleep}</span></div>
-                </div>
-                ${primaryPhoto ? `<div style="margin:6px 0; border-radius:6px; overflow:hidden; max-height:120px; border:1px solid rgba(255,214,10,0.3);"><img src="${primaryPhoto}" style="width:100%; height:120px; object-fit:cover;" alt="Form"></div>` : ''}
-                <div style="font-size:0.7rem; color:var(--text-secondary); background:rgba(255,255,255,0.04); padding:6px 8px; border-radius:4px; margin-top:4px;">
-                    <strong style="color:#10b981;">AI Body Check:</strong> ${parsed.summary}
-                </div>
-                ${athleteNotes ? `<div style="font-size:0.7rem; color:#fff; margin-top:4px;"><strong>Sporcu Notu:</strong> "${athleteNotes}"</div>` : ''}
+    // 3. Format interactive Check-in card and send to Coach Chat
+    const checkinChatCardHtml = `
+        <div class="checkin-chat-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <strong style="color:#ffd60a; font-size:0.8rem;"><i class="fa-solid fa-clipboard-check"></i> HAFTALIK CHECK-IN & FORM RAPORU</strong>
+                <span class="badge-role" style="background:#10b981; color:#fff; font-size:0.65rem;">Koça İletildi</span>
             </div>
-        `;
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:0.72rem; margin-bottom:6px; color:#fff;">
+                <div><strong>Kilo:</strong> <span style="color:#ffd60a;">${weight} kg</span></div>
+                <div><strong>Bel:</strong> <span style="color:#38bdf8;">${waist} cm</span></div>
+                <div><strong>Enerji:</strong> <span>${energy}</span></div>
+                <div><strong>Uyku:</strong> <span>${sleep}</span></div>
+            </div>
+            ${primaryPhoto ? `<div style="margin:6px 0; border-radius:6px; overflow:hidden; max-height:120px; border:1px solid rgba(255,214,10,0.3);"><img src="${primaryPhoto}" style="width:100%; height:120px; object-fit:cover;" alt="Form"></div>` : ''}
+            ${athleteNotes ? `<div style="font-size:0.7rem; color:#fff; margin-top:4px;"><strong>Sporcu Notu:</strong> "${athleteNotes}"</div>` : ''}
+        </div>
+    `;
 
-        sendLiveChatMessage("athlete", username, checkinChatCardHtml);
+    sendLiveChatMessage("athlete", username, checkinChatCardHtml);
 
-        // Render results in modal
-        renderAiBodyCheckResults(parsed);
+    // Render results in modal
+    renderAiBodyCheckResults(parsed);
 
-        if (loadArea) loadArea.style.display = "none";
-        if (resArea) resArea.style.display = "block";
+    if (loadArea) loadArea.style.display = "none";
+    if (resArea) resArea.style.display = "block";
 
-        triggerLevelUpCelebration(25, "Haftalık Check-in Tamamlandı");
-        showToast("✅ Haftalık check-in Koç Ömer'e başarıyla iletildi! 🚀");
-
-    } catch (err) {
-        if (loadArea) loadArea.style.display = "none";
-        if (formArea) formArea.style.display = "block";
-        showToast(`❌ Check-in Hatası: ${err.message || err}`);
-    }
+    triggerLevelUpCelebration(25, "Haftalık Check-in Tamamlandı");
+    showToast("✅ Haftalık check-in raporun Koç Ömer'e başarıyla iletildi! 🚀");
 }
 
 function renderAiBodyCheckResults(data) {
@@ -12053,23 +12065,22 @@ function triggerAssistantPhotoUpload() {
     if (fileInput) fileInput.click();
 }
 
-function handleAssistantPhotoSelected(event) {
+async function handleAssistantPhotoSelected(event) {
     const file = event.target.files && event.target.files[0];
     if (!file) return;
 
-    currentAssistantPhotoMime = file.type || "image/jpeg";
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        currentAssistantPhotoBase64 = e.target.result;
-        const previewBar = document.getElementById("ai-chat-img-preview-bar");
-        const thumb = document.getElementById("ai-chat-img-thumb");
-        const nameEl = document.getElementById("ai-chat-img-name");
+    currentAssistantPhotoMime = "image/jpeg";
+    const compressedData = await compressImageFile(file, 1200, 1200, 0.78);
+    if (!compressedData) return;
 
-        if (thumb) thumb.src = currentAssistantPhotoBase64;
-        if (nameEl) nameEl.innerText = file.name || "Görsel eklendi";
-        if (previewBar) previewBar.style.display = "flex";
-    };
-    reader.readAsDataURL(file);
+    currentAssistantPhotoBase64 = compressedData;
+    const previewBar = document.getElementById("ai-chat-img-preview-bar");
+    const thumb = document.getElementById("ai-chat-img-thumb");
+    const nameEl = document.getElementById("ai-chat-img-name");
+
+    if (thumb) thumb.src = currentAssistantPhotoBase64;
+    if (nameEl) nameEl.innerText = file.name || "Görsel eklendi";
+    if (previewBar) previewBar.style.display = "flex";
 }
 
 function cancelAssistantPhoto() {
@@ -12628,8 +12639,8 @@ Cevap: "Vay aslanım, demir bükücüm! Bomba gibiyim, sen nasılsın? Bugün ${
         }
     };
 
-    const savedModel = localStorage.getItem("OMAR_GEMINI_MODEL") || "gemini-1.5-flash";
-    const candidateModels = [savedModel, "gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro"];
+    const savedModel = localStorage.getItem("OMAR_GEMINI_MODEL") || "gemini-2.5-flash";
+    const candidateModels = [savedModel, "gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"];
     const models = [...new Set(candidateModels.filter(Boolean))];
     let data = null;
     let lastError = null;
@@ -13425,15 +13436,13 @@ function handleVaultMediaSelected(angle, event) {
     const preview = document.getElementById(`vault-preview-${angle}`);
     const img = document.getElementById(`vault-img-${angle}`);
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        vaultMediaData[angle] = e.target.result;
+    compressImageFile(file, 1200, 1200, 0.78).then(dataUrl => {
+        vaultMediaData[angle] = dataUrl;
         if (img) img.src = vaultMediaData[angle];
         if (box) box.classList.add("has-file");
         if (placeholder) placeholder.style.display = "none";
         if (preview) preview.style.display = "block";
-    };
-    reader.readAsDataURL(file);
+    });
 }
 
 function removeVaultMedia(angle, event) {
@@ -14048,6 +14057,149 @@ function renderSundayReportBanner() {
     } else {
         container.innerHTML = "";
     }
+}
+
+// ==================== DRAGGABLE & DISMISSIBLE ENES ABİ DOCK ENGINE ====================
+let isEnesDockDragging = false;
+
+function initDraggableEnesDock() {
+    const dock = document.getElementById("floating-ai-cloud-dock");
+    const dragHandle = document.getElementById("ai-dock-drag-handle");
+    const mainBtn = document.getElementById("ai-cloud-main-btn");
+    const restoreBar = document.getElementById("enes-dock-restore-bar");
+    if (!dock || !mainBtn) return;
+
+    // Check hidden state
+    const isHidden = localStorage.getItem("OMAR_ENES_DOCK_HIDDEN") === "true";
+    if (isHidden) {
+        dock.style.display = "none";
+        if (restoreBar) restoreBar.style.display = "block";
+    } else {
+        dock.style.display = "flex";
+        if (restoreBar) restoreBar.style.display = "none";
+    }
+
+    // Check saved position
+    const savedPos = localStorage.getItem("OMAR_ENES_DOCK_POS");
+    if (savedPos) {
+        try {
+            const pos = JSON.parse(savedPos);
+            if (pos.left !== undefined && pos.top !== undefined) {
+                const maxLeft = Math.max(10, window.innerWidth - (dock.offsetWidth || 150) - 10);
+                const maxTop = Math.max(10, window.innerHeight - (dock.offsetHeight || 50) - 10);
+                const clampLeft = Math.min(Math.max(10, pos.left), maxLeft);
+                const clampTop = Math.min(Math.max(10, pos.top), maxTop);
+
+                dock.style.left = clampLeft + "px";
+                dock.style.top = clampTop + "px";
+                dock.style.bottom = "auto";
+                dock.style.right = "auto";
+            }
+        } catch(e){}
+    }
+
+    let startX = 0, startY = 0;
+    let initialLeft = 0, initialTop = 0;
+    let dragMoved = false;
+
+    const onStart = (e) => {
+        // Don't drag if clicking hide button
+        if (e.target && (e.target.closest("#ai-dock-hide-btn") || e.target.classList.contains("ai-dock-hide-btn"))) {
+            return;
+        }
+
+        const clientX = (e.touches && e.touches.length > 0) ? e.touches[0].clientX : e.clientX;
+        const clientY = (e.touches && e.touches.length > 0) ? e.touches[0].clientY : e.clientY;
+
+        const rect = dock.getBoundingClientRect();
+        startX = clientX;
+        startY = clientY;
+        initialLeft = rect.left;
+        initialTop = rect.top;
+        dragMoved = false;
+        isEnesDockDragging = false;
+
+        document.addEventListener("mousemove", onMove);
+        document.addEventListener("mouseup", onEnd);
+        document.addEventListener("touchmove", onMove, { passive: false });
+        document.addEventListener("touchend", onEnd);
+    };
+
+    const onMove = (e) => {
+        const clientX = (e.touches && e.touches.length > 0) ? e.touches[0].clientX : e.clientX;
+        const clientY = (e.touches && e.touches.length > 0) ? e.touches[0].clientY : e.clientY;
+
+        const deltaX = clientX - startX;
+        const deltaY = clientY - startY;
+
+        if (Math.abs(deltaX) > 3 || Math.abs(deltaY) > 3) {
+            dragMoved = true;
+            isEnesDockDragging = true;
+            if (e.cancelable) e.preventDefault();
+            if (e.stopPropagation) e.stopPropagation();
+
+            let newLeft = initialLeft + deltaX;
+            let newTop = initialTop + deltaY;
+
+            const maxLeft = window.innerWidth - (dock.offsetWidth || 140) - 5;
+            const maxTop = window.innerHeight - (dock.offsetHeight || 44) - 5;
+
+            newLeft = Math.min(Math.max(5, newLeft), maxLeft);
+            newTop = Math.min(Math.max(5, newTop), maxTop);
+
+            dock.style.left = newLeft + "px";
+            dock.style.top = newTop + "px";
+            dock.style.bottom = "auto";
+            dock.style.right = "auto";
+        }
+    };
+
+    const onEnd = () => {
+        document.removeEventListener("mousemove", onMove);
+        document.removeEventListener("mouseup", onEnd);
+        document.removeEventListener("touchmove", onMove);
+        document.removeEventListener("touchend", onEnd);
+
+        if (dragMoved) {
+            const rect = dock.getBoundingClientRect();
+            localStorage.setItem("OMAR_ENES_DOCK_POS", JSON.stringify({ left: rect.left, top: rect.top }));
+            setTimeout(() => { isEnesDockDragging = false; }, 100);
+        } else {
+            isEnesDockDragging = false;
+        }
+    };
+
+    if (dragHandle) {
+        dragHandle.addEventListener("mousedown", onStart);
+        dragHandle.addEventListener("touchstart", onStart, { passive: false });
+    }
+    dock.addEventListener("mousedown", onStart);
+    dock.addEventListener("touchstart", onStart, { passive: false });
+
+    mainBtn.addEventListener("click", (e) => {
+        if (!dragMoved && !isEnesDockDragging) {
+            openAssistantModal('enes');
+        }
+    });
+}
+
+function hideEnesDock(e) {
+    if (e) e.stopPropagation();
+    const dock = document.getElementById("floating-ai-cloud-dock");
+    const restoreBar = document.getElementById("enes-dock-restore-bar");
+    if (dock) dock.style.display = "none";
+    if (restoreBar) restoreBar.style.display = "block";
+    localStorage.setItem("OMAR_ENES_DOCK_HIDDEN", "true");
+    showToast("🙈 Enes Abi gizlendi. Geri getirmek için sağ alttaki etikete tıkla.");
+}
+
+function restoreEnesDock() {
+    const dock = document.getElementById("floating-ai-cloud-dock");
+    const restoreBar = document.getElementById("enes-dock-restore-bar");
+    if (dock) dock.style.display = "flex";
+    if (restoreBar) restoreBar.style.display = "none";
+    localStorage.setItem("OMAR_ENES_DOCK_HIDDEN", "false");
+    showToast("🦍 Enes Abi tekrar ekranda!");
 }
 
 
