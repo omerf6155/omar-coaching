@@ -2738,7 +2738,7 @@ function renderDashboardQuickActions() {
 
         if (meal) {
             html += `
-                <div class="qa-4slot-btn" onclick="executeQuickMealSlot(${i})" title="Öğün Detayı ve Günlüğe Ekleme Onayı">
+                <div class="qa-4slot-btn" onclick="event.stopPropagation(); executeQuickMealSlot(${i})" title="Öğün Detayı ve Günlüğe Ekleme Onayı">
                     <span class="qa-slot-num-badge">#${i + 1}</span>
                     <button type="button" class="qa-slot-edit-trigger" onclick="event.stopPropagation(); openAssignMealSlotModal(${i});" title="Öğünü Değiştir">
                         <i class="fa-solid fa-gear"></i>
@@ -2750,7 +2750,7 @@ function renderDashboardQuickActions() {
             `;
         } else {
             html += `
-                <div class="qa-4slot-btn empty" onclick="openAssignMealSlotModal(${i})" title="Beslenmeden öğün seç">
+                <div class="qa-4slot-btn empty" onclick="event.stopPropagation(); openAssignMealSlotModal(${i})" title="Beslenmeden öğün seç">
                     <span class="qa-slot-num-badge">#${i + 1}</span>
                     <div class="qa-4slot-icon"><i class="fa-solid fa-plus"></i></div>
                     <div class="qa-4slot-title">Öğün Ekle (#${i + 1})</div>
