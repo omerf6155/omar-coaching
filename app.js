@@ -4375,8 +4375,9 @@ function saveRecipeBuilderMeal() {
 
     // Add to today's logged meals if selected
     if (addToToday) {
+        if (!appData.todayNutrition.meals) appData.todayNutrition.meals = [];
         appData.todayNutrition.meals.push({
-            id: "meal_" + Date.now(),
+            id: "meal_" + Date.now() + "_" + Math.random().toString(36).substr(2, 5),
             name: nameInput,
             desc: totals.desc,
             cal: totals.cal,
@@ -4401,8 +4402,10 @@ function logPresetMeal(key) {
     const meal = (appData.customPresets && appData.customPresets[key]) || DEFAULT_PRESET_MEALS[key];
     if (!meal) return;
 
+    if (!appData.todayNutrition.meals) appData.todayNutrition.meals = [];
+
     appData.todayNutrition.meals.push({
-        id: "log_" + Date.now(),
+        id: "log_" + Date.now() + "_" + Math.random().toString(36).substr(2, 5),
         name: meal.name,
         desc: meal.desc,
         cal: meal.cal,
@@ -4428,8 +4431,16 @@ function logAllDailyPresets() {
     showToast("Tüm Günlük Şablon Eklendi! 🎯");
 }
 
-function deleteLoggedMeal(mealId) {
-    const idx = appData.todayNutrition.meals.findIndex(m => m.id === mealId);
+function deleteLoggedMeal(mealId, index) {
+    if (!appData.todayNutrition || !Array.isArray(appData.todayNutrition.meals)) return;
+
+    let idx = -1;
+    if (mealId && typeof mealId === 'string' && mealId.trim() !== '') {
+        idx = appData.todayNutrition.meals.findIndex(m => m && m.id === mealId);
+    }
+    if (idx === -1 && typeof index === 'number' && index >= 0 && index < appData.todayNutrition.meals.length) {
+        idx = index;
+    }
     if (idx === -1) return;
 
     const removed = appData.todayNutrition.meals[idx];
@@ -4439,7 +4450,7 @@ function deleteLoggedMeal(mealId) {
     saveDataToStorage();
     renderDashboard();
     renderNutritionView();
-    showToast(`${removed.name} silindi, kalori düşürüldü 🗑️`);
+    showToast(`${removed ? removed.name : 'Öğün'} silindi, kalori düşürüldü 🗑️`);
 }
 
 function deletePreset(key) {
@@ -4455,15 +4466,18 @@ function deletePreset(key) {
 
 function clearTodayMeals() {
     if (confirm("Bugünkü tüm beslenme kayıtlarını sıfırlamak istiyor musun?")) {
+        if (!appData.todayNutrition) appData.todayNutrition = {};
         appData.todayNutrition.calories = 0;
         appData.todayNutrition.protein = 0;
         appData.todayNutrition.carbs = 0;
         appData.todayNutrition.fat = 0;
         appData.todayNutrition.meals = [];
+
+        recalculateDailyTotals();
         saveDataToStorage();
         renderDashboard();
         renderNutritionView();
-        showToast("Bugünkü beslenme sıfırlandı.");
+        showToast("Bugünkü tüm beslenme kayıtları sıfırlandı 🗑️");
     }
 }
 
@@ -4478,10 +4492,11 @@ function promptRenamePreset(key) {
     if (!appData.customPresets) {
         appData.customPresets = JSON.parse(JSON.stringify(DEFAULT_PRESET_MEALS));
     }
-    appData.customPresets[key].name = newName.trim() || `Öğün ${key}`;
+    appData.customPresets[key].name = newName.trim() || current.name;
     saveDataToStorage();
     renderNutritionView();
-    showToast("Öğün adı başarıyla güncellendi! ✏️");
+    renderDashboard();
+    showToast("Öğün adı güncellendi! ✏️");
 }
 
 function renderNutritionView() {
@@ -4518,15 +4533,15 @@ function renderNutritionView() {
             return;
         }
 
-        loggedContainer.innerHTML = meals.map(m => `
+        loggedContainer.innerHTML = meals.map((m, idx) => `
             <div class="history-item">
                 <div>
-                    <strong>${m.name}</strong> <small style="color:var(--text-muted)">(${m.time})</small>
-                    <div style="font-size:0.7rem; color:var(--text-secondary)">${m.p}g P • ${m.c}g C • ${m.f}g F</div>
+                    <strong>${m.name || 'Öğün'}</strong> <small style="color:var(--text-muted)">(${m.time || ''})</small>
+                    <div style="font-size:0.7rem; color:var(--text-secondary)">${m.p || 0}g P • ${m.c || 0}g C • ${m.f || 0}g F</div>
                 </div>
                 <div style="display:flex; align-items:center; gap:10px;">
-                    <strong style="color:#ffffff; font-size:0.85rem;">+${m.cal} kcal</strong>
-                    <button class="btn-delete-item" onclick="deleteLoggedMeal('${m.id}')" title="Öğünü Sil">
+                    <strong style="color:#ffffff; font-size:0.85rem;">+${m.cal || 0} kcal</strong>
+                    <button class="btn-delete-item" onclick="deleteLoggedMeal('${m.id || ''}', ${idx})" title="Öğünü Sil">
                         <i class="fa-solid fa-trash-can"></i>
                     </button>
                 </div>
