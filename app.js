@@ -2396,6 +2396,8 @@ function checkAndResetDailyNutrition() {
     if (!appData || !appData.todayNutrition) return;
 
     const currentFitnessKey = getFitnessDateKey();
+    let isResetOccurred = false;
+
     if (appData.todayNutrition.date !== currentFitnessKey) {
         if (!appData.stepHistory) appData.stepHistory = {};
         if (appData.todayNutrition.date && (appData.todayNutrition.steps > 0)) {
@@ -2428,7 +2430,49 @@ function checkAndResetDailyNutrition() {
             meals: [],
             loggedMeals: []
         };
+        isResetOccurred = true;
+    }
 
+    // Sync all athletes in usersRegistry for Coach Portal calibration
+    if (typeof getUsersRegistry === "function" && typeof saveUsersRegistry === "function") {
+        const registry = getUsersRegistry();
+        let registryUpdated = false;
+        Object.keys(registry).forEach(uname => {
+            const u = registry[uname];
+            if (u && u.data && u.data.todayNutrition && u.data.todayNutrition.date !== currentFitnessKey) {
+                if (!u.data.nutritionHistory) u.data.nutritionHistory = [];
+                if (u.data.todayNutrition.date && (u.data.todayNutrition.calories > 0 || (u.data.todayNutrition.meals && u.data.todayNutrition.meals.length > 0))) {
+                    u.data.nutritionHistory.push({
+                        date: u.data.todayNutrition.date,
+                        calories: u.data.todayNutrition.calories || 0,
+                        protein: u.data.todayNutrition.protein || 0,
+                        carbs: u.data.todayNutrition.carbs || 0,
+                        fat: u.data.todayNutrition.fat || 0,
+                        water: u.data.todayNutrition.water || 0,
+                        mealsCount: (u.data.todayNutrition.meals || []).length
+                    });
+                }
+
+                u.data.todayNutrition = {
+                    date: currentFitnessKey,
+                    calories: 0,
+                    protein: 0,
+                    carbs: 0,
+                    fat: 0,
+                    water: 0,
+                    steps: 0,
+                    meals: [],
+                    loggedMeals: []
+                };
+                registryUpdated = true;
+            }
+        });
+        if (registryUpdated) {
+            saveUsersRegistry(registry);
+        }
+    }
+
+    if (isResetOccurred) {
         if (typeof recalculateDailyTotals === "function") recalculateDailyTotals();
         saveDataToStorage();
     }
@@ -5175,6 +5219,12 @@ function renderWorkoutView(dayKey) {
                         `}
                     </div>
                 </div>
+            </div>
+        html += `
+            <div style="margin-top:20px; text-align:center;">
+                <button type="button" class="btn btn-primary btn-block" onclick="openWorkoutSurveyModal()" style="background:linear-gradient(135deg, #ffd60a, #eab308); color:#000; font-weight:800; font-size:0.9rem; padding:14px; border-radius:12px; box-shadow:0 6px 20px rgba(255,214,10,0.3);">
+                    🏁 Antrenmanı Tamamla & Koç Raporunu İlet (5 Soru)
+                </button>
             </div>
         `;
     });
@@ -12874,6 +12924,33 @@ function processOfflineAssistantResponse(personaKey, userText) {
     const consumed = appData.todayNutrition || {};
     const target = appData.targets || DEFAULT_TARGETS;
 
+    // 0. EXERCISE SUBSTITUTION & EQUIPMENT BUSY HANDLER
+    if (t.includes("yerine") || t.includes("değiştir") || t.includes("dolu") || t.includes("yaptım") || t.includes("bulamadım") || t.includes("yoktu")) {
+        let oldEx = "";
+        let newEx = "";
+
+        if (t.includes("düz bar") || t.includes("straight bar") || t.includes("triceps") || t.includes("triseps")) {
+            oldEx = "Triceps";
+            newEx = "Tek Kol Dumbbell Triceps";
+        } else if (t.includes("lat pulldown")) {
+            oldEx = "Lat Pulldown";
+            newEx = "Single-Arm High Cable Row";
+        } else if (t.includes("squat")) {
+            oldEx = "Squat";
+            newEx = "Hack Squat / Leg Press";
+        } else if (t.includes("bench")) {
+            oldEx = "Bench";
+            newEx = "Dumbbell Press";
+        }
+
+        if (oldEx) {
+            const swapRes = swapExerciseInWorkoutPlan(oldEx, newEx);
+            return {
+                text: `Kral, salonda alet doluluğuna takılmayıp inisiyatif alarak antrenmanı aksatmaman harika hareket! 🦍<br><br>${swapRes.message}<br><br>Tek kol dumbbell veya alternatif açıyla lifleri aynı hassasiyetle yakıyoruz. Programın güncellendi, kaldığın yerden devam et!`
+            };
+        }
+    }
+
     // 1. GREETINGS & CASUAL TALK
     const isGreeting = /^(selam|merhaba|naber|nasılsın|ne haber|nabıyon|nabiyorsun|napıyorsun|hey|günaydın|iyi akşamlar|sa|s.a|selamün|slm|iyi misin|naber kral|naber abi|nasılsın abi)/i.test(t.trim());
     if (isGreeting || t === "naber" || t === "nasılsın" || t === "nabıyon" || t === "ne haber" || t.includes("nasıl gidiyor") || t.includes("ne yapıyorsun")) {
@@ -14261,6 +14338,209 @@ function restoreEnesDock() {
     if (restoreBar) restoreBar.style.display = "none";
     localStorage.setItem("OMAR_ENES_DOCK_HIDDEN", "false");
     showToast("🦍 Enes Abi tekrar ekranda!");
+}
+
+// ==================== POST-WORKOUT 5-QUESTION SURVEY & RATING ====================
+function openWorkoutSurveyModal() {
+    openModal('modal-workout-survey');
+}
+
+function submitWorkoutSurvey() {
+    const q1 = parseInt(document.getElementById("survey-q1")?.value || "4");
+    const q2 = parseInt(document.getElementById("survey-q2")?.value || "4");
+    const q3 = parseInt(document.getElementById("survey-q3")?.value || "4");
+    const q4 = parseInt(document.getElementById("survey-q4")?.value || "5");
+    const q5 = parseInt(document.getElementById("survey-q5")?.value || "4");
+    const note = (document.getElementById("survey-note-input")?.value || "").trim();
+
+    const rating = parseFloat(((q1 + q2 + q3 + q4 + q5) / 5).toFixed(1));
+    const fitnessDate = getFitnessDateKey();
+    const workoutPlan = (appData.customWorkoutPlan && appData.customWorkoutPlan[currentActiveDay]) || { title: "Günün Antrenmanı" };
+
+    const surveyReport = {
+        id: `survey_${Date.now()}`,
+        date: fitnessDate,
+        workoutTitle: workoutPlan.title || "Antrenman",
+        dayKey: currentActiveDay,
+        rating: rating,
+        answers: {
+            energy: q1,
+            difficulty: q2,
+            comfort: q3,
+            completion: q4,
+            focus: q5
+        },
+        note: note,
+        timestamp: new Date().toISOString()
+    };
+
+    if (!appData.workoutSurveyHistory) appData.workoutSurveyHistory = [];
+    appData.workoutSurveyHistory.push(surveyReport);
+
+    // Sync to user's registry for Coach Portal view
+    const activeUsername = getActiveSessionUsername();
+    if (activeUsername && typeof getUsersRegistry === "function" && typeof saveUsersRegistry === "function") {
+        const registry = getUsersRegistry();
+        if (registry[activeUsername]) {
+            if (!registry[activeUsername].data.workoutSurveyHistory) {
+                registry[activeUsername].data.workoutSurveyHistory = [];
+            }
+            registry[activeUsername].data.workoutSurveyHistory.push(surveyReport);
+            saveUsersRegistry(registry);
+        }
+    }
+
+    addRpgStatGain('power', 10, 150, 'Antrenman Raporu');
+    evaluateDailyStreak();
+    saveDataToStorage();
+    closeModal('modal-workout-survey');
+
+    showToast(`⭐ Antrenman Puanı: ${rating} / 5.0 - Değerlendirme Koç Ömer'e İletildi! 🔥`);
+}
+
+// ==================== HOME DASHBOARD NUTRITION EDIT MODAL ====================
+function openHomeNutritionEditModal() {
+    renderHomeNutritionEditModal();
+    openModal('modal-home-nutrition-edit');
+}
+
+function renderHomeNutritionEditModal() {
+    const summaryCal = document.getElementById("home-nut-tot-cal");
+    const summaryMacros = document.getElementById("home-nut-tot-macros");
+    const listEl = document.getElementById("home-nut-logged-list");
+
+    const n = appData.todayNutrition || {};
+    const meals = n.meals || [];
+
+    if (summaryCal) summaryCal.innerText = `${Math.round(n.calories || 0)} kcal`;
+    if (summaryMacros) summaryMacros.innerText = `${Math.round(n.protein || 0)}g P • ${Math.round(n.carbs || 0)}g C • ${Math.round(n.fat || 0)}g F`;
+
+    if (listEl) {
+        if (meals.length === 0) {
+            listEl.innerHTML = `<p class="text-muted" style="text-align:center; padding:15px; font-size:0.8rem;">Bugün henüz öğün eklenmedi.</p>`;
+        } else {
+            listEl.innerHTML = meals.map((m, idx) => `
+                <div class="history-item" style="display:flex; justify-content:space-between; align-items:center; padding:8px 12px; margin-bottom:6px; background:rgba(255,255,255,0.04); border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
+                    <div>
+                        <strong style="color:#ffffff; font-size:0.82rem;">${m.name || 'Öğün'}</strong> <small style="color:var(--text-muted)">(${m.time || ''})</small>
+                        <div style="font-size:0.7rem; color:var(--text-secondary); margin-top:2px;">${m.p || 0}g P • ${m.c || 0}g C • ${m.f || 0}g F</div>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <strong style="color:#ffffff; font-size:0.82rem;">+${m.cal || 0} kcal</strong>
+                        <button type="button" class="btn-delete-item" onclick="deleteLoggedMeal('${m.id || ''}', ${idx}); renderHomeNutritionEditModal();" title="Sil" style="background:rgba(244,63,94,0.15); border:1px solid rgba(244,63,94,0.3); color:#f43f5e; border-radius:6px; padding:4px 8px; cursor:pointer; font-size:0.75rem;">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join("");
+        }
+    }
+}
+
+// ==================== DIRECT VIDEO SHARE WITH COACH ====================
+function openSendVideoToCoachModal() {
+    openModal('modal-send-video-coach');
+}
+
+function submitVideoToCoach() {
+    const exName = (document.getElementById("coach-video-ex-name")?.value || "").trim();
+    const videoUrl = (document.getElementById("coach-video-url-input")?.value || "").trim();
+    const note = (document.getElementById("coach-video-note")?.value || "").trim();
+
+    if (!exName && !videoUrl && !note) {
+        showToast("⚠️ Lütfen egzersiz adı veya bir video bağlantısı girin!");
+        return;
+    }
+
+    const messageText = `🎬 [SET VİDEOSU / FORM PAYLAŞIMI]\n📌 Egzersiz: ${exName || 'Belirtilmedi'}\n🔗 Video: ${videoUrl || 'Doğrudan Not'}\n💬 Not: ${note || '-'}`;
+
+    const activeUsername = getActiveSessionUsername();
+    if (activeUsername && typeof sendLiveChatMessage === "function") {
+        sendLiveChatMessage("athlete", activeUsername, messageText);
+    }
+
+    closeModal('modal-send-video-coach');
+    showToast("🎬 Set videon ve notun Koç Ömer'e iletildi! 📲");
+}
+
+// ==================== ENES ABİ SMART EXERCISE SUBSTITUTION ENGINE ====================
+function swapExerciseInWorkoutPlan(oldExQuery, newExName, targetDayKey = null) {
+    if (!appData.customWorkoutPlan) {
+        appData.customWorkoutPlan = JSON.parse(JSON.stringify(DEFAULT_WORKOUT_PLAN));
+    }
+
+    const dayKey = targetDayKey || currentActiveDay || "pzt";
+    const dayPlan = appData.customWorkoutPlan[dayKey];
+    if (!dayPlan || !dayPlan.exercises || dayPlan.exercises.length === 0) {
+        return { success: false, message: "Bugün için aktif bir antrenman programı bulunamadı." };
+    }
+
+    const oldQueryLower = oldExQuery.toLowerCase().trim();
+    let exIdx = dayPlan.exercises.findIndex(e => e.name.toLowerCase().includes(oldQueryLower) || oldQueryLower.includes(e.name.toLowerCase()));
+
+    if (exIdx === -1) {
+        // Search across all days if not found in current active day
+        for (const k in appData.customWorkoutPlan) {
+            const plan = appData.customWorkoutPlan[k];
+            if (plan && plan.exercises) {
+                const idx = plan.exercises.findIndex(e => e.name.toLowerCase().includes(oldQueryLower) || oldQueryLower.includes(e.name.toLowerCase()));
+                if (idx !== -1) {
+                    const prevName = plan.exercises[idx].name;
+                    plan.exercises[idx].name = newExName;
+                    saveDataToStorage();
+                    renderWorkoutView();
+                    renderDashboard();
+                    return { success: true, message: `✅ ${plan.title || k} günündeki **"${prevName}"** hareketi **"${newExName}"** ile güncellendi! 🔄`, dayKey: k };
+                }
+            }
+        }
+        return { success: false, message: `⚠️ Programında "${oldExQuery}" isminde bir hareket bulunamadı.` };
+    }
+
+    const prevName = dayPlan.exercises[exIdx].name;
+    dayPlan.exercises[exIdx].name = newExName;
+    saveDataToStorage();
+    renderWorkoutView();
+    renderDashboard();
+    return { success: true, message: `✅ Bugünkü antrenmanında **"${prevName}"** hareketi **"${newExName}"** ile başarıyla değiştirildi! 🔥`, dayKey };
+}
+
+// ==================== STEP RESET & SUBTRACTION ====================
+function resetSteps() {
+    if (confirm("Bugünkü adım sayısını sıfırlamak istiyor musun?")) {
+        appData.todayNutrition.steps = 0;
+        recordDailyStepHistory(0);
+        saveDataToStorage();
+        renderDashboard();
+        updateLiveStepTrackerUI();
+        showToast("Adımlar sıfırlandı 👟");
+    }
+}
+
+function subtractSteps(amount) {
+    const current = appData.todayNutrition.steps || 0;
+    appData.todayNutrition.steps = Math.max(0, current - amount);
+    recordDailyStepHistory(appData.todayNutrition.steps);
+    saveDataToStorage();
+    renderDashboard();
+    updateLiveStepTrackerUI();
+    showToast(`-${amount.toLocaleString('tr-TR')} Adım Çıkarıldı 👟`);
+}
+
+// ==================== WEEK-BY-WEEK NAVIGATION ENGINE ====================
+let currentNutritionWeekOffset = 0;
+let currentWorkoutWeekOffset = 0;
+
+function changeNutritionWeek(offsetDelta) {
+    currentNutritionWeekOffset += offsetDelta;
+    if (currentNutritionWeekOffset > 0) currentNutritionWeekOffset = 0;
+    renderNutritionView();
+}
+
+function changeWorkoutWeek(offsetDelta) {
+    currentWorkoutWeekOffset += offsetDelta;
+    if (currentWorkoutWeekOffset > 0) currentWorkoutWeekOffset = 0;
+    renderWorkoutView();
 }
 
 

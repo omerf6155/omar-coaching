@@ -148,9 +148,9 @@
                 <div id="sunday-report-banner-container"></div>
 
                 <!-- Daily Macro Summary Card -->
-                <div class="card macro-overview-card">
+                <div class="card macro-overview-card" onclick="openHomeNutritionEditModal()" style="cursor:pointer;" title="Bugünkü Öğünleri Düzenle & Çıkar">
                     <div class="card-header">
-                        <h2>GÜNLÜK BESLENME</h2>
+                        <h2>GÜNLÜK BESLENME <i class="fa-solid fa-pen-to-square" style="font-size:0.7rem; color:var(--text-secondary); margin-left:4px;"></i></h2>
                         <span class="target-badge" id="macro-status-badge">2.770 kcal</span>
                     </div>
 
@@ -204,17 +204,17 @@
                     </div>
                 </div>
 
-                <!-- AI FORM, VİDEO & CHECK-IN MERKEZİ -->
+                <!-- KOÇ İLETİŞİM & HAFTALIK CHECK-IN MERKEZİ -->
                 <div class="card" style="background:linear-gradient(135deg, rgba(255,214,10,0.12), rgba(168,85,247,0.08)); border:1px solid rgba(255,214,10,0.4); padding:14px; margin-bottom:14px; border-radius:var(--radius-md);">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
                         <div style="display:flex; align-items:center; gap:6px;">
                             <span style="font-size:1.1rem;">📸</span>
-                            <strong style="font-size:0.84rem; color:#ffd60a; text-transform:uppercase;">AI Form & Video Merkezi</strong>
+                            <strong style="font-size:0.84rem; color:#ffd60a; text-transform:uppercase;">KOÇ İLETİŞİM & HAFTALIK CHECK-IN</strong>
                         </div>
-                        <span style="font-size:0.65rem; color:#c084fc; background:rgba(168,85,247,0.15); border:1px solid rgba(168,85,247,0.3); padding:2px 6px; border-radius:4px; font-weight:700;">Canlı AI</span>
+                        <span style="font-size:0.65rem; color:#ffd60a; background:rgba(255,214,10,0.15); border:1px solid rgba(255,214,10,0.3); padding:2px 6px; border-radius:4px; font-weight:700;">Hızlı Rapor</span>
                     </div>
                     <p style="font-size:0.72rem; color:var(--text-secondary); margin:0 0 10px 0; line-height:1.4;">
-                        Haftalık durum güncellemeni yap, antrenman setlerinin videosunu yükleyip biyomekanik analiz al veya tabağının makrosunu hesapla!
+                        Haftalık durum güncellemeni yap, antrenman videolarını Koç Ömer'e ilet veya Word/Mail raporu oluştur.
                     </p>
                     
                     <div class="quick-upload-hub-grid" style="margin-bottom:0; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));">
@@ -233,18 +233,18 @@
                             </button>
                         </div>
 
-                        <div class="quick-upload-card card-form" onclick="openFormVisionModal()">
+                        <div class="quick-upload-card card-form" onclick="openSendVideoToCoachModal()">
                             <div>
                                 <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
-                                    <span style="font-size:1rem;">🏋️</span>
-                                    <strong style="font-size:0.78rem; color:#c084fc;">Video Form Analizi</strong>
+                                    <span style="font-size:1rem;">🎬</span>
+                                    <strong style="font-size:0.78rem; color:#c084fc;">Koça Set Videoları İlet</strong>
                                 </div>
                                 <p style="font-size:0.67rem; color:var(--text-muted); margin:0; line-height:1.3;">
-                                    Squat, Bench vb. set videonu yükle; açı ve bar yolunu çıkarsın.
+                                    Squat, Bench vb. videolarını Koç Ömer'e doğrudan ilet.
                                 </p>
                             </div>
                             <button type="button" class="btn btn-xs btn-primary" style="margin-top:8px; background:linear-gradient(135deg, #a855f7, #7c3aed); color:#fff; font-weight:800; font-size:0.7rem; border:none;">
-                                <i class="fa-solid fa-video"></i> Video Yükle
+                                <i class="fa-solid fa-paper-plane"></i> Video İlet
                             </button>
                         </div>
 
@@ -350,19 +350,16 @@
                     </div>
                 </div>
 
-                <!-- Video / Foto Form Analizi Banner -->
-                <div class="card" style="background:linear-gradient(135deg, rgba(168,85,247,0.12), rgba(124,58,237,0.05)); border:1px solid rgba(168,85,247,0.35); padding:10px 14px; margin-bottom:12px; border-radius:var(--radius-md); display:flex; justify-content:space-between; align-items:center; gap:10px;">
+                <!-- Video / Foto Form Analizi                <!-- Workout Media Sharing Bar -->
+                <div class="card" style="background:linear-gradient(135deg, rgba(168,85,247,0.12), rgba(59,130,246,0.08)); border:1px solid rgba(168,85,247,0.35); padding:10px 14px; margin-bottom:12px; border-radius:var(--radius-sm); display:flex; justify-content:space-between; align-items:center;">
                     <div>
-                        <div style="display:flex; align-items:center; gap:6px; margin-bottom:2px;">
-                            <span style="font-size:1rem;">🏋️</span>
-                            <strong style="font-size:0.8rem; color:#c084fc; text-transform:uppercase;">Egzersiz Video / Form Analizi</strong>
-                        </div>
+                        <strong style="color:#c084fc; font-size:0.8rem;"><i class="fa-solid fa-video"></i> KOÇ ÖMER'E VİDEO İLET</strong>
                         <p style="font-size:0.7rem; color:var(--text-secondary); margin:0; line-height:1.35;">
-                            Setinin videosunu veya fotoğrafını yükle; AI bar yolu ve eklem açılarını çıkarsın!
+                            Ağır setlerinin videosunu veya bağlantısını Koç Ömer'e doğrudan ulaştır!
                         </p>
                     </div>
-                    <button type="button" class="btn btn-sm btn-primary" onclick="openFormVisionModal()" style="background:linear-gradient(135deg, #a855f7, #7c3aed); color:#fff; font-weight:800; font-size:0.75rem; padding:8px 12px; white-space:nowrap; border:none;">
-                        <i class="fa-solid fa-video"></i> Video Yükle
+                    <button type="button" class="btn btn-sm btn-primary" onclick="openSendVideoToCoachModal()" style="background:linear-gradient(135deg, #a855f7, #7c3aed); color:#fff; font-weight:800; font-size:0.75rem; padding:8px 12px; white-space:nowrap; border:none;">
+                        <i class="fa-solid fa-paper-plane"></i> Video İlet
                     </button>
                 </div>
 
@@ -370,8 +367,8 @@
                     <button class="btn btn-xs btn-primary btn-split-selector" onclick="openWorkoutSplitsModal()" title="Haftalık Split / Programını Değiştir">
                         <i class="fa-solid fa-shuffle"></i> 🔄 Split Seç
                     </button>
-                    <button class="btn btn-xs btn-primary" onclick="openFormVisionModal()" title="Fotoğraf veya Videodan Biyomekanik Form Analizi Yap" style="background:linear-gradient(135deg, #a855f7, #7c3aed); border-color:#a855f7; color:#fff; font-weight:700;">
-                        <i class="fa-solid fa-video"></i> 🏋️ Form Analizi
+                    <button class="btn btn-xs btn-primary" onclick="openSendVideoToCoachModal()" title="Koç Ömer'e Form / Set Videolarını İlet" style="background:linear-gradient(135deg, #a855f7, #7c3aed); border-color:#a855f7; color:#fff; font-weight:700;">
+                        <i class="fa-solid fa-paper-plane"></i> 🎬 Koça Video İlet
                     </button>
                     <button class="btn btn-xs btn-outline" onclick="openStretchingModal()" style="border-color:rgba(192,132,252,0.4); color:#c084fc;">
                         <i class="fa-solid fa-person-praying"></i> 🧘 Esneme
@@ -401,19 +398,16 @@
                 <!-- Action Bar: Add custom meal -->
                 <div class="nutrition-top-actions">
                     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-bottom:8px;">
-                        <button class="btn btn-primary" onclick="openNewRecipeBuilderModal()" style="font-size:0.75rem; padding:10px 8px;">
+                        <button class="btn btn-primary" onclick="openNewRecipeBuilderModal()" style="font-size:0.78rem; padding:10px 8px;">
                             <i class="fa-solid fa-plus"></i> 🍽️ Öğün Planlayıcı
                         </button>
-                        <button class="btn btn-primary" onclick="openFoodVisionModal()" style="background:linear-gradient(135deg, #10b981, #059669); border-color:#10b981; color:#fff; font-weight:700; font-size:0.75rem; padding:10px 8px;">
-                            <i class="fa-solid fa-camera"></i> 📸 Tabak / Foto Makro
+                        <button class="btn btn-outline" onclick="openOnboardingWizard()" style="font-size:0.78rem; padding:10px 8px;">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> Diyet Sihirbazı
                         </button>
                     </div>
                     <div style="display:flex; gap:8px;">
-                        <button class="btn btn-outline btn-block" onclick="openOnboardingWizard()">
-                            <i class="fa-solid fa-wand-magic-sparkles"></i> Diyet Sihirbazı
-                        </button>
-                        <button class="btn btn-outline" onclick="openAssistantModal('enes')" title="Enes Abi'ye Sor (Tarif / Makro)" style="white-space:nowrap;">
-                            🦍 Enes Abi
+                        <button class="btn btn-outline btn-block" onclick="openAssistantModal('enes')" title="Enes Abi'ye Sor (Tarif / Makro)">
+                            🦍 Enes Abi (Beslenme & Makro Asistanı)
                         </button>
                     </div>
                 </div>
@@ -3585,26 +3579,157 @@
         </div>
     </div>
 
-    <!-- FLOATING AI ASSISTANT (ENES ABİ - MOVABLE & DISMISSIBLE) -->
-    <div class="floating-ai-cloud-dock" id="floating-ai-cloud-dock">
-        <div class="ai-dock-drag-handle" id="ai-dock-drag-handle" title="Enes Abi'yi Tut ve Sürükle 🖐️">
-            <i class="fa-solid fa-grip-vertical"></i>
-        </div>
-        <div class="ai-cloud-main-btn" id="ai-cloud-main-btn" role="button" tabindex="0" title="Enes Abi 🦍 (Omar AI Baş Danışmanı)">
-            <div class="ai-cloud-anim-wrap">
-                <span class="cloud-icon">🦍</span>
-                <span class="sparkle-icon">✨</span>
+    <!-- POST-WORKOUT 5-QUESTION SURVEY MODAL -->
+    <div id="modal-workout-survey" class="modal-overlay">
+        <div class="modal-card" style="max-width:440px;">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-clipboard-check" style="color:#ffd60a;"></i> Antrenman Değerlendirme Raporu</h3>
+                <button class="modal-close-btn" onclick="closeModal('modal-workout-survey')">&times;</button>
             </div>
-            <span class="ai-cloud-label">Enes Abi (AI)</span>
-        </div>
-        <div class="ai-dock-hide-btn" id="ai-dock-hide-btn" role="button" tabindex="0" ontouchstart="hideEnesDock(event)" onclick="hideEnesDock(event)" title="Gizle / Ekrandan Kaldır ✖">
-            <i class="fa-solid fa-xmark"></i>
+            <div class="modal-body" style="padding:16px;">
+                <p style="font-size:0.75rem; color:var(--text-secondary); margin-bottom:14px; line-height:1.4;">
+                    Harika bir idmanı geride bıraktın! 5 kısa soruyu yanıtlayarak Koç Ömer'e antrenman kaliteni ilet:
+                </p>
+
+                <div class="survey-question-box" style="margin-bottom:12px; background:rgba(255,255,255,0.04); padding:10px; border-radius:8px;">
+                    <label style="font-size:0.78rem; font-weight:700; color:#ffffff; display:block; margin-bottom:6px;">1. Enerji & Pompa Hissi (1-5)</label>
+                    <select id="survey-q1" class="form-select" style="font-size:0.75rem;">
+                        <option value="5">5 ⭐⭐⭐⭐⭐ - Mükemmel Pompa & Yüksek Enerji</option>
+                        <option value="4" selected>4 ⭐⭐⭐⭐ - İyimser & Yeterli Pompa</option>
+                        <option value="3">3 ⭐⭐⭐ - Orta Seviye</option>
+                        <option value="2">2 ⭐⭐ - Biraz Düşük Enerji</option>
+                        <option value="1">1 ⭐ - Çok Yorgun / Bitkin</option>
+                    </select>
+                </div>
+
+                <div class="survey-question-box" style="margin-bottom:12px; background:rgba(255,255,255,0.04); padding:10px; border-radius:8px;">
+                    <label style="font-size:0.78rem; font-weight:700; color:#ffffff; display:block; margin-bottom:6px;">2. Ağırlık Zorlanma Derecesi (RPE)</label>
+                    <select id="survey-q2" class="form-select" style="font-size:0.75rem;">
+                        <option value="5" selected>5 ⭐⭐⭐⭐⭐ - Tam Hedef Ağırlıklar / Zorlayıcı</option>
+                        <option value="4">4 ⭐⭐⭐⭐ - Uygun Zorlukta Geçti</option>
+                        <option value="3">3 ⭐⭐⭐ - Ne Zor Ne Kolay</option>
+                        <option value="2">2 ⭐⭐ - Ağırlıklar Biraz Hafif Kaldı</option>
+                        <option value="1">1 ⭐ - Çok Hafif Kaldı</option>
+                    </select>
+                </div>
+
+                <div class="survey-question-box" style="margin-bottom:12px; background:rgba(255,255,255,0.04); padding:10px; border-radius:8px;">
+                    <label style="font-size:0.78rem; font-weight:700; color:#ffffff; display:block; margin-bottom:6px;">3. Eklem & Kas Konforu</label>
+                    <select id="survey-q3" class="form-select" style="font-size:0.75rem;">
+                        <option value="5" selected>5 ⭐⭐⭐⭐⭐ - Ağrısız / Çok Temiz Form</option>
+                        <option value="4">4 ⭐⭐⭐⭐ - Rahat Hissedildi</option>
+                        <option value="3">3 ⭐⭐⭐ - Hafif Tatlı Kas Ağrısı</option>
+                        <option value="2">2 ⭐⭐ - Eklemde Ufak Sızı Varmış Gibi</option>
+                        <option value="1">1 ⭐ - Eklem Ağrısı / Rahatsızlık Hissedildi</option>
+                    </select>
+                </div>
+
+                <div class="survey-question-box" style="margin-bottom:12px; background:rgba(255,255,255,0.04); padding:10px; border-radius:8px;">
+                    <label style="font-size:0.78rem; font-weight:700; color:#ffffff; display:block; margin-bottom:6px;">4. Set & Tekrar Tamamlama Disiplini</label>
+                    <select id="survey-q4" class="form-select" style="font-size:0.75rem;">
+                        <option value="5" selected>5 ⭐⭐⭐⭐⭐ - Tüm Setler Eksiksiz Tamamlandı</option>
+                        <option value="4">4 ⭐⭐⭐⭐ - %90+ Tamamlandı</option>
+                        <option value="3">3 ⭐⭐⭐ - Çoğu Set Yapıldı</option>
+                        <option value="2">2 ⭐⭐ - Birkaç Set Erken Bırakıldı</option>
+                        <option value="1">1 ⭐ - Yarım Kaldı</option>
+                    </select>
+                </div>
+
+                <div class="survey-question-box" style="margin-bottom:14px; background:rgba(255,255,255,0.04); padding:10px; border-radius:8px;">
+                    <label style="font-size:0.78rem; font-weight:700; color:#ffffff; display:block; margin-bottom:6px;">5. Zihinsel Odak & Motivasyon</label>
+                    <select id="survey-q5" class="form-select" style="font-size:0.75rem;">
+                        <option value="5" selected>5 ⭐⭐⭐⭐⭐ - Yüksek Odak & Canavar Modu</option>
+                        <option value="4">4 ⭐⭐⭐⭐ - İçi Dolu Odak</option>
+                        <option value="3">3 ⭐⭐⭐ - Normal Düzey</option>
+                        <option value="2">2 ⭐⭐ - Biraz Dikkat Dağınıktı</option>
+                        <option value="1">1 ⭐ - Odak Sıfırdı</option>
+                    </select>
+                </div>
+
+                <div class="form-group" style="margin-bottom:14px;">
+                    <label style="font-size:0.75rem; color:var(--text-secondary);">Antrenman Notu (İsteğe Bağlı Koça Not):</label>
+                    <input type="text" id="survey-note-input" placeholder="Örn: Triceps hareketini dumbbell ile değiştirdim..." class="form-select" style="font-size:0.75rem;">
+                </div>
+
+                <button type="button" class="btn btn-primary btn-block" onclick="submitWorkoutSurvey()" style="background:#ffd60a; color:#000; font-weight:800; font-size:0.85rem; padding:10px;">
+                    <i class="fa-solid fa-paper-plane"></i> Raporu & Puanı Koça İlet
+                </button>
+            </div>
         </div>
     </div>
 
-    <!-- RECOVERY PILL WHEN ENES ABİ DOCK IS HIDDEN -->
-    <div id="enes-dock-restore-bar" class="enes-dock-restore-bar" style="display:none;" ontouchstart="restoreEnesDock()" onclick="restoreEnesDock()" title="Enes Abi'yi Ekranına Geri Getir 🦍">
-        <span>🦍 Enes Abi (AI)</span>
+    <!-- HOME DASHBOARD NUTRITION EDIT MODAL -->
+    <div id="modal-home-nutrition-edit" class="modal-overlay">
+        <div class="modal-card" style="max-width:440px;">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-utensils" style="color:#10b981;"></i> Bugünkü Öğünlerim & Düzenleme</h3>
+                <button class="modal-close-btn" onclick="closeModal('modal-home-nutrition-edit')">&times;</button>
+            </div>
+            <div class="modal-body" style="padding:16px;">
+                <div id="home-nut-summary-bar" style="background:rgba(255,255,255,0.05); padding:10px 12px; border-radius:10px; margin-bottom:14px; display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <strong style="color:#ffffff; font-size:0.85rem;" id="home-nut-tot-cal">0 kcal</strong>
+                        <div style="font-size:0.7rem; color:var(--text-secondary);" id="home-nut-tot-macros">0g P • 0g C • 0g F</div>
+                    </div>
+                    <button type="button" class="btn btn-xs btn-danger" onclick="clearTodayMeals(); renderHomeNutritionEditModal();" style="font-size:0.68rem;">
+                        <i class="fa-solid fa-trash"></i> Tümünü Sıfırla
+                    </button>
+                </div>
+
+                <div id="home-nut-logged-list" style="max-height:280px; overflow-y:auto; margin-bottom:14px;">
+                    <!-- Logged meals populated dynamically -->
+                </div>
+
+                <div style="display:flex; gap:8px;">
+                    <button type="button" class="btn btn-primary btn-block" onclick="closeModal('modal-home-nutrition-edit'); openNewRecipeBuilderModal();" style="font-size:0.75rem;">
+                        <i class="fa-solid fa-plus"></i> Yeni Öğün Ekle
+                    </button>
+                    <button type="button" class="btn btn-outline btn-block" onclick="closeModal('modal-home-nutrition-edit'); navigateToTab('nutrition');" style="font-size:0.75rem;">
+                        <i class="fa-solid fa-book-open"></i> Tüm Şablonlar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DIRECT VIDEO SHARE WITH COACH MODAL -->
+    <div id="modal-send-video-coach" class="modal-overlay">
+        <div class="modal-card" style="max-width:420px;">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-video" style="color:#c084fc;"></i> Koç Ömer'e Set Videoları İlet</h3>
+                <button class="modal-close-btn" onclick="closeModal('modal-send-video-coach')">&times;</button>
+            </div>
+            <div class="modal-body" style="padding:16px;">
+                <p style="font-size:0.75rem; color:var(--text-secondary); margin-bottom:12px; line-height:1.4;">
+                    Ağır setlerinin (Squat, Bench, Deadlift vb.) video linkini veya açıklamasını Koç Ömer'e ilet:
+                </p>
+
+                <div class="form-group" style="margin-bottom:12px;">
+                    <label style="font-size:0.75rem;">Egzersiz / Set Adı:</label>
+                    <input type="text" id="coach-video-ex-name" placeholder="Örn: 100 kg Squat 3. Set" class="form-select" style="font-size:0.75rem;">
+                </div>
+
+                <div class="form-group" style="margin-bottom:12px;">
+                    <label style="font-size:0.75rem;">Video Linki veya Google Drive / iCloud Bağlantısı:</label>
+                    <input type="url" id="coach-video-url-input" placeholder="https://..." class="form-select" style="font-size:0.75rem;">
+                </div>
+
+                <div class="form-group" style="margin-bottom:14px;">
+                    <label style="font-size:0.75rem;">Koça Mesajın / Notun:</label>
+                    <textarea id="coach-video-note" rows="3" placeholder="Formum nasıl duruyor hocam?" class="form-select" style="font-size:0.75rem; resize:vertical;"></textarea>
+                </div>
+
+                <button type="button" class="btn btn-primary btn-block" onclick="submitVideoToCoach()" style="background:linear-gradient(135deg, #a855f7, #7c3aed); border:none; color:#fff; font-weight:800; font-size:0.82rem; padding:10px;">
+                    <i class="fa-solid fa-paper-plane"></i> Koç Ömer'e İlet
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ENES ABİ RETRACTABLE SIDE NOTCH (EDGE WIDGET) -->
+    <div class="enes-side-notch-widget" id="enes-side-notch-widget" onclick="openAssistantModal('enes')" title="Enes Abi (AI Asistan)">
+        <span class="notch-icon">🦍</span>
+        <span class="notch-label">Enes Abi</span>
     </div>
 
     <!-- Notification Toast -->
