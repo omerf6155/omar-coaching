@@ -1299,7 +1299,6 @@ body {
 /* Body Lock when Modal is Active */
 body.modal-open {
     overflow: hidden !important;
-    touch-action: none;
 }
 
 /* Modals */
@@ -6686,6 +6685,8 @@ body.modal-open {
     z-index: 999;
     box-shadow: -4px 4px 20px rgba(0, 0, 0, 0.6);
     transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .enes-side-notch-widget:hover, .enes-side-notch-widget:active {

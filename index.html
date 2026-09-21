@@ -167,8 +167,8 @@
                     </div>
 
                     <!-- Streamlined Step & Live Tracking Interactive Bar -->
-                    <div class="activity-tracker-row" role="button" tabindex="0" onclick="openStepTrackerModal()" style="cursor: pointer;" title="Canlı Adım Sayar ve Takip Merkezini Aç">
-                        <div class="activity-metric-box compact-step-box" onclick="openStepTrackerModal()">
+                    <div class="activity-tracker-row" role="button" tabindex="0" onclick="event.stopPropagation(); openStepTrackerModal()" style="cursor: pointer;" title="Canlı Adım Sayar ve Takip Merkezini Aç">
+                        <div class="activity-metric-box compact-step-box" onclick="event.stopPropagation(); openStepTrackerModal()">
                             <div class="activity-metric-header">
                                 <div class="step-title-group">
                                     <i class="fa-solid fa-shoe-prints step-icon-pulse" id="dash-step-icon"></i>
