@@ -19,7 +19,7 @@ const RAW_FOODS_DATABASE = [
     { id: "hindi_gogsu", name: "Çiğ Hindi Göğsü", unit: "g", p: 24.0, c: 0.0, f: 1.0, sugar: 0.0, cal: 105 },
     { id: "dana_kiyma", name: "Çiğ Dana Kıyma (%10-12 Yağ)", unit: "g", p: 21.0, c: 0.0, f: 10.0, sugar: 0.0, cal: 175 },
     { id: "dana_biftek", name: "Çiğ Dana Biftek (Yağsız)", unit: "g", p: 22.0, c: 0.0, f: 6.0, sugar: 0.0, cal: 145 },
-    { id: "yumurta_butun", name: "Bütün Yumurta (1 Adet = 50g)", unit: "g", p: 13.0, c: 1.0, f: 10.0, sugar: 0.4, cal: 145 },
+    { id: "yumurta_butun", name: "🥚 Bütün Yumurta (Adet)", unit: "adet", p: 6.5, c: 0.5, f: 5.0, sugar: 0.2, cal: 73 },
     { id: "yumurta_beyazi", name: "Yumurta Beyazı (Sıvı)", unit: "g", p: 11.0, c: 0.7, f: 0.2, sugar: 0.7, cal: 52 },
     { id: "somon", name: "Çiğ Somon Balığı", unit: "g", p: 20.0, c: 0.0, f: 13.0, sugar: 0.0, cal: 208 },
     { id: "ton_baligi", name: "Ton Balığı (Konserve Süzme)", unit: "g", p: 26.0, c: 0.0, f: 1.0, sugar: 0.0, cal: 115 },
@@ -51,6 +51,18 @@ const RAW_FOODS_DATABASE = [
     { id: "tereyagi", name: "Tereyağı / Sade Yağ (Ghee)", unit: "g", p: 0.5, c: 0.5, f: 82.0, sugar: 0.5, cal: 740 }
 ];
 
+function getFoodFactor(food, amount) {
+    if (!food) return 0;
+    const amt = parseFloat(amount) || 0;
+    if (food.unit === "adet") return amt;
+    return amt / 100;
+}
+
+function getFoodUnitLabel(food) {
+    if (!food) return "gr";
+    return food.unit === "adet" ? "Adet" : "gr";
+}
+
 // Default Preset Meals with Ingredients
 const DEFAULT_PRESET_MEALS = {
     pancake: {
@@ -61,9 +73,9 @@ const DEFAULT_PRESET_MEALS = {
             { foodId: "muz", amount: 100 },
             { foodId: "bal", amount: 30 },
             { foodId: "fistik_ezmesi", amount: 30 },
-            { foodId: "yumurta_butun", amount: 150 } // 3 yumurta ~150g
+            { foodId: "yumurta_butun", amount: 3 } // 3 Adet yumurta
         ],
-        desc: "60g Pirinç unu, 1 Muz (100g), 30g Bal, 30g Fıstık ezmesi, 3 Yumurta",
+        desc: "60g Pirinç unu, 1 Muz (100g), 30g Bal, 30g Fıstık ezmesi, 3 Adet Yumurta",
         cal: 810, p: 31, c: 106, f: 31
     },
     preworkout: {
@@ -4260,7 +4272,8 @@ function renderRecipeIngredientsRows() {
     let html = "";
     currentRecipeIngredients.forEach((item, idx) => {
         const food = RAW_FOODS_DATABASE.find(f => f.id === item.foodId) || RAW_FOODS_DATABASE[0];
-        const factor = (item.amount || 0) / 100;
+        const factor = getFoodFactor(food, item.amount || 0);
+        const unitLbl = getFoodUnitLabel(food);
         const rowP = (food.p * factor).toFixed(1);
         const rowC = (food.c * factor).toFixed(1);
         const rowF = (food.f * factor).toFixed(1);
@@ -4274,13 +4287,13 @@ function renderRecipeIngredientsRows() {
                             <option value="${f.id}" ${f.id === item.foodId ? 'selected' : ''}>${f.name}</option>
                         `).join("")}
                     </select>
-                    <input type="number" class="ing-amount-input" value="${item.amount}" step="5" min="1" 
-                           oninput="updateIngredientRowAmount(${idx}, this.value)" title="Gramaj / Miktar">
-                    <span style="font-size:0.72rem; color:var(--text-secondary); font-weight:600;">gr</span>
+                    <input type="number" class="ing-amount-input" value="${item.amount}" step="1" min="1" 
+                           oninput="updateIngredientRowAmount(${idx}, this.value)" title="Miktar">
+                    <span style="font-size:0.72rem; color:var(--text-secondary); font-weight:600;">${unitLbl}</span>
                     <button class="btn-delete-item" onclick="removeIngredientRow(${idx})" title="Malzemeyi Sil"><i class="fa-solid fa-xmark"></i></button>
                 </div>
                 <div class="ing-macro-preview">
-                    <span>${item.amount}g ➔ ${rowCal} kcal</span>
+                    <span>${item.amount}${unitLbl} ➔ ${rowCal} kcal</span>
                     <span>${rowP}g P • ${rowC}g C • ${rowF}g F</span>
                 </div>
             </div>
@@ -4298,12 +4311,13 @@ function calculateRecipeLiveTotals() {
     currentRecipeIngredients.forEach(item => {
         const food = RAW_FOODS_DATABASE.find(f => f.id === item.foodId);
         if (food) {
-            const factor = (item.amount || 0) / 100;
+            const factor = getFoodFactor(food, item.amount || 0);
+            const unitLbl = getFoodUnitLabel(food);
             totP += food.p * factor;
             totC += food.c * factor;
             totF += food.f * factor;
             totCal += food.cal * factor;
-            descParts.push(`${item.amount}g ${food.name.split(' (')[0]}`);
+            descParts.push(`${item.amount}${unitLbl} ${food.name.split(' (')[0]}`);
         }
     });
 
@@ -5792,19 +5806,23 @@ function addFoodToWizardManualCalc() {
     const food = RAW_FOODS_DATABASE.find(f => f.id === foodId);
     if (!food) return;
 
+    const factor = getFoodFactor(food, amount);
+    const unitLbl = getFoodUnitLabel(food);
+
     wizardManualCalcItems.push({
         foodId: food.id,
         name: food.name,
         amount: amount,
-        p: +(food.p * (amount / 100)).toFixed(1),
-        c: +(food.c * (amount / 100)).toFixed(1),
-        f: +(food.f * (amount / 100)).toFixed(1),
-        sugar: +((food.sugar || 0) * (amount / 100)).toFixed(1),
-        cal: Math.round(food.cal * (amount / 100))
+        unitLbl: unitLbl,
+        p: +(food.p * factor).toFixed(1),
+        c: +(food.c * factor).toFixed(1),
+        f: +(food.f * factor).toFixed(1),
+        sugar: +((food.sugar || 0) * factor).toFixed(1),
+        cal: Math.round(food.cal * factor)
     });
 
     renderWizardManualCalcUI();
-    showToast(`✅ ${amount}g ${food.name} hesaplayıcıya eklendi.`);
+    showToast(`✅ ${amount}${unitLbl} ${food.name} hesaplayıcıya eklendi.`);
 }
 
 function removeWizardManualCalcItem(index) {
@@ -5822,7 +5840,7 @@ function renderWizardManualCalcUI() {
         listEl.innerHTML = wizardManualCalcItems.map((item, idx) => `
             <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.04); padding:4px 8px; border-radius:6px; font-size:0.72rem;">
                 <div>
-                    <strong>${item.amount}g ${item.name}</strong>
+                    <strong>${item.amount}${item.unitLbl || 'gr'} ${item.name}</strong>
                     <div style="font-size:0.65rem; color:var(--text-secondary);">${item.cal} kcal • ${item.p}g P • ${item.c}g C • ${item.f}g F • ${item.sugar}g Şeker</div>
                 </div>
                 <button type="button" onclick="removeWizardManualCalcItem(${idx})" style="background:none; border:none; color:#f43f5e; cursor:pointer; font-size:0.75rem;">
@@ -6266,12 +6284,13 @@ function getMealSubtotalMacros(ingredients) {
     ingredients.forEach(item => {
         const food = RAW_FOODS_DATABASE.find(f => f.id === item.foodId);
         if (food) {
-            const factor = (item.amount || 0) / 100;
+            const factor = getFoodFactor(food, item.amount || 0);
+            const unitLbl = getFoodUnitLabel(food);
             totP += food.p * factor;
             totC += food.c * factor;
             totF += food.f * factor;
             totCal += food.cal * factor;
-            descParts.push(`${item.amount}g ${food.name.split(' (')[0]}`);
+            descParts.push(`${item.amount}${unitLbl} ${food.name.split(' (')[0]}`);
         }
     });
 
@@ -8086,13 +8105,7 @@ function onCoachCalcFoodChange(foodId) {
     const food = RAW_FOODS_DATABASE.find(f => f.id === foodId);
     const unitLbl = document.getElementById("coach-calc-unit-lbl");
     if (unitLbl && food) {
-        if (food.id.includes("yumurta_butun") || food.id.includes("muz") || food.id.includes("hurma")) {
-            unitLbl.innerText = "gr";
-        } else if (food.id.includes("whey")) {
-            unitLbl.innerText = "gr";
-        } else {
-            unitLbl.innerText = "gr";
-        }
+        unitLbl.innerText = getFoodUnitLabel(food);
     }
 }
 
@@ -8150,7 +8163,7 @@ function loadCoachCalcPreset(presetKey) {
         coachCalcItems = [
             { id: "i1", foodId: "cig_pirinc", amount: 200 },
             { id: "i2", foodId: "tavuk_gogsu", amount: 250 },
-            { id: "i3", foodId: "yumurta_butun", amount: 150 }, // 3 yumurta
+            { id: "i3", foodId: "yumurta_butun", amount: 3 }, // 3 adet yumurta
             { id: "i4", foodId: "cig_yulaf", amount: 60 },
             { id: "i5", foodId: "fistik_ezmesi", amount: 30 },
             { id: "i6", foodId: "muz", amount: 100 },
@@ -8160,7 +8173,7 @@ function loadCoachCalcPreset(presetKey) {
         coachCalcItems = [
             { id: "i1", foodId: "tavuk_gogsu", amount: 300 },
             { id: "i2", foodId: "whey_toz", amount: 30 },
-            { id: "i3", foodId: "yumurta_butun", amount: 200 }, // 4 yumurta
+            { id: "i3", foodId: "yumurta_butun", amount: 4 }, // 4 adet yumurta
             { id: "i4", foodId: "cig_yulaf", amount: 80 },
             { id: "i5", foodId: "cig_pirinc", amount: 150 },
             { id: "i6", foodId: "zeytinyagi", amount: 10 }
@@ -8184,7 +8197,7 @@ function getCoachCalcTotals() {
     coachCalcItems.forEach(item => {
         const food = RAW_FOODS_DATABASE.find(f => f.id === item.foodId);
         if (food && item.amount > 0) {
-            const factor = item.amount / 100;
+            const factor = getFoodFactor(food, item.amount);
             totP += food.p * factor;
             totC += food.c * factor;
             totF += food.f * factor;
@@ -8245,7 +8258,8 @@ function renderCoachCalcItems() {
 
     container.innerHTML = coachCalcItems.map((item, idx) => {
         const food = RAW_FOODS_DATABASE.find(f => f.id === item.foodId) || { name: item.foodId, p:0, c:0, f:0, sugar:0, cal:0 };
-        const factor = (item.amount || 0) / 100;
+        const factor = getFoodFactor(food, item.amount || 0);
+        const unitLbl = getFoodUnitLabel(food);
         const rowP = (food.p * factor).toFixed(1);
         const rowC = (food.c * factor).toFixed(1);
         const rowF = (food.f * factor).toFixed(1);
@@ -8267,11 +8281,11 @@ function renderCoachCalcItems() {
                     </div>
                 </div>
                 <div style="display:flex; align-items:center; gap:6px;">
-                    <input type="number" value="${item.amount}" step="5" min="1" 
+                    <input type="number" value="${item.amount}" step="${food.unit === 'adet' ? '1' : '5'}" min="1" 
                            oninput="updateCoachCalcItemAmount(${idx}, this.value)" 
                            class="form-select" 
                            style="width:65px; font-size:0.72rem; padding:4px 6px; text-align:center; height:28px;">
-                    <span style="font-size:0.65rem; color:var(--text-muted);">gr</span>
+                    <span style="font-size:0.65rem; color:var(--text-muted);">${unitLbl}</span>
                     <button type="button" class="btn-delete-item" onclick="removeCoachCalcItem(${idx})" title="Çıkar" style="padding:2px 6px; font-size:0.65rem;">
                         <i class="fa-solid fa-trash"></i>
                     </button>
