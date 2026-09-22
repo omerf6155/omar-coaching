@@ -1116,16 +1116,15 @@ const DEFAULT_WORKOUT_PLAN = {
         ]
     },
     sal: {
-        title: "Pull 1 (Lat Genişlik + Arka Omuz)",
-        desc: "Arka Omuz Öncelikli + Dikey Çekiş + Kollar",
+        title: "Pull 1 (Lat Genişlik, Trapez & Biceps)",
+        desc: "Dikey Çekiş + Sırt Genişliği + Trapez & Biceps",
         exercises: [
-            { id: "sal_1", name: "Reverse Pec Deck Fly (Arka Omuz)", muscle: "Arka Omuz İzolasyon", target: "3 Set (Skapula Sabit, 10-12 Rep)", defaultSets: 3, defaultSeat: "Pede Göğüs Dayalı", isTopSet: true },
-            { id: "sal_2", name: "High Row Tek Kol (Lat Odak)", muscle: "Alt/Orta Lat", target: "2 Set (6-8 Tekrar, Dirsek Gövdeye)", defaultSets: 2, defaultSeat: "Koltuk: 3, Göğüs Pedi: 2", isTopSet: true },
-            { id: "sal_3", name: "T-Bar Row", muscle: "Orta Sırt & Kalınlık", target: "2 Sert Çalışma Seti (8-10 Tekrar)", defaultSets: 2, defaultSeat: "Göğüs Destekli", isTopSet: true },
-            { id: "sal_4", name: "Geniş Tutuş Lat Pulldown", muscle: "Üst Lat (Genişlik)", target: "2 Set (Üst Lat / Teres Major)", defaultSets: 2, defaultSeat: "Bacak Pedi: 4", isTopSet: false },
-            { id: "sal_5", name: "Dumbbell Shrug", muscle: "Trapez", target: "2 Set (Maks Ağırlık / Maks Rep)", defaultSets: 2, defaultSeat: "Ayakta", isTopSet: false },
-            { id: "sal_6", name: "Barbell Biceps Curl", muscle: "Genel Biceps", target: "2 Set (Ağır Biceps & Ön Kol)", defaultSets: 2, defaultSeat: "Düz Bar", isTopSet: true },
-            { id: "sal_7", name: "Dumbbell Curl + Ters Tutuş V-Bar", muscle: "Brachialis & Ön Kol", target: "2'şer Set (Brachialis / Ön Kol)", defaultSets: 2, defaultSeat: "Kablo Alt", isTopSet: false }
+            { id: "sal_1", name: "High Row Tek Kol (Lat Odak)", muscle: "Alt/Orta Lat", target: "2 Set (6-8 Tekrar, Dirsek Gövdeye)", defaultSets: 2, defaultSeat: "Koltuk: 3, Göğüs Pedi: 2", isTopSet: true },
+            { id: "sal_2", name: "T-Bar Row", muscle: "Orta Sırt & Kalınlık", target: "2 Sert Çalışma Seti (8-10 Tekrar)", defaultSets: 2, defaultSeat: "Göğüs Destekli", isTopSet: true },
+            { id: "sal_3", name: "Geniş Tutuş Lat Pulldown", muscle: "Üst Lat (Genişlik)", target: "2 Set (Üst Lat / Teres Major)", defaultSets: 2, defaultSeat: "Bacak Pedi: 4", isTopSet: false },
+            { id: "sal_4", name: "Dumbbell Shrug", muscle: "Trapez", target: "2 Set (Maks Ağırlık / Maks Rep)", defaultSets: 2, defaultSeat: "Ayakta", isTopSet: false },
+            { id: "sal_5", name: "Barbell Biceps Curl", muscle: "Genel Biceps", target: "2 Set (Ağır Biceps & Ön Kol)", defaultSets: 2, defaultSeat: "Düz Bar", isTopSet: true },
+            { id: "sal_6", name: "Dumbbell Curl + Ters Tutuş V-Bar", muscle: "Brachialis & Ön Kol", target: "2'şer Set (Brachialis / Ön Kol)", defaultSets: 2, defaultSeat: "Kablo Alt", isTopSet: false }
         ]
     },
     car: {
@@ -1146,8 +1145,8 @@ const DEFAULT_WORKOUT_PLAN = {
         exercises: []
     },
     cum: {
-        title: "Push 2 (Üst Omuz/Triceps)",
-        desc: "Arka Omuz Başlangıç + Makine İtiş + Uzun Baş Triceps",
+        title: "Push 2 (Omuz, Göğüs & Triceps Odaklı)",
+        desc: "Omuz İtiş + Göğüs + Triceps Uzun Baş",
         exercises: [
             { id: "cum_1", name: "Arka Omuz Fly (Reverse Pec Deck)", muscle: "Arka Omuz", target: "3 Set (Taze Sinir Sistemiyle)", defaultSets: 3, defaultSeat: "Koltuk: 3", isTopSet: true },
             { id: "cum_2", name: "Makine Chest Press", muscle: "Göğüs Gücü", target: "2 Sert Set (Derin Esneme)", defaultSets: 2, defaultSeat: "Koltuk: 4", isTopSet: true },
@@ -1196,8 +1195,8 @@ const MASTER_SPLIT_TEMPLATES = [
                 ]
             },
             sal: {
-                title: "Pull 1 (Çekiş — Sırt Genişliği & Arka Omuz / Biceps)",
-                desc: "Geniş Kanat, T-Bar Row, Arka Omuz & Biceps",
+                title: "Pull 1 (Çekiş — Sırt Genişliği, Trapez & Biceps)",
+                desc: "Geniş Kanat, T-Bar Row, Trapez & Biceps",
                 exercises: [
                     { id: "ppl5_sal_1", name: "Reverse Pec Deck Fly", muscle: "Arka Omuz", target: "3 Set (10-12 Rep)", defaultSets: 3, defaultSeat: "Göğüs Pedi", isTopSet: true },
                     { id: "ppl5_sal_2", name: "Geniş Tutuş Lat Pulldown", muscle: "Üst Lat", target: "3 Set (8-10 Rep)", defaultSets: 3, defaultSeat: "Bacak Pedi: 4", isTopSet: true },
@@ -4496,17 +4495,26 @@ function deleteLoggedMeal(mealId, index) {
     saveDataToStorage();
     renderDashboard();
     renderNutritionView();
+    if (typeof renderHomeNutritionEditModal === "function") renderHomeNutritionEditModal();
     showToast(`${removed ? removed.name : 'Öğün'} silindi, kalori düşürüldü 🗑️`);
 }
 
 function deletePreset(key) {
     if (confirm("Bu hazır şablonu silmek istiyor musunuz?")) {
+        if (!appData.customPresets) {
+            appData.customPresets = JSON.parse(JSON.stringify(DEFAULT_PRESET_MEALS));
+        }
         delete appData.customPresets[key];
-        appData.pinnedQuickActions = (appData.pinnedQuickActions || []).filter(k => k !== key);
+        if (appData.pinnedQuickActions) {
+            appData.pinnedQuickActions = appData.pinnedQuickActions.map(k => k === key ? "" : k);
+        }
+        if (appData.quickActionSlots) {
+            appData.quickActionSlots = appData.quickActionSlots.map(k => k === key ? "" : k);
+        }
         saveDataToStorage();
         renderNutritionView();
         renderDashboard();
-        showToast("Şablon silindi.");
+        showToast("Şablon silindi 🗑️");
     }
 }
 
@@ -5051,14 +5059,59 @@ function executeDaySwap(mode) {
 }
 
 function renderWorkoutView(dayKey) {
+    if (!dayKey) dayKey = currentActiveDay || "pzt";
     const container = document.getElementById("workout-content-area");
     const plan = (appData.customWorkoutPlan && appData.customWorkoutPlan[dayKey]) || DEFAULT_WORKOUT_PLAN[dayKey];
     if (!container || !plan) return;
 
     const isControlled = isAthleteUnderCoachControl();
 
+    let html = `
+        <div class="week-nav-bar" style="margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.04); padding:8px 12px; border-radius:10px; border:1px solid var(--border-subtle);">
+            <button type="button" class="btn btn-xs btn-outline" onclick="changeWorkoutWeek(-1)"><i class="fa-solid fa-chevron-left"></i> Önceki Hafta</button>
+            <span style="font-size:0.8rem; font-weight:700; color:#ffd60a;">
+                ${currentWorkoutWeekOffset === 0 ? "Bu Hafta (Aktif Program)" : `${Math.abs(currentWorkoutWeekOffset)}. Hafta Önceki İdman Geçmişi`}
+            </span>
+            <button type="button" class="btn btn-xs btn-outline" onclick="changeWorkoutWeek(1)" ${currentWorkoutWeekOffset === 0 ? 'disabled style="opacity:0.4;"' : ''}>Sonraki Hafta <i class="fa-solid fa-chevron-right"></i></button>
+        </div>
+    `;
+
+    if (currentWorkoutWeekOffset < 0) {
+        const history = appData.workoutSurveyHistory || [];
+        if (history.length === 0) {
+            html += `
+                <div class="card" style="text-align:center; padding:30px 16px;">
+                    <i class="fa-solid fa-clock-rotate-left" style="font-size:2rem; color:var(--text-secondary); margin-bottom:10px;"></i>
+                    <h3 style="font-size:0.95rem; color:#ffffff;">${Math.abs(currentWorkoutWeekOffset)}. Hafta Önceki Antrenman Kaydı Bulunamadı</h3>
+                    <p style="font-size:0.75rem; color:var(--text-secondary); margin-top:6px;">Tamamladığınız idman sonundaki 5 soruluk anketi doldurduğunuzda geçmiş haftalık raporlarınız burada listelenir.</p>
+                </div>
+            `;
+        } else {
+            html += `
+                <div class="card" style="background:rgba(15,23,42,0.6); border:1px solid rgba(255,214,10,0.3); padding:14px; margin-bottom:14px; border-radius:12px;">
+                    <h3 style="color:#ffd60a; font-size:0.88rem; margin-bottom:10px;"><i class="fa-solid fa-clipboard-check"></i> ${Math.abs(currentWorkoutWeekOffset)}. Hafta Önceki İdman Değerlendirme Raporları</h3>
+                    ${history.slice().reverse().map(item => `
+                        <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); padding:10px 12px; border-radius:8px; margin-bottom:8px;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                                <strong style="color:#ffffff; font-size:0.82rem;">${item.workoutTitle || 'Antrenman'}</strong>
+                                <span style="font-size:0.75rem; font-weight:800; color:#ffd60a;">⭐️ ${item.rating || '5.0'} / 5.0</span>
+                            </div>
+                            <div style="font-size:0.7rem; color:var(--text-secondary); display:flex; justify-content:space-between; align-items:center;">
+                                <span>📅 ${item.date || ''}</span>
+                                <span>⚡ Enerji: ${item.answers?.energy || 5}/5 • RPE: ${item.answers?.difficulty || 5}/5</span>
+                            </div>
+                            ${item.note ? `<div style="font-size:0.7rem; color:#60a5fa; margin-top:4px; font-style:italic;">💬 Not: "${item.note}"</div>` : ''}
+                        </div>
+                    `).join("")}
+                </div>
+            `;
+        }
+        container.innerHTML = html;
+        return;
+    }
+
     if (plan.exercises.length === 0) {
-        container.innerHTML = `
+        html += `
             ${isControlled ? `
                 <div class="coach-locked-banner" style="background:rgba(255, 214, 10, 0.08); border:1px solid rgba(255, 214, 10, 0.25); border-radius:var(--radius-md); padding:10px 14px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; gap:10px;">
                     <div style="display:flex; align-items:center; gap:10px;">
@@ -5079,10 +5132,11 @@ function renderWorkoutView(dayKey) {
                 <p class="text-secondary" style="font-size:0.85rem; line-height:1.5;">Kas lifleri uykuda ve dinlenirken inşa edilir. Kalorilerini tam al, suyunu ve magnezyumunu ihmal etme.</p>
             </div>
         `;
+        container.innerHTML = html;
         return;
     }
 
-    let html = `
+    html += `
         ${isControlled ? `
             <div class="coach-locked-banner" style="background:rgba(255, 214, 10, 0.08); border:1px solid rgba(255, 214, 10, 0.25); border-radius:var(--radius-md); padding:10px 14px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; gap:10px;">
                 <div style="display:flex; align-items:center; gap:10px;">
@@ -5614,23 +5668,29 @@ function getNextSessionProgressionAdvice(lastWeight, lastReps, lastRir) {
 
 // ==================== SCALE & COACH REPORT ====================
 
-function saveDailyWeight() {
+function saveDailyWeight(val) {
     const input = document.getElementById("daily-weight-input");
-    const weight = parseFloat(input.value);
-    if (!weight || weight < 40 || weight > 180) {
+    const weight = val ? parseFloat(val) : (input ? parseFloat(input.value) : NaN);
+    if (isNaN(weight) || weight < 30 || weight > 250) {
         alert("Lütfen geçerli bir kilo girin (Örn: 74.3)");
         return;
     }
 
-    const todayStr = new Date().toISOString().split('T')[0];
-    appData.weightHistory = (appData.weightHistory || []).filter(w => w.date !== todayStr);
-    appData.weightHistory.unshift({ date: todayStr, weight: weight });
+    const todayStr = getFitnessDateKey();
+    if (!appData.weightHistory) appData.weightHistory = [];
+    appData.weightHistory = appData.weightHistory.filter(w => w && w.date !== todayStr);
+    appData.weightHistory.unshift({ date: todayStr, weight: Number(weight) });
 
-    input.value = "";
+    if (!appData.userProfile) appData.userProfile = {};
+    appData.userProfile.weight = Number(weight);
+
+    if (input) input.value = "";
     saveDataToStorage();
     renderScaleView();
     updateDateDisplay();
-    showToast(`${weight} kg tartı kaydedildi! ⚖️`);
+    updateTopBarUserHeader();
+    renderDashboard();
+    showToast(`${weight.toFixed(1)} kg tartı kaydedildi! ⚖️`);
 }
 
 function renderScaleView() {
@@ -14070,6 +14130,25 @@ function generateWeeklyDocHtml() {
                     <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">${data.target.fat}g</td>
                 </tr>
             </table>
+
+            <!-- FORM DEĞİŞİM KASASI & FOTOĞRAFLAR -->
+            <h4 style="color:#0284c7; border-left:4px solid #0284c7; padding-left:8px; margin:16px 0 8px 0; font-size:14px;">5. HAFTALIK FORM DEĞİŞİM KASASI & FOTOĞRAFLAR</h4>
+            ${(appData.physiqueGallery && appData.physiqueGallery.length > 0) ? `
+                <div style="margin-bottom:20px;">
+                    ${appData.physiqueGallery.slice(0, 3).map(entry => `
+                        <div style="border:1px solid #cbd5e1; padding:8px; border-radius:6px; background:#f8fafc; margin-bottom:10px;">
+                            <div style="font-size:11px; font-weight:bold; color:#0284c7; margin-bottom:6px;">📅 Tarih: ${entry.date || ''} • Kilo: ${entry.weight || '--'} kg • Bel: ${entry.waist || '--'} cm</div>
+                            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                                ${entry.front ? `<div style="text-align:center;"><img src="${entry.front}" style="max-width:160px; max-height:200px; border-radius:4px; border:1px solid #cbd5e1; display:block;"><span style="font-size:10px; color:#64748b;">Ön Cephe</span></div>` : ''}
+                                ${entry.side ? `<div style="text-align:center;"><img src="${entry.side}" style="max-width:160px; max-height:200px; border-radius:4px; border:1px solid #cbd5e1; display:block;"><span style="font-size:10px; color:#64748b;">Yan Cephe</span></div>` : ''}
+                                ${entry.back ? `<div style="text-align:center;"><img src="${entry.back}" style="max-width:160px; max-height:200px; border-radius:4px; border:1px solid #cbd5e1; display:block;"><span style="font-size:10px; color:#64748b;">Arka Cephe</span></div>` : ''}
+                            </div>
+                        </div>
+                    `).join("")}
+                </div>
+            ` : `
+                <p style="font-size:11px; color:#64748b; margin-bottom:16px;">Bu hafta henüz form fotoğrafı yüklenmedi.</p>
+            `}
 
             <div style="border-top:2px dashed #cbd5e1; padding-top:12px; margin-top:20px; text-align:center; font-size:11px; color:#94a3b8;">
                 Omar Coaching • Biyomekanik & Anabolik Sporcu Sistemi • ODD Coaching Systems
