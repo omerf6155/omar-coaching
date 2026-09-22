@@ -7518,12 +7518,6 @@ body.modal-open {
                                     <!-- Populated dynamically -->
                                 </select>
                             </div>
-                            <button type="button" class="btn btn-primary" onclick="triggerCoachSmartAiPrescription()" id="btn-coach-ai-rx" style="background:linear-gradient(135deg, #8b5cf6, #3b82f6); border:1px solid #8b5cf6; color:#fff; font-weight:800; font-size:0.75rem; padding:9px 12px; white-space:nowrap; height:38px; display:flex; align-items:center; gap:6px;" title="Sporcunun Kilo/Yemek/RIR Verilerini Analiz Et ve Reçete Öner">
-                                <i class="fa-solid fa-wand-magic-sparkles"></i> <span>🤖 AI ile Analiz Et & Reçete Öner</span>
-                            </button>
-                            <button type="button" class="btn btn-outline" onclick="openAiSettingsModal()" style="height:38px; padding:9px 12px; font-size:0.75rem; border-color:rgba(56,189,248,0.4); color:#38bdf8; display:flex; align-items:center; gap:6px; white-space:nowrap;" title="Gemini / AI API Key Ayarları">
-                                <i class="fa-solid fa-key"></i> <span>API Key Gir</span>
-                            </button>
                         </div>
 
                         <!-- AI SMART PRESCRIPTION SUGGESTION BOX (Hidden until triggered) -->
@@ -10341,10 +10335,10 @@ body.modal-open {
                 </p>
 
                 <div class="survey-question-box" style="margin-bottom:12px; background:rgba(255,255,255,0.04); padding:10px; border-radius:8px;">
-                    <label style="font-size:0.78rem; font-weight:700; color:#ffffff; display:block; margin-bottom:6px;">1. Enerji & Pompa Hissi (1-5)</label>
+                    <label style="font-size:0.78rem; font-weight:700; color:#ffffff; display:block; margin-bottom:6px;">1. Enerji & Pump Hissi (1-5)</label>
                     <select id="survey-q1" class="form-select" style="font-size:0.75rem;">
-                        <option value="5">5 ⭐⭐⭐⭐⭐ - Mükemmel Pompa & Yüksek Enerji</option>
-                        <option value="4" selected>4 ⭐⭐⭐⭐ - İyimser & Yeterli Pompa</option>
+                        <option value="5">5 ⭐⭐⭐⭐⭐ - Mükemmel Pump & Yüksek Enerji</option>
+                        <option value="4" selected>4 ⭐⭐⭐⭐ - İyimser & Yeterli Pump</option>
                         <option value="3">3 ⭐⭐⭐ - Orta Seviye</option>
                         <option value="2">2 ⭐⭐ - Biraz Düşük Enerji</option>
                         <option value="1">1 ⭐ - Çok Yorgun / Bitkin</option>
@@ -11883,7 +11877,7 @@ const MASTER_SPLIT_TEMPLATES = [
         plan: {
             pzt: {
                 title: "Chest & Back 1 (Göğüs & Sırt Ağır)",
-                desc: "Antagonistik Gövde İnşası & Pompa",
+                desc: "Antagonistik Gövde İnşası & Pump",
                 exercises: [
                     { id: "arn_pzt_1", name: "Incline Barbell Bench Press", muscle: "Üst Göğüs", target: "3 Set (6-8 Rep)", defaultSets: 3, defaultSeat: "30 Derece", isTopSet: true },
                     { id: "arn_pzt_2", name: "Bent-Over Barbell Row", muscle: "Tüm Sırt", target: "3 Set (6-8 Rep)", defaultSets: 3, defaultSeat: "Serbest Bar", isTopSet: true },
@@ -11917,7 +11911,7 @@ const MASTER_SPLIT_TEMPLATES = [
             },
             per: {
                 title: "Chest & Back 2 (Göğüs & Sırt Hipertrofi)",
-                desc: "Yüksek Pompa ve Açı Çeşitliliği",
+                desc: "Yüksek Pump ve Açı Çeşitliliği",
                 exercises: [
                     { id: "arn_per_1", name: "Incline Dumbbell Press", muscle: "Üst Göğüs", target: "3 Set (8-10 Rep)", defaultSets: 3, defaultSeat: "30 Derece", isTopSet: true },
                     { id: "arn_per_2", name: "Chest-Supported T-Bar Row", muscle: "Orta Sırt", target: "3 Set (8-10 Rep)", defaultSets: 3, defaultSeat: "Göğüs Destekli", isTopSet: true },
@@ -12194,7 +12188,7 @@ const MASTER_SPLIT_TEMPLATES = [
         id: "torso_limbs_4day",
         name: "Torso / Limbs (Gövde & Kollar/Bacaklar - 4 Gün)",
         badge: "Antagonistik • 4 Gün",
-        desc: "Göğüs-Sırt (Gövde) ve Kol-Bacak-Omuz (Ekstremiteler) ayrımıyla mükemmel süperset ve pompa imkanı sağlayan etkili split.",
+        desc: "Göğüs-Sırt (Gövde) ve Kol-Bacak-Omuz (Ekstremiteler) ayrımıyla mükemmel süperset ve pump imkanı sağlayan etkili split.",
         daysOverview: ["Pzt: Torso 1 (Göğüs+Sırt)", "Sal: Limbs 1 (Bacak+Kol+Omuz)", "Çar: OFF", "Per: Torso 2 (Göğüs+Sırt)", "Cum: Limbs 2 (Bacak+Kol+Omuz)", "Cmt: OFF", "Paz: OFF"],
         plan: {
             pzt: {
@@ -12222,7 +12216,7 @@ const MASTER_SPLIT_TEMPLATES = [
             car: { title: "OFF (Dinlenme & Mobilite)", desc: "Toparlanma ve Esneme", exercises: [] },
             per: {
                 title: "Torso 2 (Göğüs & Sırt Hipertrofi)",
-                desc: "Yüksek Pompa ve Açı Çeşitliliği",
+                desc: "Yüksek Pump ve Açı Çeşitliliği",
                 exercises: [
                     { id: "tl_per_1", name: "Plate Loaded Chest Press", muscle: "Göğüs", target: "3 Set (8-10 Rep)", defaultSets: 3, defaultSeat: "Koltuk: 4", isTopSet: true },
                     { id: "tl_per_2", name: "High Row Tek Kol", muscle: "Lat", target: "3 Set (8-10 Rep)", defaultSets: 3, defaultSeat: "Koltuk: 3", isTopSet: true },
@@ -15647,8 +15641,8 @@ function renderWorkoutView(dayKey) {
     `;
 
     plan.exercises.forEach(ex => {
-        const savedSeat = (appData.seatSettings && appData.seatSettings[ex.id]) || ex.defaultSeat;
-        const lastLog = (appData.workoutLogs && appData.workoutLogs[ex.id]) || [];
+        const savedSeat = (appData.seatSettings && (appData.seatSettings[ex.id] || (ex.name && appData.seatSettings[ex.name]))) || ex.defaultSeat || '';
+        const lastLog = (appData.workoutLogs && (appData.workoutLogs[ex.id] || (ex.name && appData.workoutLogs[ex.name]))) || [];
         const baseSets = getExerciseBaseSetCount(ex);
         const totalSets = getExerciseSetCount(ex);
         const overloadHint = calculateOverloadTarget(lastLog);
@@ -15659,14 +15653,11 @@ function renderWorkoutView(dayKey) {
                     <div class="ex-title-group">
                         <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
                             <h3>${ex.name}</h3>
-                            <button type="button" class="btn-ex-form-check" onclick="openFormVisionModal('${(ex.name || '').replace(/'/g, "\\'")}')" title="Bu egzersiz için video/form analizi yap" style="background:rgba(168,85,247,0.12); border:1px solid rgba(168,85,247,0.35); color:#c084fc; font-size:0.65rem; font-weight:700; padding:2px 6px; border-radius:4px; cursor:pointer;">
-                                <i class="fa-solid fa-video"></i> Form Kontrolü
-                            </button>
                         </div>
                         <span class="ex-target-badge"><span class="muscle-tag">${ex.muscle || 'Kas Grubu'}</span> ${ex.target}</span>
                     </div>
                     <input type="text" class="ex-seat-input" placeholder="Koltuk/Pim" 
-                           value="${savedSeat}" onchange="saveSeatSetting('${ex.id}', this.value)" title="Koltuk ve Pim Ayarın">
+                           value="${savedSeat}" onchange="saveSeatSetting('${ex.id}', this.value, '${(ex.name || '').replace(/'/g, "\\'")}')" title="Koltuk ve Pim Ayarın (Her Hafta Otomatik Dolar)">
                 </div>
 
                 ${overloadHint ? `
@@ -15777,11 +15768,12 @@ function renderWorkoutView(dayKey) {
     container.innerHTML = html;
 }
 
-function saveSeatSetting(exId, value) {
+function saveSeatSetting(exId, value, exName) {
     if (!appData.seatSettings) appData.seatSettings = {};
     appData.seatSettings[exId] = value;
+    if (exName) appData.seatSettings[exName] = value;
     saveDataToStorage();
-    showToast("Koltuk ayarı kaydedildi 📐");
+    showToast("Koltuk/Pim ayarı kaydedildi 📐");
 }
 
 function autoSaveSet(exId, setIndex) {
@@ -18123,7 +18115,7 @@ function renderCoachRoster() {
         const history = uData.weightHistory || [];
         const currentW = history.length > 0 ? history[0].weight : (p.weight || 74.0);
 
-        const consumedCal = n.consumedCal || 0;
+        const consumedCal = (typeof n.calories === 'number' ? n.calories : (n.consumedCal || 0));
         const targetCal = t.calories || 2770;
         const calPercent = Math.min(100, Math.round((consumedCal / targetCal) * 100));
 
@@ -18250,7 +18242,7 @@ function renderCoachDetail(username) {
     if (unameEl) unameEl.innerText = `@${ath.username}`;
     if (goalEl) goalEl.innerText = goalMap[p.goal] || "🔥 Lean Bulk";
     if (weightEl) weightEl.innerText = `${currentW.toFixed(1)} kg`;
-    if (calEl) calEl.innerText = `${n.consumedCal || 0} / ${t.calories || 2770}`;
+    if (calEl) calEl.innerText = `${(typeof n.calories === 'number' ? n.calories : (n.consumedCal || 0))} / ${t.calories || 2770}`;
     if (stepsEl) stepsEl.innerText = `${(n.steps || 0).toLocaleString('tr-TR')} / ${(t.steps || 7500).toLocaleString('tr-TR')}`;
 
     const contentArea = document.getElementById("coach-deep-dive-content");
@@ -18280,16 +18272,21 @@ function renderCoachDetail(username) {
             });
         }
 
+        const dispCal = typeof n.calories === 'number' ? n.calories : (n.consumedCal || 0);
+        const dispP = typeof n.protein === 'number' ? n.protein : (n.consumedP || 0);
+        const dispC = typeof n.carbs === 'number' ? n.carbs : (n.consumedC || 0);
+        const dispF = typeof n.fat === 'number' ? n.fat : (n.consumedF || 0);
+
         contentArea.innerHTML = `
             <div class="deep-card">
                 <div class="card-header" style="margin-bottom:8px;">
                     <h2>🍽️ BUGÜNKÜ ÇİĞ ÖĞÜN VE MAKRO DAĞILIMI</h2>
                 </div>
                 <div class="profile-macro-banner" style="margin-bottom:12px;">
-                    <div class="prof-macro-col p-col"><span>Protein</span><strong>${n.consumedP || 0} / ${t.protein}g</strong></div>
-                    <div class="prof-macro-col c-col"><span>Karbonhidrat</span><strong>${n.consumedC || 0} / ${t.carbs}g</strong></div>
-                    <div class="prof-macro-col f-col"><span>Yağ</span><strong>${n.consumedF || 0} / ${t.fat}g</strong></div>
-                    <div class="prof-macro-col cal-col"><span>Kalori</span><strong>${n.consumedCal || 0} / ${t.calories}</strong></div>
+                    <div class="prof-macro-col p-col"><span>Protein</span><strong>${dispP} / ${t.protein}g</strong></div>
+                    <div class="prof-macro-col c-col"><span>Karbonhidrat</span><strong>${dispC} / ${t.carbs}g</strong></div>
+                    <div class="prof-macro-col f-col"><span>Yağ</span><strong>${dispF} / ${t.fat}g</strong></div>
+                    <div class="prof-macro-col cal-col"><span>Kalori</span><strong>${dispCal} / ${t.calories}</strong></div>
                 </div>
                 <div>${mealsHtml}</div>
             </div>
@@ -18576,15 +18573,35 @@ function renderAthleteCurrentDietInPrescription(username) {
     }
 
     let html = "";
+    const foodTotals = {};
+    let totalPlanP = 0, totalPlanC = 0, totalPlanF = 0, totalPlanCal = 0;
+
     mealKeys.forEach((key, idx) => {
         const meal = presets[key];
         if (!meal) return;
+
+        totalPlanCal += (meal.cal || 0);
+        totalPlanP += (meal.p || 0);
+        totalPlanC += (meal.c || 0);
+        totalPlanF += (meal.f || 0);
 
         let ingredientsHtml = "";
         if (meal.ingredients && Array.isArray(meal.ingredients) && meal.ingredients.length > 0) {
             ingredientsHtml = meal.ingredients.map(ing => {
                 const food = RAW_FOODS_DATABASE.find(f => f.id === ing.foodId);
                 const foodName = food ? food.name.split(' (')[0] : ing.foodId;
+
+                const fId = ing.foodId;
+                const amt = Number(ing.amount || 0);
+                if (!foodTotals[fId]) {
+                    foodTotals[fId] = {
+                        name: foodName,
+                        unit: food ? food.unit : 'g',
+                        amount: 0
+                    };
+                }
+                foodTotals[fId].amount += amt;
+
                 return `
                     <span style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); border-radius:4px; padding:2px 6px; font-size:0.65rem; color:#f0f0f0;">
                         <strong>${ing.amount}g</strong> ${foodName}
@@ -18615,7 +18632,30 @@ function renderAthleteCurrentDietInPrescription(username) {
         `;
     });
 
-    listEl.innerHTML = html;
+    let totalsHtml = "";
+    const foodKeys = Object.keys(foodTotals);
+    if (foodKeys.length > 0) {
+        totalsHtml = `
+            <div style="background:rgba(255,214,10,0.08); border:1px solid rgba(255,214,10,0.3); border-radius:8px; padding:10px; margin-top:10px;">
+                <div style="font-size:0.75rem; font-weight:800; color:#ffd60a; margin-bottom:6px; display:flex; align-items:center; justify-content:space-between;">
+                    <span><i class="fa-solid fa-calculator"></i> TOPLAM GÜNLÜK ÇİĞ BESİN BİLANÇOSU</span>
+                    <span style="font-size:0.68rem; color:#ffffff; font-weight:800;">${totalPlanCal} kcal (${Math.round(totalPlanP)}P / ${Math.round(totalPlanC)}C / ${Math.round(totalPlanF)}F)</span>
+                </div>
+                <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                    ${foodKeys.map(fId => {
+                        const item = foodTotals[fId];
+                        return `
+                            <span style="background:rgba(0,0,0,0.4); border:1px solid rgba(255,214,10,0.4); border-radius:4px; padding:3px 8px; font-size:0.68rem; color:#ffffff;">
+                                <strong>${item.amount}${item.unit}</strong> ${item.name}
+                            </span>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    listEl.innerHTML = html + totalsHtml;
 }
 
 function importAthleteMealsToCoachCalc(targetUsername) {
@@ -23534,7 +23574,7 @@ function processOfflineAssistantResponse(personaKey, userText) {
                    1. 🛑 <strong>Ağır setleri hemen durdur:</strong> Bir banka otur, derin derin diyafram nefesi al ve yüzüne soğuk su çarp.<br>
                    2. 💧 <strong>Elektrolit & Su:</strong> Bir şişe maden suyunu yudum yudum iç (tuz ve mineral tansiyonu toparlar).<br>
                    3. 💡 <strong>Neden oldu?</strong> Antrenmandan hemen önce ağır yediysen kan mideye çekilmiştir veya preworkout kafeini çarpmıştır.<br><br>
-                   Eğer 10 dakikaya toparlarsan bugün <strong>RIR 3-4</strong> (hafif pompa) şeklinde bitir; toparlayamazsan antrenmanı bırak evine git, dinlen. Kütle kaçmıyor, önce sağlık!`
+                   Eğer 10 dakikaya toparlarsan bugün <strong>RIR 3-4</strong> (hafif pump) şeklinde bitir; toparlayamazsan antrenmanı bırak evine git, dinlen. Kütle kaçmıyor, önce sağlık!`
         };
     }
 
@@ -24529,6 +24569,8 @@ function generateWeeklyDocHtml() {
     });
 
     let workoutRowsHtml = "";
+    let detailedWorkoutLogsHtml = "";
+
     dayKeys.forEach((dayKey, idx) => {
         const plan = (appData.customWorkoutPlan && appData.customWorkoutPlan[dayKey]) || (DEFAULT_WORKOUT_PLAN && DEFAULT_WORKOUT_PLAN[dayKey]);
         if (plan) {
@@ -24540,6 +24582,49 @@ function generateWeeklyDocHtml() {
                     <td style="padding:6px 10px; border:1px solid #cbd5e1; font-size:11px; color:#475569;">${exNames || 'OFF'}</td>
                 </tr>
             `;
+
+            if (plan.exercises && plan.exercises.length > 0) {
+                let dayExHtml = "";
+                plan.exercises.forEach(ex => {
+                    const savedSeat = (appData.seatSettings && (appData.seatSettings[ex.id] || (ex.name && appData.seatSettings[ex.name]))) || ex.defaultSeat || '--';
+                    const logs = (appData.workoutLogs && (appData.workoutLogs[ex.id] || (ex.name && appData.workoutLogs[ex.name]))) || [];
+
+                    let setsRows = "";
+                    if (logs.length === 0) {
+                        setsRows = `<tr><td colspan="4" style="padding:4px 8px; border:1px solid #e2e8f0; font-size:10px; color:#94a3b8; text-align:center;">Henüz set kaydı girilmedi</td></tr>`;
+                    } else {
+                        logs.forEach((s, sIdx) => {
+                            setsRows += `
+                                <tr>
+                                    <td style="padding:4px 8px; border:1px solid #e2e8f0; font-size:11px; text-align:center; font-weight:bold;">Set ${sIdx + 1} (${s.setType || 'S' + (sIdx + 1)})</td>
+                                    <td style="padding:4px 8px; border:1px solid #e2e8f0; font-size:11px; text-align:center; font-weight:bold; color:#0284c7;">${s.weight || 0} kg</td>
+                                    <td style="padding:4px 8px; border:1px solid #e2e8f0; font-size:11px; text-align:center;">${s.reps || 0} Rep</td>
+                                    <td style="padding:4px 8px; border:1px solid #e2e8f0; font-size:11px; text-align:center; color:#64748b;">${s.rir || 'RIR --'}</td>
+                                </tr>
+                            `;
+                        });
+                    }
+
+                    dayExHtml += `
+                        <div style="margin-bottom:8px; background:#f8fafc; border:1px solid #e2e8f0; padding:8px; border-radius:6px;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; font-size:11px;">
+                                <strong style="color:#0f172a;">${ex.name} (${ex.muscle || ''})</strong>
+                                <span style="color:#475569; font-size:10px;">📐 Koltuk/Pim: <strong>${savedSeat}</strong></span>
+                            </div>
+                            <table style="width:100%; border-collapse:collapse;">
+                                ${setsRows}
+                            </table>
+                        </div>
+                    `;
+                });
+
+                detailedWorkoutLogsHtml += `
+                    <div style="margin-top:12px; margin-bottom:16px;">
+                        <h5 style="margin:0 0 6px 0; color:#0284c7; font-size:12px; text-transform:uppercase;">📅 ${daysTr[idx]} - ${plan.title}</h5>
+                        ${dayExHtml}
+                    </div>
+                `;
+            }
         }
     });
 
@@ -24600,6 +24685,10 @@ function generateWeeklyDocHtml() {
                 </tr>
                 ${workoutRowsHtml}
             </table>
+
+            <!-- DETAYLI ANTRENMAN DEFTERİ & SET LOGLARI -->
+            <h4 style="color:#0284c7; border-left:4px solid #0284c7; padding-left:8px; margin:20px 0 8px 0; font-size:14px;">3.1 DETAYLI ANTRENMAN DEFTERİ & SET LOGLARI</h4>
+            ${detailedWorkoutLogsHtml}
 
             <!-- BESLENME VE MAKRO ÖZETİ -->
             <h4 style="color:#0284c7; border-left:4px solid #0284c7; padding-left:8px; margin:16px 0 8px 0; font-size:14px;">4. BESLENME VE MAKRO DİSİPLİNİ</h4>
