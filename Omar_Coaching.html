@@ -12694,6 +12694,7 @@ function createDefaultAppData() {
             meals: []
         },
         workoutLogs: {},
+        exerciseHistory: {},
         exerciseSetsCount: {},
         seatSettings: {},
         weightHistory: [],
@@ -12801,6 +12802,7 @@ function loadDataFromStorage() {
             stepHistory: parsed.stepHistory || {},
             rpgCharacter: { ...createDefaultRpgCharacter(), ...(parsed.rpgCharacter || {}) },
             workoutLogs: parsed.workoutLogs || {},
+            exerciseHistory: parsed.exerciseHistory || {},
             exerciseSetsCount: parsed.exerciseSetsCount || {},
             seatSettings: parsed.seatSettings || {},
             weightHistory: parsed.weightHistory || [],
@@ -12835,6 +12837,7 @@ function loadDataFromStorage() {
                 stepHistory: parsed.stepHistory || {},
                 rpgCharacter: { ...createDefaultRpgCharacter(), ...(parsed.rpgCharacter || {}) },
                 workoutLogs: parsed.workoutLogs || {},
+                exerciseHistory: parsed.exerciseHistory || {},
                 exerciseSetsCount: parsed.exerciseSetsCount || {},
                 seatSettings: parsed.seatSettings || {},
                 weightHistory: parsed.weightHistory || [],
@@ -15372,11 +15375,151 @@ function changeExerciseSets(exId, delta, baseSetsParam) {
     }
 }
 
+// ==================== EXERCISE-CENTRIC CANONICAL ENGINE ====================
+
+function getCanonicalExerciseKey(rawName, exId) {
+    if (!rawName && !exId) return 'unknown_exercise';
+    const str = (rawName || exId).toString();
+    const cleaned = str
+        .toLowerCase()
+        .replace(/ğ/g, 'g')
+        .replace(/ü/g, 'u')
+        .replace(/ş/g, 's')
+        .replace(/ı/g, 'i')
+        .replace(/ö/g, 'o')
+        .replace(/ç/g, 'c')
+        .replace(/\s*\([^)]*\)/g, '') // remove parenthetical notes: (Lat Odak), (30 Derece), etc.
+        .replace(/[-_+/\\.,;:!]/g, ' ')
+        .replace(/\b(makine|makinesi|machine)\b/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+    return cleaned || str.toLowerCase().trim();
+}
+
+function findMatchingExercisesInPlan(canonicalKey) {
+    const matches = [];
+    const dayKeys = ["pzt", "sal", "car", "per", "cum", "cmt", "paz"];
+    const allPlans = appData.customWorkoutPlan || DEFAULT_WORKOUT_PLAN;
+
+    dayKeys.forEach(dk => {
+        const plan = allPlans[dk] || (DEFAULT_WORKOUT_PLAN && DEFAULT_WORKOUT_PLAN[dk]);
+        if (plan && plan.exercises) {
+            plan.exercises.forEach(ex => {
+                const cK = getCanonicalExerciseKey(ex.name, ex.id);
+                if (cK === canonicalKey) {
+                    matches.push({ dayKey: dk, dayTitle: plan.title, ex: ex });
+                }
+            });
+        }
+    });
+    return matches;
+}
+
+function getExercisePreviousSession(ex, currentDayKey) {
+    const cKey = getCanonicalExerciseKey(ex.name, ex.id);
+    const todayStr = getFitnessDateKey();
+    const dayOrder = { pzt: 1, sal: 2, car: 3, per: 4, cum: 5, cmt: 6, paz: 7 };
+    const curDayNum = dayOrder[currentDayKey] || 0;
+
+    const candidateSessions = [];
+
+    // 1. Gather all candidates from appData.exerciseHistory
+    if (appData.exerciseHistory && Array.isArray(appData.exerciseHistory[cKey])) {
+        appData.exerciseHistory[cKey].forEach(sess => {
+            if (sess && Array.isArray(sess.sets) && sess.sets.some(s => s && (Number(s.weight) > 0 || Number(s.reps) > 0))) {
+                candidateSessions.push(sess);
+            }
+        });
+    }
+
+    // 2. Gather from appData.workoutLogs across all matching exercises in the plan
+    const matchingExs = findMatchingExercisesInPlan(cKey);
+    matchingExs.forEach(m => {
+        const logs = appData.workoutLogs ? appData.workoutLogs[m.ex.id] : null;
+        if (logs && Array.isArray(logs) && logs.some(s => s && (Number(s.weight) > 0 || Number(s.reps) > 0))) {
+            const firstSet = logs.find(s => s && (Number(s.weight) > 0 || Number(s.reps) > 0)) || logs[0] || {};
+            const logDate = firstSet.date || '';
+            const alreadyExists = candidateSessions.some(c => c.exId === m.ex.id && c.date === logDate);
+            if (!alreadyExists) {
+                candidateSessions.push({
+                    date: logDate,
+                    dayKey: m.dayKey,
+                    dayTitle: m.dayTitle,
+                    exId: m.ex.id,
+                    exName: m.ex.name,
+                    timestamp: firstSet.timestamp || 0,
+                    sets: logs
+                });
+            }
+        }
+    });
+
+    // 3. Check direct key in workoutLogs[cKey] or workoutLogs[ex.name]
+    [cKey, ex.name].forEach(key => {
+        if (key && appData.workoutLogs && Array.isArray(appData.workoutLogs[key])) {
+            const logs = appData.workoutLogs[key];
+            if (logs.some(s => s && (Number(s.weight) > 0 || Number(s.reps) > 0))) {
+                const firstSet = logs.find(s => s && (Number(s.weight) > 0 || Number(s.reps) > 0)) || logs[0] || {};
+                const logDate = firstSet.date || '';
+                const alreadyExists = candidateSessions.some(c => c.date === logDate && c.sets === logs);
+                if (!alreadyExists) {
+                    candidateSessions.push({
+                        date: logDate,
+                        dayKey: '',
+                        dayTitle: '',
+                        exId: ex.id,
+                        exName: ex.name,
+                        timestamp: firstSet.timestamp || 0,
+                        sets: logs
+                    });
+                }
+            }
+        }
+    });
+
+    if (candidateSessions.length === 0) {
+        return { sets: [], info: null };
+    }
+
+    // Filter for PREVIOUS sessions (not the current in-progress session today on this same exercise)
+    const previousCandidates = candidateSessions.filter(cand => {
+        if (cand.date && cand.date < todayStr) return true;
+        if (cand.exId && cand.exId !== ex.id) return true;
+        if (cand.dayKey && currentDayKey && cand.dayKey !== currentDayKey) return true;
+        return false;
+    });
+
+    const pool = previousCandidates.length > 0 ? previousCandidates : candidateSessions;
+
+    pool.sort((a, b) => {
+        if (a.date && b.date && a.date !== b.date) {
+            return b.date.localeCompare(a.date);
+        }
+        if (a.timestamp && b.timestamp && a.timestamp !== b.timestamp) {
+            return b.timestamp - a.timestamp;
+        }
+        const aDayNum = dayOrder[a.dayKey] || 0;
+        const bDayNum = dayOrder[b.dayKey] || 0;
+        const aDist = (curDayNum - aDayNum + 7) % 7 || 7;
+        const bDist = (curDayNum - bDayNum + 7) % 7 || 7;
+        return aDist - bDist;
+    });
+
+    const bestSession = pool[0];
+    return {
+        sets: bestSession.sets || [],
+        info: bestSession
+    };
+}
+
 function calculateOverloadTarget(prevLogs) {
-    if (!prevLogs || prevLogs.length === 0 || !prevLogs[0] || !prevLogs[0].weight || prevLogs[0].weight === "-") {
+    if (!prevLogs || prevLogs.length === 0) {
         return null;
     }
-    const topSet = prevLogs[0];
+    const validSets = prevLogs.filter(s => s && s.weight && s.weight !== '-' && (Number(s.weight) > 0 || Number(s.reps) > 0));
+    if (validSets.length === 0) return null;
+
+    const topSet = validSets[0];
     const w = parseFloat(topSet.weight);
     const r = parseInt(topSet.reps);
     if (!w || !r) return null;
@@ -15385,7 +15528,7 @@ function calculateOverloadTarget(prevLogs) {
     const targetHeavierWeight = (w + 2.5).toFixed(1).replace('.0', '');
     const targetHeavierReps = Math.max(5, r - 2);
 
-    return `Geçen Hafta: ${w}kg × ${r} Rep ➔ <strong>Bugün Hedef: ${w}kg × ${targetSameWeightReps} Rep</strong> veya <strong>${targetHeavierWeight}kg × ${targetHeavierReps}+ Rep</strong>`;
+    return `Önceki Seans: ${w}kg × ${r} Rep ➔ <strong>Bugün Hedef: ${w}kg × ${targetSameWeightReps} Rep</strong> veya <strong>${targetHeavierWeight}kg × ${targetHeavierReps}+ Rep</strong>`;
 }
 
 function openWorkoutSplitsModal() {
@@ -15641,11 +15784,43 @@ function renderWorkoutView(dayKey) {
     `;
 
     plan.exercises.forEach(ex => {
-        const savedSeat = (appData.seatSettings && (appData.seatSettings[ex.id] || (ex.name && appData.seatSettings[ex.name]))) || ex.defaultSeat || '';
-        const lastLog = (appData.workoutLogs && (appData.workoutLogs[ex.id] || (ex.name && appData.workoutLogs[ex.name]))) || [];
+        const cKey = getCanonicalExerciseKey(ex.name, ex.id);
+        const savedSeat = (appData.seatSettings && (appData.seatSettings[ex.id] || (ex.name && appData.seatSettings[ex.name]) || appData.seatSettings[cKey])) || ex.defaultSeat || '';
+        
+        // Exercise-Centric Previous Session Lookup (Cross-day & Cross-week):
+        const prevSession = getExercisePreviousSession(ex, currentActiveDay);
+        const lastLog = prevSession.sets || [];
+        const prevInfo = prevSession.info;
+
         const baseSets = getExerciseBaseSetCount(ex);
         const totalSets = getExerciseSetCount(ex);
         const overloadHint = calculateOverloadTarget(lastLog);
+
+        // Previous session summary banner:
+        let prevSessionSummary = "";
+        if (lastLog.length > 0 && lastLog.some(s => s && (Number(s.weight) > 0 || Number(s.reps) > 0))) {
+            const dayNamesMap = { pzt: "Pazartesi", sal: "Salı", car: "Çarşamba", per: "Perşembe", cum: "Cuma", cmt: "Cumartesi", paz: "Pazar" };
+            const dayLabel = (prevInfo && prevInfo.dayKey && dayNamesMap[prevInfo.dayKey]) ? dayNamesMap[prevInfo.dayKey] : "";
+            const dateLabel = (prevInfo && prevInfo.date) ? prevInfo.date : "";
+            const tagStr = [dayLabel, dateLabel].filter(Boolean).join(" • ");
+            
+            const setsSummary = lastLog
+                .filter(s => s && (Number(s.weight) > 0 || Number(s.reps) > 0))
+                .map((s, idx) => `<strong>${idx + 1}. Set:</strong> <span style="color:#ffffff;">${s.weight}kg × ${s.reps}</span>${s.rir ? ` <span style="color:#ffd60a; opacity:0.9;">(${s.rir})</span>` : ''}`)
+                .join(" • ");
+
+            if (setsSummary) {
+                prevSessionSummary = `
+                    <div style="background:rgba(255,214,10,0.08); border:1px solid rgba(255,214,10,0.25); border-radius:8px; padding:6px 10px; margin-bottom:8px; font-size:0.72rem; color:#ffd60a; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:4px;">
+                        <div>
+                            <i class="fa-solid fa-clock-rotate-left"></i>
+                            <span style="font-weight:700; margin-left:4px;">Önceki Seans ${tagStr ? `(${tagStr})` : ''}:</span>
+                            <span style="margin-left:4px;">${setsSummary}</span>
+                        </div>
+                    </div>
+                `;
+            }
+        }
 
         html += `
             <div class="exercise-card">
@@ -15659,6 +15834,8 @@ function renderWorkoutView(dayKey) {
                     <input type="text" class="ex-seat-input" placeholder="Koltuk/Pim" 
                            value="${savedSeat}" onchange="saveSeatSetting('${ex.id}', this.value, '${(ex.name || '').replace(/'/g, "\\'")}')" title="Koltuk ve Pim Ayarın (Her Hafta Otomatik Dolar)">
                 </div>
+
+                ${prevSessionSummary}
 
                 ${overloadHint ? `
                     <div class="overload-hint-box">
@@ -15679,16 +15856,22 @@ function renderWorkoutView(dayKey) {
                     <tbody>
         `;
 
+        const todayLogs = (appData.workoutLogs && appData.workoutLogs[ex.id]) || [];
+
         for (let i = 1; i <= totalSets; i++) {
             const prevSet = lastLog[i - 1] || { weight: "-", reps: "-", rir: "", setType: "" };
+            const todaySet = todayLogs[i - 1] || null;
+
             const isExtraBackOff = (i > baseSets);
             const coachDir = (!isExtraBackOff && ex.setDirectives && ex.setDirectives[i - 1]) || null;
             const defaultTag = isExtraBackOff ? "BACK" : ((coachDir && coachDir.type) ? coachDir.type : ((i === 1 && ex.isTopSet) ? "TOP" : (i > 1 && ex.isTopSet) ? "BACK" : "S" + i));
-            const currentSetType = prevSet.setType || defaultTag;
-            const savedW = prevSet.weight !== '-' ? prevSet.weight : '';
-            const savedR = prevSet.reps !== '-' ? prevSet.reps : '';
-            const savedRir = prevSet.rir || '';
-            const tagClass = currentSetType === 'TOP' ? 'tag-top' : currentSetType === 'BACK' ? 'tag-back' : currentSetType === 'ISINMA' ? 'tag-warm' : currentSetType === 'DROP' ? 'tag-drop' : 'tag-normal';
+            
+            const isLoggedToday = todaySet && (todaySet.date === getFitnessDateKey() || (todaySet.weight > 0 && (!todaySet.date || todaySet.date === new Date().toISOString().split('T')[0])));
+            const curSetType = (todaySet && todaySet.setType) ? todaySet.setType : (prevSet.setType || defaultTag);
+            const savedW = (todaySet && isLoggedToday && todaySet.weight !== '-') ? todaySet.weight : '';
+            const savedR = (todaySet && isLoggedToday && todaySet.reps !== '-') ? todaySet.reps : '';
+            const savedRir = (todaySet && isLoggedToday) ? (todaySet.rir || '') : '';
+            const tagClass = curSetType === 'TOP' ? 'tag-top' : curSetType === 'BACK' ? 'tag-back' : curSetType === 'ISINMA' ? 'tag-warm' : curSetType === 'DROP' ? 'tag-drop' : 'tag-normal';
 
             const coachTargetText = isExtraBackOff
                 ? "⚡ Ekstra Back-Off (Sporcu İnisiyatifi)"
@@ -15697,24 +15880,24 @@ function renderWorkoutView(dayKey) {
             html += `
                 <tr class="set-row ${isExtraBackOff ? 'set-row-extra' : ''}" style="${isExtraBackOff ? 'background:rgba(96,165,250,0.05);' : ''}">
                     <td>
-                        <span class="set-tag ${tagClass}" id="type_${ex.id}_${i}" data-set-type="${currentSetType}" title="Set Tipi: ${currentSetType}">
-                            ${currentSetType === 'TOP' ? '🔥 TOP' : currentSetType === 'BACK' ? '⚡ BACK' : currentSetType === 'ISINMA' ? '🟡 ISIN' : currentSetType === 'DROP' ? '💥 DROP' : currentSetType}
+                        <span class="set-tag ${tagClass}" id="type_${ex.id}_${i}" data-set-type="${curSetType}" title="Set Tipi: ${curSetType}">
+                            ${curSetType === 'TOP' ? '🔥 TOP' : curSetType === 'BACK' ? '⚡ BACK' : curSetType === 'ISINMA' ? '🟡 ISIN' : curSetType === 'DROP' ? '💥 DROP' : curSetType}
                         </span>
                     </td>
                     <td style="font-size: 0.75rem; color: var(--text-muted); line-height:1.25;">
-                        <div>${prevSet.weight !== '-' ? `<span style="color:#ffffff; font-weight:700;">${prevSet.weight}kg</span> × ${prevSet.reps}` : '<span style="opacity:0.35;">-</span>'}</div>
+                        <div>${prevSet.weight !== '-' ? `<span style="color:#ffffff; font-weight:700;">${prevSet.weight}kg</span> × ${prevSet.reps}${prevSet.rir ? ` <span style="font-size:0.65rem; color:#ffd60a;">(${prevSet.rir})</span>` : ''}` : '<span style="opacity:0.35;">-</span>'}</div>
                         ${coachTargetText ? `<div style="font-size:0.62rem; color:${isExtraBackOff ? '#60a5fa' : '#ffd60a'}; font-weight:700; margin-top:2px;" title="${isExtraBackOff ? 'Ekstra Set' : 'Koç Direktifi'}"><i class="fa-solid ${isExtraBackOff ? 'fa-bolt' : 'fa-bullseye'}"></i> ${coachTargetText}</div>` : ''}
                     </td>
                     <td>
                         <div style="display: flex; gap: 3px;">
-                            <input type="number" step="0.5" class="set-input" placeholder="Kg" id="w_${ex.id}_${i}" 
-                                   value="${savedW}" onchange="autoSaveSet('${ex.id}', ${i})">
-                            <input type="number" class="set-input" placeholder="Rep" id="r_${ex.id}_${i}" 
-                                   value="${savedR}" onchange="autoSaveSet('${ex.id}', ${i})">
+                            <input type="number" step="0.5" class="set-input" placeholder="${prevSet.weight !== '-' ? prevSet.weight : 'Kg'}" id="w_${ex.id}_${i}" 
+                                   value="${savedW}" onchange="autoSaveSet('${ex.id}', ${i}, '${(ex.name || '').replace(/'/g, "\\'")}')">
+                            <input type="number" class="set-input" placeholder="${prevSet.reps !== '-' ? prevSet.reps : 'Rep'}" id="r_${ex.id}_${i}" 
+                                   value="${savedR}" onchange="autoSaveSet('${ex.id}', ${i}, '${(ex.name || '').replace(/'/g, "\\'")}')">
                         </div>
                     </td>
                     <td>
-                        <select class="rir-select" id="rir_${ex.id}_${i}" onchange="autoSaveSet('${ex.id}', ${i})">
+                        <select class="rir-select" id="rir_${ex.id}_${i}" onchange="autoSaveSet('${ex.id}', ${i}, '${(ex.name || '').replace(/'/g, "\\'")}')">
                             <option value="" ${savedRir === '' ? 'selected' : ''}>Zorluk Seç</option>
                             <option value="RIR 0" ${savedRir === 'RIR 0' || savedRir === 'Zor (RIR 0)' || savedRir === '🔴 Zor (Tükeniş / 0)' ? 'selected' : ''}>🔴 Zor (Tükeniş / 0)</option>
                             <option value="RIR 1" ${savedRir === 'RIR 1' || savedRir === 'İdeal (RIR 1)' || savedRir === '🟢 İdeal (1 Kaldı)' ? 'selected' : ''}>🟢 İdeal (1 Kaldı)</option>
@@ -15772,11 +15955,13 @@ function saveSeatSetting(exId, value, exName) {
     if (!appData.seatSettings) appData.seatSettings = {};
     appData.seatSettings[exId] = value;
     if (exName) appData.seatSettings[exName] = value;
+    const cKey = getCanonicalExerciseKey(exName || exId, exId);
+    appData.seatSettings[cKey] = value;
     saveDataToStorage();
     showToast("Koltuk/Pim ayarı kaydedildi 📐");
 }
 
-function autoSaveSet(exId, setIndex) {
+function autoSaveSet(exId, setIndex, exName) {
     const weightEl = document.getElementById(`w_${exId}_${setIndex}`);
     const repsEl = document.getElementById(`r_${exId}_${setIndex}`);
     const rirEl = document.getElementById(`rir_${exId}_${setIndex}`);
@@ -15795,13 +15980,60 @@ function autoSaveSet(exId, setIndex) {
     if (!appData.workoutLogs) appData.workoutLogs = {};
     if (!appData.workoutLogs[exId]) appData.workoutLogs[exId] = [];
 
-    appData.workoutLogs[exId][setIndex - 1] = {
+    const todayStr = getFitnessDateKey();
+    const timestamp = Date.now();
+
+    const setData = {
         weight: w,
         reps: r,
         rir: rir,
         setType: setType,
-        date: new Date().toISOString().split('T')[0]
+        date: todayStr,
+        timestamp: timestamp
     };
+
+    appData.workoutLogs[exId][setIndex - 1] = setData;
+
+    // Resolve exercise name and canonical key
+    let resolvedName = exName;
+    if (!resolvedName) {
+        const allPlans = appData.customWorkoutPlan || DEFAULT_WORKOUT_PLAN;
+        for (const dk of Object.keys(allPlans)) {
+            const p = allPlans[dk];
+            if (p && p.exercises) {
+                const found = p.exercises.find(e => e.id === exId);
+                if (found) {
+                    resolvedName = found.name;
+                    break;
+                }
+            }
+        }
+    }
+
+    const cKey = getCanonicalExerciseKey(resolvedName || exId, exId);
+
+    // Save to chronological exerciseHistory
+    if (!appData.exerciseHistory) appData.exerciseHistory = {};
+    if (!appData.exerciseHistory[cKey]) appData.exerciseHistory[cKey] = [];
+
+    let session = appData.exerciseHistory[cKey].find(s => s && s.date === todayStr && s.exId === exId);
+    if (!session) {
+        session = {
+            date: todayStr,
+            timestamp: timestamp,
+            dayKey: currentActiveDay,
+            exId: exId,
+            exName: resolvedName || exId,
+            sets: []
+        };
+        appData.exerciseHistory[cKey].unshift(session);
+    }
+    session.timestamp = timestamp;
+    session.sets[setIndex - 1] = setData;
+
+    // Mirror to canonical key in workoutLogs
+    appData.workoutLogs[cKey] = session.sets;
+    if (resolvedName) appData.workoutLogs[resolvedName] = session.sets;
 
     addRpgStatGain('power', 2, 25, 'Antrenman Seti');
     evaluateDailyStreak();
@@ -24586,8 +24818,9 @@ function generateWeeklyDocHtml() {
             if (plan.exercises && plan.exercises.length > 0) {
                 let dayExHtml = "";
                 plan.exercises.forEach(ex => {
-                    const savedSeat = (appData.seatSettings && (appData.seatSettings[ex.id] || (ex.name && appData.seatSettings[ex.name]))) || ex.defaultSeat || '--';
-                    const logs = (appData.workoutLogs && (appData.workoutLogs[ex.id] || (ex.name && appData.workoutLogs[ex.name]))) || [];
+                    const cKey = getCanonicalExerciseKey(ex.name, ex.id);
+                    const savedSeat = (appData.seatSettings && (appData.seatSettings[ex.id] || (ex.name && appData.seatSettings[ex.name]) || appData.seatSettings[cKey])) || ex.defaultSeat || '--';
+                    const logs = (appData.workoutLogs && (appData.workoutLogs[ex.id] || (ex.name && appData.workoutLogs[ex.name]) || appData.workoutLogs[cKey])) || [];
 
                     let setsRows = "";
                     if (logs.length === 0) {
