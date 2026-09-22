@@ -2276,6 +2276,7 @@ document.addEventListener("DOMContentLoaded", () => {
             checkOnboardingStatus();
             checkAthletePendingRevision();
             checkAthleteUnreadMessages();
+            checkMorningWeighInGate();
         }
     }
     initModalBackdropHandlers();
@@ -5932,6 +5933,85 @@ function getNextSessionProgressionAdvice(lastWeight, lastReps, lastRir) {
 
 // ==================== SCALE & COACH REPORT ====================
 
+// ==================== 🌅 MORNING FASTED WEIGH-IN GATE PROTOCOL ====================
+
+function checkMorningWeighInGate() {
+    const activeUsername = getActiveSessionUsername();
+    if (!activeUsername) return;
+    const registry = getUsersRegistry();
+    const user = registry[activeUsername];
+    if (user && user.role === "coach") return; // Coaches don't weigh in
+
+    // Don't interrupt onboarding if athlete hasn't finished onboarding wizard
+    if (appData.userProfile && appData.userProfile.onboardingCompleted === false) return;
+
+    const todayStr = getFitnessDateKey();
+    const history = appData.weightHistory || [];
+    const hasWeighedToday = history.some(w => w && w.date === todayStr);
+
+    if (hasWeighedToday) return; // Already weighed today!
+
+    // Check if dismissed/skipped for this fitness session day
+    const skipKey = `SKIPPED_WEIGH_IN_${activeUsername}_${todayStr}`;
+    if (sessionStorage.getItem(skipKey) === "true") return;
+
+    // Small delay so dashboard elements finish rendering smoothly
+    setTimeout(() => {
+        const currHistory = appData.weightHistory || [];
+        if (!currHistory.some(w => w && w.date === todayStr)) {
+            openMorningWeighInModal();
+        }
+    }, 650);
+}
+
+function openMorningWeighInModal() {
+    const history = appData.weightHistory || [];
+    const latestWeight = history.length > 0 ? history[0].weight : (appData.userProfile?.weight || 74.0);
+
+    const prevValEl = document.getElementById("morning-gate-prev-weight-val");
+    if (prevValEl) prevValEl.innerText = `${latestWeight.toFixed(1)} kg`;
+
+    const input = document.getElementById("morning-gate-weight-input");
+    if (input) {
+        input.value = latestWeight.toFixed(1);
+    }
+
+    openModal("modal-morning-weigh-in");
+}
+
+function adjustMorningGateWeight(delta) {
+    const input = document.getElementById("morning-gate-weight-input");
+    if (!input) return;
+    let val = parseFloat(input.value) || 74.0;
+    val = Math.round((val + delta) * 10) / 10;
+    if (val >= 30 && val <= 250) {
+        input.value = val.toFixed(1);
+    }
+}
+
+function submitMorningGateWeight() {
+    const input = document.getElementById("morning-gate-weight-input");
+    const weight = input ? parseFloat(input.value) : NaN;
+    if (isNaN(weight) || weight < 30 || weight > 250) {
+        alert("Lütfen geçerli bir kilo girin (Örn: 74.5)");
+        return;
+    }
+
+    saveDailyWeight(weight);
+    addRpgStatGain('discipline', 5, 50, 'Sabah Aç Karnına Tartı');
+    closeModal("modal-morning-weigh-in");
+    showToast(`🌅 Harika! Sabah aç karnına tartın kaydedildi: ${weight.toFixed(1)} kg. Güne hazırsın! 🚀`);
+}
+
+function skipMorningGateWeight() {
+    const activeUsername = getActiveSessionUsername();
+    const todayStr = getFitnessDateKey();
+    const skipKey = `SKIPPED_WEIGH_IN_${activeUsername}_${todayStr}`;
+    sessionStorage.setItem(skipKey, "true");
+    closeModal("modal-morning-weigh-in");
+    showToast("Anlaşıldı! Yarın sabah aç karnına tartılmayı unutma 💪");
+}
+
 function saveDailyWeight(val) {
     const input = document.getElementById("daily-weight-input");
     const weight = val ? parseFloat(val) : (input ? parseFloat(input.value) : NaN);
@@ -7770,6 +7850,7 @@ function switchAppPortal(mode) {
         renderWorkoutView(currentActiveDay);
         checkAthletePendingRevision();
         checkAthleteUnreadMessages();
+        checkMorningWeighInGate();
         refreshRealtimeChatConnection();
         showToast("Sporcu Portalı Aktif 🏃‍♂️");
     }
@@ -7912,6 +7993,7 @@ function renderCoachRoster() {
 
         const surveys = (uData.workoutSurveyHistory && Array.isArray(uData.workoutSurveyHistory)) ? uData.workoutSurveyHistory : [];
         const latestSurvey = surveys.length > 0 ? surveys[surveys.length - 1] : null;
+        const hasWeighedToday = (uData.weightHistory || []).some(w => w && w.date === getFitnessDateKey());
 
         const initial = (ath.displayName || ath.username).charAt(0).toUpperCase();
 
@@ -7941,8 +8023,11 @@ function renderCoachRoster() {
 
                 <div class="arc-metrics-row">
                     <div class="arc-m-item">
-                        <span>Güncel Kilo</span>
+                        <span>Sabah Tartısı</span>
                         <strong>${currentW.toFixed(1)} kg</strong>
+                        <span style="font-size:0.62rem; font-weight:700; color:${hasWeighedToday ? '#30d158' : '#f59e0b'};">
+                            ${hasWeighedToday ? '✅ Tartıldı' : '⏳ Bekleniyor'}
+                        </span>
                     </div>
                     <div class="arc-m-item">
                         <span>Günlük Kalori</span>

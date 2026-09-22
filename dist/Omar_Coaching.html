@@ -10514,6 +10514,66 @@ body.modal-open {
         </div>
     </div>
 
+    <!-- 🌅 MANDATORY MORNING FASTED WEIGH-IN PROTOCOL MODAL -->
+    <div id="modal-morning-weigh-in" class="modal-overlay" style="z-index: 10005; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); background: rgba(0, 0, 0, 0.85);">
+        <div class="modal-card" style="max-width:440px; border: 1.5px solid rgba(255, 214, 10, 0.5); box-shadow: 0 10px 40px rgba(255, 214, 10, 0.15);">
+            <div class="modal-header" style="border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 10px;">
+                <h3 style="color:#ffd60a; font-size: 0.95rem;">
+                    <i class="fa-solid fa-scale-balanced"></i> 🌅 Sabah Aç Karnına Günlük Tartı
+                </h3>
+                <span class="badge-role" style="background:#ffd60a; color:#000; font-size:0.6rem; font-weight:900;">GÜNLÜK DİSİPLİN</span>
+            </div>
+            <div class="modal-body" style="padding: 14px 6px;">
+                <!-- Motivational & Educational Coach Callout -->
+                <div style="background: linear-gradient(135deg, rgba(255, 214, 10, 0.1), rgba(15, 23, 42, 0.7)); border: 1px solid rgba(255, 214, 10, 0.3); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 14px;">
+                    <div style="display: flex; gap: 10px; align-items: flex-start;">
+                        <span style="font-size: 1.6rem; line-height: 1;">👑</span>
+                        <div style="font-size: 0.76rem; color: #ffffff; line-height: 1.45;">
+                            <strong style="color: #ffd60a; display: block; margin-bottom: 3px;">Koç Ömer'in Sabah Protokolü:</strong>
+                            Günaydın! Sabah <strong>tuvalete çıktıktan hemen sonra, hiçbir şey yemeden ve içmeden</strong> tartıl. İlerlemenin ve kalori yönetiminin en dürüst pusulası sabah aç karnına tartıdır.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Last Recorded Weight Reminder -->
+                <div id="morning-gate-last-weight-banner" style="display: flex; justify-content: space-between; align-items: center; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 8px 12px; margin-bottom: 16px; font-size: 0.75rem;">
+                    <span style="color: var(--text-secondary);"><i class="fa-solid fa-clock-rotate-left"></i> Son Kayıtlı Kilon:</span>
+                    <strong id="morning-gate-prev-weight-val" style="color: #38bdf8; font-size: 0.85rem;">-- kg</strong>
+                </div>
+
+                <!-- Digital Weight Input with Stepper Controls -->
+                <div class="form-group" style="text-align: center; margin-bottom: 16px;">
+                    <label style="font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 8px; display: block; font-weight: 700;">
+                        GÜNCEL SABAH KİLONU GİR (KG)
+                    </label>
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        <button type="button" class="btn btn-outline" onclick="adjustMorningGateWeight(-0.1)" style="width: 44px; height: 48px; font-size: 1.1rem; font-weight: 800; border-color: rgba(255,255,255,0.2); color: #fff;">
+                            -
+                        </button>
+                        <div style="position: relative; max-width: 170px; width: 100%;">
+                            <input type="number" id="morning-gate-weight-input" step="0.1" min="30" max="250" placeholder="74.5"
+                                   style="width: 100%; text-align: center; font-size: 1.6rem; font-weight: 900; color: #ffd60a; background: var(--bg-input); border: 2px solid rgba(255, 214, 10, 0.5); border-radius: var(--radius-md); padding: 8px 10px; box-sizing: border-box;">
+                            <span style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 0.85rem; color: var(--text-muted); font-weight: 800;">kg</span>
+                        </div>
+                        <button type="button" class="btn btn-outline" onclick="adjustMorningGateWeight(0.1)" style="width: 44px; height: 48px; font-size: 1.1rem; font-weight: 800; border-color: rgba(255,255,255,0.2); color: #fff;">
+                            +
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Primary CTA: Save & Start Day -->
+                <button type="button" class="btn btn-primary btn-block" onclick="submitMorningGateWeight()" style="background: linear-gradient(135deg, #ffd60a, #f59e0b); color: #000; font-weight: 900; font-size: 0.88rem; padding: 12px; border: none; box-shadow: 0 4px 16px rgba(255, 214, 10, 0.3); margin-bottom: 8px;">
+                    <i class="fa-solid fa-check"></i> Kilonu Kaydet & Güne Başla 🚀
+                </button>
+
+                <!-- Exception Button: Bypass / Skip for Today -->
+                <button type="button" class="btn btn-outline btn-block" onclick="skipMorningGateWeight()" style="border: 1px dashed rgba(255, 255, 255, 0.2); color: var(--text-secondary); font-size: 0.72rem; padding: 8px;">
+                    <i class="fa-solid fa-person-walking-dashed-line-arrow-right"></i> Bugün Yanımda Tartı Yok (Pas Geç)
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- ENES ABİ RETRACTABLE SIDE NOTCH (EDGE WIDGET) -->
     <div class="enes-side-notch-widget" id="enes-side-notch-widget" onclick="openAssistantModal('enes')" title="Enes Abi (AI Asistan)">
         <span class="notch-icon">🦍</span>
@@ -12802,6 +12862,7 @@ document.addEventListener("DOMContentLoaded", () => {
             checkOnboardingStatus();
             checkAthletePendingRevision();
             checkAthleteUnreadMessages();
+            checkMorningWeighInGate();
         }
     }
     initModalBackdropHandlers();
@@ -16458,6 +16519,85 @@ function getNextSessionProgressionAdvice(lastWeight, lastReps, lastRir) {
 
 // ==================== SCALE & COACH REPORT ====================
 
+// ==================== 🌅 MORNING FASTED WEIGH-IN GATE PROTOCOL ====================
+
+function checkMorningWeighInGate() {
+    const activeUsername = getActiveSessionUsername();
+    if (!activeUsername) return;
+    const registry = getUsersRegistry();
+    const user = registry[activeUsername];
+    if (user && user.role === "coach") return; // Coaches don't weigh in
+
+    // Don't interrupt onboarding if athlete hasn't finished onboarding wizard
+    if (appData.userProfile && appData.userProfile.onboardingCompleted === false) return;
+
+    const todayStr = getFitnessDateKey();
+    const history = appData.weightHistory || [];
+    const hasWeighedToday = history.some(w => w && w.date === todayStr);
+
+    if (hasWeighedToday) return; // Already weighed today!
+
+    // Check if dismissed/skipped for this fitness session day
+    const skipKey = `SKIPPED_WEIGH_IN_${activeUsername}_${todayStr}`;
+    if (sessionStorage.getItem(skipKey) === "true") return;
+
+    // Small delay so dashboard elements finish rendering smoothly
+    setTimeout(() => {
+        const currHistory = appData.weightHistory || [];
+        if (!currHistory.some(w => w && w.date === todayStr)) {
+            openMorningWeighInModal();
+        }
+    }, 650);
+}
+
+function openMorningWeighInModal() {
+    const history = appData.weightHistory || [];
+    const latestWeight = history.length > 0 ? history[0].weight : (appData.userProfile?.weight || 74.0);
+
+    const prevValEl = document.getElementById("morning-gate-prev-weight-val");
+    if (prevValEl) prevValEl.innerText = `${latestWeight.toFixed(1)} kg`;
+
+    const input = document.getElementById("morning-gate-weight-input");
+    if (input) {
+        input.value = latestWeight.toFixed(1);
+    }
+
+    openModal("modal-morning-weigh-in");
+}
+
+function adjustMorningGateWeight(delta) {
+    const input = document.getElementById("morning-gate-weight-input");
+    if (!input) return;
+    let val = parseFloat(input.value) || 74.0;
+    val = Math.round((val + delta) * 10) / 10;
+    if (val >= 30 && val <= 250) {
+        input.value = val.toFixed(1);
+    }
+}
+
+function submitMorningGateWeight() {
+    const input = document.getElementById("morning-gate-weight-input");
+    const weight = input ? parseFloat(input.value) : NaN;
+    if (isNaN(weight) || weight < 30 || weight > 250) {
+        alert("Lütfen geçerli bir kilo girin (Örn: 74.5)");
+        return;
+    }
+
+    saveDailyWeight(weight);
+    addRpgStatGain('discipline', 5, 50, 'Sabah Aç Karnına Tartı');
+    closeModal("modal-morning-weigh-in");
+    showToast(`🌅 Harika! Sabah aç karnına tartın kaydedildi: ${weight.toFixed(1)} kg. Güne hazırsın! 🚀`);
+}
+
+function skipMorningGateWeight() {
+    const activeUsername = getActiveSessionUsername();
+    const todayStr = getFitnessDateKey();
+    const skipKey = `SKIPPED_WEIGH_IN_${activeUsername}_${todayStr}`;
+    sessionStorage.setItem(skipKey, "true");
+    closeModal("modal-morning-weigh-in");
+    showToast("Anlaşıldı! Yarın sabah aç karnına tartılmayı unutma 💪");
+}
+
 function saveDailyWeight(val) {
     const input = document.getElementById("daily-weight-input");
     const weight = val ? parseFloat(val) : (input ? parseFloat(input.value) : NaN);
@@ -18296,6 +18436,7 @@ function switchAppPortal(mode) {
         renderWorkoutView(currentActiveDay);
         checkAthletePendingRevision();
         checkAthleteUnreadMessages();
+        checkMorningWeighInGate();
         refreshRealtimeChatConnection();
         showToast("Sporcu Portalı Aktif 🏃‍♂️");
     }
@@ -18438,6 +18579,7 @@ function renderCoachRoster() {
 
         const surveys = (uData.workoutSurveyHistory && Array.isArray(uData.workoutSurveyHistory)) ? uData.workoutSurveyHistory : [];
         const latestSurvey = surveys.length > 0 ? surveys[surveys.length - 1] : null;
+        const hasWeighedToday = (uData.weightHistory || []).some(w => w && w.date === getFitnessDateKey());
 
         const initial = (ath.displayName || ath.username).charAt(0).toUpperCase();
 
@@ -18467,8 +18609,11 @@ function renderCoachRoster() {
 
                 <div class="arc-metrics-row">
                     <div class="arc-m-item">
-                        <span>Güncel Kilo</span>
+                        <span>Sabah Tartısı</span>
                         <strong>${currentW.toFixed(1)} kg</strong>
+                        <span style="font-size:0.62rem; font-weight:700; color:${hasWeighedToday ? '#30d158' : '#f59e0b'};">
+                            ${hasWeighedToday ? '✅ Tartıldı' : '⏳ Bekleniyor'}
+                        </span>
                     </div>
                     <div class="arc-m-item">
                         <span>Günlük Kalori</span>
