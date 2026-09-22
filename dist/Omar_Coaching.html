@@ -912,34 +912,51 @@ body {
     display: flex;
     flex-direction: column;
     gap: 6px;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
 }
 
 .ing-inputs-top {
     display: flex;
     gap: 6px;
     align-items: center;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
 }
 
 .ing-food-select {
-    flex: 1;
+    flex: 1 1 0;
+    min-width: 0;
+    width: 0;
     background: var(--bg-card-subtle);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-sm);
     color: #ffffff;
     padding: 7px 8px;
     font-size: 0.78rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    box-sizing: border-box;
 }
 
 .ing-amount-input {
-    width: 65px;
+    width: 60px;
+    min-width: 50px;
     background: var(--bg-card-subtle);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-sm);
     color: #ffffff;
-    padding: 7px 6px;
+    padding: 7px 4px;
     font-size: 0.8rem;
     font-weight: 700;
     text-align: center;
+    box-sizing: border-box;
+    flex-shrink: 0;
 }
 
 .ing-macro-preview {
@@ -1329,6 +1346,10 @@ body.modal-open {
     padding: 0;
     touch-action: pan-y;
     overscroll-behavior: contain;
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100vw;
+    box-sizing: border-box;
 }
 
 .modal-overlay.active {
@@ -1343,11 +1364,23 @@ body.modal-open {
     max-width: 460px;
     max-height: 88vh;
     overflow-y: auto;
+    overflow-x: hidden;
     padding: 20px;
+    box-sizing: border-box;
     display: flex;
     flex-direction: column;
     gap: 14px;
     animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modal-body {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
 }
 
 @keyframes slideUp {
@@ -6524,6 +6557,18 @@ body.modal-open {
 }
 
 @media (max-width: 600px) {
+    .modal-card {
+        padding: 16px 12px;
+        max-width: 100vw;
+        border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    }
+    .modal-body {
+        padding: 0;
+        width: 100%;
+        max-width: 100%;
+        overflow-x: hidden;
+        box-sizing: border-box;
+    }
     .ai-cloud-main-btn {
         padding: 7px 14px 7px 9px;
     }
@@ -14726,9 +14771,12 @@ function openNewRecipeBuilderModal() {
     document.getElementById("recipe-edit-preset-id").value = "";
     document.getElementById("recipe-meal-name").value = "";
     document.getElementById("recipe-builder-title").innerHTML = `<i class="fa-solid fa-utensils"></i> 🍽️ Özel Öğün & Beslenme Mimarisi`;
-    document.getElementById("recipe-add-today-row").style.display = "block";
-    document.getElementById("recipe-add-today-chk").checked = true;
-    document.getElementById("recipe-save-preset-chk").checked = true;
+    const addRow = document.getElementById("recipe-add-today-row");
+    if (addRow) addRow.style.display = "block";
+    const addChk = document.getElementById("recipe-add-today-chk");
+    if (addChk) addChk.checked = true;
+    const saveChk = document.getElementById("recipe-save-preset-chk");
+    if (saveChk) saveChk.checked = true;
 
     currentRecipeIngredients = [
         { foodId: "tavuk_gogsu", amount: 200 },
@@ -14740,6 +14788,12 @@ function openNewRecipeBuilderModal() {
     openModal('modal-recipe-builder');
 }
 
+// Global alias for compatibility with buttons calling openRecipeBuilderModal
+window.openRecipeBuilderModal = openNewRecipeBuilderModal;
+function openRecipeBuilderModal() {
+    openNewRecipeBuilderModal();
+}
+
 function openEditRecipeModal(presetKey) {
     const preset = (appData.customPresets && appData.customPresets[presetKey]) || DEFAULT_PRESET_MEALS[presetKey];
     if (!preset) return;
@@ -14747,8 +14801,12 @@ function openEditRecipeModal(presetKey) {
     document.getElementById("recipe-edit-preset-id").value = presetKey;
     document.getElementById("recipe-meal-name").value = preset.name;
     document.getElementById("recipe-builder-title").innerHTML = `<i class="fa-solid fa-pen-to-square"></i> Şablonu Düzenle: ${preset.name}`;
-    document.getElementById("recipe-save-preset-chk").checked = true;
-    document.getElementById("recipe-add-today-chk").checked = false;
+    const saveChk = document.getElementById("recipe-save-preset-chk");
+    if (saveChk) saveChk.checked = true;
+    const addRow = document.getElementById("recipe-add-today-row");
+    if (addRow) addRow.style.display = "block";
+    const addChk = document.getElementById("recipe-add-today-chk");
+    if (addChk) addChk.checked = true; // Checked so "Kaydet ve Uygula" immediately updates today's log
 
     if (preset.ingredients && preset.ingredients.length > 0) {
         currentRecipeIngredients = JSON.parse(JSON.stringify(preset.ingredients));
@@ -14902,21 +14960,41 @@ function saveRecipeBuilderMeal() {
         };
     }
 
-    // Add to today's logged meals if selected
+    // Add or Update today's logged meals if selected
     if (addToToday) {
         if (!appData.todayNutrition.meals) appData.todayNutrition.meals = [];
-        appData.todayNutrition.meals.push({
-            id: "meal_" + Date.now() + "_" + Math.random().toString(36).substr(2, 5),
-            name: nameInput,
-            desc: totals.desc,
-            cal: totals.cal,
-            p: totals.p,
-            c: totals.c,
-            f: totals.f,
-            time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
-        });
-        addRpgStatGain('recovery', 3, 30, 'Öğün Kaydı');
-        evaluateDailyStreak();
+        
+        // Find if an existing meal matches either by presetKey or by exact/trimmed meal name
+        const existingIdx = appData.todayNutrition.meals.findIndex(m => 
+            (presetIdInput && m.presetKey === presetIdInput) || 
+            (m.name && m.name.trim().toLowerCase() === nameInput.toLowerCase())
+        );
+
+        if (existingIdx !== -1) {
+            // Update existing logged meal in place!
+            appData.todayNutrition.meals[existingIdx].name = nameInput;
+            appData.todayNutrition.meals[existingIdx].desc = totals.desc;
+            appData.todayNutrition.meals[existingIdx].cal = totals.cal;
+            appData.todayNutrition.meals[existingIdx].p = totals.p;
+            appData.todayNutrition.meals[existingIdx].c = totals.c;
+            appData.todayNutrition.meals[existingIdx].f = totals.f;
+            if (presetKey) appData.todayNutrition.meals[existingIdx].presetKey = presetKey;
+        } else {
+            // Add as new meal to today's log
+            appData.todayNutrition.meals.push({
+                id: "meal_" + Date.now() + "_" + Math.random().toString(36).substr(2, 5),
+                presetKey: presetKey,
+                name: nameInput,
+                desc: totals.desc,
+                cal: totals.cal,
+                p: totals.p,
+                c: totals.c,
+                f: totals.f,
+                time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
+            });
+            addRpgStatGain('recovery', 3, 30, 'Öğün Kaydı');
+            evaluateDailyStreak();
+        }
     }
 
     recalculateDailyTotals();
@@ -14924,7 +15002,7 @@ function saveRecipeBuilderMeal() {
     renderDashboard();
     renderNutritionView();
     closeModal('modal-recipe-builder');
-    showToast(`${nameInput} başarıyla kaydedildi! 🍱 (${totals.cal} kcal)`);
+    showToast(`${nameInput} başarıyla kaydedildi ve uygulandı! 🍱 (${totals.cal} kcal)`);
 }
 
 function logPresetMeal(key) {
@@ -14935,6 +15013,7 @@ function logPresetMeal(key) {
 
     appData.todayNutrition.meals.push({
         id: "log_" + Date.now() + "_" + Math.random().toString(36).substr(2, 5),
+        presetKey: key,
         name: meal.name,
         desc: meal.desc,
         cal: meal.cal,
@@ -18357,6 +18436,9 @@ function renderCoachRoster() {
         const msgs = chatDb[ath.username] || [];
         const unreadCount = msgs.filter(m => m.sender === "athlete" && !m.read).length;
 
+        const surveys = (uData.workoutSurveyHistory && Array.isArray(uData.workoutSurveyHistory)) ? uData.workoutSurveyHistory : [];
+        const latestSurvey = surveys.length > 0 ? surveys[surveys.length - 1] : null;
+
         const initial = (ath.displayName || ath.username).charAt(0).toUpperCase();
 
         html += `
@@ -18372,8 +18454,13 @@ function renderCoachRoster() {
                             <span class="arc-uname">@${ath.username}</span>
                         </div>
                     </div>
-                    <div style="display:flex; align-items:center; gap:6px;">
+                    <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; justify-content:flex-end;">
                         <span class="arc-goal-badge">${goalStr}</span>
+                        ${surveys.length > 0 ? `
+                            <span class="badge-role" style="background:#ffd60a; color:#000; font-size:0.6rem; font-weight:900; cursor:pointer;" onclick="selectCoachDetailAthlete('${ath.username}'); switchCoachDetailTab('workout');" title="Antrenman sonu değerlendirme anketini incele">
+                                <i class="fa-solid fa-star"></i> ${surveys.length} İdman Raporu
+                            </span>
+                        ` : ''}
                         ${unreadCount > 0 ? `<span class="badge-role" style="background:var(--status-amber); color:#000; font-size:0.6rem; font-weight:900;">${unreadCount} Yeni Mesaj</span>` : ''}
                     </div>
                 </div>
@@ -18393,6 +18480,13 @@ function renderCoachRoster() {
                     </div>
                 </div>
 
+                ${latestSurvey ? `
+                    <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,214,10,0.08); border:1px solid rgba(255,214,10,0.28); border-radius:var(--radius-sm); padding:6px 10px; margin-bottom:10px; font-size:0.7rem; color:#ffd60a; cursor:pointer;" onclick="selectCoachDetailAthlete('${ath.username}'); switchCoachDetailTab('workout');" title="Son idman anketini ve set defterini incele">
+                        <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:72%;"><i class="fa-solid fa-bell"></i> <strong>Son İdman:</strong> ${escapeHtml(latestSurvey.workoutTitle || 'Antrenman')} (${latestSurvey.date || ''})</span>
+                        <span style="color:#000; background:#ffd60a; font-weight:900; padding:2px 7px; border-radius:4px; font-size:0.68rem; flex-shrink:0;">⭐ ${latestSurvey.rating || 5} / 5.0</span>
+                    </div>
+                ` : ''}
+
                 <div style="margin-bottom:10px;">
                     <div style="display:flex; justify-content:space-between; font-size:0.68rem; color:var(--text-secondary); margin-bottom:3px;">
                         <span>Beslenme Uyumu (%${calPercent})</span>
@@ -18402,13 +18496,16 @@ function renderCoachRoster() {
                 </div>
 
                 <div class="arc-actions-grid">
-                    <button class="btn btn-xs btn-outline" onclick="selectCoachDetailAthlete('${ath.username}')">
+                    <button class="btn btn-xs btn-outline" onclick="selectCoachDetailAthlete('${ath.username}')" title="Sporcu Genel Profili">
                         <i class="fa-solid fa-chart-pie"></i> İncele
                     </button>
-                    <button class="btn btn-xs btn-primary" onclick="loadAthleteForPrescription('${ath.username}')">
-                        <i class="fa-solid fa-file-pen"></i> Revize Et
+                    <button class="btn btn-xs btn-outline" onclick="selectCoachDetailAthlete('${ath.username}'); switchCoachDetailTab('workout');" style="color:#ffd60a; border-color:rgba(255,214,10,0.4);" title="Antrenman Defteri & Anketler">
+                        <i class="fa-solid fa-dumbbell"></i> İdman (${surveys.length})
                     </button>
-                    <button class="btn btn-xs btn-outline" onclick="selectCoachChatAthlete('${ath.username}')">
+                    <button class="btn btn-xs btn-primary" onclick="loadAthleteForPrescription('${ath.username}')" title="Reçete & Hedef Güncelle">
+                        <i class="fa-solid fa-file-pen"></i> Revize
+                    </button>
+                    <button class="btn btn-xs btn-outline" onclick="selectCoachChatAthlete('${ath.username}')" title="Sporcu ile Canlı Mesajlaş">
                         <i class="fa-solid fa-comments"></i> Chat ${unreadCount > 0 ? `(${unreadCount})` : ''}
                     </button>
                 </div>
@@ -18427,7 +18524,12 @@ function selectCoachDetailAthlete(username) {
 function switchCoachDetailTab(subtab, btn) {
     currentCoachDetailSubtab = subtab;
     document.querySelectorAll(".deep-tab").forEach(t => t.classList.remove("active"));
-    if (btn) btn.classList.add("active");
+    if (btn) {
+        btn.classList.add("active");
+    } else {
+        const targetBtn = Array.from(document.querySelectorAll(".deep-tab")).find(b => b.getAttribute("onclick") && b.getAttribute("onclick").includes(`'${subtab}'`));
+        if (targetBtn) targetBtn.classList.add("active");
+    }
     renderCoachDetail(currentCoachSelectedAthlete);
 }
 
@@ -18524,51 +18626,194 @@ function renderCoachDetail(username) {
             </div>
         `;
     } else if (currentCoachDetailSubtab === "workout") {
+        const surveys = (uData.workoutSurveyHistory && Array.isArray(uData.workoutSurveyHistory)) ? uData.workoutSurveyHistory : [];
+        const plan = uData.customWorkoutPlan || (typeof DEFAULT_WORKOUT_PLAN !== "undefined" ? DEFAULT_WORKOUT_PLAN : null);
         const logs = uData.workoutLogs || {};
-        const logKeys = Object.keys(logs);
+        const seatSettings = uData.seatSettings || {};
 
-        let logsHtml = "";
-        if (logKeys.length === 0) {
-            logsHtml = `<p class="text-secondary" style="font-size:0.75rem; text-align:center; padding:16px;">Henüz kaydedilmiş antrenman seti bulunmuyor.</p>`;
+        // 1. SURVERYS SECTION HTML
+        let surveysHtml = "";
+        if (surveys.length === 0) {
+            surveysHtml = `
+                <div style="background:var(--bg-card-subtle); border:1px dashed var(--border-subtle); border-radius:var(--radius-sm); padding:16px; text-align:center;">
+                    <i class="fa-solid fa-clipboard-question" style="font-size:1.6rem; color:var(--text-muted); margin-bottom:6px; display:block;"></i>
+                    <p class="text-secondary" style="font-size:0.75rem; margin:0;">Sporcu henüz antrenman sonu değerlendirme anketi göndermedi.</p>
+                </div>
+            `;
         } else {
-            logKeys.forEach(k => {
-                const sets = logs[k] || [];
-                logsHtml += `
-                    <div class="deep-meal-item">
-                        <strong style="color:#ffd60a; font-size:0.78rem; display:block; margin-bottom:4px;">Egzersiz Kodu: ${k}</strong>
-                        <table style="width:100%; font-size:0.72rem; color:#fff;">
-                            <thead>
-                                <tr style="color:var(--text-muted); text-align:left;">
-                                    <th>Set</th>
-                                    <th>Ağırlık</th>
-                                    <th>Tekrar</th>
-                                    <th>Zorluk / RIR</th>
-                                    <th>Tarih</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${sets.map((s, idx) => `
-                                    <tr>
-                                        <td>S${idx + 1}</td>
-                                        <td><strong>${s.weight} kg</strong></td>
-                                        <td><strong>${s.reps} rep</strong></td>
-                                        <td><span class="badge-role" style="font-size:0.62rem;">${s.rir || 'Belirtilmedi'}</span></td>
-                                        <td style="color:var(--text-muted);">${s.date || 'Bugün'}</td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
+            // Newest surveys first
+            const sortedSurveys = [...surveys].reverse();
+            surveysHtml = sortedSurveys.map((sv, idx) => {
+                const dateStr = sv.date || (sv.timestamp ? sv.timestamp.split('T')[0] : 'Tarih Belirtilmedi');
+                const rating = typeof sv.rating === 'number' ? sv.rating : 5.0;
+                const ans = sv.answers || {};
+
+                const metrics = [
+                    { label: "⚡ Enerji & Motivasyon", val: ans.energy || 4, max: 5 },
+                    { label: "💥 Zorluk & RPE", val: ans.difficulty || 4, max: 5 },
+                    { label: "🛡️ Eklem / Kas Konforu", val: ans.comfort || 4, max: 5 },
+                    { label: "🎯 Programı Bitirme", val: ans.completion || 5, max: 5 },
+                    { label: "🧠 Zihinsel Odak / Pump", val: ans.focus || 4, max: 5 }
+                ];
+
+                return `
+                    <div style="background:linear-gradient(135deg, rgba(255,214,10,0.06), rgba(15,23,42,0.6)); border:1px solid rgba(255,214,10,0.3); border-radius:var(--radius-md); padding:14px; margin-bottom:12px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:8px;">
+                            <div>
+                                <span style="font-size:0.68rem; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px;">📅 ${dateStr} • Rapor #${sortedSurveys.length - idx}</span>
+                                <h3 style="color:#ffffff; font-size:0.92rem; margin:2px 0 0 0; display:flex; align-items:center; gap:6px;">
+                                    <i class="fa-solid fa-fire" style="color:#ffd60a;"></i> ${escapeHtml(sv.workoutTitle || 'Antrenman')}
+                                </h3>
+                            </div>
+                            <div style="text-align:right;">
+                                <div style="font-size:1.15rem; font-weight:900; color:#ffd60a;">⭐ ${rating} <span style="font-size:0.75rem; color:var(--text-secondary);">/ 5.0</span></div>
+                            </div>
+                        </div>
+
+                        <!-- 5 Performance Pillars -->
+                        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:6px; margin-bottom:10px;">
+                            ${metrics.map(m => `
+                                <div style="background:rgba(0,0,0,0.35); border:1px solid rgba(255,255,255,0.05); border-radius:var(--radius-sm); padding:6px 8px; font-size:0.7rem;">
+                                    <div style="color:var(--text-secondary); font-size:0.64rem;">${m.label}</div>
+                                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:2px;">
+                                        <strong style="color:#fff; font-size:0.8rem;">${m.val} / ${m.max}</strong>
+                                        <div style="display:inline-flex; gap:2px;">
+                                            ${[1,2,3,4,5].map(dot => `<span style="display:inline-block; width:5px; height:5px; border-radius:50%; background:${dot <= m.val ? '#ffd60a' : 'rgba(255,255,255,0.15)'};"></span>`).join('')}
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+
+                        <!-- Athlete's Custom Note -->
+                        <div style="background:rgba(255,255,255,0.03); border-left:3px solid #ffd60a; border-radius:0 var(--radius-sm) var(--radius-sm) 0; padding:8px 10px; font-size:0.74rem;">
+                            <span style="color:var(--text-secondary); font-weight:700; display:block; margin-bottom:2px;"><i class="fa-solid fa-message"></i> Sporcunun İdman Notu:</span>
+                            <span style="color:${sv.note ? '#ffffff' : 'var(--text-muted)'}; font-style:${sv.note ? 'normal' : 'italic'};">
+                                ${sv.note ? `"${escapeHtml(sv.note)}"` : "Sporcu ekstra not yazmadı."}
+                            </span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 2. EXERCISE LOGBOOK & SPLIT BREAKDOWN HTML
+        let workoutPlanHtml = "";
+        const dayKeys = ["pazartesi", "sali", "carsamba", "persembe", "cuma", "cumartesi", "pazar"];
+        const dayNamesTr = {
+            pazartesi: "Pazartesi",
+            sali: "Salı",
+            carsamba: "Çarşamba",
+            persembe: "Perşembe",
+            cuma: "Cuma",
+            cumartesi: "Cumartesi",
+            pazar: "Pazar"
+        };
+
+        if (plan) {
+            dayKeys.forEach(dayKey => {
+                const dayPlan = plan[dayKey];
+                if (!dayPlan) return;
+                const exercises = dayPlan.exercises || [];
+                const dayTitle = dayPlan.title || 'Dinlenme';
+                const isRest = exercises.length === 0 || dayTitle.toLowerCase().includes("off") || dayTitle.toLowerCase().includes("dinlenme");
+
+                let exRows = "";
+                if (isRest) {
+                    exRows = `<p class="text-secondary" style="font-size:0.72rem; padding:6px 0; margin:0; font-style:italic;">🛌 Dinlenme ve Toparlanma Günü (Aktif dinlenme & yürüyüş)</p>`;
+                } else {
+                    exRows = exercises.map(ex => {
+                        const cKey = typeof getCanonicalExerciseKey === "function" ? getCanonicalExerciseKey(ex.name, ex.id) : (ex.name || ex.id);
+                        const savedSeat = (seatSettings[ex.id] || (ex.name && seatSettings[ex.name]) || seatSettings[cKey]) || ex.defaultSeat || '--';
+                        const exLogs = (logs[ex.id] || (ex.name && logs[ex.name]) || logs[cKey]) || [];
+
+                        let setsTable = "";
+                        if (exLogs.length === 0) {
+                            setsTable = `<div style="font-size:0.68rem; color:var(--text-muted); padding:4px 0; font-style:italic;">Henüz set verisi girilmedi (Reçete Hedefi: ${escapeHtml(ex.defaultTarget || '2-3 Set')})</div>`;
+                        } else {
+                            setsTable = `
+                                <table style="width:100%; font-size:0.7rem; color:#fff; border-collapse:collapse; margin-top:4px;">
+                                    <thead>
+                                        <tr style="color:var(--text-muted); text-align:left; border-bottom:1px solid rgba(255,255,255,0.06);">
+                                            <th style="padding:3px 4px;">Set</th>
+                                            <th style="padding:3px 4px;">Ağırlık</th>
+                                            <th style="padding:3px 4px;">Tekrar</th>
+                                            <th style="padding:3px 4px;">RIR / Zorluk</th>
+                                            <th style="padding:3px 4px;">Tarih</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${exLogs.map((s, sIdx) => `
+                                            <tr style="border-bottom:1px solid rgba(255,255,255,0.03);">
+                                                <td style="padding:3px 4px; font-weight:700; color:#ffd60a;">${s.setType || 'Set ' + (sIdx + 1)}</td>
+                                                <td style="padding:3px 4px; font-weight:800; color:#38bdf8;">${s.weight} kg</td>
+                                                <td style="padding:3px 4px; font-weight:700;">${s.reps} rep</td>
+                                                <td style="padding:3px 4px;"><span class="badge-role" style="font-size:0.58rem; padding:1px 5px;">${s.rir || 'RIR --'}</span></td>
+                                                <td style="padding:3px 4px; color:var(--text-muted); font-size:0.65rem;">${s.date || 'Bugün'}</td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            `;
+                        }
+
+                        return `
+                            <div style="background:var(--bg-input); border:1px solid var(--border-subtle); border-radius:var(--radius-sm); padding:8px 10px; margin-bottom:8px;">
+                                <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:4px; margin-bottom:4px;">
+                                    <div>
+                                        <strong style="color:#ffffff; font-size:0.8rem; display:block;">${escapeHtml(ex.name)}</strong>
+                                        <span style="font-size:0.66rem; color:var(--text-secondary);">${escapeHtml(ex.muscle || '')}</span>
+                                    </div>
+                                    <div style="text-align:right;">
+                                        <span style="font-size:0.65rem; color:#ffd60a; background:rgba(255,214,10,0.12); border:1px solid rgba(255,214,10,0.3); border-radius:4px; padding:1px 6px; font-weight:600;">
+                                            📐 Koltuk: ${escapeHtml(savedSeat)}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div style="font-size:0.66rem; color:var(--text-secondary); margin-bottom:4px;">
+                                    🎯 Reçete Hedefi: <span style="color:#cbd5e1; font-weight:600;">${escapeHtml(ex.defaultTarget || '2 Set')}</span>
+                                </div>
+                                ${setsTable}
+                            </div>
+                        `;
+                    }).join('');
+                }
+
+                workoutPlanHtml += `
+                    <div style="background:var(--bg-card-subtle); border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:10px 12px; margin-bottom:12px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:6px;">
+                            <h4 style="margin:0; font-size:0.82rem; color:#ffd60a; text-transform:uppercase; letter-spacing:0.5px; display:flex; align-items:center; gap:6px;">
+                                <span>📅 ${dayNamesTr[dayKey] || dayKey}:</span>
+                                <span style="color:#ffffff; font-weight:700;">${escapeHtml(dayTitle)}</span>
+                            </h4>
+                            <span class="badge-role" style="font-size:0.6rem;">${exercises.length} Hareket</span>
+                        </div>
+                        ${exRows}
                     </div>
                 `;
             });
         }
 
         contentArea.innerHTML = `
-            <div class="deep-card">
-                <div class="card-header" style="margin-bottom:8px;">
-                    <h2>🏋️ ANTRENMAN DEFTERİ & SET PERFORMANSI</h2>
+            <!-- Survey Reports Section -->
+            <div class="deep-card" style="margin-bottom:16px;">
+                <div class="card-header" style="margin-bottom:10px;">
+                    <h2 style="display:flex; align-items:center; gap:8px;">
+                        <i class="fa-solid fa-star" style="color:#ffd60a;"></i> ANTRENMAN SONU DEĞERLENDİRME ANKETLERİ
+                        <span class="badge-role" style="background:#ffd60a; color:#000; font-size:0.62rem; font-weight:900;">${surveys.length} Rapor</span>
+                    </h2>
                 </div>
-                <div>${logsHtml}</div>
+                <div>${surveysHtml}</div>
+            </div>
+
+            <!-- Workout Logbook & Weekly Program Breakdown -->
+            <div class="deep-card">
+                <div class="card-header" style="margin-bottom:10px;">
+                    <h2 style="display:flex; align-items:center; gap:8px;">
+                        <i class="fa-solid fa-dumbbell" style="color:var(--color-primary);"></i> ANTRENMAN PROGRAMI & GÜNCEL SET DEFTERİ
+                    </h2>
+                </div>
+                <div>${workoutPlanHtml || '<p class="text-secondary" style="font-size:0.75rem; text-align:center;">Antrenman planı bulunamadı.</p>'}</div>
             </div>
         `;
     } else if (currentCoachDetailSubtab === "supplements") {

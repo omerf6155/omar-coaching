@@ -901,34 +901,51 @@ body {
     display: flex;
     flex-direction: column;
     gap: 6px;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
 }
 
 .ing-inputs-top {
     display: flex;
     gap: 6px;
     align-items: center;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
 }
 
 .ing-food-select {
-    flex: 1;
+    flex: 1 1 0;
+    min-width: 0;
+    width: 0;
     background: var(--bg-card-subtle);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-sm);
     color: #ffffff;
     padding: 7px 8px;
     font-size: 0.78rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    box-sizing: border-box;
 }
 
 .ing-amount-input {
-    width: 65px;
+    width: 60px;
+    min-width: 50px;
     background: var(--bg-card-subtle);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-sm);
     color: #ffffff;
-    padding: 7px 6px;
+    padding: 7px 4px;
     font-size: 0.8rem;
     font-weight: 700;
     text-align: center;
+    box-sizing: border-box;
+    flex-shrink: 0;
 }
 
 .ing-macro-preview {
@@ -1318,6 +1335,10 @@ body.modal-open {
     padding: 0;
     touch-action: pan-y;
     overscroll-behavior: contain;
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100vw;
+    box-sizing: border-box;
 }
 
 .modal-overlay.active {
@@ -1332,11 +1353,23 @@ body.modal-open {
     max-width: 460px;
     max-height: 88vh;
     overflow-y: auto;
+    overflow-x: hidden;
     padding: 20px;
+    box-sizing: border-box;
     display: flex;
     flex-direction: column;
     gap: 14px;
     animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modal-body {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
 }
 
 @keyframes slideUp {
@@ -6513,6 +6546,18 @@ body.modal-open {
 }
 
 @media (max-width: 600px) {
+    .modal-card {
+        padding: 16px 12px;
+        max-width: 100vw;
+        border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    }
+    .modal-body {
+        padding: 0;
+        width: 100%;
+        max-width: 100%;
+        overflow-x: hidden;
+        box-sizing: border-box;
+    }
     .ai-cloud-main-btn {
         padding: 7px 14px 7px 9px;
     }
