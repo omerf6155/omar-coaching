@@ -2203,7 +2203,8 @@ function createDefaultAppData() {
         stepHistory: {},
         rpgCharacter: createDefaultRpgCharacter(),
         todayNutrition: {
-            date: new Date().toISOString().split('T')[0],
+            date: getFitnessDateKey(),
+            sessionKey: getFitnessDateKey(),
             calories: 0,
             protein: 0,
             carbs: 0,
@@ -2326,6 +2327,7 @@ function loadDataFromStorage() {
             onboardingCompleted: parsed.onboardingCompleted !== undefined ? parsed.onboardingCompleted : false,
             userProfile: parsed.userProfile || null
         };
+        checkAndResetDailyNutrition();
         return true;
     }
 
