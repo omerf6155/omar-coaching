@@ -7762,16 +7762,21 @@ body.modal-open {
                 </div>
 
                 <!-- Daily Weigh-In Entry -->
-                <div class="card">
+                <div class="card" id="card-daily-weigh-in">
                     <div class="card-header">
-                        <h2>SABAH AÇ TARTI GİRİŞİ</h2>
+                        <h2><i class="fa-solid fa-weight-scale"></i> SABAH AÇ TARTI GİRİŞİ</h2>
+                        <span id="scale-entry-status-badge" class="badge-role" style="font-size:0.65rem; background:rgba(255,214,10,0.15); color:#ffd60a;">Günde 1 Kez</span>
                     </div>
-                    <div class="weigh-input-row">
+                    <div id="scale-daily-limit-warning" style="background:rgba(255,214,10,0.1); border:1px solid rgba(255,214,10,0.3); padding:8px 12px; border-radius:8px; font-size:0.73rem; color:#ffd60a; margin-bottom:10px; display:flex; align-items:center; gap:8px;">
+                        <i class="fa-solid fa-triangle-exclamation" style="font-size:1rem; flex-shrink:0;"></i>
+                        <span><strong>Dikkat:</strong> Günde yalnızca <u>tek bir tartı</u> girme hakkınız vardır. Lütfen sabah aç karnına, tuvalet sonrası net kilonuzu giriniz.</span>
+                    </div>
+                    <div class="weigh-input-row" id="weigh-input-container">
                         <div class="input-group">
-                            <input type="number" id="daily-weight-input" step="0.1" placeholder="74.0">
+                            <input type="number" id="daily-weight-input" step="0.1" placeholder="74.0" onfocus="handleWeighInputFocus()">
                             <span class="unit">kg</span>
                         </div>
-                        <button class="btn btn-primary" onclick="saveDailyWeight()">Kaydet</button>
+                        <button class="btn btn-primary" id="btn-save-daily-weight" onclick="saveDailyWeight()">Kaydet</button>
                     </div>
                 </div>
 
@@ -7947,6 +7952,22 @@ body.modal-open {
                     </div>
                 </div>
 
+                <!-- Coach Athlete Leaderboard Standings Card -->
+                <div class="card" id="coach-leaderboard-card" style="background:linear-gradient(135deg, rgba(255,214,10,0.08), rgba(168,85,247,0.05)); border:1px solid rgba(255,214,10,0.3); margin-bottom:14px; padding:14px; border-radius:var(--radius-md);">
+                    <div class="card-header" style="margin-bottom:8px;">
+                        <h2 style="color:#ffd60a; font-size:0.85rem; display:flex; align-items:center; gap:6px;">
+                            <i class="fa-solid fa-trophy" style="color:#ffd60a;"></i> SPORCU LİG SIRALAMASI (HAFTALIK)
+                        </h2>
+                        <span class="badge-role" style="background:#ffd60a; color:#000; font-weight:900; font-size:0.65rem;">Haftalık Sıralama</span>
+                    </div>
+                    <p class="text-secondary" style="font-size:0.72rem; line-height:1.4; margin-bottom:10px;">
+                        Sporcularınızın disiplin, antrenman ve beslenme ile topladıkları haftalık XP ve lig dereceleri:
+                    </p>
+                    <div id="coach-leaderboard-container">
+                        <!-- Rendered dynamically -->
+                    </div>
+                </div>
+
                 <!-- Athlete Search & Filter Filter Pills -->
                 <div class="roster-filter-row">
                     <div class="roster-search-wrap">
@@ -7958,6 +7979,7 @@ body.modal-open {
                         <button class="roster-pill" onclick="filterCoachRosterByGoal('bulk', this)">Bulk</button>
                         <button class="roster-pill" onclick="filterCoachRosterByGoal('cut', this)">Cut</button>
                         <button class="roster-pill" onclick="filterCoachRosterByGoal('recomp', this)">Recomp</button>
+                        <button class="roster-pill" id="btn-coach-sort-rank" onclick="toggleCoachRosterSortRank(this)" style="color:#ffd60a; border-color:rgba(255,214,10,0.4);"><i class="fa-solid fa-arrow-down-wide-short"></i> Lige Göre</button>
                     </div>
                 </div>
 
@@ -7995,7 +8017,7 @@ body.modal-open {
                     </div>
 
                     <!-- Action shortcuts for selected athlete -->
-                    <div class="adh-actions-row" style="grid-template-columns: 1fr 1fr 1fr 1fr; gap:6px;">
+                    <div class="adh-actions-row" style="grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap:6px;">
                         <button class="btn btn-xs btn-primary" onclick="goToPrescriptionForCurrentAthlete()">
                             <i class="fa-solid fa-utensils"></i> Diyet
                         </button>
@@ -8003,7 +8025,10 @@ body.modal-open {
                             <i class="fa-solid fa-dumbbell"></i> İdman
                         </button>
                         <button class="btn btn-xs btn-primary" onclick="openCoachPhysiqueReviewModal(currentCoachSelectedAthlete)" style="background:linear-gradient(135deg, #a855f7, #7c3aed); color:#fff; font-weight:800; border:none;">
-                            <i class="fa-solid fa-camera"></i> Form Kasası
+                            <i class="fa-solid fa-camera"></i> Form
+                        </button>
+                        <button class="btn btn-xs btn-primary" onclick="openAthleteWordDocForCoach(currentCoachSelectedAthlete)" style="background:linear-gradient(135deg, #0284c7, #0369a1); color:#fff; font-weight:800; border:none;" title="Saat saat detaylı Word raporunu aç ve indir">
+                            <i class="fa-solid fa-file-word"></i> Word (.doc)
                         </button>
                         <button class="btn btn-xs btn-outline" onclick="goToChatForCurrentAthlete()">
                             <i class="fa-solid fa-comments"></i> Chat
@@ -13749,8 +13774,12 @@ function loadDataFromStorage() {
 function saveDataToStorage() {
     const activeUsername = getActiveSessionUsername();
     if (activeUsername) {
+        const cleanUname = activeUsername.toLowerCase().trim();
         const registry = getUsersRegistry();
-        if (registry[activeUsername]) {
+        if (registry[cleanUname]) {
+            registry[cleanUname].data = JSON.parse(JSON.stringify(appData));
+            saveUsersRegistry(registry);
+        } else if (registry[activeUsername]) {
             registry[activeUsername].data = JSON.parse(JSON.stringify(appData));
             saveUsersRegistry(registry);
         }
@@ -13792,7 +13821,8 @@ function checkAndResetDailyNutrition() {
                 carbs: appData.todayNutrition.carbs || 0,
                 fat: appData.todayNutrition.fat || 0,
                 water: appData.todayNutrition.water || 0,
-                mealsCount: (appData.todayNutrition.meals || []).length
+                mealsCount: (appData.todayNutrition.meals || []).length,
+                meals: Array.isArray(appData.todayNutrition.meals) ? JSON.parse(JSON.stringify(appData.todayNutrition.meals)) : []
             });
         }
 
@@ -13858,19 +13888,32 @@ function checkAndResetDailyNutrition() {
 
 // Recalculate today totals from actual logged meals (prevents desync!)
 function recalculateDailyTotals() {
+    if (!appData.todayNutrition) {
+        appData.todayNutrition = { calories: 0, protein: 0, carbs: 0, fat: 0, water: 0, steps: 0, meals: [] };
+    }
+    const currentFitnessKey = getFitnessDateKey();
+    if (!appData.todayNutrition.date) {
+        appData.todayNutrition.date = currentFitnessKey;
+    }
+
     const meals = appData.todayNutrition.meals || [];
     let totCal = 0, totP = 0, totC = 0, totF = 0;
     meals.forEach(m => {
-        totCal += m.cal || 0;
-        totP += m.p || 0;
-        totC += m.c || 0;
-        totF += m.f || 0;
+        if (!m) return;
+        const c = (m.cal !== undefined && m.cal !== null) ? Number(m.cal) : Number(m.calories || 0);
+        const p = (m.p !== undefined && m.p !== null) ? Number(m.p) : Number(m.protein || 0);
+        const carb = (m.c !== undefined && m.c !== null) ? Number(m.c) : Number(m.carbs || 0);
+        const f = (m.f !== undefined && m.f !== null) ? Number(m.f) : Number(m.fat || 0);
+        totCal += (isNaN(c) ? 0 : c);
+        totP += (isNaN(p) ? 0 : p);
+        totC += (isNaN(carb) ? 0 : carb);
+        totF += (isNaN(f) ? 0 : f);
     });
 
-    appData.todayNutrition.calories = totCal;
-    appData.todayNutrition.protein = totP;
-    appData.todayNutrition.carbs = totC;
-    appData.todayNutrition.fat = totF;
+    appData.todayNutrition.calories = Math.round(totCal);
+    appData.todayNutrition.protein = Math.round(totP * 10) / 10;
+    appData.todayNutrition.carbs = Math.round(totC * 10) / 10;
+    appData.todayNutrition.fat = Math.round(totF * 10) / 10;
 }
 
 // Navigation & Modals
@@ -16526,15 +16569,20 @@ function logPresetMeal(key) {
 
     if (!appData.todayNutrition.meals) appData.todayNutrition.meals = [];
 
+    const mealCal = Number(meal.cal !== undefined ? meal.cal : (meal.calories || 0)) || 0;
+    const mealP = Number(meal.p !== undefined ? meal.p : (meal.protein || 0)) || 0;
+    const mealC = Number(meal.c !== undefined ? meal.c : (meal.carbs || 0)) || 0;
+    const mealF = Number(meal.f !== undefined ? meal.f : (meal.fat || 0)) || 0;
+
     appData.todayNutrition.meals.push({
         id: "log_" + Date.now() + "_" + Math.random().toString(36).substr(2, 5),
         presetKey: key,
         name: meal.name,
-        desc: meal.desc,
-        cal: meal.cal,
-        p: meal.p,
-        c: meal.c,
-        f: meal.f,
+        desc: meal.desc || "",
+        cal: mealCal,
+        p: mealP,
+        c: mealC,
+        f: mealF,
         time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
     });
 
@@ -16544,7 +16592,8 @@ function logPresetMeal(key) {
     saveDataToStorage();
     renderDashboard();
     renderNutritionView();
-    showToast(`${meal.name} Eklendi! 🔥 (+${meal.cal} kcal)`);
+    if (typeof renderHomeNutritionEditModal === "function") renderHomeNutritionEditModal();
+    showToast(`${meal.name} Eklendi! 🔥 (+${mealCal} kcal)`);
 }
 
 function logAllDailyPresets() {
@@ -18051,7 +18100,26 @@ function skipMorningGateWeight() {
     showToast("Anlaşıldı! Yarın sabah aç karnına tartılmayı unutma 💪");
 }
 
+function handleWeighInputFocus() {
+    const todayStr = getFitnessDateKey();
+    const existing = (appData.weightHistory || []).find(w => w && w.date === todayStr);
+    if (existing) {
+        showToast("⚠️ Bugün zaten tartı girdiniz. Günde yalnızca 1 kez tartı girilebilir!");
+    } else {
+        showToast("⚠️ Önemli: Günde yalnızca TEK bir tartı hakkınız var! Lütfen doğru giriniz.");
+    }
+}
+
 function saveDailyWeight(val) {
+    const todayStr = getFitnessDateKey();
+    if (!appData.weightHistory) appData.weightHistory = [];
+    const alreadySaved = appData.weightHistory.find(w => w && w.date === todayStr);
+    if (alreadySaved) {
+        alert(`⚠️ Günde yalnızca 1 kez tartı girme hakkınız bulunmaktadır!\n\nBugünkü tartınız (${alreadySaved.weight} kg) zaten kaydedildi ve kilitlendi.`);
+        renderScaleView();
+        return;
+    }
+
     const input = document.getElementById("daily-weight-input");
     const weight = val ? parseFloat(val) : (input ? parseFloat(input.value) : NaN);
     if (isNaN(weight) || weight < 30 || weight > 250) {
@@ -18059,9 +18127,6 @@ function saveDailyWeight(val) {
         return;
     }
 
-    const todayStr = getFitnessDateKey();
-    if (!appData.weightHistory) appData.weightHistory = [];
-    appData.weightHistory = appData.weightHistory.filter(w => w && w.date !== todayStr);
     appData.weightHistory.unshift({ date: todayStr, weight: Number(weight) });
 
     if (!appData.userProfile) appData.userProfile = {};
@@ -18079,32 +18144,82 @@ function saveDailyWeight(val) {
         appData.lastWeighInXpDate = todayStr;
     }
 
-    if (input) input.value = "";
     saveDataToStorage();
     renderScaleView();
     updateDateDisplay();
     updateTopBarUserHeader();
     renderDashboard();
-    showToast(`${weight.toFixed(1)} kg tartı kaydedildi! ⚖️`);
+    if (typeof renderCoachRoster === "function") renderCoachRoster();
+    showToast(`✅ ${weight.toFixed(1)} kg tartı kaydedildi ve kilitlendi! ⚖️`);
 }
 
 function renderScaleView() {
     const history = appData.weightHistory || [];
     const listContainer = document.getElementById("weight-history-list");
+    const todayStr = getFitnessDateKey();
+    const todayEntry = history.find(w => w && w.date === todayStr);
+    const latestW = history.length > 0 ? history[0].weight : (appData.userProfile ? appData.userProfile.weight : 74.0);
+
+    // Update Input Container with Locked or Active State
+    const inputContainer = document.getElementById("weigh-input-container");
+    const statusBadge = document.getElementById("scale-entry-status-badge");
+    const warningEl = document.getElementById("scale-daily-limit-warning");
+
+    if (inputContainer) {
+        if (todayEntry) {
+            inputContainer.innerHTML = `
+                <div class="input-group">
+                    <input type="number" id="daily-weight-input" value="${Number(todayEntry.weight).toFixed(1)}" disabled style="opacity:0.8; cursor:not-allowed; background:rgba(255,255,255,0.06); font-weight:800; color:#34d399;">
+                    <span class="unit">kg</span>
+                </div>
+                <button type="button" class="btn btn-outline" disabled style="cursor:not-allowed; border-color:#34d399; color:#34d399; background:rgba(52,211,153,0.12); font-weight:800;">
+                    <i class="fa-solid fa-lock"></i> Bugün Girildi (${Number(todayEntry.weight).toFixed(1)} kg)
+                </button>
+            `;
+            if (statusBadge) {
+                statusBadge.innerHTML = "🔒 Bugün Girildi (Kilitli)";
+                statusBadge.style.background = "rgba(52,211,153,0.15)";
+                statusBadge.style.color = "#34d399";
+            }
+            if (warningEl) {
+                warningEl.style.display = "none";
+            }
+        } else {
+            inputContainer.innerHTML = `
+                <div class="input-group">
+                    <input type="number" id="daily-weight-input" step="0.1" placeholder="${Number(latestW).toFixed(1)}" onfocus="handleWeighInputFocus()">
+                    <span class="unit">kg</span>
+                </div>
+                <button type="button" class="btn btn-primary" id="btn-save-daily-weight" onclick="saveDailyWeight()">Kaydet</button>
+            `;
+            if (statusBadge) {
+                statusBadge.innerHTML = "⏳ Bugünün Tartısı Bekleniyor";
+                statusBadge.style.background = "rgba(255,214,10,0.15)";
+                statusBadge.style.color = "#ffd60a";
+            }
+            if (warningEl) {
+                warningEl.style.display = "flex";
+            }
+        }
+    }
     
     if (history.length === 0) {
-        listContainer.innerHTML = `<p class="text-muted" style="text-align:center; padding:10px; font-size:0.8rem;">Henüz tartı verisi girilmedi.</p>`;
-        document.getElementById("current-week-avg").innerText = "74.0 kg";
-        document.getElementById("weekly-delta").innerText = "+0.0 kg";
+        if (listContainer) listContainer.innerHTML = `<p class="text-muted" style="text-align:center; padding:10px; font-size:0.8rem;">Henüz tartı verisi girilmedi.</p>`;
+        const avgEl = document.getElementById("current-week-avg");
+        if (avgEl) avgEl.innerText = `${Number(latestW).toFixed(1)} kg`;
+        const dEl = document.getElementById("weekly-delta");
+        if (dEl) dEl.innerText = "+0.0 kg";
         return;
     }
 
-    listContainer.innerHTML = history.slice(0, 14).map(h => `
-        <div class="history-item">
-            <span>${h.date}</span>
-            <strong style="color:#ffffff">${h.weight.toFixed(1)} kg</strong>
-        </div>
-    `).join("");
+    if (listContainer) {
+        listContainer.innerHTML = history.slice(0, 14).map(h => `
+            <div class="history-item">
+                <span>${h.date}</span>
+                <strong style="color:#ffffff">${Number(h.weight).toFixed(1)} kg</strong>
+            </div>
+        `).join("");
+    }
 
     const last7 = history.slice(0, 7);
     const avg7 = last7.reduce((acc, curr) => acc + curr.weight, 0) / last7.length;
@@ -19980,6 +20095,24 @@ function filterCoachRosterByGoal(goal, btn) {
     renderCoachRoster();
 }
 
+let coachRosterSortByRank = false;
+
+function toggleCoachRosterSortRank(btn) {
+    coachRosterSortByRank = !coachRosterSortByRank;
+    if (btn) {
+        if (coachRosterSortByRank) {
+            btn.classList.add("active");
+            btn.style.background = "#ffd60a";
+            btn.style.color = "#000";
+        } else {
+            btn.classList.remove("active");
+            btn.style.background = "";
+            btn.style.color = "#ffd60a";
+        }
+    }
+    renderCoachRoster();
+}
+
 function renderCoachRoster() {
     renderCoachChangeRequests();
     const container = document.getElementById("coach-roster-container");
@@ -19989,6 +20122,43 @@ function renderCoachRoster() {
     const chatDb = getChatDB();
     const searchVal = document.getElementById("coach-athlete-search") ? document.getElementById("coach-athlete-search").value.trim().toLowerCase() : "";
     const weeklyLeaderboard = calculateWeeklyLeaderboard();
+
+    // Render Dedicated Coach Leaderboard Standings
+    const lbContainer = document.getElementById("coach-leaderboard-container");
+    if (lbContainer) {
+        if (!weeklyLeaderboard || weeklyLeaderboard.length === 0) {
+            lbContainer.innerHTML = `<p class="text-secondary" style="font-size:0.75rem; text-align:center; padding:10px;">Henüz lig verisi oluşmadı.</p>`;
+        } else {
+            lbContainer.innerHTML = `
+                <div style="display:flex; flex-direction:column; gap:6px;">
+                    ${weeklyLeaderboard.map((item, idx) => {
+                        const medal = idx === 0 ? "🥇" : (idx === 1 ? "🥈" : (idx === 2 ? "🥉" : `#${idx + 1}`));
+                        const badgeBg = idx === 0 ? "rgba(255,214,10,0.18)" : (idx === 1 ? "rgba(148,163,184,0.15)" : (idx === 2 ? "rgba(249,115,22,0.15)" : "rgba(255,255,255,0.04)"));
+                        const borderCol = idx === 0 ? "rgba(255,214,10,0.5)" : (idx === 1 ? "rgba(148,163,184,0.3)" : (idx === 2 ? "rgba(249,115,22,0.3)" : "rgba(255,255,255,0.08)"));
+                        return `
+                            <div style="display:flex; justify-content:space-between; align-items:center; background:${badgeBg}; border:1px solid ${borderCol}; border-radius:8px; padding:8px 12px; cursor:pointer;" onclick="selectCoachDetailAthlete('${item.username}')" title="Sporcu Profilini İncele">
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <span style="font-size:1.1rem; font-weight:900; min-width:24px; text-align:center;">${medal}</span>
+                                    <span style="font-size:1.1rem;">${item.avatarIcon || '🦁'}</span>
+                                    <div>
+                                        <div style="display:flex; align-items:center; gap:6px;">
+                                            <strong style="color:#ffffff; font-size:0.82rem;">${item.displayName || item.username}</strong>
+                                            <span style="font-size:0.65rem; color:#ffd60a; font-weight:700;">${item.athleteTag || ''}</span>
+                                        </div>
+                                        <div style="font-size:0.68rem; color:var(--text-secondary);">${item.rankTitle || 'Savaşçı'} • Lv.${item.level || 1} • 🔥 ${item.streak || 0} Gün Seri</div>
+                                    </div>
+                                </div>
+                                <div style="text-align:right;">
+                                    <strong style="color:#ffd60a; font-size:0.88rem;">${(item.weeklyXp || 0).toLocaleString('tr-TR')} XP</strong>
+                                    <span class="badge-role" style="font-size:0.6rem; display:block; margin-top:2px;">#${idx + 1}. Derece</span>
+                                </div>
+                            </div>
+                        `;
+                    }).join("")}
+                </div>
+            `;
+        }
+    }
 
     let athletes = Object.values(registry).filter(u => u.role !== "coach");
 
@@ -20009,6 +20179,15 @@ function renderCoachRoster() {
         });
     }
 
+    // Sort by league rank if enabled
+    if (coachRosterSortByRank) {
+        athletes.sort((a, b) => {
+            const rankA = weeklyLeaderboard.find(l => l.username === a.username)?.rank || 999;
+            const rankB = weeklyLeaderboard.find(l => l.username === b.username)?.rank || 999;
+            return rankA - rankB;
+        });
+    }
+
     if (athletes.length === 0) {
         container.innerHTML = `
             <div class="card" style="text-align:center; padding:30px 16px;">
@@ -20021,10 +20200,15 @@ function renderCoachRoster() {
     }
 
     const goalMap = { bulk: "🔥 Lean Bulk", cut: "✂️ Cutting", recomp: "⚡ Recomp" };
+    const activeUname = (getActiveSessionUsername() || "").toLowerCase().trim();
 
     let html = "";
     athletes.forEach(ath => {
-        const uData = ath.data || {};
+        let uData = ath.data || {};
+        if (activeUname && ath.username.toLowerCase().trim() === activeUname) {
+            uData = appData;
+        }
+
         const p = uData.userProfile || {};
         const t = uData.targets || DEFAULT_TARGETS;
         const n = uData.todayNutrition || {};
@@ -20033,7 +20217,9 @@ function renderCoachRoster() {
         const history = uData.weightHistory || [];
         const currentW = history.length > 0 ? history[0].weight : (p.weight || 74.0);
 
-        const consumedCal = (typeof n.calories === 'number' ? n.calories : (n.consumedCal || 0));
+        const consumedCal = (n.meals && n.meals.length > 0)
+            ? n.meals.reduce((sum, m) => sum + (Number(m.cal !== undefined ? m.cal : (m.calories || 0)) || 0), 0)
+            : Number(n.calories || 0);
         const targetCal = t.calories || 2770;
         const calPercent = Math.min(100, Math.round((consumedCal / targetCal) * 100));
 
@@ -20187,7 +20373,12 @@ function renderCoachDetail(username) {
         selectEl.innerHTML = athletes.map(a => `<option value="${a.username}" ${a.username === username ? 'selected' : ''}>${a.displayName || a.username} (@${a.username})</option>`).join('');
     }
 
-    const uData = ath.data || {};
+    const activeUname = (getActiveSessionUsername() || "").toLowerCase().trim();
+    let uData = ath.data || {};
+    if (activeUname && ath.username.toLowerCase().trim() === activeUname) {
+        uData = appData;
+    }
+
     const p = uData.userProfile || {};
     const t = uData.targets || DEFAULT_TARGETS;
     const n = uData.todayNutrition || {};
@@ -20205,12 +20396,25 @@ function renderCoachDetail(username) {
     const calEl = document.getElementById("adh-calorie-status");
     const stepsEl = document.getElementById("adh-steps");
 
+    const dispCal = (n.meals && n.meals.length > 0)
+        ? n.meals.reduce((sum, m) => sum + (Number(m.cal !== undefined ? m.cal : (m.calories || 0)) || 0), 0)
+        : Number(n.calories || 0);
+    const dispP = (n.meals && n.meals.length > 0)
+        ? Math.round(n.meals.reduce((sum, m) => sum + (Number(m.p !== undefined ? m.p : (m.protein || 0)) || 0), 0) * 10) / 10
+        : Number(n.protein || 0);
+    const dispC = (n.meals && n.meals.length > 0)
+        ? Math.round(n.meals.reduce((sum, m) => sum + (Number(m.c !== undefined ? m.c : (m.carbs || 0)) || 0), 0) * 10) / 10
+        : Number(n.carbs || 0);
+    const dispF = (n.meals && n.meals.length > 0)
+        ? Math.round(n.meals.reduce((sum, m) => sum + (Number(m.f !== undefined ? m.f : (m.fat || 0)) || 0), 0) * 10) / 10
+        : Number(n.fat || 0);
+
     if (avatarEl) avatarEl.innerText = (ath.displayName || ath.username).charAt(0).toUpperCase();
     if (nameEl) nameEl.innerText = ath.displayName || ath.username;
     if (unameEl) unameEl.innerText = `@${ath.username}`;
     if (goalEl) goalEl.innerText = goalMap[p.goal] || "🔥 Lean Bulk";
     if (weightEl) weightEl.innerText = `${currentW.toFixed(1)} kg`;
-    if (calEl) calEl.innerText = `${(typeof n.calories === 'number' ? n.calories : (n.consumedCal || 0))} / ${t.calories || 2770}`;
+    if (calEl) calEl.innerText = `${dispCal} / ${t.calories || 2770} kcal`;
     if (stepsEl) stepsEl.innerText = `${(n.steps || 0).toLocaleString('tr-TR')} / ${(t.steps || 7500).toLocaleString('tr-TR')}`;
 
     const contentArea = document.getElementById("coach-deep-dive-content");
@@ -20223,32 +20427,37 @@ function renderCoachDetail(username) {
             mealsHtml = `<p class="text-secondary" style="font-size:0.75rem; text-align:center; padding:16px;">Bugün henüz kayıtlı öğün yok.</p>`;
         } else {
             meals.forEach(m => {
+                const mealCal = Number(m.cal !== undefined ? m.cal : (m.calories || 0)) || 0;
+                const mealP = Number(m.p !== undefined ? m.p : (m.protein || 0)) || 0;
+                const mealC = Number(m.c !== undefined ? m.c : (m.carbs || 0)) || 0;
+                const mealF = Number(m.f !== undefined ? m.f : (m.fat || 0)) || 0;
                 mealsHtml += `
-                    <div class="deep-meal-item">
-                        <div class="deep-meal-title">
-                            <span>${m.name}</span>
-                            <span class="badge-role" style="font-size:0.65rem;">${m.cal} kcal</span>
+                    <div class="deep-meal-item" style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:10px 12px; margin-bottom:8px;">
+                        <div class="deep-meal-title" style="display:flex; justify-content:space-between; align-items:center;">
+                            <div style="display:flex; align-items:center; gap:6px;">
+                                <span style="font-size:0.88rem; font-weight:800; color:#fff;">${m.name}</span>
+                                <span class="badge-role" style="background:rgba(56,189,248,0.15); color:#38bdf8; font-size:0.65rem;">⏰ ${m.time || 'Saat Belirtilmedi'}</span>
+                            </div>
+                            <span class="badge-role" style="font-size:0.72rem; background:#ffd60a; color:#000; font-weight:900;">${mealCal} kcal</span>
                         </div>
-                        <div style="font-size:0.68rem; color:var(--text-secondary); margin-top:3px; display:flex; gap:10px;">
-                            <span>🍗 <strong>${m.p}g</strong> Prot</span>
-                            <span>🍚 <strong>${m.c}g</strong> Karb</span>
-                            <span>🥑 <strong>${m.f}g</strong> Yağ</span>
-                            ${m.time ? `<span>⏰ ${m.time}</span>` : ''}
+                        ${m.desc ? `<div style="font-size:0.72rem; color:var(--text-secondary); margin-top:4px;">🥗 ${m.desc}</div>` : ''}
+                        <div style="font-size:0.68rem; color:var(--text-secondary); margin-top:5px; display:flex; gap:12px;">
+                            <span>🍗 <strong>${mealP}g</strong> Protein</span>
+                            <span>🍚 <strong>${mealC}g</strong> Karb</span>
+                            <span>🥑 <strong>${mealF}g</strong> Yağ</span>
                         </div>
                     </div>
                 `;
             });
         }
 
-        const dispCal = typeof n.calories === 'number' ? n.calories : (n.consumedCal || 0);
-        const dispP = typeof n.protein === 'number' ? n.protein : (n.consumedP || 0);
-        const dispC = typeof n.carbs === 'number' ? n.carbs : (n.consumedC || 0);
-        const dispF = typeof n.fat === 'number' ? n.fat : (n.consumedF || 0);
-
         contentArea.innerHTML = `
             <div class="deep-card">
-                <div class="card-header" style="margin-bottom:8px;">
+                <div class="card-header" style="margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
                     <h2>🍽️ BUGÜNKÜ ÇİĞ ÖĞÜN VE MAKRO DAĞILIMI</h2>
+                    <button type="button" class="btn btn-xs btn-primary" onclick="openAthleteWordDocForCoach('${username}')" style="background:linear-gradient(135deg, #0284c7, #0369a1); font-weight:800; border:none; display:inline-flex; align-items:center; gap:5px;">
+                        <i class="fa-solid fa-file-word"></i> Word Raporu (.doc)
+                    </button>
                 </div>
                 <div class="profile-macro-banner" style="margin-bottom:12px;">
                     <div class="prof-macro-col p-col"><span>Protein</span><strong>${dispP} / ${t.protein}g</strong></div>
@@ -26773,19 +26982,41 @@ function saveCoachPhysiqueFeedback(username, entryId) {
 
 // ==================== HAFTALIK KOÇ RAPORU (WORD & E-POSTA) SİSTEMİ ====================
 
-function openWeeklyDocReportModal() {
-    renderWeeklyDocReportPreview();
+function openWeeklyDocReportModal(targetUsername) {
+    window.currentDocTargetAthlete = targetUsername || getActiveSessionUsername() || "omer";
+    renderWeeklyDocReportPreview(window.currentDocTargetAthlete);
     openModal('modal-weekly-doc-report');
 }
 
-function generateWeeklyDocReportData() {
+function openAthleteWordDocForCoach(username) {
+    const target = username || window.currentCoachSelectedAthlete || "omer";
+    openWeeklyDocReportModal(target);
+}
+
+function downloadAthleteWordDocForCoach(username) {
+    const target = username || window.currentCoachSelectedAthlete || "omer";
+    downloadWeeklyWordDoc(target);
+}
+
+function generateWeeklyDocReportData(targetUsername) {
     const today = new Date();
     const dateStr = today.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
-    const username = getActiveSessionUsername() || "omer";
-    const userProf = appData.userProfile || { name: 'Omar', weight: 74, height: 178, goal: 'bulk' };
+    const username = (targetUsername || window.currentDocTargetAthlete || getActiveSessionUsername() || "omer").toLowerCase().trim();
+    
+    // Check if target user matches active session or is in usersRegistry
+    let userData = null;
+    const activeUser = (getActiveSessionUsername() || "").toLowerCase().trim();
+    if (username === activeUser) {
+        userData = appData;
+    } else {
+        const reg = (typeof getUsersRegistry === "function") ? getUsersRegistry() : {};
+        userData = reg[username] || reg[username.toLowerCase()] || appData;
+    }
+    
+    const userProf = userData.userProfile || { name: username, weight: 74, height: 178, goal: 'bulk' };
     
     // Weight & 7-day stats
-    const history = appData.weightHistory || [];
+    const history = userData.weightHistory || [];
     const currentWeight = history.length > 0 ? Number(history[0].weight || 74) : (userProf.weight || 74);
     const prevWeight = history.length > 1 ? Number(history[1].weight || currentWeight) : currentWeight;
     const weightDiff = (currentWeight - prevWeight).toFixed(1);
@@ -26802,10 +27033,10 @@ function generateWeeklyDocReportData() {
     let totalSets = 0;
     const daysKeys = ["pzt", "sal", "car", "per", "cum", "cmt", "paz"];
     daysKeys.forEach(dayKey => {
-        const plan = (appData.customWorkoutPlan && appData.customWorkoutPlan[dayKey]) || (DEFAULT_WORKOUT_PLAN && DEFAULT_WORKOUT_PLAN[dayKey]);
+        const plan = (userData.customWorkoutPlan && userData.customWorkoutPlan[dayKey]) || (DEFAULT_WORKOUT_PLAN && DEFAULT_WORKOUT_PLAN[dayKey]);
         if (plan && plan.exercises) {
             plan.exercises.forEach(ex => {
-                const logs = appData.workoutLogs ? appData.workoutLogs[ex.id] : null;
+                const logs = userData.workoutLogs ? userData.workoutLogs[ex.id] : null;
                 if (logs && Array.isArray(logs)) {
                     logs.forEach(set => {
                         const w = Number(set.weight || 0);
@@ -26820,12 +27051,38 @@ function generateWeeklyDocReportData() {
         }
     });
 
-    // Nutrition & Macro Averages
-    const consumed = appData.todayNutrition || {};
-    const target = appData.targets || DEFAULT_TARGETS;
+    // Nutrition & Macro details
+    const todayNut = userData.todayNutrition || {};
+    const meals = Array.isArray(todayNut.meals) ? todayNut.meals : [];
 
-    // Checkin / Body measures
-    const waist = (appData.waistHistory && appData.waistHistory.length > 0) ? appData.waistHistory[0].waist : 81;
+    let consumedCal = Number(todayNut.calories || 0);
+    let consumedP = Number(todayNut.protein || 0);
+    let consumedC = Number(todayNut.carbs || 0);
+    let consumedF = Number(todayNut.fat || 0);
+
+    if (meals.length > 0) {
+        let calcCal = 0, calcP = 0, calcC = 0, calcF = 0;
+        meals.forEach(m => {
+            calcCal += Number(m.calories || m.cal || 0);
+            calcP += Number(m.protein || m.p || 0);
+            calcC += Number(m.carbs || m.c || 0);
+            calcF += Number(m.fat || m.f || 0);
+        });
+        if (calcCal > 0 || consumedCal === 0) {
+            consumedCal = Math.round(calcCal);
+            consumedP = Math.round(calcP);
+            consumedC = Math.round(calcC);
+            consumedF = Math.round(calcF);
+        }
+    }
+
+    const target = userData.targets || DEFAULT_TARGETS;
+    const waist = (userData.waistHistory && userData.waistHistory.length > 0) ? userData.waistHistory[0].waist : 81;
+    const nutritionHistory = userData.nutritionHistory || [];
+    const physiqueGallery = userData.physiqueGallery || [];
+    const customWorkoutPlan = userData.customWorkoutPlan || {};
+    const workoutLogs = userData.workoutLogs || {};
+    const seatSettings = userData.seatSettings || {};
 
     return {
         dateStr,
@@ -26838,14 +27095,27 @@ function generateWeeklyDocReportData() {
         last7Weights,
         totalTonnage: Math.round(totalTonnage),
         totalSets,
-        consumed,
+        consumed: {
+            calories: consumedCal,
+            protein: consumedP,
+            carbs: consumedC,
+            fat: consumedF,
+            water: todayNut.water || 0,
+            date: todayNut.date || getFitnessDateKey(),
+            meals: meals
+        },
         target,
-        waist
+        waist,
+        nutritionHistory,
+        physiqueGallery,
+        customWorkoutPlan,
+        workoutLogs,
+        seatSettings
     };
 }
 
-function generateWeeklyDocHtml() {
-    const data = generateWeeklyDocReportData();
+function generateWeeklyDocHtml(targetUsername) {
+    const data = generateWeeklyDocReportData(targetUsername);
     const daysTr = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
     const dayKeys = ["pzt", "sal", "car", "per", "cum", "cmt", "paz"];
 
@@ -26865,7 +27135,7 @@ function generateWeeklyDocHtml() {
     let detailedWorkoutLogsHtml = "";
 
     dayKeys.forEach((dayKey, idx) => {
-        const plan = (appData.customWorkoutPlan && appData.customWorkoutPlan[dayKey]) || (DEFAULT_WORKOUT_PLAN && DEFAULT_WORKOUT_PLAN[dayKey]);
+        const plan = (data.customWorkoutPlan && data.customWorkoutPlan[dayKey]) || (DEFAULT_WORKOUT_PLAN && DEFAULT_WORKOUT_PLAN[dayKey]);
         if (plan) {
             const exNames = (plan.exercises || []).map(e => e.name).slice(0, 4).join(", ");
             workoutRowsHtml += `
@@ -26880,8 +27150,8 @@ function generateWeeklyDocHtml() {
                 let dayExHtml = "";
                 plan.exercises.forEach(ex => {
                     const cKey = getCanonicalExerciseKey(ex.name, ex.id);
-                    const savedSeat = (appData.seatSettings && (appData.seatSettings[ex.id] || (ex.name && appData.seatSettings[ex.name]) || appData.seatSettings[cKey])) || ex.defaultSeat || '--';
-                    const logs = (appData.workoutLogs && (appData.workoutLogs[ex.id] || (ex.name && appData.workoutLogs[ex.name]) || appData.workoutLogs[cKey])) || [];
+                    const savedSeat = (data.seatSettings && (data.seatSettings[ex.id] || (ex.name && data.seatSettings[ex.name]) || data.seatSettings[cKey])) || ex.defaultSeat || '--';
+                    const logs = (data.workoutLogs && (data.workoutLogs[ex.id] || (ex.name && data.workoutLogs[ex.name]) || data.workoutLogs[cKey])) || [];
 
                     let setsRows = "";
                     if (logs.length === 0) {
@@ -26922,11 +27192,100 @@ function generateWeeklyDocHtml() {
         }
     });
 
+    // SAAT SAAT ÖĞÜN DETAYLARI
+    let todayMealsRowsHtml = "";
+    if (!data.consumed.meals || data.consumed.meals.length === 0) {
+        todayMealsRowsHtml = `<p style="font-size:11px; color:#64748b; margin:6px 0; font-style:italic;">Bugün henüz kayıtlı öğün bulunmuyor.</p>`;
+    } else {
+        let mealTrs = "";
+        data.consumed.meals.forEach((m, mIdx) => {
+            const timeStr = m.time || (m.timestamp ? new Date(m.timestamp).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }) : '--:--');
+            const mealName = m.name || `Öğün ${mIdx + 1}`;
+            const mCal = Number(m.calories || m.cal || 0);
+            const mP = Number(m.protein || m.p || 0);
+            const mC = Number(m.carbs || m.c || 0);
+            const mF = Number(m.fat || m.f || 0);
+            const desc = m.desc || (m.grams ? `${m.grams}g` : '');
+
+            mealTrs += `
+                <tr style="background:${mIdx % 2 === 0 ? '#ffffff' : '#f8fafc'};">
+                    <td style="padding:6px 8px; border:1px solid #cbd5e1; font-weight:bold; color:#0284c7; text-align:center;">⏰ ${timeStr}</td>
+                    <td style="padding:6px 8px; border:1px solid #cbd5e1; font-weight:bold;">${mealName} ${desc ? `<span style="font-size:10px; font-weight:normal; color:#64748b;">(${desc})</span>` : ''}</td>
+                    <td style="padding:6px 8px; border:1px solid #cbd5e1; text-align:center; color:#16a34a; font-weight:bold;">${mP}g</td>
+                    <td style="padding:6px 8px; border:1px solid #cbd5e1; text-align:center; color:#d97706;">${mC}g</td>
+                    <td style="padding:6px 8px; border:1px solid #cbd5e1; text-align:center; color:#dc2626;">${mF}g</td>
+                    <td style="padding:6px 8px; border:1px solid #cbd5e1; text-align:center; font-weight:bold; color:#0f172a;">${mCal} kcal</td>
+                </tr>
+            `;
+        });
+
+        todayMealsRowsHtml = `
+            <table style="width:100%; border-collapse:collapse; font-size:11px; margin-top:6px;">
+                <tr style="background:#e2e8f0; color:#1e293b;">
+                    <th style="padding:6px 8px; border:1px solid #cbd5e1; text-align:center; width:80px;">Saat</th>
+                    <th style="padding:6px 8px; border:1px solid #cbd5e1; text-align:left;">Öğün / Besin Adı</th>
+                    <th style="padding:6px 8px; border:1px solid #cbd5e1; text-align:center; width:65px;">Protein</th>
+                    <th style="padding:6px 8px; border:1px solid #cbd5e1; text-align:center; width:65px;">Karb</th>
+                    <th style="padding:6px 8px; border:1px solid #cbd5e1; text-align:center; width:65px;">Yağ</th>
+                    <th style="padding:6px 8px; border:1px solid #cbd5e1; text-align:center; width:85px;">Kalori</th>
+                </tr>
+                ${mealTrs}
+                <tr style="background:#f1f5f9; font-weight:bold;">
+                    <td colspan="2" style="padding:6px 8px; border:1px solid #cbd5e1; text-align:right;">BUGÜN TOPLAM:</td>
+                    <td style="padding:6px 8px; border:1px solid #cbd5e1; text-align:center; color:#16a34a;">${data.consumed.protein}g</td>
+                    <td style="padding:6px 8px; border:1px solid #cbd5e1; text-align:center; color:#d97706;">${data.consumed.carbs}g</td>
+                    <td style="padding:6px 8px; border:1px solid #cbd5e1; text-align:center; color:#dc2626;">${data.consumed.fat}g</td>
+                    <td style="padding:6px 8px; border:1px solid #cbd5e1; text-align:center; color:#0284c7;">${data.consumed.calories} kcal</td>
+                </tr>
+            </table>
+        `;
+    }
+
+    // GÜNDEN GÜNE BESLENME GEÇMİŞİ (HAFTALIK GEÇMİŞ)
+    let pastNutritionRowsHtml = "";
+    if (!data.nutritionHistory || data.nutritionHistory.length === 0) {
+        pastNutritionRowsHtml = `<p style="font-size:11px; color:#94a3b8; margin:6px 0; font-style:italic;">Arşivde henüz geçmiş gün beslenme kaydı bulunmuyor.</p>`;
+    } else {
+        let historyTrs = "";
+        data.nutritionHistory.slice(-7).reverse().forEach(h => {
+            const hDate = h.date || '--';
+            const hCal = h.calories || 0;
+            const hP = h.protein || 0;
+            const hC = h.carbs || 0;
+            const hF = h.fat || 0;
+            const hCount = h.mealsCount || (h.meals ? h.meals.length : 0);
+            
+            historyTrs += `
+                <tr>
+                    <td style="padding:5px 8px; border:1px solid #cbd5e1; font-weight:bold;">📅 ${hDate}</td>
+                    <td style="padding:5px 8px; border:1px solid #cbd5e1; text-align:center; font-weight:bold; color:#0284c7;">${hCal} kcal</td>
+                    <td style="padding:5px 8px; border:1px solid #cbd5e1; text-align:center; color:#16a34a;">${hP}g</td>
+                    <td style="padding:5px 8px; border:1px solid #cbd5e1; text-align:center;">${hC}g</td>
+                    <td style="padding:5px 8px; border:1px solid #cbd5e1; text-align:center;">${hF}g</td>
+                    <td style="padding:5px 8px; border:1px solid #cbd5e1; text-align:center; font-size:10px; color:#64748b;">${hCount} Öğün</td>
+                </tr>
+            `;
+        });
+        pastNutritionRowsHtml = `
+            <table style="width:100%; border-collapse:collapse; font-size:11px; margin-top:6px;">
+                <tr style="background:#f1f5f9; color:#475569;">
+                    <th style="padding:5px 8px; border:1px solid #cbd5e1; text-align:left;">Tarih</th>
+                    <th style="padding:5px 8px; border:1px solid #cbd5e1; text-align:center;">Kalori</th>
+                    <th style="padding:5px 8px; border:1px solid #cbd5e1; text-align:center;">Protein</th>
+                    <th style="padding:5px 8px; border:1px solid #cbd5e1; text-align:center;">Karb</th>
+                    <th style="padding:5px 8px; border:1px solid #cbd5e1; text-align:center;">Yağ</th>
+                    <th style="padding:5px 8px; border:1px solid #cbd5e1; text-align:center;">Öğün Sayısı</th>
+                </tr>
+                ${historyTrs}
+            </table>
+        `;
+    }
+
     return `
         <div style="font-family: Arial, sans-serif; color: #0f172a; max-width: 700px; margin: 0 auto; background:#ffffff; padding:20px; border-radius:8px;">
             <div style="text-align: center; border-bottom: 3px solid #0284c7; padding-bottom: 12px; margin-bottom: 20px;">
                 <h1 style="color: #0284c7; margin: 0; font-size: 22px; text-transform: uppercase;">OMAR COACHING</h1>
-                <h3 style="color: #475569; margin: 4px 0 0 0; font-size: 14px; font-weight: normal;">Haftalık Sporcu Gelişim & Tartı Raporu</h3>
+                <h3 style="color: #475569; margin: 4px 0 0 0; font-size: 14px; font-weight: normal;">Haftalık Sporcu Gelişim & Beslenme / Tartı Raporu</h3>
                 <p style="color: #64748b; font-size: 11px; margin: 4px 0 0 0;">Tarih: ${data.dateStr} | Sporcu: ${data.username.toUpperCase()}</p>
             </div>
 
@@ -26984,28 +27343,52 @@ function generateWeeklyDocHtml() {
             <h4 style="color:#0284c7; border-left:4px solid #0284c7; padding-left:8px; margin:20px 0 8px 0; font-size:14px;">3.1 DETAYLI ANTRENMAN DEFTERİ & SET LOGLARI</h4>
             ${detailedWorkoutLogsHtml}
 
-            <!-- BESLENME VE MAKRO ÖZETİ -->
-            <h4 style="color:#0284c7; border-left:4px solid #0284c7; padding-left:8px; margin:16px 0 8px 0; font-size:14px;">4. BESLENME VE MAKRO DİSİPLİNİ</h4>
-            <table style="width:100%; border-collapse:collapse; margin-bottom:20px; font-size:12px;">
-                <tr style="background:#f1f5f9;">
-                    <th style="padding:6px 8px; border:1px solid #cbd5e1;">Kalori (kcal)</th>
-                    <th style="padding:6px 8px; border:1px solid #cbd5e1;">Protein (g)</th>
-                    <th style="padding:6px 8px; border:1px solid #cbd5e1;">Karbonhidrat (g)</th>
-                    <th style="padding:6px 8px; border:1px solid #cbd5e1;">Yağ (g)</th>
+            <!-- BESLENME VE SAAT SAAT DETAYLI ÖĞÜN GÜNLÜĞÜ -->
+            <h4 style="color:#0284c7; border-left:4px solid #0284c7; padding-left:8px; margin:20px 0 8px 0; font-size:14px;">4. BESLENME & SAAT SAAT DETAYLI ÖĞÜN GÜNLÜĞÜ</h4>
+            
+            <table style="width:100%; border-collapse:collapse; margin-bottom:14px; font-size:12px;">
+                <tr style="background:#0284c7; color:#ffffff;">
+                    <th style="padding:6px 8px; border:1px solid #cbd5e1; text-align:left;">Durum</th>
+                    <th style="padding:6px 8px; border:1px solid #cbd5e1; text-align:center;">Kalori (kcal)</th>
+                    <th style="padding:6px 8px; border:1px solid #cbd5e1; text-align:center;">Protein (g)</th>
+                    <th style="padding:6px 8px; border:1px solid #cbd5e1; text-align:center;">Karbonhidrat (g)</th>
+                    <th style="padding:6px 8px; border:1px solid #cbd5e1; text-align:center;">Yağ (g)</th>
                 </tr>
                 <tr>
-                    <td style="padding:8px; border:1px solid #cbd5e1; text-align:center; font-weight:bold;">${data.target.calories} kcal</td>
-                    <td style="padding:8px; border:1px solid #cbd5e1; text-align:center; font-weight:bold; color:#16a34a;">${data.target.protein}g</td>
-                    <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">${data.target.carbs}g</td>
-                    <td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">${data.target.fat}g</td>
+                    <td style="padding:6px 8px; border:1px solid #cbd5e1; font-weight:bold; background:#f8fafc;">Hedef</td>
+                    <td style="padding:6px 8px; border:1px solid #cbd5e1; text-align:center; font-weight:bold;">${data.target.calories} kcal</td>
+                    <td style="padding:6px 8px; border:1px solid #cbd5e1; text-align:center; font-weight:bold; color:#16a34a;">${data.target.protein}g</td>
+                    <td style="padding:6px 8px; border:1px solid #cbd5e1; text-align:center;">${data.target.carbs}g</td>
+                    <td style="padding:6px 8px; border:1px solid #cbd5e1; text-align:center;">${data.target.fat}g</td>
+                </tr>
+                <tr>
+                    <td style="padding:6px 8px; border:1px solid #cbd5e1; font-weight:bold; background:#f0fdf4; color:#15803d;">Bugün Alınan</td>
+                    <td style="padding:6px 8px; border:1px solid #cbd5e1; text-align:center; font-weight:bold; color:#0284c7;">${data.consumed.calories} kcal</td>
+                    <td style="padding:6px 8px; border:1px solid #cbd5e1; text-align:center; font-weight:bold; color:#16a34a;">${data.consumed.protein}g</td>
+                    <td style="padding:6px 8px; border:1px solid #cbd5e1; text-align:center; color:#d97706;">${data.consumed.carbs}g</td>
+                    <td style="padding:6px 8px; border:1px solid #cbd5e1; text-align:center; color:#dc2626;">${data.consumed.fat}g</td>
                 </tr>
             </table>
 
+            <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:6px; padding:10px; margin-bottom:16px;">
+                <div style="font-size:12px; font-weight:bold; color:#0f172a; margin-bottom:4px;">
+                    🕒 BUGÜNÜN ÖĞÜNLERİ (SAAT SAAT DETAYLI LİSTE):
+                </div>
+                ${todayMealsRowsHtml}
+            </div>
+
+            <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:6px; padding:10px; margin-bottom:16px;">
+                <div style="font-size:12px; font-weight:bold; color:#475569; margin-bottom:4px;">
+                    📅 GEÇMİŞ GÜNLERİN BESLENME TABLOSU (HAFTALIK GEÇMİŞ):
+                </div>
+                ${pastNutritionRowsHtml}
+            </div>
+
             <!-- FORM DEĞİŞİM KASASI & FOTOĞRAFLAR -->
             <h4 style="color:#0284c7; border-left:4px solid #0284c7; padding-left:8px; margin:16px 0 8px 0; font-size:14px;">5. HAFTALIK FORM DEĞİŞİM KASASI & FOTOĞRAFLAR</h4>
-            ${(appData.physiqueGallery && appData.physiqueGallery.length > 0) ? `
+            ${(data.physiqueGallery && data.physiqueGallery.length > 0) ? `
                 <div style="margin-bottom:20px;">
-                    ${appData.physiqueGallery.slice(0, 3).map(entry => `
+                    ${data.physiqueGallery.slice(0, 3).map(entry => `
                         <div style="border:1px solid #cbd5e1; padding:8px; border-radius:6px; background:#f8fafc; margin-bottom:10px;">
                             <div style="font-size:11px; font-weight:bold; color:#0284c7; margin-bottom:6px;">📅 Tarih: ${entry.date || ''} • Kilo: ${entry.weight || '--'} kg • Bel: ${entry.waist || '--'} cm</div>
                             <div style="display:flex; gap:10px; flex-wrap:wrap;">
@@ -27027,19 +27410,22 @@ function generateWeeklyDocHtml() {
     `;
 }
 
-function renderWeeklyDocReportPreview() {
+function renderWeeklyDocReportPreview(targetUsername) {
     const container = document.getElementById("weekly-report-preview-container");
     if (container) {
-        container.innerHTML = generateWeeklyDocHtml();
+        const target = targetUsername || window.currentDocTargetAthlete || getActiveSessionUsername() || "omer";
+        container.innerHTML = generateWeeklyDocHtml(target);
     }
 }
 
-function downloadWeeklyWordDoc() {
-    const reportHtml = generateWeeklyDocHtml();
+function downloadWeeklyWordDoc(targetUsername) {
+    const target = targetUsername || window.currentDocTargetAthlete || getActiveSessionUsername() || "omer";
+    const reportHtml = generateWeeklyDocHtml(target);
+    const uname = target.toUpperCase();
     const header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' "+
         "xmlns:w='urn:schemas-microsoft-com:office:word' "+
         "xmlns='http://www.w3.org/TR/REC-html40'>"+
-        "<head><meta charset='utf-8'><title>Haftalık Koç Raporu</title></head><body>";
+        "<head><meta charset='utf-8'><title>Haftalık Koç Raporu - " + uname + "</title></head><body>";
     const footer = "</body></html>";
     const sourceHTML = header + reportHtml + footer;
     
@@ -27051,12 +27437,12 @@ function downloadWeeklyWordDoc() {
     const a = document.createElement("a");
     a.href = url;
     const nowStr = new Date().toISOString().slice(0,10);
-    a.download = `Omar_Coaching_Haftalik_Rapor_${nowStr}.doc`;
+    a.download = `Omar_Coaching_${uname}_Haftalik_Rapor_${nowStr}.doc`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    showToast("📄 Haftalık Word Raporu (.doc) indirildi!");
+    showToast(`📄 ${uname} Sporcusu Haftalık Word Raporu (.doc) indirildi!`);
 }
 
 function sendWeeklyReportByEmail() {

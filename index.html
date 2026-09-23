@@ -485,16 +485,21 @@
                 </div>
 
                 <!-- Daily Weigh-In Entry -->
-                <div class="card">
+                <div class="card" id="card-daily-weigh-in">
                     <div class="card-header">
-                        <h2>SABAH AÇ TARTI GİRİŞİ</h2>
+                        <h2><i class="fa-solid fa-weight-scale"></i> SABAH AÇ TARTI GİRİŞİ</h2>
+                        <span id="scale-entry-status-badge" class="badge-role" style="font-size:0.65rem; background:rgba(255,214,10,0.15); color:#ffd60a;">Günde 1 Kez</span>
                     </div>
-                    <div class="weigh-input-row">
+                    <div id="scale-daily-limit-warning" style="background:rgba(255,214,10,0.1); border:1px solid rgba(255,214,10,0.3); padding:8px 12px; border-radius:8px; font-size:0.73rem; color:#ffd60a; margin-bottom:10px; display:flex; align-items:center; gap:8px;">
+                        <i class="fa-solid fa-triangle-exclamation" style="font-size:1rem; flex-shrink:0;"></i>
+                        <span><strong>Dikkat:</strong> Günde yalnızca <u>tek bir tartı</u> girme hakkınız vardır. Lütfen sabah aç karnına, tuvalet sonrası net kilonuzu giriniz.</span>
+                    </div>
+                    <div class="weigh-input-row" id="weigh-input-container">
                         <div class="input-group">
-                            <input type="number" id="daily-weight-input" step="0.1" placeholder="74.0">
+                            <input type="number" id="daily-weight-input" step="0.1" placeholder="74.0" onfocus="handleWeighInputFocus()">
                             <span class="unit">kg</span>
                         </div>
-                        <button class="btn btn-primary" onclick="saveDailyWeight()">Kaydet</button>
+                        <button class="btn btn-primary" id="btn-save-daily-weight" onclick="saveDailyWeight()">Kaydet</button>
                     </div>
                 </div>
 
@@ -670,6 +675,22 @@
                     </div>
                 </div>
 
+                <!-- Coach Athlete Leaderboard Standings Card -->
+                <div class="card" id="coach-leaderboard-card" style="background:linear-gradient(135deg, rgba(255,214,10,0.08), rgba(168,85,247,0.05)); border:1px solid rgba(255,214,10,0.3); margin-bottom:14px; padding:14px; border-radius:var(--radius-md);">
+                    <div class="card-header" style="margin-bottom:8px;">
+                        <h2 style="color:#ffd60a; font-size:0.85rem; display:flex; align-items:center; gap:6px;">
+                            <i class="fa-solid fa-trophy" style="color:#ffd60a;"></i> SPORCU LİG SIRALAMASI (HAFTALIK)
+                        </h2>
+                        <span class="badge-role" style="background:#ffd60a; color:#000; font-weight:900; font-size:0.65rem;">Haftalık Sıralama</span>
+                    </div>
+                    <p class="text-secondary" style="font-size:0.72rem; line-height:1.4; margin-bottom:10px;">
+                        Sporcularınızın disiplin, antrenman ve beslenme ile topladıkları haftalık XP ve lig dereceleri:
+                    </p>
+                    <div id="coach-leaderboard-container">
+                        <!-- Rendered dynamically -->
+                    </div>
+                </div>
+
                 <!-- Athlete Search & Filter Filter Pills -->
                 <div class="roster-filter-row">
                     <div class="roster-search-wrap">
@@ -681,6 +702,7 @@
                         <button class="roster-pill" onclick="filterCoachRosterByGoal('bulk', this)">Bulk</button>
                         <button class="roster-pill" onclick="filterCoachRosterByGoal('cut', this)">Cut</button>
                         <button class="roster-pill" onclick="filterCoachRosterByGoal('recomp', this)">Recomp</button>
+                        <button class="roster-pill" id="btn-coach-sort-rank" onclick="toggleCoachRosterSortRank(this)" style="color:#ffd60a; border-color:rgba(255,214,10,0.4);"><i class="fa-solid fa-arrow-down-wide-short"></i> Lige Göre</button>
                     </div>
                 </div>
 
@@ -718,7 +740,7 @@
                     </div>
 
                     <!-- Action shortcuts for selected athlete -->
-                    <div class="adh-actions-row" style="grid-template-columns: 1fr 1fr 1fr 1fr; gap:6px;">
+                    <div class="adh-actions-row" style="grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap:6px;">
                         <button class="btn btn-xs btn-primary" onclick="goToPrescriptionForCurrentAthlete()">
                             <i class="fa-solid fa-utensils"></i> Diyet
                         </button>
@@ -726,7 +748,10 @@
                             <i class="fa-solid fa-dumbbell"></i> İdman
                         </button>
                         <button class="btn btn-xs btn-primary" onclick="openCoachPhysiqueReviewModal(currentCoachSelectedAthlete)" style="background:linear-gradient(135deg, #a855f7, #7c3aed); color:#fff; font-weight:800; border:none;">
-                            <i class="fa-solid fa-camera"></i> Form Kasası
+                            <i class="fa-solid fa-camera"></i> Form
+                        </button>
+                        <button class="btn btn-xs btn-primary" onclick="openAthleteWordDocForCoach(currentCoachSelectedAthlete)" style="background:linear-gradient(135deg, #0284c7, #0369a1); color:#fff; font-weight:800; border:none;" title="Saat saat detaylı Word raporunu aç ve indir">
+                            <i class="fa-solid fa-file-word"></i> Word (.doc)
                         </button>
                         <button class="btn btn-xs btn-outline" onclick="goToChatForCurrentAthlete()">
                             <i class="fa-solid fa-comments"></i> Chat
