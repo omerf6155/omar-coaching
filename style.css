@@ -4694,24 +4694,29 @@ body.modal-open {
 
 .btn-rpg-action {
     flex: 1;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    min-height: 40px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: var(--radius-sm);
     color: #ffffff;
     font-size: 0.72rem;
     font-weight: 700;
-    padding: 7px 8px;
+    padding: 8px 6px;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
+    gap: 5px;
     cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
     transition: all 0.2s ease;
 }
 
-.btn-rpg-action:hover {
-    background: rgba(255, 255, 255, 0.09);
-    border-color: rgba(255, 255, 255, 0.2);
+.btn-rpg-action:hover, .btn-rpg-action:active {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.25);
+    transform: scale(0.98);
 }
 
 .badge-mini-gain {
@@ -6795,14 +6800,17 @@ body.modal-open {
     justify-content: space-between;
     align-items: center;
     cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
     transition: all 0.2s ease;
     margin-top: 8px;
 }
 
-.weekly-league-banner:hover {
+.weekly-league-banner:hover, .weekly-league-banner:active {
     border-color: #ffd60a;
-    background: linear-gradient(135deg, rgba(255, 214, 10, 0.18), rgba(15, 23, 42, 0.85));
-    transform: translateY(-1px);
+    background: linear-gradient(135deg, rgba(255, 214, 10, 0.22), rgba(15, 23, 42, 0.9));
+    transform: scale(0.99);
 }
 
 .leaderboard-podium {
@@ -7018,6 +7026,137 @@ body.modal-open {
     font-weight: 800;
     color: #ffd60a;
 }
+
+/* ==================== 🛍️ PERK STORE & INVENTORY STYLES ==================== */
+.perk-store-card {
+    background: var(--bg-card-subtle);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: all 0.2s ease;
+}
+
+.perk-store-card:hover {
+    border-color: rgba(255, 214, 10, 0.4);
+    background: linear-gradient(135deg, rgba(255, 214, 10, 0.05), rgba(15, 23, 42, 0.8));
+}
+
+.perk-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.perk-card-title-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.perk-card-icon {
+    font-size: 1.5rem;
+    line-height: 1;
+}
+
+.perk-card-title-group h4 {
+    margin: 0;
+    font-size: 0.85rem;
+    color: #ffffff;
+    font-weight: 800;
+}
+
+.perk-card-badge {
+    font-size: 0.62rem;
+    font-weight: 800;
+    padding: 2px 6px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+}
+
+.perk-card-desc {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    line-height: 1.45;
+    margin: 0;
+}
+
+.perk-card-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 4px;
+    padding-top: 8px;
+    border-top: 1px dashed rgba(255, 255, 255, 0.08);
+}
+
+.perk-cost-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.82rem;
+    font-weight: 900;
+    color: #ffd60a;
+}
+
+.inventory-card {
+    background: var(--bg-card-subtle);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+
+.inventory-card.is-used {
+    opacity: 0.6;
+    border-style: dashed;
+}
+
+.inventory-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.inventory-meta strong {
+    display: block;
+    font-size: 0.78rem;
+    color: #ffffff;
+}
+
+.inventory-meta small {
+    font-size: 0.65rem;
+    color: var(--text-secondary);
+}
+
+.inventory-coupon-code {
+    background: rgba(255, 214, 10, 0.15);
+    border: 1px dashed #ffd60a;
+    color: #ffd60a;
+    font-family: monospace;
+    font-weight: 900;
+    font-size: 0.8rem;
+    padding: 3px 8px;
+    border-radius: 4px;
+    user-select: all;
+    display: inline-block;
+    margin-top: 4px;
+}
+
+.chat-bubble.vip-bubble {
+    border: 1.5px solid #ffd60a !important;
+    box-shadow: 0 0 14px rgba(255, 214, 10, 0.35) !important;
+    background: linear-gradient(135deg, rgba(255, 214, 10, 0.15), rgba(15, 23, 42, 0.95)) !important;
+}
+
 
 
 

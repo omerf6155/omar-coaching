@@ -91,8 +91,8 @@
                 </div>
 
                 <!-- RPG SANAL KARAKTER & GÜNLÜK STREAK KARTI -->
-                <div class="card rpg-hero-card" onclick="openCharacterHubModal()" title="Sanal Karakterini ve Gelişimini İncele">
-                    <div class="rpg-card-header">
+                <div class="card rpg-hero-card">
+                    <div class="rpg-card-header" onclick="openCharacterHubModal()" style="cursor:pointer;" title="Sanal Karakterini ve Gelişimini İncele">
                         <div class="rpg-avatar-badge" id="rpg-dash-avatar">
                             <span class="rpg-avatar-icon" id="rpg-dash-avatar-icon">🛡️</span>
                             <span class="rpg-lvl-badge" id="rpg-dash-lvl">Lv.1</span>
@@ -109,7 +109,7 @@
                                 <span class="rpg-xp-text" id="rpg-dash-xp-text">0 / 250 XP</span>
                             </div>
                         </div>
-                        <div class="rpg-coins-badge" id="rpg-dash-coins">
+                        <div class="rpg-coins-badge" id="rpg-dash-coins" onclick="openPerkStoreModal()" style="cursor:pointer;" title="Puan Mağazasını Aç (Harca)">
                             <i class="fa-solid fa-coins"></i> <span id="rpg-dash-coins-val">100</span>
                         </div>
                     </div>
@@ -135,13 +135,13 @@
                     </div>
 
                     <div class="rpg-quick-actions-bar">
-                        <button type="button" class="btn-rpg-action" onclick="event.stopPropagation(); openWeeklyLeaderboardModal()">
-                            <i class="fa-solid fa-trophy" style="color:#ffd60a;"></i> Lig & Kürsü <span class="badge-mini-gain" id="rpg-dash-weekly-rank" style="background:#ffd60a; color:#000;">#1</span>
+                        <button type="button" class="btn-rpg-action" onclick="openWeeklyLeaderboardModal()">
+                            <i class="fa-solid fa-trophy" style="color:#ffd60a;"></i> Lig Sıralaması <span class="badge-mini-gain" id="rpg-dash-weekly-rank" style="background:#ffd60a; color:#000;">#1</span>
                         </button>
-                        <button type="button" class="btn-rpg-action" onclick="event.stopPropagation(); openStretchingModal()">
+                        <button type="button" class="btn-rpg-action" onclick="openStretchingModal()">
                             <i class="fa-solid fa-person-praying" style="color:#c084fc;"></i> Esneme <span class="badge-mini-gain">+MOB</span>
                         </button>
-                        <button type="button" class="btn-rpg-action" onclick="event.stopPropagation(); openCharacterHubModal()">
+                        <button type="button" class="btn-rpg-action" onclick="openCharacterHubModal()">
                             <i class="fa-solid fa-id-card-clip" style="color:#ffd60a;"></i> Karakter <i class="fa-solid fa-chevron-right"></i>
                         </button>
                     </div>
@@ -2329,6 +2329,14 @@
                 </div>
             </div>
 
+            <!-- Daily Message Quota & VIP Indicator Bar -->
+            <div id="athlete-chat-quota-bar" style="padding: 6px 14px; background: rgba(0,0,0,0.3); border-bottom: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem;">
+                <span id="athlete-chat-quota-text" style="color: var(--text-secondary);">💬 Günlük Soru Kotası: <strong style="color:#ffd60a;">10 / 10</strong></span>
+                <span onclick="openPerkStoreModal()" style="color: #ffd60a; cursor: pointer; font-weight: 700;">
+                    <i class="fa-solid fa-coins"></i> VIP Bilet & Mağaza &raquo;
+                </span>
+            </div>
+
             <!-- Quick Question Chips for Athlete -->
             <div class="quick-chips-scroll" style="padding:8px 12px; background:var(--bg-card-subtle); border-bottom:1px solid var(--border-subtle);">
                 <button class="quick-chip" onclick="openWeeklyCheckinModal()" style="background:#ffd60a; color:#000; font-weight:800;"><i class="fa-solid fa-clipboard-check"></i> 📋 Haftalık Check-in Yap</button>
@@ -3353,8 +3361,11 @@
                         <div class="ch-hub-title-badge" id="ch-hub-title-display">🐣 Çaylak Sporcu</div>
                         <div class="ch-hub-streak-coins-row">
                             <span class="ch-hub-streak-pill"><i class="fa-solid fa-fire"></i> <span id="ch-hub-streak-num">0</span> Gün Seri</span>
-                            <span class="ch-hub-coins-pill"><i class="fa-solid fa-coins"></i> <span id="ch-hub-coins-num">100</span> Omar Coins</span>
+                            <span class="ch-hub-coins-pill" onclick="openPerkStoreModal()" style="cursor:pointer;" title="Puan Mağazasını Aç"><i class="fa-solid fa-coins"></i> <span id="ch-hub-coins-num">100</span> Omar Coins</span>
                         </div>
+                        <button type="button" class="btn btn-primary btn-block" onclick="openPerkStoreModal()" style="margin-top:8px; background:linear-gradient(135deg, #ffd60a, #f59e0b); color:#000; font-weight:800; font-size:0.74rem; padding:8px 10px; border:none; box-shadow:0 3px 12px rgba(255,214,10,0.25);">
+                            <i class="fa-solid fa-store"></i> 🛍️ Avantaj Mağazası & Envanter (Puan Harca)
+                        </button>
                     </div>
                 </div>
 
@@ -3787,17 +3798,17 @@
     </div>
 
     <!-- ==================== 🏆 WEEKLY LEADERBOARD & PODIUM MODAL ==================== -->
-    <div id="modal-weekly-leaderboard" class="modal">
-        <div class="modal-content modal-content-lg" style="max-width: 520px;">
+    <div id="modal-weekly-leaderboard" class="modal-overlay">
+        <div class="modal-card" style="max-width: 500px; max-height: 90vh;">
             <div class="modal-header">
                 <div style="display: flex; align-items: center; gap: 8px;">
                     <span style="font-size: 1.4rem;">🏆</span>
                     <div>
-                        <h3 style="margin: 0; font-size: 1rem; color: #ffd60a;">Haftalık Lig & Şampiyon Kürsüsü</h3>
+                        <h3 style="margin: 0; font-size: 1rem; color: #ffd60a;">Haftalık Lig Sıralaması</h3>
                         <small id="weekly-leaderboard-countdown" style="color: var(--text-secondary); font-size: 0.68rem;">Pazartesi 06:00 döngüsü</small>
                     </div>
                 </div>
-                <button type="button" class="btn-close" onclick="closeModal('modal-weekly-leaderboard')">×</button>
+                <button type="button" class="modal-close-btn" onclick="closeModal('modal-weekly-leaderboard')">&times;</button>
             </div>
             <div class="modal-body" style="padding: 14px 10px;">
                 <!-- League Cycle Explanation Card -->
@@ -3823,11 +3834,70 @@
                     <i class="fa-solid fa-list-ol"></i> Sıralama Tablosu
                 </h4>
                 <div id="weekly-leaderboard-list-container" class="leaderboard-list"></div>
+
+                <div style="margin-top: 14px; text-align: center;">
+                    <button type="button" class="btn btn-block btn-outline" onclick="closeModal('modal-weekly-leaderboard')" style="font-size: 0.8rem; padding: 10px;">
+                        Kapat
+                    </button>
+                </div>
             </div>
-            <div class="modal-footer" style="padding: 10px 14px;">
-                <button type="button" class="btn btn-block btn-outline" onclick="closeModal('modal-weekly-leaderboard')" style="font-size: 0.8rem; padding: 10px;">
-                    Kapat
-                </button>
+        </div>
+    </div>
+
+    <!-- ==================== 🪙 OMAR COINS PERK & AVANTAJ MAĞAZASI MODALİ ==================== -->
+    <div id="modal-perk-store" class="modal-overlay">
+        <div class="modal-card" style="max-width: 520px; max-height: 90vh;">
+            <div class="modal-header" style="background: linear-gradient(135deg, rgba(255, 214, 10, 0.15), rgba(15, 23, 42, 0.7));">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 1.4rem;">🛍️</span>
+                    <div>
+                        <h3 style="margin: 0; font-size: 1rem; color: #ffd60a;">Avantaj Mağazası (Perk Store)</h3>
+                        <small style="color: var(--text-secondary); font-size: 0.68rem;">Disiplin puanlarını koçluk avantajlarına dönüştür</small>
+                    </div>
+                </div>
+                <button type="button" class="modal-close-btn" onclick="closeModal('modal-perk-store')">&times;</button>
+            </div>
+            
+            <div class="modal-body" style="padding: 12px 10px;">
+                <!-- Wallet Balance Bar -->
+                <div style="background: rgba(255, 214, 10, 0.08); border: 1px solid rgba(255, 214, 10, 0.25); border-radius: var(--radius-sm); padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 1.3rem;">🪙</span>
+                        <div>
+                            <span style="font-size: 0.65rem; color: var(--text-secondary); display: block; text-transform: uppercase;">Mevcut Bakiyen</span>
+                            <strong id="perk-store-balance" style="font-size: 1.15rem; color: #ffd60a; font-weight: 900;">100 Omar Coins</strong>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-xs btn-outline" onclick="closeModal('modal-perk-store'); openCharacterHubModal();" style="font-size: 0.7rem; border-color: rgba(255,214,10,0.4); color: #ffd60a;">
+                        <i class="fa-solid fa-fire"></i> Puan Kazanım Rehberi
+                    </button>
+                </div>
+
+                <!-- Tabs: Mağaza vs Envanterim -->
+                <div style="display: flex; gap: 6px; margin-bottom: 14px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 8px;">
+                    <button type="button" id="tab-btn-perk-shop" class="btn btn-xs btn-primary" onclick="switchPerkStoreTab('shop')" style="flex: 1; font-weight: 800; font-size: 0.75rem;">
+                        <i class="fa-solid fa-bag-shopping"></i> Avantajlar (Mağaza)
+                    </button>
+                    <button type="button" id="tab-btn-perk-inv" class="btn btn-xs btn-outline" onclick="switchPerkStoreTab('inventory')" style="flex: 1; font-size: 0.75rem;">
+                        <i class="fa-solid fa-box-open"></i> Envanterim <span id="perk-inv-count-badge" class="badge-mini-gain" style="background:#ffd60a; color:#000; margin-left:4px;">0</span>
+                    </button>
+                </div>
+
+                <!-- Tab 1: Shop Items Container -->
+                <div id="perk-store-items-container" style="display: flex; flex-direction: column; gap: 10px;">
+                    <!-- Populated dynamically -->
+                </div>
+
+                <!-- Tab 2: Inventory Items Container -->
+                <div id="perk-store-inventory-container" style="display: none; flex-direction: column; gap: 8px;">
+                    <!-- Populated dynamically -->
+                </div>
+
+                <div style="margin-top: 14px; text-align: center;">
+                    <button type="button" class="btn btn-block btn-outline" onclick="closeModal('modal-perk-store')" style="font-size: 0.8rem; padding: 10px;">
+                        Kapat
+                    </button>
+                </div>
             </div>
         </div>
     </div>

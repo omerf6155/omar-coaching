@@ -2170,7 +2170,8 @@ function createDefaultRpgCharacter() {
         lastStreakDate: null,
         completedStretchesToday: {},
         avatarKey: "warrior_iron",
-        history: []
+        history: [],
+        inventory: []
     };
 }
 
@@ -3227,6 +3228,256 @@ function openWeeklyLeaderboardModal() {
     openModal("modal-weekly-leaderboard");
 }
 
+// ==================== 🛍️ OMAR COINS PERK & AVANTAJ MAĞAZASI MOTORU ====================
+
+const PERK_STORE_CATALOG = [
+    {
+        key: "vip_msg",
+        name: "⚡ VIP Öncelikli Mesaj Bileti",
+        cost: 50,
+        icon: "⚡",
+        badge: "Öncelikli Cevap",
+        badgeColor: "#ffd60a",
+        badgeTextColor: "#000",
+        desc: "Günlük 10 ücretsiz soru kotası dolduğunda koça öncelikli soru hakkı sağlar. Mesajın Koç Ömer'in panelinde altın VIP rozetiyle en tepede parlar.",
+        actionText: "Bilet Al (50 Coins)"
+    },
+    {
+        key: "cheat_meal",
+        name: "🍕 Resmi Cheat Meal İzni & Telafi Rehberi",
+        cost: 150,
+        icon: "🍕",
+        badge: "Koç Onaylı Kaçamak",
+        badgeColor: "#fb923c",
+        badgeTextColor: "#fff",
+        desc: "Haftalık disiplinin ödülü! Koça resmi kaçamak izni bildirimi gider ve suçluluk hissetmeden metabolizmayı canlandırma & ertesi gün dengeleme protokolü açılır.",
+        actionText: "İzin Al (150 Coins)"
+    },
+    {
+        key: "coach_call",
+        name: "🎟️ 15 Dk Birebir Strateji & Form Randevusu",
+        cost: 350,
+        icon: "🎟️",
+        badge: "1-e-1 Özel Görüşme",
+        badgeColor: "#38bdf8",
+        badgeTextColor: "#000",
+        desc: "Koç Ömer ile 15 dakikalık birebir görüntülü veya sesli özel değerlendirme randevusu bileti. Koç paneline öncelikli randevu talebi iletilir.",
+        actionText: "Bilet Al (350 Coins)"
+    },
+    {
+        key: "discount_15",
+        name: "🏷️ %15 Koçluk / Paket Yenileme İndirimi",
+        cost: 500,
+        icon: "🏷️",
+        badge: "Gerçek Koçluk İndirimi",
+        badgeColor: "#34d399",
+        badgeTextColor: "#000",
+        desc: "Disiplinini gerçek indirime dönüştür! Bir sonraki ay koçluk veya paket yenilemesinde geçerli sana özel %15 indirim kupon kodu üretilir.",
+        actionText: "Kupon Al (500 Coins)"
+    }
+];
+
+let currentPerkStoreTab = 'shop';
+
+function openPerkStoreModal(tab = 'shop') {
+    currentPerkStoreTab = tab;
+    renderPerkStore(tab);
+    openModal("modal-perk-store");
+}
+
+function switchPerkStoreTab(tab) {
+    currentPerkStoreTab = tab;
+    renderPerkStore(tab);
+}
+
+function renderPerkStore(tab = currentPerkStoreTab) {
+    if (!appData.rpgCharacter) appData.rpgCharacter = createDefaultRpgCharacter();
+    const c = appData.rpgCharacter;
+    if (!Array.isArray(c.inventory)) c.inventory = [];
+
+    const balEl = document.getElementById("perk-store-balance");
+    if (balEl) balEl.innerText = `${(c.coins || 0).toLocaleString('tr-TR')} Omar Coins`;
+
+    const invBadge = document.getElementById("perk-inv-count-badge");
+    const activeInvCount = c.inventory.filter(i => !i.used).length;
+    if (invBadge) invBadge.innerText = activeInvCount;
+
+    const shopBtn = document.getElementById("tab-btn-perk-shop");
+    const invBtn = document.getElementById("tab-btn-perk-inv");
+    const shopContainer = document.getElementById("perk-store-items-container");
+    const invContainer = document.getElementById("perk-store-inventory-container");
+
+    if (tab === 'shop') {
+        if (shopBtn) { shopBtn.className = "btn btn-xs btn-primary"; shopBtn.style.fontWeight = "800"; }
+        if (invBtn) { invBtn.className = "btn btn-xs btn-outline"; invBtn.style.fontWeight = "normal"; }
+        if (shopContainer) shopContainer.style.display = "flex";
+        if (invContainer) invContainer.style.display = "none";
+        renderPerkStoreItems();
+    } else {
+        if (shopBtn) { shopBtn.className = "btn btn-xs btn-outline"; shopBtn.style.fontWeight = "normal"; }
+        if (invBtn) { invBtn.className = "btn btn-xs btn-primary"; invBtn.style.fontWeight = "800"; }
+        if (shopContainer) shopContainer.style.display = "none";
+        if (invContainer) invContainer.style.display = "flex";
+        renderPerkStoreInventory();
+    }
+}
+
+function renderPerkStoreItems() {
+    const container = document.getElementById("perk-store-items-container");
+    if (!container) return;
+    const c = appData.rpgCharacter || {};
+    const coins = c.coins || 0;
+
+    let html = "";
+    PERK_STORE_CATALOG.forEach(item => {
+        const canAfford = coins >= item.cost;
+        html += `
+            <div class="perk-store-card">
+                <div class="perk-card-top">
+                    <div class="perk-card-title-group">
+                        <span class="perk-card-icon">${item.icon}</span>
+                        <div>
+                            <h4>${item.name}</h4>
+                            <span class="perk-card-badge" style="background:${item.badgeColor}; color:${item.badgeTextColor};">${item.badge}</span>
+                        </div>
+                    </div>
+                </div>
+                <p class="perk-card-desc">${item.desc}</p>
+                <div class="perk-card-bottom">
+                    <span class="perk-cost-pill">
+                        <i class="fa-solid fa-coins"></i> ${item.cost} Coins
+                    </span>
+                    <button type="button" class="btn btn-xs ${canAfford ? 'btn-primary' : 'btn-outline'}" 
+                            onclick="buyPerkItem('${item.key}')" 
+                            style="${canAfford ? 'background:linear-gradient(135deg, #ffd60a, #f59e0b); color:#000; font-weight:800;' : 'opacity:0.6; cursor:not-allowed;'}"
+                            ${!canAfford ? 'title="Yetersiz bakiye"' : ''}>
+                        <i class="fa-solid fa-cart-shopping"></i> ${item.actionText}
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+    container.innerHTML = html;
+}
+
+function renderPerkStoreInventory() {
+    const container = document.getElementById("perk-store-inventory-container");
+    if (!container) return;
+    const c = appData.rpgCharacter || {};
+    const inventory = c.inventory || [];
+
+    if (inventory.length === 0) {
+        container.innerHTML = `
+            <div style="text-align:center; padding:30px 16px; color:var(--text-secondary); font-size:0.78rem;">
+                <i class="fa-solid fa-box-open" style="font-size:2.2rem; color:var(--text-muted); margin-bottom:10px; display:block;"></i>
+                Henüz satın aldığın bir avantaj veya bilet yok.<br>
+                Mağaza sekmesinden biriktirdiğin puanlarla ilk avantajını açabilirsin! 🚀
+            </div>
+        `;
+        return;
+    }
+
+    let html = "";
+    inventory.forEach(item => {
+        const isUsed = item.used === true;
+        html += `
+            <div class="inventory-card ${isUsed ? 'is-used' : ''}">
+                <div class="inventory-left">
+                    <span style="font-size:1.6rem;">${item.icon || '🎁'}</span>
+                    <div class="inventory-meta">
+                        <strong>${item.name}</strong>
+                        <small>Alındı: ${item.date || '-'} ${isUsed ? `• Kullanıldı (${item.usedDate ? new Date(item.usedDate).toLocaleDateString('tr-TR') : 'Tamamlandı'})` : '• Aktif Kullanılabilir'}</small>
+                        ${item.code ? `<div><span class="inventory-coupon-code">${item.code}</span> <small style="color:#ffd60a; margin-left:4px;">(İndirim Kodu)</small></div>` : ''}
+                    </div>
+                </div>
+                <div>
+                    ${!isUsed ? `
+                        <button type="button" class="btn btn-xs btn-outline" onclick="useInventoryItem('${item.id}')" style="border-color:#ffd60a; color:#ffd60a; font-weight:700;">
+                            ${item.key === 'vip_msg' ? 'Sohbette Kullan' : (item.key === 'cheat_meal' ? 'Protokolü Gör' : 'Detay')}
+                        </button>
+                    ` : `
+                        <span style="font-size:0.68rem; color:var(--text-muted); font-weight:700;">Kullanıldı ✅</span>
+                    `}
+                </div>
+            </div>
+        `;
+    });
+    container.innerHTML = html;
+}
+
+function buyPerkItem(perkKey) {
+    if (!appData.rpgCharacter) appData.rpgCharacter = createDefaultRpgCharacter();
+    const c = appData.rpgCharacter;
+    if (!Array.isArray(c.inventory)) c.inventory = [];
+
+    const item = PERK_STORE_CATALOG.find(p => p.key === perkKey);
+    if (!item) return;
+
+    if ((c.coins || 0) < item.cost) {
+        showToast(`⚠️ Yetersiz bakiye! Bu avantaj için ${item.cost} Coins gerekli. Mevcut: ${c.coins || 0} Coins`);
+        return;
+    }
+
+    if (!confirm(`"${item.name}" avantajını ${item.cost} Omar Coins karşılığında satın almak istiyor musun?`)) {
+        return;
+    }
+
+    c.coins = (c.coins || 0) - item.cost;
+
+    const activeUsername = (getActiveSessionUsername() || "omer").toLowerCase().trim();
+    let couponCode = null;
+    if (perkKey === 'discount_15') {
+        couponCode = `OMAR-VIP-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+    }
+
+    const isAutoActivated = (perkKey === 'cheat_meal' || perkKey === 'coach_call');
+
+    const newInvItem = {
+        id: "inv_" + Date.now() + "_" + Math.random().toString(36).substr(2, 4),
+        key: item.key,
+        name: item.name,
+        icon: item.icon,
+        date: new Date().toLocaleDateString('tr-TR'),
+        used: isAutoActivated,
+        usedDate: isAutoActivated ? new Date().toISOString() : null,
+        code: couponCode
+    };
+
+    c.inventory.unshift(newInvItem);
+    saveDataToStorage();
+    renderRpgDashboardCard();
+    renderPerkStore();
+
+    if (perkKey === 'cheat_meal') {
+        sendLiveChatMessage("athlete", activeUsername, "🍕 [RESMİ CHEAT MEAL İZNİ]: Sporcu 150 Omar Coins harcayarak haftalık kontrollü kaçamak protokolünü aktif etti!", true);
+        alert(`🍕 RESMİ CHEAT MEAL İZNİ AKTİF EDİLDİ!\n\nKoç Ömer'e bildirim iletildi. Kontrollü Kaçamak Protokolü:\n1. Kaçamak öğününden 30 dk önce 1 büyük bardak su iç.\n2. Ertesi gün karbonhidrat alımını %20 kıs ve fazladan 3.000 adım at.\n3. Suçluluk hissetme, metabolizman şoklandı! 💪`);
+    } else if (perkKey === 'coach_call') {
+        sendLiveChatMessage("athlete", activeUsername, "🎟️ [1-E-1 STRATEJİ GÖRÜŞMESİ TALEBİ]: Sporcu 350 Omar Coins harcayarak 15 dakikalık birebir görüşme bileti aldı. Uygun saat bekleniyor.", true);
+        alert(`🎟️ BİREBİR GÖRÜŞME BİLETİ AÇILDI!\n\nKoç Ömer ile 15 dakikalık değerlendirme randevusu talebin koçun paneline iletildi. Koçun sana uygun gün ve saati sohbetten yazacaktır.`);
+    } else if (perkKey === 'discount_15') {
+        alert(`🎉 TEBRİKLER! %15 KOÇLUK İNDİRİM KODUN:\n\n👉 ${couponCode}\n\nBu kodu sonraki ay paketini yenilerken Koç Ömer'e ileterek %15 indirimden anında yararlanabilirsin.`);
+    } else if (perkKey === 'vip_msg') {
+        showToast("⚡ VIP Öncelikli Mesaj Bileti envanterine eklendi! Kota dolduğunda otomatik kullanılabilir.");
+    }
+}
+
+function useInventoryItem(itemId) {
+    if (!appData.rpgCharacter) return;
+    const c = appData.rpgCharacter;
+    const item = (c.inventory || []).find(i => i.id === itemId);
+    if (!item) return;
+
+    if (item.key === 'vip_msg') {
+        closeModal('modal-perk-store');
+        openModal('modal-athlete-chat');
+        showToast("⚡ VIP Mesaj Biletin hazır! Sohbet kutusundan sorunu yazıp gönderebilirsin.");
+    } else if (item.key === 'cheat_meal') {
+        alert(`🍕 RESMİ CHEAT MEAL PROTOKOLÜ:\n1. Kaçamak öğününden önce bol su tüket.\n2. Ertesi gün karbonhidratı %20 kısarak kalori dengesini koru.\n3. Günlük adımını 12.000'e çıkararak glikojen depolarını boşalt!`);
+    } else if (item.key === 'discount_15') {
+        alert(`🏷️ İndirim Kodun: ${item.code || 'OMAR-VIP-15'}\nPaket yenilemesinde koçuna iletebilirsin.`);
+    }
+}
+
 function renderRpgDashboardCard() {
     if (!appData.rpgCharacter) appData.rpgCharacter = createDefaultRpgCharacter();
     const c = appData.rpgCharacter;
@@ -3303,7 +3554,7 @@ function renderRpgDashboardCard() {
                     <div style="display:flex; align-items:center; gap:10px;">
                         <span style="font-size:1.3rem;">🏆</span>
                         <div>
-                            <strong style="font-size:0.76rem; color:#ffd60a; display:block;">Haftalık Disiplin Ligi</strong>
+                            <strong style="font-size:0.76rem; color:#ffd60a; display:block;">Haftalık Lig Sıralaması</strong>
                             <small style="font-size:0.65rem; color:var(--text-secondary);">
                                 1. Sırada: <span style="color:#ffffff; font-weight:700;">${leader ? leader.displayName : '-'}</span> (${leader ? leader.weeklyXp : 0} XP) • ${timeRemaining}
                             </small>
@@ -8331,6 +8582,7 @@ function renderCoachRoster() {
 
         const msgs = chatDb[ath.username] || [];
         const unreadCount = msgs.filter(m => m.sender === "athlete" && !m.read).length;
+        const hasUnreadVip = msgs.some(m => m.sender === "athlete" && !m.read && (m.isVip || (m.text && m.text.includes("[VIP"))));
 
         const surveys = (uData.workoutSurveyHistory && Array.isArray(uData.workoutSurveyHistory)) ? uData.workoutSurveyHistory : [];
         const latestSurvey = surveys.length > 0 ? surveys[surveys.length - 1] : null;
@@ -8363,7 +8615,11 @@ function renderCoachRoster() {
                                 <i class="fa-solid fa-star"></i> ${surveys.length} İdman Raporu
                             </span>
                         ` : ''}
-                        ${unreadCount > 0 ? `<span class="badge-role" style="background:var(--status-amber); color:#000; font-size:0.6rem; font-weight:900;">${unreadCount} Yeni Mesaj</span>` : ''}
+                        ${unreadCount > 0 ? `
+                            <span class="badge-role" style="background:${hasUnreadVip ? 'linear-gradient(135deg, #ffd60a, #ff9f0a)' : 'var(--status-amber)'}; color:#000; font-size:0.6rem; font-weight:900; ${hasUnreadVip ? 'box-shadow:0 0 12px rgba(255,214,10,0.8); animation:pulse 1.5s infinite;' : ''}">
+                                ${hasUnreadVip ? '⚡ VIP SORU (' + unreadCount + ')' : unreadCount + ' Yeni Mesaj'}
+                            </span>
+                        ` : ''}
                     </div>
                 </div>
 
@@ -10779,7 +11035,7 @@ function handleIncomingLiveEvent(payload, source) {
     }
 }
 
-async function sendLiveChatMessage(senderRole, targetAthleteUsername, text) {
+async function sendLiveChatMessage(senderRole, targetAthleteUsername, text, isVip = false) {
     if (!text || !targetAthleteUsername) return;
     const cleanTarget = targetAthleteUsername.toLowerCase().trim();
     const msgId = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 7)}`;
@@ -10798,6 +11054,7 @@ async function sendLiveChatMessage(senderRole, targetAthleteUsername, text) {
         text: text,
         time: timeStr,
         date: dateStr,
+        isVip: isVip,
         timestamp: Date.now()
     };
 
@@ -10812,6 +11069,7 @@ async function sendLiveChatMessage(senderRole, targetAthleteUsername, text) {
         text: text,
         time: timeStr,
         date: dateStr,
+        isVip: isVip,
         read: senderRole === "coach" ? false : false
     });
     saveChatDB(chatDb);
@@ -11057,10 +11315,14 @@ function renderCoachChat(username) {
     let html = "";
     msgs.forEach(m => {
         const isCoach = m.sender === "coach";
+        const isVipMsg = m.isVip || (m.text && m.text.includes("[VIP ÖNCELİKLİ"));
         html += `
             <div class="chat-msg-row ${isCoach ? 'sent' : 'received'}">
-                <div class="chat-bubble ${isCoach ? 'coach' : 'athlete'}">
-                    <span class="chat-sender-tag">${isCoach ? '👑 Koç Ömer' : `@${cleanUsername}`}</span>
+                <div class="chat-bubble ${isCoach ? 'coach' : 'athlete'} ${isVipMsg ? 'vip-bubble' : ''}">
+                    <span class="chat-sender-tag" style="${isVipMsg ? 'color:#ffd60a; font-weight:900;' : ''}">
+                        ${isCoach ? '👑 Koç Ömer' : `@${cleanUsername}`}
+                        ${isVipMsg ? '<span style="background:#ffd60a; color:#000; font-size:0.6rem; padding:1px 5px; border-radius:3px; margin-left:4px; font-weight:900;">⚡ VIP SORU</span>' : ''}
+                    </span>
                     <div class="chat-text">${formatChatMessage(m.text)}</div>
                 </div>
                 <span class="chat-time">${m.time || ''}</span>
@@ -11223,11 +11485,51 @@ function openAthleteChatModal() {
     const unreadBadge = document.getElementById("athlete-unread-badge");
     if (unreadBadge) unreadBadge.style.display = "none";
 
+    updateAthleteChatQuotaUI();
     renderAthleteChatMessages(activeUsername);
     openModal("modal-athlete-chat");
 
     // Force an immediate cloud catch-up poll
     syncCloudHistory(activeUsername, true);
+}
+
+const ATHLETE_DAILY_FREE_QUOTA = 10;
+
+function getAthleteTodayMessageCount(username) {
+    const cleanUsername = (username || "omer").toLowerCase().trim();
+    const chatDb = getChatDB();
+    const msgs = chatDb[cleanUsername] || [];
+    const todayStr = new Date().toLocaleDateString('tr-TR');
+
+    const todayAthleteMsgs = msgs.filter(m => {
+        if (m.sender !== "athlete") return false;
+        if (m.date === todayStr) return true;
+        if (m.timestamp) {
+            const msgDate = new Date(m.timestamp).toLocaleDateString('tr-TR');
+            if (msgDate === todayStr) return true;
+        }
+        return false;
+    });
+    return todayAthleteMsgs.length;
+}
+
+function updateAthleteChatQuotaUI() {
+    const quotaText = document.getElementById("athlete-chat-quota-text");
+    if (!quotaText) return;
+
+    const activeUsername = (getActiveSessionUsername() || "omer").toLowerCase().trim();
+    const todayCount = getAthleteTodayMessageCount(activeUsername);
+    const remaining = Math.max(0, ATHLETE_DAILY_FREE_QUOTA - todayCount);
+
+    if (!appData.rpgCharacter) appData.rpgCharacter = createDefaultRpgCharacter();
+    const c = appData.rpgCharacter;
+    const vipTickets = (c.inventory || []).filter(i => i.key === 'vip_msg' && !i.used).length;
+
+    let html = `💬 Günlük Soru Kotası: <strong style="color:${remaining > 0 ? '#ffd60a' : '#ff453a'};">${remaining} / ${ATHLETE_DAILY_FREE_QUOTA}</strong>`;
+    if (vipTickets > 0) {
+        html += ` • <span style="color:#ffd60a; font-weight:700;">🎟️ ${vipTickets} VIP Bilet</span>`;
+    }
+    quotaText.innerHTML = html;
 }
 
 function renderAthleteChatMessages(username) {
@@ -11275,16 +11577,21 @@ function renderAthleteChatMessages(username) {
                 <p>Koçun Ömer ile birebir iletişim hattı. Aklına takılanları ve form videolarını buradan iletebilirsin.</p>
             </div>
         `;
+        updateAthleteChatQuotaUI();
         return;
     }
 
     let html = "";
     msgs.forEach(m => {
         const isMe = m.sender === "athlete";
+        const isVipMsg = m.isVip || (m.text && m.text.includes("[VIP ÖNCELİKLİ"));
         html += `
             <div class="chat-msg-row ${isMe ? 'sent' : 'received'}">
-                <div class="chat-bubble ${isMe ? 'athlete' : 'coach'}">
-                    <span class="chat-sender-tag">${isMe ? 'Sen' : '👑 Koç Ömer'}</span>
+                <div class="chat-bubble ${isMe ? 'athlete' : 'coach'} ${isVipMsg ? 'vip-bubble' : ''}">
+                    <span class="chat-sender-tag" style="${isVipMsg ? 'color:#ffd60a; font-weight:900;' : ''}">
+                        ${isMe ? 'Sen' : '👑 Koç Ömer'}
+                        ${isVipMsg ? '<span style="background:#ffd60a; color:#000; font-size:0.6rem; padding:1px 5px; border-radius:3px; margin-left:4px; font-weight:900;">⚡ VIP SORU</span>' : ''}
+                    </span>
                     <div class="chat-text">${formatChatMessage(m.text)}</div>
                 </div>
                 <span class="chat-time">${m.time || ''}</span>
@@ -11293,6 +11600,7 @@ function renderAthleteChatMessages(username) {
     });
 
     msgsArea.innerHTML = html;
+    updateAthleteChatQuotaUI();
     requestAnimationFrame(() => {
         msgsArea.scrollTop = msgsArea.scrollHeight;
     });
@@ -11309,12 +11617,58 @@ function handleAthleteSendMessage(event) {
     const input = document.getElementById("athlete-chat-input");
     if (!input || !input.value.trim()) return;
 
-    const text = input.value.trim();
+    const rawText = input.value.trim();
     const activeUsername = (getActiveSessionUsername() || "omer").toLowerCase().trim();
-    input.value = "";
 
-    sendLiveChatMessage("athlete", activeUsername, text);
-    showToast("Mesajın Koç Ömer'e iletildi! 💬");
+    if (!appData.rpgCharacter) appData.rpgCharacter = createDefaultRpgCharacter();
+    const c = appData.rpgCharacter;
+    if (!Array.isArray(c.inventory)) c.inventory = [];
+
+    const todayCount = getAthleteTodayMessageCount(activeUsername);
+    let isVip = false;
+    let textToSend = rawText;
+
+    if (todayCount >= ATHLETE_DAILY_FREE_QUOTA) {
+        // Quota reached! Check for VIP ticket in inventory
+        const vipTicketIndex = c.inventory.findIndex(i => i.key === 'vip_msg' && !i.used);
+        if (vipTicketIndex !== -1) {
+            const useTicket = confirm(`💬 Günlük ${ATHLETE_DAILY_FREE_QUOTA} ücretsiz soru kotanızı doldurdunuz.\n\nEnvanterinizde 1 adet VIP Öncelikli Mesaj Bileti bulundu! Bu bileti kullanarak sorunuzu koçunuza acil/öncelikli olarak iletmek istiyor musunuz?`);
+            if (!useTicket) return;
+
+            c.inventory[vipTicketIndex].used = true;
+            c.inventory[vipTicketIndex].usedDate = new Date().toISOString();
+            isVip = true;
+            textToSend = `⚡ [VIP ÖNCELİKLİ SORU]: ${rawText}`;
+            saveDataToStorage();
+            renderRpgDashboardCard();
+            renderPerkStore();
+            showToast("🎟️ 1 VIP Mesaj Bileti kullanıldı!");
+        } else {
+            // No VIP ticket, check coins
+            const userCoins = c.coins || 0;
+            if (userCoins >= 50) {
+                const buyTicketPrompt = confirm(`💬 Günlük ${ATHLETE_DAILY_FREE_QUOTA} ücretsiz soru kotanızı doldurdunuz.\n\n50 Omar Coins harcayarak bu soruyu VIP Öncelikli Soru olarak iletmek istiyor musunuz?\n(Mevcut Bakiyeniz: ${userCoins} Omar Coins)`);
+                if (!buyTicketPrompt) return;
+
+                c.coins = userCoins - 50;
+                isVip = true;
+                textToSend = `⚡ [VIP ÖNCELİKLİ SORU]: ${rawText}`;
+                saveDataToStorage();
+                renderRpgDashboardCard();
+                renderPerkStore();
+                showToast("⚡ 50 Omar Coins harcandı ve VIP sorunuz iletildi!");
+            } else {
+                alert(`⚠️ Günlük ${ATHLETE_DAILY_FREE_QUOTA} ücretsiz soru kotanızı doldurdunuz!\n\nEkstra soru göndermek için en az 50 Omar Coins veya 1 VIP Mesaj Bileti gereklidir.\nMevcut Bakiyeniz: ${userCoins} Omar Coins.\n\nGünlük hedeflerinizi tamamlayarak puan toplayabilir veya Avantaj Mağazasını inceleyebilirsiniz.`);
+                openPerkStoreModal();
+                return;
+            }
+        }
+    }
+
+    input.value = "";
+    sendLiveChatMessage("athlete", activeUsername, textToSend, isVip);
+    updateAthleteChatQuotaUI();
+    showToast(isVip ? "⚡ VIP Öncelikli sorunuz Koç Ömer'e iletildi!" : "Mesajınız Koç Ömer'e iletildi! 💬");
 }
 
 function insertAthleteQuickMessage(text) {
