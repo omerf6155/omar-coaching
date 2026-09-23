@@ -2157,6 +2157,9 @@ function createDefaultRpgCharacter() {
     return {
         level: 1,
         xp: 0,
+        weeklyXp: 0,
+        currentWeekKey: null,
+        discipline: 10, // DIS (Sabah tartısı & disiplin)
         power: 10,     // STR (Antrenman setleri & PR'lar)
         mobility: 10,  // MOB (Esneme & mobilite rutinleri)
         endurance: 10, // END (Günlük adımlar & GPS yürüyüş)
@@ -2953,9 +2956,288 @@ let currentStretchingState = {
     isPaused: false
 };
 
+// ==================== 🏆 WEEKLY LEAGUE, LEADERBOARD & ANTI-CHEAT ENGINE ====================
+
+function getFitnessWeekKey(d = new Date()) {
+    // Bodybuilding fitness day starts at 06:00 AM (6 hour offset)
+    const eff = new Date(d.getTime() - 6 * 3600 * 1000);
+    const day = eff.getDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
+    const diff = day === 0 ? 6 : day - 1;
+    const monday = new Date(eff);
+    monday.setDate(eff.getDate() - diff);
+    const y = monday.getFullYear();
+    const m = String(monday.getMonth() + 1).padStart(2, '0');
+    const date = String(monday.getDate()).padStart(2, '0');
+    return `W_${y}_${m}_${date}`;
+}
+
+function getWeeklyCycleTimeRemaining() {
+    const now = new Date();
+    const eff = new Date(now.getTime() - 6 * 3600 * 1000);
+    const day = eff.getDay();
+    const diffToMonday = day === 0 ? 6 : day - 1;
+    const thisMonday = new Date(eff);
+    thisMonday.setDate(eff.getDate() - diffToMonday);
+    thisMonday.setHours(6, 0, 0, 0);
+
+    const nextMonday = new Date(thisMonday);
+    nextMonday.setDate(nextMonday.getDate() + 7);
+
+    const msRemaining = Math.max(0, nextMonday.getTime() - now.getTime());
+    const totalHours = Math.floor(msRemaining / (1000 * 60 * 60));
+    const days = Math.floor(totalHours / 24);
+    const hours = totalHours % 24;
+
+    if (days > 0) {
+        return `${days} gün ${hours} saat kaldı`;
+    } else {
+        return `${hours} saat kaldı`;
+    }
+}
+
+// Anti-Cheat: 60-Minute Meal Logging XP Cooldown
+function awardMealLoggingXp(mealName) {
+    const nowMs = Date.now();
+    const lastTime = appData.lastMealXpTime || 0;
+    const MEAL_COOLDOWN_MS = 60 * 60 * 1000; // 60 minutes
+    if (nowMs - lastTime >= MEAL_COOLDOWN_MS) {
+        addRpgStatGain('recovery', 3, 30, 'Dengeli Öğün');
+        appData.lastMealXpTime = nowMs;
+        saveDataToStorage();
+        return true;
+    }
+    return false;
+}
+
+// Anti-Cheat: Capped Daily Steps XP (Max 250 XP / ~12.5k steps per day)
+function awardStepXp(stepDiff) {
+    if (stepDiff <= 0) return;
+    const todayStr = getFitnessDateKey();
+    if (appData.stepXpDate !== todayStr) {
+        appData.stepXpDate = todayStr;
+        appData.todayStepXpAwarded = 0;
+    }
+    const MAX_DAILY_STEP_XP = 250;
+    const availableXp = Math.max(0, MAX_DAILY_STEP_XP - (appData.todayStepXpAwarded || 0));
+    if (availableXp <= 0) return;
+
+    const rawXp = Math.round(stepDiff / 50);
+    const xpToGive = Math.min(availableXp, rawXp);
+    if (xpToGive > 0) {
+        const endGain = Math.max(1, Math.round(xpToGive / 10));
+        addRpgStatGain('endurance', endGain, xpToGive, 'Adım Takibi');
+        appData.todayStepXpAwarded = (appData.todayStepXpAwarded || 0) + xpToGive;
+        saveDataToStorage();
+    }
+}
+
+// Anti-Cheat: Capped Daily Workout Sets XP (Max 500 XP / ~20 sets per day)
+function awardWorkoutSetXp() {
+    const todayStr = getFitnessDateKey();
+    if (appData.setXpDate !== todayStr) {
+        appData.setXpDate = todayStr;
+        appData.todaySetXpAwarded = 0;
+    }
+    const MAX_DAILY_SET_XP = 500;
+    if ((appData.todaySetXpAwarded || 0) < MAX_DAILY_SET_XP) {
+        addRpgStatGain('power', 2, 25, 'Antrenman Seti');
+        appData.todaySetXpAwarded = (appData.todaySetXpAwarded || 0) + 25;
+        saveDataToStorage();
+    }
+}
+
+// Calculate Weekly Leaderboard across registered athletes
+function calculateWeeklyLeaderboard() {
+    const curWeekKey = getFitnessWeekKey();
+    const registry = (typeof getUsersRegistry === "function") ? getUsersRegistry() : {};
+    const activeUsername = (typeof getActiveSessionUsername === "function") ? getActiveSessionUsername() : null;
+
+    const SQUAD_BENCHMARKS = [
+        { username: "burak_k", displayName: "Burak Kaya", avatarIcon: "🦁", weeklyXp: 480, level: 4, rankTitle: "Gladyatör" },
+        { username: "serkan_t", displayName: "Serkan Tekin", avatarIcon: "⚡", weeklyXp: 390, level: 3, rankTitle: "Demir Yumruk" },
+        { username: "efe_d", displayName: "Efe Demir", avatarIcon: "🥋", weeklyXp: 310, level: 2, rankTitle: "Çırak Savaşçı" },
+        { username: "kaan_a", displayName: "Kaan Arslan", avatarIcon: "🐺", weeklyXp: 220, level: 2, rankTitle: "Çırak Savaşçı" }
+    ];
+
+    let leaderboard = [];
+    const athletes = Object.values(registry).filter(u => u && u.role !== "coach");
+
+    athletes.forEach(ath => {
+        let uData = ath.data || {};
+        if (activeUsername && ath.username === activeUsername) {
+            uData = appData;
+        }
+
+        const rpg = uData.rpgCharacter || {};
+        const weeklyXp = (rpg.currentWeekKey === curWeekKey) ? (rpg.weeklyXp || 0) : 0;
+        const activeAvatar = RPG_AVATARS.find(a => a.key === rpg.avatarKey) || RPG_AVATARS[0];
+        const lvlObj = RPG_LEVEL_LADDER.find(l => l.level === (rpg.level || 1)) || RPG_LEVEL_LADDER[0];
+
+        leaderboard.push({
+            username: ath.username,
+            displayName: ath.displayName || ath.username,
+            avatarIcon: activeAvatar.icon,
+            weeklyXp: weeklyXp,
+            totalXp: rpg.xp || 0,
+            level: rpg.level || 1,
+            rankTitle: lvlObj.title,
+            isCurrentUser: (activeUsername && ath.username === activeUsername),
+            streak: rpg.streak || 0
+        });
+    });
+
+    // If active user isn't in registry yet (e.g. single user or guest session)
+    if (activeUsername && !leaderboard.some(l => l.username === activeUsername)) {
+        const rpg = appData.rpgCharacter || {};
+        const weeklyXp = (rpg.currentWeekKey === curWeekKey) ? (rpg.weeklyXp || 0) : 0;
+        const activeAvatar = RPG_AVATARS.find(a => a.key === rpg.avatarKey) || RPG_AVATARS[0];
+        const lvlObj = RPG_LEVEL_LADDER.find(l => l.level === (rpg.level || 1)) || RPG_LEVEL_LADDER[0];
+
+        leaderboard.push({
+            username: activeUsername,
+            displayName: appData.userProfile?.name || "Ben",
+            avatarIcon: activeAvatar.icon,
+            weeklyXp: weeklyXp,
+            totalXp: rpg.xp || 0,
+            level: rpg.level || 1,
+            rankTitle: lvlObj.title,
+            isCurrentUser: true,
+            streak: rpg.streak || 0
+        });
+    }
+
+    // Merge realistic squad benchmarks if less than 4 athletes exist
+    if (leaderboard.length < 4) {
+        SQUAD_BENCHMARKS.forEach(bench => {
+            if (!leaderboard.some(l => l.username === bench.username)) {
+                leaderboard.push({
+                    username: bench.username,
+                    displayName: bench.displayName,
+                    avatarIcon: bench.avatarIcon,
+                    weeklyXp: bench.weeklyXp,
+                    totalXp: bench.weeklyXp * 3,
+                    level: bench.level,
+                    rankTitle: bench.rankTitle,
+                    isCurrentUser: false,
+                    streak: 3
+                });
+            }
+        });
+    }
+
+    leaderboard.sort((a, b) => b.weeklyXp - a.weeklyXp || b.totalXp - a.totalXp);
+
+    leaderboard.forEach((item, index) => {
+        item.rank = index + 1;
+        item.isChampion = (index === 0);
+    });
+
+    return leaderboard;
+}
+
+function renderWeeklyLeaderboardModal() {
+    const leaderboard = calculateWeeklyLeaderboard();
+    const countdownEl = document.getElementById("weekly-leaderboard-countdown");
+    if (countdownEl) {
+        countdownEl.innerText = `Pazartesi 06:00 döngüsü • ${getWeeklyCycleTimeRemaining()}`;
+    }
+
+    const podiumContainer = document.getElementById("weekly-podium-container");
+    const listContainer = document.getElementById("weekly-leaderboard-list-container");
+
+    const first = leaderboard[0];
+    const second = leaderboard[1];
+    const third = leaderboard[2];
+
+    if (podiumContainer) {
+        podiumContainer.innerHTML = `
+            <!-- 2nd Place (Silver) -->
+            <div class="podium-step podium-silver">
+                <div class="podium-avatar-wrap">
+                    <div class="podium-avatar">${second ? second.avatarIcon : '🥈'}</div>
+                    <span class="podium-rank-badge">2</span>
+                </div>
+                <div class="podium-name" title="${second ? second.displayName : '-'}">${second ? second.displayName : '-'}</div>
+                <div class="podium-xp">${second ? second.weeklyXp : 0} XP</div>
+                <div class="podium-pillar">
+                    <span style="font-size:1.1rem;">🥈</span>
+                </div>
+            </div>
+
+            <!-- 1st Place (Gold Champion) -->
+            <div class="podium-step podium-gold">
+                <div class="podium-avatar-wrap">
+                    <span class="podium-crown">👑</span>
+                    <div class="podium-avatar">${first ? first.avatarIcon : '🥇'}</div>
+                    <span class="podium-rank-badge">1</span>
+                </div>
+                <div class="podium-name" title="${first ? first.displayName : '-'}">${first ? first.displayName : '-'}</div>
+                <div class="podium-xp">${first ? first.weeklyXp : 0} XP</div>
+                <div class="podium-pillar">
+                    <span style="font-size:1.4rem;">🥇</span>
+                    <small style="font-size:0.6rem; font-weight:800; color:#ffd60a; margin-top:2px;">ŞAMPİYON</small>
+                </div>
+            </div>
+
+            <!-- 3rd Place (Bronze) -->
+            <div class="podium-step podium-bronze">
+                <div class="podium-avatar-wrap">
+                    <div class="podium-avatar">${third ? third.avatarIcon : '🥉'}</div>
+                    <span class="podium-rank-badge">3</span>
+                </div>
+                <div class="podium-name" title="${third ? third.displayName : '-'}">${third ? third.displayName : '-'}</div>
+                <div class="podium-xp">${third ? third.weeklyXp : 0} XP</div>
+                <div class="podium-pillar">
+                    <span style="font-size:1.1rem;">🥉</span>
+                </div>
+            </div>
+        `;
+    }
+
+    if (listContainer) {
+        let html = "";
+        leaderboard.forEach(item => {
+            const posClass = item.rank === 1 ? 'pos-1' : (item.rank === 2 ? 'pos-2' : (item.rank === 3 ? 'pos-3' : ''));
+            const rankIcon = item.rank === 1 ? '👑' : `#${item.rank}`;
+            const currentUserBadge = item.isCurrentUser ? `<span style="background:rgba(255,214,10,0.2); color:#ffd60a; font-size:0.6rem; padding:1px 5px; border-radius:3px; font-weight:800; margin-left:4px;">SEN</span>` : '';
+
+            html += `
+                <div class="leaderboard-row ${item.isCurrentUser ? 'is-current-user' : ''}">
+                    <div class="leaderboard-row-left">
+                        <span class="leaderboard-pos ${posClass}">${rankIcon}</span>
+                        <div class="leaderboard-user-avatar">${item.avatarIcon}</div>
+                        <div class="leaderboard-user-meta">
+                            <strong>${item.displayName} ${currentUserBadge}</strong>
+                            <small>Lv.${item.level} ${item.rankTitle} • 🔥 ${item.streak} Gün</small>
+                        </div>
+                    </div>
+                    <div class="leaderboard-row-right">
+                        <span class="leaderboard-xp-val">${item.weeklyXp} XP</span>
+                        <small style="display:block; font-size:0.62rem; color:var(--text-secondary);">bu hafta</small>
+                    </div>
+                </div>
+            `;
+        });
+        listContainer.innerHTML = html;
+    }
+}
+
+function openWeeklyLeaderboardModal() {
+    renderWeeklyLeaderboardModal();
+    openModal("modal-weekly-leaderboard");
+}
+
 function renderRpgDashboardCard() {
     if (!appData.rpgCharacter) appData.rpgCharacter = createDefaultRpgCharacter();
     const c = appData.rpgCharacter;
+
+    // Weekly fitness cycle check & rollover
+    const curWeekKey = getFitnessWeekKey();
+    if (c.currentWeekKey !== curWeekKey) {
+        c.currentWeekKey = curWeekKey;
+        c.weeklyXp = 0;
+        saveDataToStorage();
+    }
 
     const curLvlObj = RPG_LEVEL_LADDER.find(l => l.level === c.level) || RPG_LEVEL_LADDER[0];
     const nextLvlObj = RPG_LEVEL_LADDER.find(l => l.level === c.level + 1);
@@ -2999,6 +3281,44 @@ function renderRpgDashboardCard() {
 
     const recEl = document.getElementById("rpg-stat-rec");
     if (recEl) recEl.innerText = c.recovery || 10;
+
+    // Sync Weekly Leaderboard rank & banner strip
+    try {
+        const leaderboard = calculateWeeklyLeaderboard();
+        const myEntry = leaderboard.find(l => l.isCurrentUser);
+        const myRank = myEntry ? myEntry.rank : 1;
+        const rankBadge = document.getElementById("rpg-dash-weekly-rank");
+        if (rankBadge) {
+            rankBadge.innerText = `#${myRank}`;
+            rankBadge.style.background = myRank === 1 ? '#ffd60a' : (myRank === 2 ? '#cbd5e1' : (myRank === 3 ? '#fb923c' : 'rgba(255,255,255,0.15)'));
+            rankBadge.style.color = myRank <= 3 ? '#000' : '#fff';
+        }
+
+        const stripContainer = document.getElementById("weekly-league-champion-strip");
+        if (stripContainer) {
+            const leader = leaderboard[0];
+            const timeRemaining = getWeeklyCycleTimeRemaining();
+            stripContainer.innerHTML = `
+                <div class="weekly-league-banner" onclick="openWeeklyLeaderboardModal()">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <span style="font-size:1.3rem;">🏆</span>
+                        <div>
+                            <strong style="font-size:0.76rem; color:#ffd60a; display:block;">Haftalık Disiplin Ligi</strong>
+                            <small style="font-size:0.65rem; color:var(--text-secondary);">
+                                1. Sırada: <span style="color:#ffffff; font-weight:700;">${leader ? leader.displayName : '-'}</span> (${leader ? leader.weeklyXp : 0} XP) • ${timeRemaining}
+                            </small>
+                        </div>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <span style="font-size:0.75rem; font-weight:800; color:#ffd60a;">Sıran: #${myRank}</span>
+                        <i class="fa-solid fa-chevron-right" style="font-size:0.7rem; color:var(--text-muted);"></i>
+                    </div>
+                </div>
+            `;
+        }
+    } catch (e) {
+        console.warn("Weekly leaderboard strip sync error:", e);
+    }
 }
 
 function addRpgStatGain(statType, statAmount, xpAmount, reasonTitle) {
@@ -3014,6 +3334,15 @@ function addRpgStatGain(statType, statAmount, xpAmount, reasonTitle) {
     if (statType === 'mobility') c.mobility = (c.mobility || 10) + statAmount;
     if (statType === 'endurance') c.endurance = (c.endurance || 10) + statAmount;
     if (statType === 'recovery') c.recovery = (c.recovery || 10) + statAmount;
+    if (statType === 'discipline') c.discipline = (c.discipline || 10) + statAmount;
+
+    // Weekly cycle tracker
+    const curWeekKey = getFitnessWeekKey();
+    if (c.currentWeekKey !== curWeekKey) {
+        c.currentWeekKey = curWeekKey;
+        c.weeklyXp = 0;
+    }
+    c.weeklyXp = (c.weeklyXp || 0) + calcXp;
 
     c.xp = (c.xp || 0) + calcXp;
     c.coins = (c.coins || 0) + calcCoins;
@@ -3987,7 +4316,7 @@ function stopLiveStepTracking() {
     detachDeviceMotionListener();
 
     if (liveStepTrackerState.sessionSteps > 0) {
-        addRpgStatGain('endurance', Math.max(1, Math.round(liveStepTrackerState.sessionSteps / 500)), Math.round(liveStepTrackerState.sessionSteps / 50), 'Canlı Yürüyüş');
+        awardStepXp(liveStepTrackerState.sessionSteps);
         evaluateDailyStreak();
     }
 
@@ -4181,7 +4510,7 @@ function renderStepHistoryTable() {
 function addSteps(amount) {
     appData.todayNutrition.steps = (appData.todayNutrition.steps || 0) + amount;
     recordDailyStepHistory(appData.todayNutrition.steps);
-    addRpgStatGain('endurance', Math.max(1, Math.round(amount / 500)), Math.round(amount / 50), 'Adım');
+    awardStepXp(amount);
     evaluateDailyStreak();
     saveDataToStorage();
     renderDashboard();
@@ -4198,7 +4527,7 @@ function promptCustomSteps() {
         appData.todayNutrition.steps = val;
         recordDailyStepHistory(appData.todayNutrition.steps);
         if (diff > 0) {
-            addRpgStatGain('endurance', Math.max(1, Math.round(diff / 500)), Math.round(diff / 50), 'Adım');
+            awardStepXp(diff);
             evaluateDailyStreak();
         }
         saveDataToStorage();
@@ -4467,7 +4796,7 @@ function saveRecipeBuilderMeal() {
                 f: totals.f,
                 time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
             });
-            addRpgStatGain('recovery', 3, 30, 'Öğün Kaydı');
+            awardMealLoggingXp(nameInput);
             evaluateDailyStreak();
         }
     }
@@ -4499,7 +4828,7 @@ function logPresetMeal(key) {
     });
 
     recalculateDailyTotals();
-    addRpgStatGain('recovery', 3, 30, 'Öğün Kaydı');
+    awardMealLoggingXp(meal.name);
     evaluateDailyStreak();
     saveDataToStorage();
     renderDashboard();
@@ -5589,7 +5918,7 @@ function autoSaveSet(exId, setIndex, exName) {
     appData.workoutLogs[cKey] = session.sets;
     if (resolvedName) appData.workoutLogs[resolvedName] = session.sets;
 
-    addRpgStatGain('power', 2, 25, 'Antrenman Seti');
+    awardWorkoutSetXp();
     evaluateDailyStreak();
     saveDataToStorage();
     showToast(`${setType} Kaydedildi! 💪`);
@@ -5998,7 +6327,6 @@ function submitMorningGateWeight() {
     }
 
     saveDailyWeight(weight);
-    addRpgStatGain('discipline', 5, 50, 'Sabah Aç Karnına Tartı');
     closeModal("modal-morning-weigh-in");
     showToast(`🌅 Harika! Sabah aç karnına tartın kaydedildi: ${weight.toFixed(1)} kg. Güne hazırsın! 🚀`);
 }
@@ -6027,6 +6355,18 @@ function saveDailyWeight(val) {
 
     if (!appData.userProfile) appData.userProfile = {};
     appData.userProfile.weight = Number(weight);
+
+    // Anti-Cheat: Fasted morning weigh-in XP gate (06:00 - 11:00 AM full reward, else reduced reward, max once per fitness day)
+    const now = new Date();
+    const currentHour = now.getHours();
+    if (appData.lastWeighInXpDate !== todayStr) {
+        if (currentHour >= 6 && currentHour < 11) {
+            addRpgStatGain('discipline', 5, 50, 'Sabah Aç Karnına Tartı (06:00-11:00)');
+        } else {
+            addRpgStatGain('discipline', 1, 10, 'Tartı Kaydı (Geç Tartı)');
+        }
+        appData.lastWeighInXpDate = todayStr;
+    }
 
     if (input) input.value = "";
     saveDataToStorage();
@@ -7937,6 +8277,7 @@ function renderCoachRoster() {
     const registry = getUsersRegistry();
     const chatDb = getChatDB();
     const searchVal = document.getElementById("coach-athlete-search") ? document.getElementById("coach-athlete-search").value.trim().toLowerCase() : "";
+    const weeklyLeaderboard = calculateWeeklyLeaderboard();
 
     let athletes = Object.values(registry).filter(u => u.role !== "coach");
 
@@ -7995,6 +8336,11 @@ function renderCoachRoster() {
         const latestSurvey = surveys.length > 0 ? surveys[surveys.length - 1] : null;
         const hasWeighedToday = (uData.weightHistory || []).some(w => w && w.date === getFitnessDateKey());
 
+        const athLbr = weeklyLeaderboard.find(l => l.username === ath.username);
+        const athRank = athLbr ? athLbr.rank : '-';
+        const athWeeklyXp = athLbr ? athLbr.weeklyXp : 0;
+        const athLvl = athLbr ? athLbr.level : (uData.rpgCharacter?.level || 1);
+
         const initial = (ath.displayName || ath.username).charAt(0).toUpperCase();
 
         html += `
@@ -8028,6 +8374,11 @@ function renderCoachRoster() {
                         <span style="font-size:0.62rem; font-weight:700; color:${hasWeighedToday ? '#30d158' : '#f59e0b'};">
                             ${hasWeighedToday ? '✅ Tartıldı' : '⏳ Bekleniyor'}
                         </span>
+                    </div>
+                    <div class="arc-m-item">
+                        <span>Haftalık Lig</span>
+                        <strong style="color:#ffd60a;">#${athRank} (${athWeeklyXp} XP)</strong>
+                        <span style="font-size:0.62rem; color:var(--text-secondary);">Lv.${athLvl}</span>
                     </div>
                     <div class="arc-m-item">
                         <span>Günlük Kalori</span>
@@ -13880,7 +14231,7 @@ function applyAiMealAdd(mealId, mealName, p, c, f, cal) {
 
     appData.todayNutrition.meals.push(newLoggedMeal);
     recalculateDailyTotals();
-    addRpgStatGain('recovery', 3, 30, 'Öğün Kaydı');
+    awardMealLoggingXp(mealName);
     evaluateDailyStreak();
     saveDataToStorage();
     renderNutritionView();

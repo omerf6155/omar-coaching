@@ -135,14 +135,20 @@
                     </div>
 
                     <div class="rpg-quick-actions-bar">
+                        <button type="button" class="btn-rpg-action" onclick="event.stopPropagation(); openWeeklyLeaderboardModal()">
+                            <i class="fa-solid fa-trophy" style="color:#ffd60a;"></i> Lig & Kürsü <span class="badge-mini-gain" id="rpg-dash-weekly-rank" style="background:#ffd60a; color:#000;">#1</span>
+                        </button>
                         <button type="button" class="btn-rpg-action" onclick="event.stopPropagation(); openStretchingModal()">
-                            <i class="fa-solid fa-person-praying" style="color:#c084fc;"></i> Esneme Yap <span class="badge-mini-gain">+MOB</span>
+                            <i class="fa-solid fa-person-praying" style="color:#c084fc;"></i> Esneme <span class="badge-mini-gain">+MOB</span>
                         </button>
                         <button type="button" class="btn-rpg-action" onclick="event.stopPropagation(); openCharacterHubModal()">
-                            <i class="fa-solid fa-id-card-clip" style="color:#ffd60a;"></i> Karakter Merkezi <i class="fa-solid fa-chevron-right"></i>
+                            <i class="fa-solid fa-id-card-clip" style="color:#ffd60a;"></i> Karakter <i class="fa-solid fa-chevron-right"></i>
                         </button>
                     </div>
                 </div>
+
+                <!-- Weekly League Leaderboard Banner Strip -->
+                <div id="weekly-league-champion-strip"></div>
 
                 <!-- Sunday Coach Report Banner (Appears on Sundays) -->
                 <div id="sunday-report-banner-container"></div>
@@ -3775,6 +3781,52 @@
                 <!-- Exception Button: Bypass / Skip for Today -->
                 <button type="button" class="btn btn-outline btn-block" onclick="skipMorningGateWeight()" style="border: 1px dashed rgba(255, 255, 255, 0.2); color: var(--text-secondary); font-size: 0.72rem; padding: 8px;">
                     <i class="fa-solid fa-person-walking-dashed-line-arrow-right"></i> Bugün Yanımda Tartı Yok (Pas Geç)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== 🏆 WEEKLY LEADERBOARD & PODIUM MODAL ==================== -->
+    <div id="modal-weekly-leaderboard" class="modal">
+        <div class="modal-content modal-content-lg" style="max-width: 520px;">
+            <div class="modal-header">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 1.4rem;">🏆</span>
+                    <div>
+                        <h3 style="margin: 0; font-size: 1rem; color: #ffd60a;">Haftalık Lig & Şampiyon Kürsüsü</h3>
+                        <small id="weekly-leaderboard-countdown" style="color: var(--text-secondary); font-size: 0.68rem;">Pazartesi 06:00 döngüsü</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" onclick="closeModal('modal-weekly-leaderboard')">×</button>
+            </div>
+            <div class="modal-body" style="padding: 14px 10px;">
+                <!-- League Cycle Explanation Card -->
+                <div style="background: linear-gradient(135deg, rgba(255, 214, 10, 0.08), rgba(15, 23, 42, 0.7)); border: 1px solid rgba(255, 214, 10, 0.25); border-radius: var(--radius-sm); padding: 10px 12px; margin-bottom: 14px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 0.76rem; color: #ffffff; line-height: 1.4;">
+                            <strong style="color: #ffd60a;">Koç Ömer Disiplin Ligi:</strong> Her Pazartesi 06:00'da sıfırlanır. Haftanın 1.'si <strong>Haftanın Şampiyonu 👑</strong> unvanı ve özel koçluk avantajı kazanır!
+                        </span>
+                    </div>
+                </div>
+
+                <!-- 3-Athlete Podium (1st, 2nd, 3rd) -->
+                <div id="weekly-podium-container" class="leaderboard-podium"></div>
+
+                <!-- Anti-Cheat Fair Play Notice -->
+                <div style="display: flex; align-items: center; gap: 8px; background: rgba(56, 189, 248, 0.06); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: var(--radius-sm); padding: 8px 12px; margin-bottom: 12px; font-size: 0.68rem; color: #bae6fd;">
+                    <i class="fa-solid fa-shield-halved" style="color: #38bdf8; font-size: 0.9rem;"></i>
+                    <span><strong>Adil Lig Koruması:</strong> Sabah 06:00-11:00 aç karnına tartı tam puan (+50 XP), öğünler arası 60 dk koruma süresi ve günlük tavan kontrolleri aktiftir.</span>
+                </div>
+
+                <!-- Remaining Athletes Ranking List -->
+                <h4 style="font-size: 0.78rem; color: var(--text-secondary); margin: 12px 0 6px 2px; text-transform: uppercase; letter-spacing: 0.5px;">
+                    <i class="fa-solid fa-list-ol"></i> Sıralama Tablosu
+                </h4>
+                <div id="weekly-leaderboard-list-container" class="leaderboard-list"></div>
+            </div>
+            <div class="modal-footer" style="padding: 10px 14px;">
+                <button type="button" class="btn btn-block btn-outline" onclick="closeModal('modal-weekly-leaderboard')" style="font-size: 0.8rem; padding: 10px;">
+                    Kapat
                 </button>
             </div>
         </div>
