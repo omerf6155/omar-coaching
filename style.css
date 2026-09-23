@@ -7157,6 +7157,116 @@ body.modal-open {
     background: linear-gradient(135deg, rgba(255, 214, 10, 0.15), rgba(15, 23, 42, 0.95)) !important;
 }
 
+/* ==================== 🤖 AI FORM COACH & BIOMECHANIC CARD STYLES ==================== */
+.ai-form-score-box {
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.15), rgba(15, 23, 42, 0.9));
+    border: 1px solid rgba(168, 85, 247, 0.4);
+    border-radius: var(--radius-md);
+    padding: 14px;
+    text-align: center;
+    margin-bottom: 12px;
+}
+
+.ai-form-score-number {
+    font-size: 2.2rem;
+    font-weight: 900;
+    line-height: 1;
+    margin-bottom: 4px;
+}
+
+.ai-biomechanic-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.ai-bio-card {
+    background: var(--bg-card-subtle);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 8px 10px;
+}
+
+.ai-bio-title {
+    font-size: 0.65rem;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 3px;
+    text-transform: uppercase;
+}
+
+.ai-bio-val {
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: #ffffff;
+}
+
+.ai-advice-list {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    margin-bottom: 12px;
+}
+
+.ai-advice-item {
+    font-size: 0.74rem;
+    line-height: 1.45;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+}
+
+.ai-advice-item:last-child {
+    margin-bottom: 0;
+}
+
+/* ==================== 🛡️ COACH AUDIT & ANOMALY CARD STYLES ==================== */
+.audit-anomaly-card {
+    background: rgba(239, 68, 68, 0.08);
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+}
+
+.audit-anomaly-card.resolved {
+    background: rgba(48, 209, 88, 0.08);
+    border-color: rgba(48, 209, 88, 0.3);
+    opacity: 0.7;
+}
+
+.audit-anomaly-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.audit-anomaly-title {
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: #f87171;
+}
+
+.audit-anomaly-desc {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+    margin-bottom: 8px;
+}
+
+.audit-action-row {
+    display: flex;
+    gap: 6px;
+    justify-content: flex-end;
+}
+
+
 
 
 

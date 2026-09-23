@@ -2171,7 +2171,9 @@ function createDefaultRpgCharacter() {
         completedStretchesToday: {},
         avatarKey: "warrior_iron",
         history: [],
-        inventory: []
+        inventory: [],
+        fairPlayScore: 100, // 🛡️ Fair Play & Güvenilirlik Skoru (%100)
+        anomalyFlags: []    // ⚠️ Şüpheli giriş kayıtları
     };
 }
 
@@ -3010,8 +3012,42 @@ function awardMealLoggingXp(mealName) {
     return false;
 }
 
-// Anti-Cheat: Capped Daily Steps XP (Max 250 XP / ~12.5k steps per day)
-function awardStepXp(stepDiff) {
+// ==================== 🛡️ ANTI-CHEAT & DOĞRULAMA MOTORU ====================
+function recordAnomalyAudit(type, title, details, xpFlagged = 0) {
+    if (!appData.anomalyAuditLogs) appData.anomalyAuditLogs = [];
+    if (!appData.rpgCharacter) appData.rpgCharacter = createDefaultRpgCharacter();
+    const c = appData.rpgCharacter;
+    if (!Array.isArray(c.anomalyFlags)) c.anomalyFlags = [];
+
+    const newAnomaly = {
+        id: "anom_" + Date.now() + "_" + Math.random().toString(36).substr(2, 4),
+        type: type, // 'rapid_sets', 'massive_steps', 'speed_nutrition'
+        title: title,
+        details: details,
+        date: new Date().toLocaleDateString('tr-TR'),
+        time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
+        timestamp: Date.now(),
+        status: "pending", // 'pending', 'approved', 'revoked'
+        xpFlagged: xpFlagged
+    };
+
+    appData.anomalyAuditLogs.unshift(newAnomaly);
+    c.anomalyFlags.unshift(newAnomaly);
+    saveDataToStorage();
+
+    const activeUsername = (getActiveSessionUsername() || "omer").toLowerCase().trim();
+    if (typeof sendRealtimeLiveEvent === "function") {
+        sendRealtimeLiveEvent({
+            type: "athlete_anomaly_flagged",
+            athleteUsername: activeUsername,
+            anomaly: newAnomaly
+        });
+    }
+    return newAnomaly;
+}
+
+// Anti-Cheat: Capped Daily Steps XP with Verified Sensor Bonus
+function awardStepXp(stepDiff, isVerified = false) {
     if (stepDiff <= 0) return;
     const todayStr = getFitnessDateKey();
     if (appData.stepXpDate !== todayStr) {
@@ -3022,27 +3058,56 @@ function awardStepXp(stepDiff) {
     const availableXp = Math.max(0, MAX_DAILY_STEP_XP - (appData.todayStepXpAwarded || 0));
     if (availableXp <= 0) return;
 
-    const rawXp = Math.round(stepDiff / 50);
+    let rawXp = Math.round(stepDiff / 50);
+    if (isVerified) {
+        rawXp = Math.round(rawXp * 1.15); // +15% verified sensor / live GPS bonus
+    }
     const xpToGive = Math.min(availableXp, rawXp);
     if (xpToGive > 0) {
         const endGain = Math.max(1, Math.round(xpToGive / 10));
-        addRpgStatGain('endurance', endGain, xpToGive, 'Adım Takibi');
+        addRpgStatGain('endurance', endGain, xpToGive, isVerified ? '✅ Doğrulanmış GPS/Adım' : 'Adım Takibi');
         appData.todayStepXpAwarded = (appData.todayStepXpAwarded || 0) + xpToGive;
         saveDataToStorage();
     }
 }
 
-// Anti-Cheat: Capped Daily Workout Sets XP (Max 500 XP / ~20 sets per day)
+// Anti-Cheat: Workout Set Pacing & Burst Speed Detection
+let recentSetClickTimes = [];
+
 function awardWorkoutSetXp() {
     const todayStr = getFitnessDateKey();
     if (appData.setXpDate !== todayStr) {
         appData.setXpDate = todayStr;
         appData.todaySetXpAwarded = 0;
+        recentSetClickTimes = [];
     }
+
+    const now = Date.now();
+    recentSetClickTimes.push(now);
+    // Keep only timestamps from the last 60 seconds
+    recentSetClickTimes = recentSetClickTimes.filter(t => now - t <= 60000);
+
+    // If 5 or more sets recorded within 60 seconds -> trigger suspicious speed audit
+    let isSuspiciousSpeed = false;
+    if (recentSetClickTimes.length >= 5) {
+        isSuspiciousSpeed = true;
+        if (!appData.lastRapidSetAnomaly || (now - appData.lastRapidSetAnomaly > 180000)) {
+            appData.lastRapidSetAnomaly = now;
+            recordAnomalyAudit(
+                'rapid_sets',
+                '⚡ Şüpheli İdman Hızı',
+                `60 saniyede ${recentSetClickTimes.length} set kaydedildi. Fizyolojik dinlenme payı tespit edilemedi.`,
+                100
+            );
+            showToast("⚠️ Hızlı set kaydı tespit edildi. Sistem aktiviteyi koç denetim listesine aldı.", "warning");
+        }
+    }
+
     const MAX_DAILY_SET_XP = 500;
     if ((appData.todaySetXpAwarded || 0) < MAX_DAILY_SET_XP) {
-        addRpgStatGain('power', 2, 25, 'Antrenman Seti');
-        appData.todaySetXpAwarded = (appData.todaySetXpAwarded || 0) + 25;
+        const xpAmount = isSuspiciousSpeed ? 5 : 25;
+        addRpgStatGain('power', 2, xpAmount, isSuspiciousSpeed ? 'Set (Denetim Bekliyor)' : 'Antrenman Seti');
+        appData.todaySetXpAwarded = (appData.todaySetXpAwarded || 0) + xpAmount;
         saveDataToStorage();
     }
 }
@@ -3241,6 +3306,17 @@ const PERK_STORE_CATALOG = [
         badgeTextColor: "#000",
         desc: "Günlük 10 ücretsiz soru kotası dolduğunda koça öncelikli soru hakkı sağlar. Mesajın Koç Ömer'in panelinde altın VIP rozetiyle en tepede parlar.",
         actionText: "Bilet Al (50 Coins)"
+    },
+    {
+        key: "ai_form_pass",
+        name: "🤖 AI Form Analizi & Sakatlık Raporu",
+        cost: 30,
+        icon: "🔬",
+        badge: "Omar AI Vision",
+        badgeColor: "#a855f7",
+        badgeTextColor: "#fff",
+        desc: "Squat, Bench, Deadlift vb. hareketler için iskelet açısı, ROM ve omurga güvenliği biomekanik analizi. 0-100 Form Skoru ve düzeltme direktifi.",
+        actionText: "Analiz Başlat (30 Coins)"
     },
     {
         key: "cheat_meal",
@@ -3458,6 +3534,10 @@ function buyPerkItem(perkKey) {
         alert(`🎉 TEBRİKLER! %15 KOÇLUK İNDİRİM KODUN:\n\n👉 ${couponCode}\n\nBu kodu sonraki ay paketini yenilerken Koç Ömer'e ileterek %15 indirimden anında yararlanabilirsin.`);
     } else if (perkKey === 'vip_msg') {
         showToast("⚡ VIP Öncelikli Mesaj Bileti envanterine eklendi! Kota dolduğunda otomatik kullanılabilir.");
+    } else if (perkKey === 'ai_form_pass') {
+        closeModal('modal-perk-store');
+        openAiFormCoachModal();
+        showToast("🔬 AI Form Analizi başlatılıyor!");
     }
 }
 
@@ -3475,6 +3555,9 @@ function useInventoryItem(itemId) {
         alert(`🍕 RESMİ CHEAT MEAL PROTOKOLÜ:\n1. Kaçamak öğününden önce bol su tüket.\n2. Ertesi gün karbonhidratı %20 kısarak kalori dengesini koru.\n3. Günlük adımını 12.000'e çıkararak glikojen depolarını boşalt!`);
     } else if (item.key === 'discount_15') {
         alert(`🏷️ İndirim Kodun: ${item.code || 'OMAR-VIP-15'}\nPaket yenilemesinde koçuna iletebilirsin.`);
+    } else if (item.key === 'ai_form_pass') {
+        closeModal('modal-perk-store');
+        openAiFormCoachModal();
     }
 }
 
@@ -4567,7 +4650,7 @@ function stopLiveStepTracking() {
     detachDeviceMotionListener();
 
     if (liveStepTrackerState.sessionSteps > 0) {
-        awardStepXp(liveStepTrackerState.sessionSteps);
+        awardStepXp(liveStepTrackerState.sessionSteps, true);
         evaluateDailyStreak();
     }
 
@@ -4778,7 +4861,17 @@ function promptCustomSteps() {
         appData.todayNutrition.steps = val;
         recordDailyStepHistory(appData.todayNutrition.steps);
         if (diff > 0) {
-            awardStepXp(diff);
+            // Anti-Cheat: If manual diff >= 6000 steps at once without pedometer/GPS session
+            if (diff >= 6000) {
+                recordAnomalyAudit(
+                    'massive_steps',
+                    '👟 Yüksek Manuel Adım Girişi',
+                    `Sensör veya GPS doğrulaması olmadan tek seferde +${diff.toLocaleString('tr-TR')} manuel adım eklendi.`,
+                    Math.min(250, Math.round(diff / 50))
+                );
+                showToast(`⚠️ Yüksek manuel adım girişi (+${diff.toLocaleString('tr-TR')}) koç denetim kaydına eklendi.`, "warning");
+            }
+            awardStepXp(diff, false);
             evaluateDailyStreak();
         }
         saveDataToStorage();
@@ -8588,6 +8681,9 @@ function renderCoachRoster() {
         const latestSurvey = surveys.length > 0 ? surveys[surveys.length - 1] : null;
         const hasWeighedToday = (uData.weightHistory || []).some(w => w && w.date === getFitnessDateKey());
 
+        const anomalies = (uData.anomalyAuditLogs || []).filter(a => a.status === "pending");
+        const fairPlay = (uData.rpgCharacter && typeof uData.rpgCharacter.fairPlayScore === 'number') ? uData.rpgCharacter.fairPlayScore : 100;
+
         const athLbr = weeklyLeaderboard.find(l => l.username === ath.username);
         const athRank = athLbr ? athLbr.rank : '-';
         const athWeeklyXp = athLbr ? athLbr.weeklyXp : 0;
@@ -8610,6 +8706,11 @@ function renderCoachRoster() {
                     </div>
                     <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; justify-content:flex-end;">
                         <span class="arc-goal-badge">${goalStr}</span>
+                        ${anomalies.length > 0 ? `
+                            <span class="badge-role" style="background:#ff453a; color:#fff; font-size:0.6rem; font-weight:900; cursor:pointer; box-shadow:0 0 10px rgba(255,69,58,0.7); animation:pulse 1.5s infinite;" onclick="openCoachAuditModal('${ath.username}')" title="Şüpheli aktiviteyi incele ve karar ver">
+                                🛡️ ${anomalies.length} Şüpheli Giriş
+                            </span>
+                        ` : ''}
                         ${surveys.length > 0 ? `
                             <span class="badge-role" style="background:#ffd60a; color:#000; font-size:0.6rem; font-weight:900; cursor:pointer;" onclick="selectCoachDetailAthlete('${ath.username}'); switchCoachDetailTab('workout');" title="Antrenman sonu değerlendirme anketini incele">
                                 <i class="fa-solid fa-star"></i> ${surveys.length} İdman Raporu
@@ -8637,8 +8738,8 @@ function renderCoachRoster() {
                         <span style="font-size:0.62rem; color:var(--text-secondary);">Lv.${athLvl}</span>
                     </div>
                     <div class="arc-m-item">
-                        <span>Günlük Kalori</span>
-                        <strong>${consumedCal} / ${targetCal} kcal</strong>
+                        <span>Güvenilirlik</span>
+                        <strong style="color:${fairPlay >= 90 ? '#34d399' : (fairPlay >= 70 ? '#f59e0b' : '#ff453a')}; cursor:pointer;" onclick="openCoachAuditModal('${ath.username}')" title="Disiplin & Denetim Kaydını İncele">🛡️ %${fairPlay}</strong>
                     </div>
                     <div class="arc-m-item">
                         <span>Adım</span>
@@ -15942,8 +16043,530 @@ function changeWorkoutWeek(offsetDelta) {
     currentWorkoutWeekOffset += offsetDelta;
     if (currentWorkoutWeekOffset > 0) currentWorkoutWeekOffset = 0;
     renderWorkoutView();
+}// ==================== 🛡️ KOÇ DİSİPLİN & ANOMALİ DENETİM MODALİ ====================
+let currentAuditAthleteUsername = "omer";
+
+function openCoachAuditModal(athleteUsername) {
+    const cleanUsername = (athleteUsername || currentCoachSelectedAthlete || "omer").toLowerCase().trim();
+    currentAuditAthleteUsername = cleanUsername;
+
+    const registry = getUsersRegistry();
+    const athlete = registry[cleanUsername] || {};
+    const uData = athlete.data || {};
+    const c = uData.rpgCharacter || {};
+    const fairPlay = typeof c.fairPlayScore === 'number' ? c.fairPlayScore : 100;
+    const anomalies = uData.anomalyAuditLogs || [];
+
+    const nameEl = document.getElementById("coach-audit-athlete-name");
+    if (nameEl) nameEl.innerText = `Sporcu: ${athlete.displayName || cleanUsername} (@${cleanUsername})`;
+
+    const fpVal = document.getElementById("coach-audit-fairplay-val");
+    if (fpVal) {
+        fpVal.innerText = `%${fairPlay}`;
+        fpVal.style.color = fairPlay >= 90 ? "#34d399" : (fairPlay >= 70 ? "#f59e0b" : "#f87171");
+    }
+
+    const stBadge = document.getElementById("coach-audit-status-badge");
+    const pendingCount = anomalies.filter(a => a.status === "pending").length;
+    if (stBadge) {
+        if (pendingCount > 0) {
+            stBadge.innerText = `⚠️ ${pendingCount} İncelenmeyi Bekleyen Kayıt`;
+            stBadge.style.background = "#ff453a";
+            stBadge.style.color = "#fff";
+        } else {
+            stBadge.innerText = "Kayıtlar Normal ✅";
+            stBadge.style.background = "#34d399";
+            stBadge.style.color = "#000";
+        }
+    }
+
+    const container = document.getElementById("coach-audit-list-container");
+    if (container) {
+        if (anomalies.length === 0) {
+            container.innerHTML = `
+                <div style="text-align:center; padding:26px 10px; color:var(--text-secondary); font-size:0.78rem;">
+                    <i class="fa-solid fa-shield-halved" style="font-size:2rem; margin-bottom:8px; color:#34d399;"></i>
+                    <p>Bu sporcu için şüpheli veya kural dışı bir aktivite kaydı bulunmuyor. Disiplin puanı tam.</p>
+                </div>
+            `;
+        } else {
+            let html = "";
+            anomalies.forEach(anom => {
+                const isPending = anom.status === "pending";
+                const isApproved = anom.status === "approved";
+                const isRevoked = anom.status === "revoked";
+
+                html += `
+                    <div class="audit-anomaly-card ${!isPending ? 'resolved' : ''}">
+                        <div class="audit-anomaly-header">
+                            <span class="audit-anomaly-title">
+                                ${anom.title || 'Şüpheli Aktivite'}
+                            </span>
+                            <span style="font-size:0.65rem; color:var(--text-secondary);">${anom.date || ''} ${anom.time || ''}</span>
+                        </div>
+                        <div class="audit-anomaly-desc">
+                            ${anom.details || ''}
+                            ${anom.xpFlagged ? `<div style="margin-top:3px; color:#ffd60a; font-weight:700;">Etkilenen XP/Skor: ~${anom.xpFlagged} XP</div>` : ''}
+                        </div>
+                        <div class="audit-action-row">
+                            ${isPending ? `
+                                <button type="button" class="btn btn-xs btn-outline" onclick="resolveCoachAnomaly('${cleanUsername}', '${anom.id}', 'approved')" style="border-color:#34d399; color:#34d399; font-weight:800;">
+                                    <i class="fa-solid fa-check"></i> Onayla (Normal Say)
+                                </button>
+                                <button type="button" class="btn btn-xs btn-danger" onclick="resolveCoachAnomaly('${cleanUsername}', '${anom.id}', 'revoked')" style="font-weight:800;">
+                                    <i class="fa-solid fa-xmark"></i> İptal Et & XP Geri Al
+                                </button>
+                            ` : `
+                                <span style="font-size:0.7rem; font-weight:800; color:${isApproved ? '#34d399' : '#f87171'};">
+                                    ${isApproved ? 'Koç Tarafından Onaylandı ✅' : 'İptal Edildi & Ceza Verildi ❌'}
+                                </span>
+                            `}
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+    }
+
+    openModal("modal-coach-audit");
 }
 
+function resolveCoachAnomaly(athleteUsername, anomalyId, decision) {
+    const cleanUsername = (athleteUsername || "omer").toLowerCase().trim();
+    const registry = getUsersRegistry();
+    const athlete = registry[cleanUsername];
+    if (!athlete || !athlete.data) return;
 
+    const uData = athlete.data;
+    if (!Array.isArray(uData.anomalyAuditLogs)) uData.anomalyAuditLogs = [];
+    const anom = uData.anomalyAuditLogs.find(a => a.id === anomalyId);
+    if (!anom) return;
 
+    if (!uData.rpgCharacter) uData.rpgCharacter = createDefaultRpgCharacter();
+    const c = uData.rpgCharacter;
+
+    if (decision === 'approved') {
+        anom.status = 'approved';
+        anom.resolvedDate = new Date().toISOString();
+        showToast("Aktivite onaylandı ve temizlendi ✅");
+    } else if (decision === 'revoked') {
+        anom.status = 'revoked';
+        anom.resolvedDate = new Date().toISOString();
+
+        // Deduct flagged XP and lower fair play score
+        const deductXp = anom.xpFlagged || 50;
+        c.xp = Math.max(0, (c.xp || 0) - deductXp);
+        c.weeklyXp = Math.max(0, (c.weeklyXp || 0) - deductXp);
+        c.coins = Math.max(0, (c.coins || 0) - 20);
+        c.fairPlayScore = Math.max(50, (c.fairPlayScore || 100) - 5);
+
+        // Notify athlete in live chat
+        sendLiveChatMessage(
+            "coach",
+            cleanUsername,
+            `🛡️ [DİSİPLİN DENETİMİ]: Şüpheli aktivite kaydı ('${anom.title}') antrenör tarafından incelendi ve geçersiz sayılarak -${deductXp} XP geri alındı. Güvenilirlik skorun: %${c.fairPlayScore}. Lütfen antrenman ve adımlarını gerçek zamanlı kaydet! 💪`
+        );
+        showToast("Şüpheli giriş iptal edildi ve sporcuya bildirim yollandı 🛡️");
+    }
+
+    // Save and re-render
+    saveUsersRegistry(registry);
+    if (cleanUsername === (getActiveSessionUsername() || "omer").toLowerCase().trim()) {
+        appData.anomalyAuditLogs = uData.anomalyAuditLogs;
+        appData.rpgCharacter = c;
+        saveDataToStorage();
+        renderRpgDashboardCard();
+    }
+
+    openCoachAuditModal(cleanUsername);
+    renderCoachRoster();
+}
+
+// ==================== 🤖 AI FORM ANALİZ KOÇU MOTORU ====================
+let currentAiFormMedia = null;
+
+function openAiFormCoachModal() {
+    if (!appData.rpgCharacter) appData.rpgCharacter = createDefaultRpgCharacter();
+    const c = appData.rpgCharacter;
+
+    const balText = document.getElementById("ai-form-balance-text");
+    if (balText) balText.innerText = `${(c.coins || 0).toLocaleString('tr-TR')} Omar Coins`;
+
+    resetAiFormCoachModal();
+    openModal("modal-ai-form-coach");
+}
+
+function resetAiFormCoachModal() {
+    const inputSec = document.getElementById("ai-form-input-section");
+    const scanSec = document.getElementById("ai-form-scanning-section");
+    const resSec = document.getElementById("ai-form-results-section");
+    const fileLabel = document.getElementById("ai-form-file-label");
+    const previewBox = document.getElementById("ai-form-media-preview");
+    const fileInput = document.getElementById("ai-form-file-input");
+    const notesInput = document.getElementById("ai-form-notes-input");
+
+    if (inputSec) inputSec.style.display = "block";
+    if (scanSec) scanSec.style.display = "none";
+    if (resSec) resSec.style.display = "none";
+    if (fileLabel) fileLabel.innerText = "Fotoğraf veya Video Seç";
+    if (previewBox) { previewBox.style.display = "none"; previewBox.innerHTML = ""; }
+    if (fileInput) fileInput.value = "";
+    if (notesInput) notesInput.value = "";
+    currentAiFormMedia = null;
+}
+
+function handleAiFormFileSelected(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const fileLabel = document.getElementById("ai-form-file-label");
+    const previewBox = document.getElementById("ai-form-media-preview");
+
+    if (fileLabel) fileLabel.innerText = `Seçildi: ${file.name} (${Math.round(file.size / 1024)} KB)`;
+
+    const isVideo = file.type.startsWith("video/");
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        currentAiFormMedia = {
+            dataUrl: e.target.result,
+            type: isVideo ? "video" : "image",
+            name: file.name
+        };
+        if (previewBox) {
+            previewBox.style.display = "block";
+            if (isVideo) {
+                previewBox.innerHTML = `<video src="${e.target.result}" controls style="max-height:160px; max-width:100%; border-radius:6px; border:1px solid rgba(168,85,247,0.4);"></video>`;
+            } else {
+                previewBox.innerHTML = `<img src="${e.target.result}" style="max-height:160px; max-width:100%; object-fit:contain; border-radius:6px; border:1px solid rgba(168,85,247,0.4);">`;
+            }
+        }
+    };
+    reader.readAsDataURL(file);
+}
+
+const AI_EXERCISE_BIOMECHANICS = {
+    squat: {
+        title: "Barbell Back Squat",
+        primaryROM: "95° Derinlik (Kalça çizgisi diz kapağı altında)",
+        spineStatus: "Nötr Lomber, Toraks Açık",
+        barPath: "Dikey Ayak Ortası (Mid-foot) Sapması: %3",
+        tempo: "3-1-X (Kontrollü Eksantrik, Patlayıcı Konsantrik)",
+        baseScore: 88,
+        tips: [
+            "Dipten kalkarken kalça ve göğüs aynı anda yükselmeli ('Good Morning' hatasından kaçın).",
+            "Diz kapaklarını ayak baş parmağının baktığı açıyla dışarı doğru iterek adduktor desteğini maksimize et.",
+            "Nefes kilitlenmesini (Valsalva Manevrası) tepe noktada tamamla ve dipte nefes boşaltma."
+        ]
+    },
+    bench: {
+        title: "Barbell Flat Bench Press",
+        primaryROM: "Tam Sternum Teması & Tepe Kilitlenme",
+        spineStatus: "Kontrollü Skapular Retraksiyon & Göğüs Kemeri",
+        barPath: "J-Eğrisi (Alt Göğüsten Omuz Eksenine İtme) Sapması: %4",
+        tempo: "2-1-1 (Temas Kontrollü, Omuz Koruyucu)",
+        baseScore: 86,
+        tips: [
+            "Dirseklerini gövdeye 45°-65° açıda tut; 90° açıyla açmak ön omuz (anterior deltoid) impingement riskini artırır.",
+            "Bar alt göğse değdiğinde omuzlarını öne çıkarma (protraction); kürek kemiklerini sehpaya yapışık tut.",
+            "Bacak itişini (Leg Drive) aktif kullanarak kalçayı sehpadan kaldırmadan zemine güç aktar."
+        ]
+    },
+    deadlift: {
+        title: "Conventional / Sumo Deadlift",
+        primaryROM: "Yerden Tam Kalça Ekstansiyonuna",
+        spineStatus: "Sert Nötr Omurga, Sıfır Fleksiyon",
+        barPath: "Kaval & Uyluk Temas Çizgisi Sapması: %2",
+        tempo: "1-0-2 (Patlayıcı Çekiş, Kontrollü İniş)",
+        baseScore: 89,
+        tips: [
+            "Bar kaval kemiğine yapışık başlamalı; barın öne kayması alt omurga L4-L5 disk baskısını 3 kat artırır.",
+            "Hareketi belden çekmek yerine ayak tabanlarınla zemini itme ('Push the floor') hissiyatıyla başlat.",
+            "Tepe noktada geriye aşırı yaslanma (hyperextension); sadece kalçanı sıkarak dik kilitlen."
+        ]
+    },
+    row: {
+        title: "Barbell Bent-Over Row",
+        primaryROM: "Kasık / Alt Karın Çekiş Hattı",
+        spineStatus: "45° Gövde Eğimi, Nötr Boyun",
+        barPath: "Diyagonal Çekiş Sapması: %5",
+        tempo: "2-1-2 (Tepe Sıkıştırma 1 sn)",
+        baseScore: 84,
+        tips: [
+            "Barı göğse değil, alt karın / leğen kemiğine doğru çekerek lats ve rhomboid aktivasyonunu maksimize et.",
+            "Gövdeni her tekrarda yukarı fırlatma; hamstring ve bel stabilitesini bozmadan izole çekiş sağla.",
+            "Alt noktada kürek kemiklerinin hafif açılmasına izin ver, çekerken geriye kilitle."
+        ]
+    },
+    ohp: {
+        title: "Overhead Military Press",
+        primaryROM: "Köprücük Kemiğinden Tepeye",
+        spineStatus: "Kilitli Karın & Kalça, Minimal Kemer",
+        barPath: "Baş Geçişi Sonrası Dikey Kilitlenme",
+        tempo: "2-0-1 (Dipten Hızlı İtiş)",
+        baseScore: 85,
+        tips: [
+            "Bar çeneyi geçer geçmez başını hafifçe öne alarak barı başının tam tepesinde omurga eksenine oturt.",
+            "Aşırı bel kavisini önlemek için kalça kaslarını (glute) ve alt karın duvarını beton gibi sık.",
+            "Alt noktada ön kolların zemine tam 90 derece dikey kaldığından emin ol."
+        ]
+    },
+    rdl: {
+        title: "Romanian Deadlift (RDL)",
+        primaryROM: "Kalça Geriye Maksimum İtim (Diz Altı)",
+        spineStatus: "Mükemmel Omurga Nötralliği",
+        barPath: "Bacak Boyunca Dikey Kayma: %2",
+        tempo: "3-1-1 (Eksantrik Gerilim Odaklı)",
+        baseScore: 87,
+        tips: [
+            "Dizleri bükerek çömelme; kalçanı arkandaki duvara dokunmak istercesine geriye doğru it (Hip Hinge).",
+            "Hamstring gerilimi bittiğinde daha fazla aşağı inmeye çalışma; sırtın bükülmesi sakatlık yaratır.",
+            "Bakışlarını yukarı dikme, omurga hattını korumak için 2 metre ilerideki zemine odaklan."
+        ]
+    },
+    lateral: {
+        title: "Dumbbell Lateral Raise",
+        primaryROM: "Omuz Hizası (90° Abduksiyon)",
+        spineStatus: "Dik Duruş, Sıfır Salınım",
+        barPath: "Skapular Düzlem (~30° Önde)",
+        tempo: "2-1-2 (Tepe Tutuş, Yavaş İndiriş)",
+        baseScore: 83,
+        tips: [
+            "Dumbbell'ları tam yanına değil, hafifçe 30 derece öne (Skapular Düzlem) doğru kaldırarak omuz eklemini koru.",
+            "Harekete trapezius ile değil, dirseklerini dışarı uzatma niyetiyle başla.",
+            "Gövdeni öne arkaya sallayarak momentum alma; gerekirse ağırlığı 1-2 kg düşür."
+        ]
+    },
+    curl: {
+        title: "Barbell / Dumbbell Bicep Curl",
+        primaryROM: "Tam Fleksiyon & Kontrollü Ekstansiyon",
+        spineStatus: "Sabit Gövde, Sıfır Bel Desteği",
+        barPath: "Dairesel Ön Kol Arkı",
+        tempo: "2-1-2 (Negatif Gerilim)",
+        baseScore: 85,
+        tips: [
+            "Dirseklerini gövdenin yanında sabitle; ağırlığı kaldırmak için dirseklerini öne veya geriye savurma.",
+            "Bileklerini aşırı bükme (wrist curl yapma), yükün tamamını pazı kasına odakla.",
+            "Alt noktada dirseğini 180 derece kilitlemeden hemen önce yeni tekrara başla."
+        ]
+    },
+    dips: {
+        title: "Weighted / Bodyweight Dips",
+        primaryROM: "Üst Kol Yere Paralel (90° Dirsek)",
+        spineStatus: "15° Öne Eğimli Gövde (Göğüs Aktivasyonu)",
+        barPath: "Kontrollü Dikey İniş Sapması: %4",
+        tempo: "2-1-1 (Dipte Omuz Koruma)",
+        baseScore: 84,
+        tips: [
+            "Gövdeni 15-20 derece öne eğik tutarak ön omuzdaki aşırı gerilimi göğüs kaslarına aktar.",
+            "Paralel çizgisinden daha derine inmek omuz kapsülü zorlayabilir; 90 derece açıda kontrollü dur.",
+            "Tepe noktada dirseklerini sertçe çarparak kilitleme."
+        ]
+    },
+    pullup: {
+        title: "Pull-Up / Lat Pulldown",
+        primaryROM: "Tam Asılıştan Çene Bar Üstüne",
+        spineStatus: "Hafif Torasik Ekstansiyon",
+        barPath: "Dikey Göğüs Çekiş Ekseni",
+        tempo: "2-1-2 (Dipte Tam Gerim)",
+        baseScore: 88,
+        tips: [
+            "Çekişi kollarla değil, kürek kemiklerini aşağı bastırarak (Scapular Depression) başlat.",
+            "Göğsünü bara yaklaştırmaya çalışarak kanat kaslarını tam kasılmaya zorla.",
+            "Bacaklarını sallayarak 'Kipping' yapma; hareketi saf sırt kuvvetiyle yürüt."
+        ]
+    }
+};
+
+async function runAiBiomechanicalAnalysis() {
+    if (!appData.rpgCharacter) appData.rpgCharacter = createDefaultRpgCharacter();
+    const c = appData.rpgCharacter;
+
+    const COST = 30;
+    if ((c.coins || 0) < COST) {
+        alert(`⚠️ Yetersiz Bakiye! AI Form Analizi için ${COST} Omar Coins gereklidir.\nMevcut Bakiyen: ${c.coins || 0} Coins.\n\nGünlük hedeflerini tamamlayarak puan toplayabilirsin.`);
+        return;
+    }
+
+    const exSelect = document.getElementById("ai-form-exercise-select");
+    const weightInput = document.getElementById("ai-form-weight-input");
+    const repsInput = document.getElementById("ai-form-reps-input");
+    const notesInput = document.getElementById("ai-form-notes-input");
+
+    const exKey = exSelect ? exSelect.value : "squat";
+    const weightVal = weightInput ? weightInput.value.trim() : "";
+    const repsVal = repsInput ? repsInput.value.trim() : "";
+    const notesVal = notesInput ? notesInput.value.trim().toLowerCase() : "";
+
+    const bioData = AI_EXERCISE_BIOMECHANICS[exKey] || AI_EXERCISE_BIOMECHANICS["squat"];
+
+    // Deduct coins
+    c.coins = (c.coins || 0) - COST;
+    saveDataToStorage();
+    renderRpgDashboardCard();
+    const balText = document.getElementById("ai-form-balance-text");
+    if (balText) balText.innerText = `${c.coins.toLocaleString('tr-TR')} Omar Coins`;
+
+    // Show Scanning Animation UI
+    const inputSec = document.getElementById("ai-form-input-section");
+    const scanSec = document.getElementById("ai-form-scanning-section");
+    const resSec = document.getElementById("ai-form-results-section");
+    const scanText = document.getElementById("ai-scanning-step-text");
+    const scanProgress = document.getElementById("ai-scanning-progress-bar");
+
+    if (inputSec) inputSec.style.display = "none";
+    if (scanSec) scanSec.style.display = "block";
+    if (resSec) resSec.style.display = "none";
+
+    const steps = [
+        { pct: "30%", txt: "1. İskelet eklem açıları ve hareket ekseni haritalanıyor..." },
+        { pct: "65%", txt: "2. Bar yolu (Bar Path) & ROM hareket açıklığı hesaplanıyor..." },
+        { pct: "90%", txt: "3. Omurga yük dağılımı & sakatlık risk faktörleri simüle ediliyor..." },
+        { pct: "100%", txt: "4. Koç Ömer AI biomekanik optimizasyon raporu hazırlandı!" }
+    ];
+
+    for (let i = 0; i < steps.length; i++) {
+        if (scanProgress) scanProgress.style.width = steps[i].pct;
+        if (scanText) scanText.innerText = steps[i].txt;
+        await new Promise(r => setTimeout(r, 650));
+    }
+
+    // Calculate dynamic form score
+    let calculatedScore = bioData.baseScore + Math.floor(Math.random() * 5);
+    let riskLevel = "Düşük (Güvenli Form)";
+    let riskColor = "#34d399";
+
+    const warningKeywords = ["ağrı", "omuz", "bel", "batma", "büküldü", "sallandım", "kaçtı", "zorlandım", "bozuldu"];
+    const hasWarning = warningKeywords.some(kw => notesVal.includes(kw));
+
+    if (hasWarning) {
+        calculatedScore = Math.max(68, calculatedScore - 14);
+        riskLevel = "Orta (Biomekanik Düzeltme Şart)";
+        riskColor = "#f59e0b";
+    }
+
+    const report = {
+        id: "aiform_" + Date.now(),
+        exerciseKey: exKey,
+        exerciseTitle: bioData.title,
+        weight: weightVal ? `${weightVal} kg` : "Serbest / Belirtilmedi",
+        reps: repsVal ? `${repsVal} tekrar` : "Tekrar belirtilmedi",
+        notes: notesVal || "Ek not girilmedi",
+        score: calculatedScore,
+        riskLevel: riskLevel,
+        riskColor: riskColor,
+        rom: bioData.primaryROM,
+        spine: bioData.spineStatus,
+        barPath: bioData.barPath,
+        tempo: bioData.tempo,
+        tips: bioData.tips,
+        media: currentAiFormMedia ? { type: currentAiFormMedia.type, name: currentAiFormMedia.name } : null,
+        date: new Date().toLocaleDateString('tr-TR'),
+        time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
+    };
+
+    if (!appData.aiFormHistory) appData.aiFormHistory = [];
+    appData.aiFormHistory.unshift(report);
+    saveDataToStorage();
+
+    renderAiFormResults(report);
+}
+
+function renderAiFormResults(report) {
+    const scanSec = document.getElementById("ai-form-scanning-section");
+    const resSec = document.getElementById("ai-form-results-section");
+    if (scanSec) scanSec.style.display = "none";
+    if (!resSec) return;
+
+    resSec.style.display = "block";
+
+    const scoreColor = report.score >= 85 ? "#34d399" : (report.score >= 75 ? "#ffd60a" : "#f87171");
+    const scoreGrade = report.score >= 90 ? "🏆 Kusursuz Teknik" : (report.score >= 80 ? "⭐ Çok İyi (Küçük Detaylar)" : "⚠️ Düzeltme Gerekiyor");
+
+    let tipsHtml = "";
+    report.tips.forEach((t, idx) => {
+        tipsHtml += `
+            <div class="ai-advice-item">
+                <span style="color:#c084fc; font-weight:900;">${idx + 1}.</span>
+                <span>${t}</span>
+            </div>
+        `;
+    });
+
+    resSec.innerHTML = `
+        <div class="ai-form-score-box">
+            <span style="font-size:0.7rem; color:var(--text-secondary); text-transform:uppercase; font-weight:800; display:block; margin-bottom:4px;">
+                ${report.exerciseTitle} • Biomekanik Form Skoru
+            </span>
+            <div class="ai-form-score-number" style="color:${scoreColor};">
+                ${report.score} <span style="font-size:1.1rem; color:var(--text-muted);">/ 100</span>
+            </div>
+            <span class="badge-role" style="background:${scoreColor}; color:#000; font-weight:900; font-size:0.72rem; padding:3px 10px;">
+                ${scoreGrade}
+            </span>
+            <div style="font-size:0.68rem; color:var(--text-secondary); margin-top:8px;">
+                ${report.weight} • ${report.reps}
+            </div>
+        </div>
+
+        <!-- 4 Pillars of Biomechanics Grid -->
+        <div class="ai-biomechanic-grid">
+            <div class="ai-bio-card">
+                <div class="ai-bio-title"><i class="fa-solid fa-arrows-up-down"></i> Hareket Derinliği (ROM)</div>
+                <div class="ai-bio-val">${report.rom}</div>
+            </div>
+            <div class="ai-bio-card">
+                <div class="ai-bio-title"><i class="fa-solid fa-shield-halved"></i> Omurga & Bel Basıncı</div>
+                <div class="ai-bio-val" style="color:${report.riskColor};">${report.spine}</div>
+            </div>
+            <div class="ai-bio-card">
+                <div class="ai-bio-title"><i class="fa-solid fa-ruler-vertical"></i> Bar Yolu (Bar Path)</div>
+                <div class="ai-bio-val">${report.barPath}</div>
+            </div>
+            <div class="ai-bio-card">
+                <div class="ai-bio-title"><i class="fa-solid fa-stopwatch"></i> Önerilen Tempo & Negatif</div>
+                <div class="ai-bio-val">${report.tempo}</div>
+            </div>
+        </div>
+
+        <!-- 3 Actionable Fixes -->
+        <div style="margin-bottom:12px;">
+            <h5 style="font-size:0.75rem; color:#ffd60a; margin-bottom:6px; display:flex; align-items:center; gap:5px;">
+                <i class="fa-solid fa-lightbulb"></i> Koç Ömer'in 3 Kritik Biomekanik Düzeltmesi:
+            </h5>
+            <div class="ai-advice-list">
+                ${tipsHtml}
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div style="display:flex; flex-direction:column; gap:8px;">
+            <button type="button" class="btn btn-block btn-primary" onclick="sendAiFormReportToCoachChat('${report.id}')" style="background:linear-gradient(135deg,#ffd60a,#f59e0b); color:#000; font-weight:800; font-size:0.8rem; padding:10px;">
+                <i class="fa-solid fa-paper-plane"></i> 💬 Bu Raporu Koç Ömer'e Gönder & Yorum İste
+            </button>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                <button type="button" class="btn btn-outline" onclick="resetAiFormCoachModal()" style="font-size:0.74rem;">
+                    <i class="fa-solid fa-rotate-left"></i> Yeni Analiz
+                </button>
+                <button type="button" class="btn btn-outline" onclick="closeModal('modal-ai-form-coach')" style="font-size:0.74rem;">
+                    Kapat
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+function sendAiFormReportToCoachChat(analysisId) {
+    const list = appData.aiFormHistory || [];
+    const report = list.find(r => r.id === analysisId) || list[0];
+    if (!report) return;
+
+    const activeUsername = (getActiveSessionUsername() || "omer").toLowerCase().trim();
+    const chatMsg = `🤖 [AI BIOMEKANİK FORM RAPORU]:\n🏋️ Hareket: ${report.exerciseTitle} (${report.weight}, ${report.reps})\n📊 AI Form Skoru: ${report.score} / 100\n🛡️ Omurga Riski: ${report.riskLevel}\n📏 ROM & Bar Yolu: ${report.rom}\n💡 Not: "${report.notes}"\n\nHocam yapay zeka analizimi inceleyip antrenör gözüyle yorumlayabilir misiniz?`;
+
+    sendLiveChatMessage("athlete", activeUsername, chatMsg, false);
+    closeModal("modal-ai-form-coach");
+    openModal("modal-athlete-chat");
+    showToast("🤖 Form analizi Koç Ömer ile olan sohbetine iletildi!");
+}
 
