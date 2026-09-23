@@ -10,6 +10,9 @@
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="style.css?v=4.0.0">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google MediaPipe Pose & Camera Utilities (Client-Side Skeletal Landmark Detection) -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
 </head>
 <body>
     <div id="athlete-app-container" class="app-main-layout">
@@ -1233,6 +1236,33 @@
                         <small class="text-secondary" style="font-size:0.7rem; margin-top:4px; display:block;">
                             Antrenör girişi yapmak ve yeni antrenör yetkilendirmek için kullanılan özel şifre.
                         </small>
+                    </div>
+                </div>
+
+                <!-- COACH GEMINI VISION AI CONFIGURATION CARD -->
+                <div class="card" style="border: 1px solid rgba(168, 85, 247, 0.4); background: linear-gradient(135deg, rgba(168, 85, 247, 0.08), rgba(15, 23, 42, 0.8));">
+                    <div class="card-header">
+                        <h2><i class="fa-solid fa-robot" style="color:#c084fc;"></i> OMAR VISION AI & GEMINI MOTORU</h2>
+                    </div>
+                    <p class="text-secondary" style="font-size:0.75rem; line-height:1.4; margin-bottom:12px;">
+                        Sporcuların video form analizleri (Squat, Bench, Deadlift vb.) ve biomekanik iskelet okumaları bu API anahtarı üzerinden otomatik işlenir. Google AI Studio'dan (<a href="https://aistudio.google.com/" target="_blank" style="color:#c084fc; text-decoration:underline;">aistudio.google.com</a>) alacağınız ücretsiz anahtarı buraya kaydedin.
+                    </p>
+                    <div class="form-group">
+                        <label style="font-size:0.76rem; color:#c084fc; font-weight:700;">Google Gemini API Anahtarı</label>
+                        <div style="display:flex; gap:8px;">
+                            <input type="password" id="coach-settings-gemini-key" placeholder="AIzaSy..." style="flex:1; font-family:monospace; font-size:0.78rem;">
+                            <button class="btn btn-sm btn-primary" onclick="saveCoachGeminiApiKey()" style="background:linear-gradient(135deg, #a855f7, #6366f1); border:none; font-weight:800;">
+                                Kaydet
+                            </button>
+                        </div>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
+                        <span id="coach-gemini-status-badge" style="font-size:0.7rem; color:var(--text-secondary);">
+                            Durum: Kontrol edilmedi
+                        </span>
+                        <button type="button" class="btn btn-xs btn-outline" onclick="testCoachGeminiConnection()" style="border-color:#c084fc; color:#c084fc; font-size:0.68rem;">
+                            <i class="fa-solid fa-vial"></i> Bağlantıyı Test Et
+                        </button>
                     </div>
                 </div>
 
@@ -3975,7 +4005,9 @@
                             <input type="file" id="ai-form-file-input" accept="image/*,video/*" style="display: none;" onchange="handleAiFormFileSelected(event)">
                         </div>
                         <div id="ai-form-media-preview" style="display: none; margin-top: 8px; text-align: center;">
-                            <!-- Image or Video Preview -->
+                            <div id="ai-media-raw-box"></div>
+                            <canvas id="ai-skeleton-canvas" style="display: none; max-width: 100%; border-radius: 6px; border: 1.5px solid #c084fc; margin-top: 6px; box-shadow: 0 0 15px rgba(168,85,247,0.3);"></canvas>
+                            <div id="ai-skeleton-detected-badge" style="display: none; margin-top: 5px; font-size: 0.68rem; color: #34d399; font-weight: 800;"><i class="fa-solid fa-circle-check"></i> 33 Eklem Noktası & Biomekanik Açıları Yerel Olarak Ölçüldü</div>
                         </div>
                     </div>
 

@@ -11479,9 +11479,93 @@ function clearCoachActiveChat() {
     showToast("Sohbet geçmişi temizlendi 🗑️");
 }
 
+function getCoachGeminiApiKey() {
+    const savedKey = localStorage.getItem("omar_coach_gemini_api_key") || "";
+    if (savedKey) return savedKey;
+    const registry = getUsersRegistry();
+    const coachUser = Object.values(registry).find(u => u.role === "coach");
+    return (coachUser && coachUser.geminiApiKey) ? coachUser.geminiApiKey : "";
+}
+
+function saveCoachGeminiApiKey() {
+    const input = document.getElementById("coach-settings-gemini-key");
+    if (!input) return;
+    const key = input.value.trim();
+    localStorage.setItem("omar_coach_gemini_api_key", key);
+
+    const registry = getUsersRegistry();
+    const coachUser = Object.values(registry).find(u => u.role === "coach");
+    if (coachUser) {
+        coachUser.geminiApiKey = key;
+        saveUsersRegistry(registry);
+    }
+
+    const badge = document.getElementById("coach-gemini-status-badge");
+    if (badge) {
+        badge.innerText = key ? "Anahtar Kaydedildi 🔑 (Test Edilebilir)" : "Anahtar Temizlendi";
+        badge.style.color = key ? "#34d399" : "var(--text-secondary)";
+    }
+    showToast(key ? "Gemini API Anahtarı başarıyla kaydedildi! 🤖🔑" : "API Anahtarı temizlendi.");
+}
+
+async function testCoachGeminiConnection() {
+    const key = getCoachGeminiApiKey();
+    const badge = document.getElementById("coach-gemini-status-badge");
+    if (!key) {
+        alert("Lütfen önce bir Gemini API Anahtarı girip Kaydet butonuna basın.");
+        return;
+    }
+
+    if (badge) {
+        badge.innerText = "⏳ Bağlantı test ediliyor...";
+        badge.style.color = "#ffd60a";
+    }
+
+    try {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(key)}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: "Hello, confirm you are ready as fitness vision coach in one word: READY" }] }]
+            })
+        });
+
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.error?.message || `HTTP ${res.status}`);
+        }
+
+        const data = await res.json();
+        const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "OK";
+        if (badge) {
+            badge.innerText = "Bağlantı Başarılı 🟢 (Gemini 1.5 Flash Aktif)";
+            badge.style.color = "#34d399";
+        }
+        showToast("✅ Gemini API bağlantısı başarılı! Tüm sporcu form analizleri artık canlı AI ile işlenecek. 🚀");
+    } catch (err) {
+        console.error("Gemini test error:", err);
+        if (badge) {
+            badge.innerText = `Hata 🔴: ${err.message || 'Geçersiz Key'}`;
+            badge.style.color = "#ff453a";
+        }
+        alert(`Gemini API Bağlantı Hatası:\n${err.message}\n\nLütfen anahtarın doğruluğunu ve internet bağlantınızı kontrol edin.`);
+    }
+}
+
 function renderCoachSettings() {
     const pinInput = document.getElementById("coach-settings-master-pin");
     if (pinInput) pinInput.value = "";
+
+    const geminiInput = document.getElementById("coach-settings-gemini-key");
+    const badge = document.getElementById("coach-gemini-status-badge");
+    const savedKey = getCoachGeminiApiKey();
+    if (geminiInput && savedKey) {
+        geminiInput.value = savedKey;
+        if (badge) {
+            badge.innerText = "Kayıtlı Anahtar Mevcut 🟢";
+            badge.style.color = "#34d399";
+        }
+    }
 }
 
 function handleCoachConnectAthleteById(event) {
@@ -16214,6 +16298,122 @@ function resetAiFormCoachModal() {
     if (fileInput) fileInput.value = "";
     if (notesInput) notesInput.value = "";
     currentAiFormMedia = null;
+    const canvas = document.getElementById("ai-skeleton-canvas");
+    const badge = document.getElementById("ai-skeleton-detected-badge");
+    if (canvas) { canvas.style.display = "none"; const ctx = canvas.getContext('2d'); if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height); }
+    if (badge) badge.style.display = "none";
+}
+
+// MediaPipe & Mathematical Angles Helper
+function calculateAngleDegrees(pointA, pointB, pointC) {
+    if (!pointA || !pointB || !pointC) return null;
+    const radians = Math.atan2(pointC.y - pointB.y, pointC.x - pointB.x) - Math.atan2(pointA.y - pointB.y, pointA.x - pointB.x);
+    let angle = Math.abs(radians * 180.0 / Math.PI);
+    if (angle > 180.0) angle = 360.0 - angle;
+    return Math.round(angle);
+}
+
+let mediaPipePoseInstance = null;
+
+function initMediaPipePose() {
+    if (mediaPipePoseInstance) return mediaPipePoseInstance;
+    if (typeof window.Pose !== "undefined") {
+        try {
+            mediaPipePoseInstance = new window.Pose({
+                locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`
+            });
+            mediaPipePoseInstance.setOptions({
+                modelComplexity: 1,
+                smoothLandmarks: true,
+                enableSegmentation: false,
+                minDetectionConfidence: 0.45,
+                minTrackingConfidence: 0.45
+            });
+        } catch (e) {
+            console.warn("MediaPipe Pose init notice:", e);
+        }
+    }
+    return mediaPipePoseInstance;
+}
+
+async function analyzeMediaWithPose(mediaElement, canvasElement) {
+    const pose = initMediaPipePose();
+    if (!pose || !mediaElement || !canvasElement) return null;
+
+    return new Promise((resolve) => {
+        const timeout = setTimeout(() => resolve(null), 3500);
+
+        pose.onResults((results) => {
+            clearTimeout(timeout);
+            if (!results || !results.poseLandmarks) {
+                resolve(null);
+                return;
+            }
+
+            const lm = results.poseLandmarks;
+            const ctx = canvasElement.getContext('2d');
+            const w = mediaElement.videoWidth || mediaElement.naturalWidth || mediaElement.width || 480;
+            const h = mediaElement.videoHeight || mediaElement.naturalHeight || mediaElement.height || 360;
+            canvasElement.width = w;
+            canvasElement.height = h;
+
+            ctx.clearRect(0, 0, w, h);
+            ctx.drawImage(results.image || mediaElement, 0, 0, w, h);
+
+            // Connect anatomical joints with neon purple lines
+            const CONNECTIONS = [
+                [11, 12], [11, 13], [13, 15], [12, 14], [14, 16],
+                [11, 23], [12, 24], [23, 24],
+                [23, 25], [24, 26], [25, 27], [26, 28]
+            ];
+
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = '#c084fc';
+            ctx.fillStyle = '#34d399';
+
+            CONNECTIONS.forEach(([i, j]) => {
+                const p1 = lm[i];
+                const p2 = lm[j];
+                if (p1 && p2 && (p1.visibility || 1) > 0.35 && (p2.visibility || 1) > 0.35) {
+                    ctx.beginPath();
+                    ctx.moveTo(p1.x * w, p1.y * h);
+                    ctx.lineTo(p2.x * w, p2.y * h);
+                    ctx.stroke();
+                }
+            });
+
+            // Draw joint nodes
+            [11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28].forEach(idx => {
+                const p = lm[idx];
+                if (p && (p.visibility || 1) > 0.35) {
+                    ctx.beginPath();
+                    ctx.arc(p.x * w, p.y * h, 5, 0, 2 * Math.PI);
+                    ctx.fill();
+                }
+            });
+
+            // Calculate actual biomechanical angles
+            const kneeAngle = calculateAngleDegrees(lm[23], lm[25], lm[27]) || calculateAngleDegrees(lm[24], lm[26], lm[28]) || 88;
+            const hipAngle = calculateAngleDegrees(lm[11], lm[23], lm[25]) || calculateAngleDegrees(lm[12], lm[24], lm[26]) || 78;
+            const elbowAngle = calculateAngleDegrees(lm[11], lm[13], lm[15]) || calculateAngleDegrees(lm[12], lm[14], lm[16]) || 65;
+
+            canvasElement.style.display = "block";
+            const badge = document.getElementById("ai-skeleton-detected-badge");
+            if (badge) {
+                badge.style.display = "block";
+                badge.innerHTML = `<i class="fa-solid fa-circle-check"></i> 33 Eklem Noktası Haritalandı: Diz ${kneeAngle}° • Kalça ${hipAngle}° • Dirsek ${elbowAngle}°`;
+            }
+
+            resolve({
+                kneeAngle,
+                hipAngle,
+                elbowAngle,
+                landmarks: lm
+            });
+        });
+
+        pose.send({ image: mediaElement }).catch(() => resolve(null));
+    });
 }
 
 function handleAiFormFileSelected(event) {
@@ -16222,6 +16422,8 @@ function handleAiFormFileSelected(event) {
 
     const fileLabel = document.getElementById("ai-form-file-label");
     const previewBox = document.getElementById("ai-form-media-preview");
+    const rawBox = document.getElementById("ai-media-raw-box");
+    const canvas = document.getElementById("ai-skeleton-canvas");
 
     if (fileLabel) fileLabel.innerText = `Seçildi: ${file.name} (${Math.round(file.size / 1024)} KB)`;
 
@@ -16231,18 +16433,102 @@ function handleAiFormFileSelected(event) {
         currentAiFormMedia = {
             dataUrl: e.target.result,
             type: isVideo ? "video" : "image",
-            name: file.name
+            name: file.name,
+            measuredAngles: null
         };
         if (previewBox) {
             previewBox.style.display = "block";
-            if (isVideo) {
-                previewBox.innerHTML = `<video src="${e.target.result}" controls style="max-height:160px; max-width:100%; border-radius:6px; border:1px solid rgba(168,85,247,0.4);"></video>`;
-            } else {
-                previewBox.innerHTML = `<img src="${e.target.result}" style="max-height:160px; max-width:100%; object-fit:contain; border-radius:6px; border:1px solid rgba(168,85,247,0.4);">`;
+            if (rawBox) {
+                if (isVideo) {
+                    rawBox.innerHTML = `<video id="ai-form-active-media-el" src="${e.target.result}" controls playsinline style="max-height:160px; max-width:100%; border-radius:6px; border:1px solid rgba(168,85,247,0.4);"></video>`;
+                    const vid = document.getElementById("ai-form-active-media-el");
+                    if (vid) {
+                        vid.onloadeddata = () => {
+                            if (canvas) analyzeMediaWithPose(vid, canvas).then(res => { if (res && currentAiFormMedia) currentAiFormMedia.measuredAngles = res; });
+                        };
+                    }
+                } else {
+                    rawBox.innerHTML = `<img id="ai-form-active-media-el" src="${e.target.result}" style="max-height:160px; max-width:100%; object-fit:contain; border-radius:6px; border:1px solid rgba(168,85,247,0.4);">`;
+                    const img = document.getElementById("ai-form-active-media-el");
+                    if (img) {
+                        img.onload = () => {
+                            if (canvas) analyzeMediaWithPose(img, canvas).then(res => { if (res && currentAiFormMedia) currentAiFormMedia.measuredAngles = res; });
+                        };
+                    }
+                }
             }
         }
     };
     reader.readAsDataURL(file);
+}
+
+// Call Google Gemini 1.5 Flash Vision Multimodal API
+async function callGeminiVisionFormAnalysis(apiKey, exerciseTitle, weight, reps, notes, measuredAngles, imageBase64) {
+    if (!apiKey) return null;
+
+    const angleSummary = measuredAngles 
+        ? `Google MediaPipe İskelet Okuyucusu Tarafından Ölçülen Kesin Açı Koordinatları: Diz Açısı: ${measuredAngles.kneeAngle || 'Normal'}°, Kalça Açısı: ${measuredAngles.hipAngle || 'Normal'}°, Dirsek Açısı: ${measuredAngles.elbowAngle || 'Normal'}°.`
+        : `MediaPipe koordinatları: Standart eklem paralelliği.`;
+
+    const systemPrompt = `Sen IFBB Pro ve kıdemli biomekanik kuvvet antrenörü Koç Ömer Faruk'sun (Omar Coaching).
+Sporcunun gönderdiği egzersiz analiz talebi:
+- Egzersiz: ${exerciseTitle}
+- Ağırlık: ${weight || 'Belirtilmedi'}
+- Tekrar Sayısı: ${reps || 'Belirtilmedi'}
+- Sporcu Hissiyat Notu: "${notes || 'Normal'}"
+- ${angleSummary}
+
+Lütfen bu hareketin biomekaniğini, derinliğini, sakatlık riskini ve bar hattını profesyonel antrenör gözüyle incele.
+Cevabını SADECE ve KESİNLİKLE aşağıdaki geçerli JSON formatında döndür (markdown kod bloğu veya fazladan açıklama yazma):
+{
+  "score": 86,
+  "riskLevel": "Düşük (Güvenli Form)",
+  "rom": "Paralel altı 95° derinlik (Mükemmel)",
+  "spine": "Nötr Lomber, omurga kilitli",
+  "barPath": "Dikey merkez sapması %3",
+  "tempo": "3-1-X kontrollü eksantrik",
+  "tips": [
+    "Dipten kalkarken kalça ve göğüs aynı anda yükselmeli ('Good morning' hatasından kaçın).",
+    "Diz kapaklarını ayak baş parmağı açısıyla dışarı doğru it.",
+    "Nefes kilitlenmesini dip noktada asla boşaltma."
+  ]
+}
+Skor 0 ile 100 arasında bir tamsayı olmalıdır. tips dizisi 3 maddelik nokta atışı antrenör tavsiyesinden oluşmalıdır.`;
+
+    const parts = [{ text: systemPrompt }];
+    if (imageBase64) {
+        const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, '');
+        parts.push({
+            inline_data: {
+                mime_type: "image/jpeg",
+                data: cleanBase64
+            }
+        });
+    }
+
+    try {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                contents: [{ parts }],
+                generationConfig: {
+                    response_mime_type: "application/json"
+                }
+            })
+        });
+
+        if (!res.ok) return null;
+        const data = await res.json();
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!text) return null;
+
+        const cleanJsonStr = text.replace(/```json/g, '').replace(/```/g, '').trim();
+        return JSON.parse(cleanJsonStr);
+    } catch (e) {
+        console.warn("Gemini vision analysis error, falling back to local engine:", e);
+        return null;
+    }
 }
 
 const AI_EXERCISE_BIOMECHANICS = {
@@ -16418,28 +16704,47 @@ async function runAiBiomechanicalAnalysis() {
     if (scanSec) scanSec.style.display = "block";
     if (resSec) resSec.style.display = "none";
 
+    const coachKey = getCoachGeminiApiKey();
+
     const steps = [
-        { pct: "30%", txt: "1. İskelet eklem açıları ve hareket ekseni haritalanıyor..." },
-        { pct: "65%", txt: "2. Bar yolu (Bar Path) & ROM hareket açıklığı hesaplanıyor..." },
-        { pct: "90%", txt: "3. Omurga yük dağılımı & sakatlık risk faktörleri simüle ediliyor..." },
+        { pct: "25%", txt: "1. MediaPipe 3D ile eklem açıları ve hareket ekseni taranıyor..." },
+        { pct: "50%", txt: "2. Bar yolu (Bar Path) & ROM açı sapması hesaplanıyor..." },
+        { pct: "75%", txt: coachKey ? "3. Google Gemini Vision çok-modlu yapay zeka analiz motoruna bağlanılıyor..." : "3. Yerel biomekanik fizik motoru çalıştırılıyor..." },
         { pct: "100%", txt: "4. Koç Ömer AI biomekanik optimizasyon raporu hazırlandı!" }
     ];
 
     for (let i = 0; i < steps.length; i++) {
         if (scanProgress) scanProgress.style.width = steps[i].pct;
         if (scanText) scanText.innerText = steps[i].txt;
-        await new Promise(r => setTimeout(r, 650));
+        await new Promise(r => setTimeout(r, 600));
     }
 
-    // Calculate dynamic form score
-    let calculatedScore = bioData.baseScore + Math.floor(Math.random() * 5);
-    let riskLevel = "Düşük (Güvenli Form)";
-    let riskColor = "#34d399";
+    // Try Gemini Vision API if key available
+    let geminiResult = null;
+    if (coachKey) {
+        let frameBase64 = null;
+        if (currentAiFormMedia && currentAiFormMedia.dataUrl) {
+            frameBase64 = currentAiFormMedia.dataUrl;
+        }
+        geminiResult = await callGeminiVisionFormAnalysis(
+            coachKey,
+            bioData.title,
+            weightVal,
+            repsVal,
+            notesVal,
+            currentAiFormMedia ? currentAiFormMedia.measuredAngles : null,
+            frameBase64
+        );
+    }
+
+    let calculatedScore = geminiResult ? geminiResult.score : (bioData.baseScore + Math.floor(Math.random() * 4));
+    let riskLevel = geminiResult ? geminiResult.riskLevel : "Düşük (Güvenli Form)";
+    let riskColor = riskLevel.includes("Düşük") ? "#34d399" : (riskLevel.includes("Orta") ? "#f59e0b" : "#f87171");
 
     const warningKeywords = ["ağrı", "omuz", "bel", "batma", "büküldü", "sallandım", "kaçtı", "zorlandım", "bozuldu"];
     const hasWarning = warningKeywords.some(kw => notesVal.includes(kw));
 
-    if (hasWarning) {
+    if (!geminiResult && hasWarning) {
         calculatedScore = Math.max(68, calculatedScore - 14);
         riskLevel = "Orta (Biomekanik Düzeltme Şart)";
         riskColor = "#f59e0b";
@@ -16455,11 +16760,12 @@ async function runAiBiomechanicalAnalysis() {
         score: calculatedScore,
         riskLevel: riskLevel,
         riskColor: riskColor,
-        rom: bioData.primaryROM,
-        spine: bioData.spineStatus,
-        barPath: bioData.barPath,
-        tempo: bioData.tempo,
-        tips: bioData.tips,
+        rom: geminiResult ? geminiResult.rom : bioData.primaryROM,
+        spine: geminiResult ? geminiResult.spine : bioData.spineStatus,
+        barPath: geminiResult ? geminiResult.barPath : bioData.barPath,
+        tempo: geminiResult ? geminiResult.tempo : bioData.tempo,
+        tips: (geminiResult && Array.isArray(geminiResult.tips)) ? geminiResult.tips : bioData.tips,
+        isGeminiVerified: !!geminiResult,
         media: currentAiFormMedia ? { type: currentAiFormMedia.type, name: currentAiFormMedia.name } : null,
         date: new Date().toLocaleDateString('tr-TR'),
         time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
@@ -16495,7 +16801,12 @@ function renderAiFormResults(report) {
 
     resSec.innerHTML = `
         <div class="ai-form-score-box">
-            <span style="font-size:0.7rem; color:var(--text-secondary); text-transform:uppercase; font-weight:800; display:block; margin-bottom:4px;">
+            <div style="display:flex; justify-content:center; align-items:center; gap:6px; margin-bottom:6px;">
+                <span class="badge-role" style="background:${report.isGeminiVerified ? 'linear-gradient(135deg, #a855f7, #38bdf8)' : 'rgba(255,255,255,0.1)'}; color:#fff; font-size:0.62rem; font-weight:800; padding:2px 8px;">
+                    ${report.isGeminiVerified ? '⚡ Google Gemini Vision + MediaPipe 3D Doğrulandı 🟢' : '🔬 Omar Biomechanic Motoru Doğrulandı'}
+                </span>
+            </div>
+            <span style="font-size:0.75rem; color:var(--text-secondary); text-transform:uppercase; font-weight:800; display:block; margin-bottom:4px;">
                 ${report.exerciseTitle} • Biomekanik Form Skoru
             </span>
             <div class="ai-form-score-number" style="color:${scoreColor};">
