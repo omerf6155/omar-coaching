@@ -691,6 +691,41 @@
                     </div>
                 </div>
 
+                <!-- Coach Autonomous NPC & QA Hub Card -->
+                <div class="card" id="coach-npc-qa-card" style="background:linear-gradient(135deg, rgba(14,165,233,0.12), rgba(99,102,241,0.08)); border:1px solid rgba(14,165,233,0.35); margin-bottom:14px; padding:14px; border-radius:var(--radius-md);">
+                    <div class="card-header" style="margin-bottom:8px;">
+                        <h2 style="color:#38bdf8; font-size:0.85rem; display:flex; align-items:center; gap:6px;">
+                            <i class="fa-solid fa-robot" style="color:#38bdf8;"></i> OTONOM NPC SPORCULAR & SİSTEM ELEŞTİRMEN (QA) MASASI
+                        </h2>
+                        <span class="badge-role" style="background:#0284c7; color:#fff; font-weight:900; font-size:0.65rem;">4 Otonom Bot Aktif</span>
+                    </div>
+                    <p class="text-secondary" style="font-size:0.72rem; line-height:1.4; margin-bottom:10px;">
+                        Sistemi gerçek sporcular gibi deneyimleyen otonom botlarımızın anlık UX, matematik, kural ve beslenme denetim raporları:
+                    </p>
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:8px; margin-bottom:10px;">
+                        <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:8px 10px; text-align:center;">
+                            <div style="font-size:0.65rem; color:var(--text-secondary); text-transform:uppercase;">Sistem Sağlık Skoru</div>
+                            <strong style="color:#38bdf8; font-size:1.05rem;" id="qa-stat-health-score">⭐ 4.9 / 5.0</strong>
+                        </div>
+                        <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:8px 10px; text-align:center;">
+                            <div style="font-size:0.65rem; color:var(--text-secondary); text-transform:uppercase;">Tamamlanan Testler</div>
+                            <strong style="color:#ffd60a; font-size:1.05rem;" id="qa-stat-test-count">16 Senaryo</strong>
+                        </div>
+                        <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:8px 10px; text-align:center;">
+                            <div style="font-size:0.65rem; color:var(--text-secondary); text-transform:uppercase;">Kural İhlali / Hata</div>
+                            <strong style="color:#22c55e; font-size:1.05rem;" id="qa-stat-bug-count">0 Kritik Hata</strong>
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                        <button class="btn btn-xs btn-primary" onclick="openCoachNpcQaModal()" style="background:linear-gradient(135deg, #0284c7, #0369a1); color:#fff; font-weight:800; border:none; padding:8px 12px; border-radius:6px; flex:1;">
+                            <i class="fa-solid fa-clipboard-check"></i> QA Eleştiri & Gözlem Raporlarını Aç
+                        </button>
+                        <button class="btn btn-xs" onclick="runNpcLifeSimulation(true)" style="background:rgba(255,214,10,0.15); border:1px solid rgba(255,214,10,0.4); color:#ffd60a; font-weight:800; padding:8px 12px; border-radius:6px;">
+                            <i class="fa-solid fa-bolt"></i> Simülasyonu İlerlet
+                        </button>
+                    </div>
+                </div>
+
                 <!-- Athlete Search & Filter Filter Pills -->
                 <div class="roster-filter-row">
                     <div class="roster-search-wrap">
@@ -2969,6 +3004,54 @@
                 <div id="weekly-report-preview-container" style="background:#0f172a; border:1px solid rgba(56,189,248,0.3); border-radius:10px; padding:16px; font-size:0.78rem; color:#e2e8f0; line-height:1.5;">
                     <!-- Populated dynamically via JS -->
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== 🤖 OTONOM NPC SPORCULAR & QA ELEŞTİRMEN MASASI MODALI ==================== -->
+    <div id="modal-coach-npc-qa" class="modal-overlay">
+        <div class="modal-card" style="max-width:700px; max-height:92vh; display:flex; flex-direction:column;">
+            <div class="modal-header" style="background:linear-gradient(135deg, rgba(14,165,233,0.2), rgba(99,102,241,0.12)); flex-shrink:0;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:1.3rem;">🤖</span>
+                    <div>
+                        <h3 style="margin:0; font-size:0.95rem; color:#fff;">Otonom NPC Sporcular & QA Eleştirmen Masası</h3>
+                        <span style="font-size:0.68rem; color:#38bdf8;">Kullanıcı Deneyimi (UX), Matematik, Kural & Biyomekanik Denetim Raporları</span>
+                    </div>
+                </div>
+                <button class="modal-close-btn" onclick="closeModal('modal-coach-npc-qa')">&times;</button>
+            </div>
+            <div class="modal-body" style="padding:16px 14px; overflow-y:auto; flex:1;">
+                <!-- Summary bar -->
+                <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); padding:10px 12px; border-radius:8px; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+                    <div>
+                        <span style="font-size:0.7rem; color:var(--text-secondary); display:block;">Genel Memnuniyet / QA Sağlığı</span>
+                        <strong style="font-size:1.1rem; color:#38bdf8;">⭐⭐⭐⭐⭐ 4.9 / 5.0 (Mükemmel)</strong>
+                    </div>
+                    <div style="display:flex; gap:6px;">
+                        <button class="btn btn-xs" onclick="runNpcLifeSimulation(true)" style="background:#ffd60a; color:#000; font-weight:800; border:none; padding:8px 12px; border-radius:6px; cursor:pointer;">
+                            <i class="fa-solid fa-bolt"></i> Simülasyonu Çalıştır
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Filter Category Pills -->
+                <div style="display:flex; gap:6px; overflow-x:auto; margin-bottom:14px; padding-bottom:4px;">
+                    <button class="roster-pill active" id="qa-filter-all" onclick="filterNpcQaCategory('all', this)">Tümü</button>
+                    <button class="roster-pill" id="qa-filter-ux" onclick="filterNpcQaCategory('ux', this)">🎨 UX & Ergonomi</button>
+                    <button class="roster-pill" id="qa-filter-math" onclick="filterNpcQaCategory('math', this)">📐 Matematik & Kurallar</button>
+                    <button class="roster-pill" id="qa-filter-diet" onclick="filterNpcQaCategory('diet', this)">🥗 Beslenme & Raporlar</button>
+                    <button class="roster-pill" id="qa-filter-coach" onclick="filterNpcQaCategory('coach', this)">💬 Koçluk Hissiyatı</button>
+                </div>
+
+                <!-- QA Logs Container -->
+                <div id="npc-qa-logs-list" style="display:flex; flex-direction:column; gap:10px;">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+            <div class="modal-footer" style="padding:10px 14px; border-top:1px solid var(--border-subtle); display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-size:0.7rem; color:var(--text-muted);">4 Otonom Bot Bağımsız Olarak Test Ediyor • Omar Coaching QA Engine</span>
+                <button type="button" class="btn btn-sm btn-secondary" onclick="closeModal('modal-coach-npc-qa')">Kapat</button>
             </div>
         </div>
     </div>

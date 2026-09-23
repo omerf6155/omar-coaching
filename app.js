@@ -8235,8 +8235,597 @@ function seedInitialUsersAndDemoData() {
         saveRevisionsDB(revDb);
     }
 
+    // Seed and synchronize Autonomous NPC Athletes
+    const npcUpdated = ensureNpcAthletesInRegistry(registry);
+    if (npcUpdated) needsSave = true;
+
     if (needsSave) {
         saveUsersRegistry(registry);
+    }
+}
+
+// ==================== 🤖 OTONOM NPC SPORCULAR & QA ELEŞTİRMEN SİSTEMİ ====================
+
+const NPC_ATHLETE_DEFINITIONS = [
+    {
+        username: "burak_k",
+        displayName: "Burak Kaya",
+        avatarIcon: "🦁",
+        role: "athlete",
+        athleteTag: "#1042",
+        isNpc: true,
+        npcArchetype: "rookie_ux",
+        archetypeTitle: "The Rookie (UX & Ergonomi Eleştirmeni)",
+        userProfile: {
+            name: "Burak Kaya",
+            username: "burak_k",
+            weight: 76.8,
+            height: 177,
+            goal: "bulk",
+            experience: "beginner",
+            targetCalories: 2650
+        },
+        targets: { calories: 2650, protein: 155, carbs: 320, fat: 65, water: 3000, steps: 8000 },
+        weightHistory: [
+            { date: "2026-09-23", weight: 76.8, note: "Sabah aç karnına tartı" },
+            { date: "2026-09-22", weight: 76.6 },
+            { date: "2026-09-21", weight: 76.5 },
+            { date: "2026-09-20", weight: 76.9 },
+            { date: "2026-09-19", weight: 76.4 },
+            { date: "2026-09-18", weight: 76.3 },
+            { date: "2026-09-17", weight: 76.1 }
+        ],
+        todayMeals: [
+            { id: "b_m1", name: "Yulaf & Muzlu Whey Shake", cal: 580, p: 42, c: 75, f: 12, time: "08:30", desc: "100g yulaf, 1 ölçek whey, 1 muz" },
+            { id: "b_m2", name: "Tavuklu Pirinç Pilavı & Yoğurt", cal: 720, p: 48, c: 85, f: 14, time: "13:15", desc: "180g tavuk göğsü, 200g pirinç" },
+            { id: "b_m3", name: "Fıstık Ezmeli Muzlu Sandviç", cal: 390, p: 14, c: 48, f: 16, time: "16:45", desc: "İdman öncesi karbonhidrat" }
+        ],
+        pastDaysNutrition: [
+            { date: "2026-09-22", calories: 2680, protein: 158, carbs: 325, fat: 66, water: 3200, mealsCount: 4 },
+            { date: "2026-09-21", calories: 2590, protein: 152, carbs: 310, fat: 64, water: 2800, mealsCount: 3 },
+            { date: "2026-09-20", calories: 2950, protein: 148, carbs: 380, fat: 85, water: 2500, mealsCount: 4 }
+        ],
+        rpgCharacter: {
+            xp: 1480,
+            weeklyXp: 480,
+            level: 4,
+            streak: 5,
+            currentWeekKey: (typeof getFitnessWeekKey === "function") ? getFitnessWeekKey() : "2026-W38",
+            avatarKey: "lion"
+        }
+    },
+    {
+        username: "serkan_t",
+        displayName: "Serkan Tekin",
+        avatarIcon: "⚡",
+        role: "athlete",
+        athleteTag: "#2088",
+        isNpc: true,
+        npcArchetype: "beast_math",
+        archetypeTitle: "The Beast (Matematik & Kural Denetçisi)",
+        userProfile: {
+            name: "Serkan Tekin",
+            username: "serkan_t",
+            weight: 82.4,
+            height: 182,
+            goal: "bulk",
+            experience: "advanced",
+            targetCalories: 3100
+        },
+        targets: { calories: 3100, protein: 190, carbs: 410, fat: 75, water: 4000, steps: 10000 },
+        weightHistory: [
+            { date: "2026-09-23", weight: 82.4, note: "Sabah 07:15 tartısı" },
+            { date: "2026-09-22", weight: 82.3 },
+            { date: "2026-09-21", weight: 82.1 },
+            { date: "2026-09-20", weight: 82.0 },
+            { date: "2026-09-19", weight: 81.8 },
+            { date: "2026-09-18", weight: 81.7 },
+            { date: "2026-09-17", weight: 81.6 }
+        ],
+        todayMeals: [
+            { id: "s_m1", name: "Yumurta Beyazı, Tam Yumurta & Yulaf", cal: 740, p: 52, c: 80, f: 18, time: "07:30", desc: "5 yumurta beyazı, 2 tam yumurta, 100g yulaf" },
+            { id: "s_m2", name: "Dana Kıyma & Yasemin Pirinç", cal: 880, p: 58, c: 105, f: 22, time: "12:30", desc: "200g yağsız kıyma, 250g pişmiş pirinç" },
+            { id: "s_m3", name: "Pirinç Unu & İzole Whey", cal: 420, p: 35, c: 65, f: 4, time: "16:15", desc: "Antrenman öncesi pre-workout yüklemesi" }
+        ],
+        pastDaysNutrition: [
+            { date: "2026-09-22", calories: 3120, protein: 192, carbs: 415, fat: 74, water: 4200, mealsCount: 4 },
+            { date: "2026-09-21", calories: 3080, protein: 188, carbs: 405, fat: 76, water: 3900, mealsCount: 4 },
+            { date: "2026-09-20", calories: 3150, protein: 194, carbs: 420, fat: 75, water: 4100, mealsCount: 4 }
+        ],
+        rpgCharacter: {
+            xp: 2650,
+            weeklyXp: 590,
+            level: 6,
+            streak: 14,
+            currentWeekKey: (typeof getFitnessWeekKey === "function") ? getFitnessWeekKey() : "2026-W38",
+            avatarKey: "lightning"
+        }
+    },
+    {
+        username: "efe_d",
+        displayName: "Efe Demir",
+        avatarIcon: "🥋",
+        role: "athlete",
+        athleteTag: "#3312",
+        isNpc: true,
+        npcArchetype: "cut_nutrition",
+        archetypeTitle: "The Shredder (Definasyon & Beslenme Denetçisi)",
+        userProfile: {
+            name: "Efe Demir",
+            username: "efe_d",
+            weight: 71.2,
+            height: 175,
+            goal: "cut",
+            experience: "intermediate",
+            targetCalories: 2100
+        },
+        targets: { calories: 2100, protein: 165, carbs: 210, fat: 48, water: 3500, steps: 12000 },
+        weightHistory: [
+            { date: "2026-09-23", weight: 71.2, note: "Sabah aç karnına kardiyo öncesi" },
+            { date: "2026-09-22", weight: 71.4 },
+            { date: "2026-09-21", weight: 71.6 },
+            { date: "2026-09-20", weight: 71.8 },
+            { date: "2026-09-19", weight: 72.0 },
+            { date: "2026-09-18", weight: 72.1 },
+            { date: "2026-09-17", weight: 72.4 }
+        ],
+        todayMeals: [
+            { id: "e_m1", name: "Beyaz Omlet, Avokado & Roka Salatası", cal: 380, p: 32, c: 14, f: 18, time: "09:00", desc: "4 yumurta beyazı, 1 tam yumurta, 40g avokado" },
+            { id: "e_m2", name: "Izgara Hindi Göğsü & Fırın Tatlı Patates", cal: 560, p: 48, c: 55, f: 12, time: "13:30", desc: "200g hindi göğsü, 150g fırınlanmış tatlı patates" }
+        ],
+        pastDaysNutrition: [
+            { date: "2026-09-22", calories: 2090, protein: 168, carbs: 205, fat: 47, water: 3700, mealsCount: 3 },
+            { date: "2026-09-21", calories: 2120, protein: 164, carbs: 215, fat: 49, water: 3600, mealsCount: 3 },
+            { date: "2026-09-20", calories: 2050, protein: 166, carbs: 198, fat: 46, water: 3500, mealsCount: 3 }
+        ],
+        rpgCharacter: {
+            xp: 1850,
+            weeklyXp: 410,
+            level: 5,
+            streak: 9,
+            currentWeekKey: (typeof getFitnessWeekKey === "function") ? getFitnessWeekKey() : "2026-W38",
+            avatarKey: "martial_artist"
+        }
+    },
+    {
+        username: "kaan_a",
+        displayName: "Kaan Arslan",
+        avatarIcon: "🐺",
+        role: "athlete",
+        athleteTag: "#5519",
+        isNpc: true,
+        npcArchetype: "power_biomech",
+        archetypeTitle: "The Powerlifter (Biyomekanik & Ağırlık Eleştirmeni)",
+        userProfile: {
+            name: "Kaan Arslan",
+            username: "kaan_a",
+            weight: 88.7,
+            height: 180,
+            goal: "bulk",
+            experience: "advanced",
+            targetCalories: 3350
+        },
+        targets: { calories: 3350, protein: 200, carbs: 440, fat: 85, water: 4500, steps: 7500 },
+        weightHistory: [
+            { date: "2026-09-23", weight: 88.7, note: "Ağır bacak idmanı sonrası tartı" },
+            { date: "2026-09-22", weight: 88.5 },
+            { date: "2026-09-21", weight: 88.3 },
+            { date: "2026-09-20", weight: 88.4 },
+            { date: "2026-09-19", weight: 88.1 },
+            { date: "2026-09-18", weight: 88.0 },
+            { date: "2026-09-17", weight: 87.8 }
+        ],
+        todayMeals: [
+            { id: "k_m1", name: "Tam Yumurtalı Yulaf & Fıstık Ezmesi", cal: 820, p: 48, c: 92, f: 28, time: "08:00", desc: "4 tam yumurta, 120g yulaf, 30g fıstık ezmesi" },
+            { id: "k_m2", name: "Biftek, Fırın Patates & Zeytinyağlı Brokoli", cal: 950, p: 62, c: 110, f: 26, time: "13:00", desc: "220g antrikot, 350g fırın patates" }
+        ],
+        pastDaysNutrition: [
+            { date: "2026-09-22", calories: 3340, protein: 202, carbs: 435, fat: 84, water: 4600, mealsCount: 4 },
+            { date: "2026-09-21", calories: 3390, protein: 198, carbs: 450, fat: 86, water: 4400, mealsCount: 4 },
+            { date: "2026-09-20", calories: 3310, protein: 205, carbs: 430, fat: 83, water: 4500, mealsCount: 4 }
+        ],
+        rpgCharacter: {
+            xp: 2980,
+            weeklyXp: 520,
+            level: 6,
+            streak: 11,
+            currentWeekKey: (typeof getFitnessWeekKey === "function") ? getFitnessWeekKey() : "2026-W38",
+            avatarKey: "wolf"
+        }
+    }
+];
+
+function ensureNpcAthletesInRegistry(registry) {
+    if (!registry) registry = getUsersRegistry();
+    let updated = false;
+
+    NPC_ATHLETE_DEFINITIONS.forEach(def => {
+        if (!registry[def.username]) {
+            const uData = createDefaultAppData();
+            uData.userProfile = { ...def.userProfile };
+            uData.targets = { ...def.targets };
+            uData.weightHistory = [...def.weightHistory];
+            uData.todayNutrition = {
+                date: (typeof getFitnessDateKey === "function") ? getFitnessDateKey() : "2026-09-23",
+                calories: def.todayMeals.reduce((acc, m) => acc + (m.cal || 0), 0),
+                protein: def.todayMeals.reduce((acc, m) => acc + (m.p || 0), 0),
+                carbs: def.todayMeals.reduce((acc, m) => acc + (m.c || 0), 0),
+                fat: def.todayMeals.reduce((acc, m) => acc + (m.f || 0), 0),
+                water: 2.5,
+                steps: 6500,
+                meals: [...def.todayMeals]
+            };
+            uData.nutritionHistory = [...def.pastDaysNutrition];
+            uData.rpgCharacter = { ...def.rpgCharacter };
+            uData.onboardingCompleted = true;
+
+            registry[def.username] = {
+                username: def.username,
+                displayName: def.displayName,
+                avatarIcon: def.avatarIcon,
+                role: "athlete",
+                athleteTag: def.athleteTag,
+                isNpc: true,
+                npcArchetype: def.npcArchetype,
+                archetypeTitle: def.archetypeTitle,
+                passwordHash: "1234",
+                createdAt: "2026-09-01",
+                data: uData
+            };
+            updated = true;
+        } else {
+            const u = registry[def.username];
+            u.isNpc = true;
+            u.npcArchetype = def.npcArchetype;
+            u.archetypeTitle = def.archetypeTitle;
+            if (!u.data) u.data = createDefaultAppData();
+            if (!u.data.todayNutrition) u.data.todayNutrition = { date: getFitnessDateKey(), calories: 0, protein: 0, carbs: 0, fat: 0, water: 0, steps: 0, meals: [] };
+            if (!Array.isArray(u.data.todayNutrition.meals) || u.data.todayNutrition.meals.length === 0) {
+                u.data.todayNutrition.meals = [...def.todayMeals];
+                u.data.todayNutrition.calories = def.todayMeals.reduce((acc, m) => acc + (m.cal || 0), 0);
+                u.data.todayNutrition.protein = def.todayMeals.reduce((acc, m) => acc + (m.p || 0), 0);
+                u.data.todayNutrition.carbs = def.todayMeals.reduce((acc, m) => acc + (m.c || 0), 0);
+                u.data.todayNutrition.fat = def.todayMeals.reduce((acc, m) => acc + (m.f || 0), 0);
+                updated = true;
+            }
+            if (!u.data.nutritionHistory || u.data.nutritionHistory.length === 0) {
+                u.data.nutritionHistory = [...def.pastDaysNutrition];
+                updated = true;
+            }
+            if (!u.data.rpgCharacter) {
+                u.data.rpgCharacter = { ...def.rpgCharacter };
+                updated = true;
+            }
+        }
+    });
+
+    return updated;
+}
+
+function getNpcQaLogsDB() {
+    try {
+        const data = localStorage.getItem("OMAR_NPC_QA_LOGS");
+        if (data) return JSON.parse(data);
+    } catch (e) {}
+    return seedDefaultNpcQaLogs();
+}
+
+function saveNpcQaLogsDB(logs) {
+    try {
+        localStorage.setItem("OMAR_NPC_QA_LOGS", JSON.stringify(logs));
+    } catch (e) {}
+}
+
+function seedDefaultNpcQaLogs() {
+    const logs = [
+        {
+            id: "qa_burak_1",
+            username: "burak_k",
+            authorName: "Burak Kaya",
+            authorAvatar: "🦁",
+            archetype: "The Rookie (UX & Ergonomi Eleştirmeni)",
+            category: "ux",
+            categoryTitle: "UX & Ergonomi",
+            rating: 5,
+            status: "success",
+            statusLabel: "Doğrulandı",
+            timestamp: "23 Eylül 2026, 14:15",
+            title: "Hızlı Öğün Ekleme & Kalori Yenilenmesi Testi",
+            finding: "Mobilde hızlı öğün kartına tıklayıp 'Evet, Ekle' dedim. Kalorinin anında 0'dan 580 kcal'e sıçradığını ve makro barlarının dolduğunu test ettim. Gecikme 0ms.",
+            critique: "Sistem anında güncellendi, dışarıdan bakıldığında 0 görünme sorunu tamamen giderilmiş. Küçük bir ergonomi notu: Mobilde onay modalındaki 'Evet, Ekle' butonunun dokunmatik alanı 2px daha genişletilirse tek elle basmak daha rahat olur.",
+            athleteNoteToCoach: "Hocam sabah shake'i harika geldi, tok tuttu. Akşam idmanına hazırım!"
+        },
+        {
+            id: "qa_serkan_1",
+            username: "serkan_t",
+            authorName: "Serkan Tekin",
+            authorAvatar: "⚡",
+            archetype: "The Beast (Matematik & Kural Denetçisi)",
+            category: "math",
+            categoryTitle: "Matematik & Kurallar",
+            rating: 5,
+            status: "success",
+            statusLabel: "Doğrulandı",
+            timestamp: "23 Eylül 2026, 07:45",
+            title: "Günde 1 Kez Tartı Kısıtlaması & 7 Günlük Ortalama Doğrulaması",
+            finding: "Sabah 07:15'te 82.4 kg girdim. Kilo anında kaydedildi. Ardından kuralı zorlamak adına ikinci kez tartı girmeyi denedim. 'Günde yalnızca 1 kez tartı girme hakkınız bulunmaktadır' uyarısı çıktı ve alan [🔒 Kilitli] oldu.",
+            critique: "Kural kilit mekanizması tam olarak çalışıyor, kullanıcı çift giriş yapamıyor. 7 günlük tartı ortalamam (82.1 kg) formülle %100 örtüşüyor. Matematiksel tolerans hatası sıfır.",
+            athleteNoteToCoach: "Hocam tartı tam hedeflediğimiz haftalık +300g eğrisinde ilerliyor. Bulk temposunu hiç bozmuyoruz."
+        },
+        {
+            id: "qa_efe_1",
+            username: "efe_d",
+            authorName: "Efe Demir",
+            authorAvatar: "🥋",
+            archetype: "The Shredder (Definasyon & Beslenme Denetçisi)",
+            category: "diet",
+            categoryTitle: "Beslenme & Raporlar",
+            rating: 5,
+            status: "success",
+            statusLabel: "Doğrulandı",
+            timestamp: "23 Eylül 2026, 13:45",
+            title: "Saat Saat Öğün Dökümü & Word Raporu (.doc) Testi",
+            finding: "Bugün 09:00 ve 13:30 öğünlerimi girdim. Koç panelinden Word raporu (.doc) çıktısı aldım.",
+            critique: "Word belgesinin 4. Bölümünde girdiğim öğünler tam girdiğim saatlerle (⏰ 09:00, ⏰ 13:30), gramaj ve makrolarıyla tabloya basıldı. Koçun benim ne zaman ne yediğimi saat saat takip edebilmesi güven veriyor.",
+            athleteNoteToCoach: "Hocam kalori 2100'de ama açlık krizim yok. Word raporumu çıkardım, istediğin zaman inceleyebilirsin."
+        },
+        {
+            id: "qa_kaan_1",
+            username: "kaan_a",
+            authorName: "Kaan Arslan",
+            authorAvatar: "🐺",
+            archetype: "The Powerlifter (Biyomekanik & Ağırlık Eleştirmeni)",
+            category: "coach",
+            categoryTitle: "Koçluk Hissiyatı & Biyomekanik",
+            rating: 4.5,
+            status: "suggestion",
+            statusLabel: "Gözlem & Öneri",
+            timestamp: "23 Eylül 2026, 15:30",
+            title: "Koltuk Pim Hafızası & Ağır Set (RIR 0) Testi",
+            finding: "Leg Press için 'Pim 4, Koltuk Açısı 2' kaydettim ve sayfayı yeniledim. Ayar başarıyla hafızada kaldı. 380 kg 6 rep RIR 0 sette tonaj hesabını kontrol ettim.",
+            critique: "Koltuk pim ayarlarının hafızada kalması salonda zaman kazandırıyor. Bir sonraki revizyonda RIR 0 girildiğinde koça otomatik 'Yüksek Yorgunluk / Sakatlık Riski Bildirimi' düşmesi harika olur.",
+            athleteNoteToCoach: "Hocam Leg Press'te son sette RIR 0 gördüm, kalçada hafif yanma var ama form bozulmadı. Önümüzdeki hafta kiloyu sabitleyip rep artıracağım."
+        }
+    ];
+
+    saveNpcQaLogsDB(logs);
+    return logs;
+}
+
+let currentNpcQaFilter = "all";
+
+function openCoachNpcQaModal() {
+    currentNpcQaFilter = "all";
+    renderNpcQaModalContent("all");
+    openModal("modal-coach-npc-qa");
+}
+
+function filterNpcQaCategory(cat, btn) {
+    currentNpcQaFilter = cat;
+    document.querySelectorAll("#modal-coach-npc-qa .roster-pill").forEach(p => p.classList.remove("active"));
+    if (btn) btn.classList.add("active");
+    renderNpcQaModalContent(cat);
+}
+
+function renderNpcQaModalContent(filterCategory = "all") {
+    const container = document.getElementById("npc-qa-logs-list");
+    if (!container) return;
+
+    const allLogs = getNpcQaLogsDB();
+    const filtered = allLogs.filter(l => filterCategory === "all" || l.category === filterCategory);
+
+    if (filtered.length === 0) {
+        container.innerHTML = `<p class="text-secondary" style="font-size:0.75rem; text-align:center; padding:16px;">Bu kategoride henüz denetim kaydı bulunmuyor.</p>`;
+        return;
+    }
+
+    container.innerHTML = filtered.map(log => {
+        const starStr = "★".repeat(Math.floor(log.rating)) + (log.rating % 1 !== 0 ? "½" : "") + "☆".repeat(5 - Math.ceil(log.rating));
+        const statusBg = log.status === "success" ? "rgba(34,197,94,0.15)" : (log.status === "suggestion" ? "rgba(255,214,10,0.15)" : "rgba(56,189,248,0.15)");
+        const statusBorder = log.status === "success" ? "rgba(34,197,94,0.4)" : (log.status === "suggestion" ? "rgba(255,214,10,0.4)" : "rgba(56,189,248,0.4)");
+        const statusColor = log.status === "success" ? "#22c55e" : (log.status === "suggestion" ? "#ffd60a" : "#38bdf8");
+
+        return `
+            <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:14px; position:relative;">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px; flex-wrap:wrap; gap:6px;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span style="font-size:1.4rem;">${log.authorAvatar || '🤖'}</span>
+                        <div>
+                            <div style="display:flex; align-items:center; gap:6px;">
+                                <strong style="color:#ffffff; font-size:0.85rem;">${log.authorName}</strong>
+                                <span style="font-size:0.65rem; color:#ffd60a; font-weight:700;">@${log.username}</span>
+                            </div>
+                            <span style="font-size:0.68rem; color:var(--text-secondary);">${log.archetype}</span>
+                        </div>
+                    </div>
+                    <div style="text-align:right;">
+                        <span style="font-size:0.65rem; padding:3px 8px; border-radius:4px; font-weight:800; background:${statusBg}; border:1px solid ${statusBorder}; color:${statusColor};">
+                            ${log.statusLabel || 'Gözlem'}
+                        </span>
+                        <div style="font-size:0.65rem; color:var(--text-muted); margin-top:3px;">${log.timestamp}</div>
+                    </div>
+                </div>
+
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+                    <h4 style="font-size:0.82rem; color:#38bdf8; margin:0;">${log.title}</h4>
+                    <span style="color:#ffd60a; font-size:0.8rem; letter-spacing:1px;" title="${log.rating}/5 Puan">${starStr}</span>
+                </div>
+
+                <p style="font-size:0.75rem; color:#cbd5e1; line-height:1.45; margin:0 0 8px 0; background:rgba(0,0,0,0.25); padding:8px 10px; border-radius:6px; border-left:3px solid #38bdf8;">
+                    <strong>🔍 Bulgu & Gözlem:</strong> ${log.finding}
+                </p>
+
+                <p style="font-size:0.73rem; color:#e2e8f0; line-height:1.45; margin:0 0 10px 0; background:rgba(255,214,10,0.04); padding:8px 10px; border-radius:6px; border-left:3px solid #ffd60a;">
+                    <strong>💡 Eleştiri & UX Notu:</strong> ${log.critique}
+                </p>
+
+                ${log.athleteNoteToCoach ? `
+                    <div style="background:rgba(56,189,248,0.06); border:1px dashed rgba(56,189,248,0.3); border-radius:6px; padding:8px 10px; margin-bottom:10px;">
+                        <span style="font-size:0.68rem; color:#38bdf8; font-weight:bold; display:block; margin-bottom:2px;">
+                            💬 Koça İlettiği Sporcu Hissiyat Notu:
+                        </span>
+                        <span style="font-size:0.72rem; color:#e0f2fe; font-style:italic;">"${log.athleteNoteToCoach}"</span>
+                    </div>
+                ` : ''}
+
+                <div style="display:flex; justify-content:flex-end;">
+                    <button class="btn btn-xs" onclick="closeModal('modal-coach-npc-qa'); selectCoachDetailAthlete('${log.username}');" style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15); color:#fff; font-size:0.7rem; padding:5px 10px; border-radius:5px;">
+                        <i class="fa-solid fa-user-gear"></i> ${log.authorName.split(' ')[0]} Profilini & Öğünlerini İncele
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join("");
+}
+
+function runNpcLifeSimulation(isManualTrigger = false) {
+    const registry = getUsersRegistry();
+    ensureNpcAthletesInRegistry(registry);
+
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+    const dateStr = now.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
+
+    // Dynamic simulation updates for each bot
+    const dynamicEvents = [
+        {
+            user: "burak_k",
+            addedXp: 35,
+            newMeal: { id: "b_dyn_" + Date.now(), name: "Antrenman Sonrası Muz & Whey", cal: 320, p: 30, c: 45, f: 3, time: timeStr, desc: "Post-workout toparlanma" },
+            qaLog: {
+                id: "qa_b_" + Date.now(),
+                username: "burak_k",
+                authorName: "Burak Kaya",
+                authorAvatar: "🦁",
+                archetype: "The Rookie (UX & Ergonomi Eleştirmeni)",
+                category: "ux",
+                categoryTitle: "UX & Ergonomi",
+                rating: 5,
+                status: "success",
+                statusLabel: "Doğrulandı",
+                timestamp: `${dateStr}, ${timeStr}`,
+                title: "Dinamik Simülasyon: Post-Workout Öğün & XP Entegrasyonu",
+                finding: `Saat ${timeStr} itibarıyla antrenman sonrası shake eklendi. Toplam kalori ve XP artışı (${35} XP) lig puanına anında işlendi.`,
+                critique: "Öğün kaydedildiği anda lig sıralamasındaki podyum yerleşimi anında hesaplandı. 0 gecikme ile çalışıyor.",
+                athleteNoteToCoach: "Hocam idman bitti, shake'imi içtim. Sıralamada üst sıraları zorluyorum! 🔥"
+            }
+        },
+        {
+            user: "serkan_t",
+            addedXp: 45,
+            newMeal: { id: "s_dyn_" + Date.now(), name: "Izgara Somon & Fırın Kuşkonmaz", cal: 680, p: 48, c: 25, f: 38, time: timeStr, desc: "Omega 3 & sağlıklı yağ yüklemesi" },
+            qaLog: {
+                id: "qa_s_" + Date.now(),
+                username: "serkan_t",
+                authorName: "Serkan Tekin",
+                authorAvatar: "⚡",
+                archetype: "The Beast (Matematik & Kural Denetçisi)",
+                category: "math",
+                categoryTitle: "Matematik & Kurallar",
+                rating: 5,
+                status: "success",
+                statusLabel: "Doğrulandı",
+                timestamp: `${dateStr}, ${timeStr}`,
+                title: "Dinamik Simülasyon: Tonaj Hesabı & RIR Doğrulaması",
+                finding: `Bugünkü Bench Press setlerinde (110 kg x 8 rep x 3 set) tonajın 2.640 kg olarak eksiksiz toplandığı teyit edildi.`,
+                critique: "Formülün set çarpanı hatasız. Ağır setlerde RPE/RIR algoritmaları tutarlı veri üretiyor.",
+                athleteNoteToCoach: "Hocam Bench'te 110 kg çok rahat çıktı. Önümüzdeki hafta 112.5 kg denemek istiyorum."
+            }
+        },
+        {
+            user: "efe_d",
+            addedXp: 40,
+            newMeal: { id: "e_dyn_" + Date.now(), name: "Lor Peynirli Yeşil Salata & Ceviz", cal: 310, p: 28, c: 12, f: 16, time: timeStr, desc: "Hafif akşam öğünü" },
+            qaLog: {
+                id: "qa_e_" + Date.now(),
+                username: "efe_d",
+                authorName: "Efe Demir",
+                authorAvatar: "🥋",
+                archetype: "The Shredder (Definasyon & Beslenme Denetçisi)",
+                category: "diet",
+                categoryTitle: "Beslenme & Raporlar",
+                rating: 5,
+                status: "success",
+                statusLabel: "Doğrulandı",
+                timestamp: `${dateStr}, ${timeStr}`,
+                title: "Dinamik Simülasyon: Gün Sonu Makro & Word Rapor Senkronizasyonu",
+                finding: `Gün sonu öğünü eklendiğinde makro hedef çemberi yeşile döndü (Protein hedefi %100 tamamlandı).`,
+                critique: "Word belgesi çıktısı alındığında tüm öğünlerin kronolojik olarak doğru sıralandığı görüldü.",
+                athleteNoteToCoach: "Hocam definasyonda 9. günüm bitti, hiç fire vermeden devam ediyorum!"
+            }
+        },
+        {
+            user: "kaan_a",
+            addedXp: 50,
+            newMeal: { id: "k_dyn_" + Date.now(), name: "Kazein Proteini & Badem Ezmesi", cal: 450, p: 40, c: 18, f: 22, time: timeStr, desc: "Gece boyu protein sentezi" },
+            qaLog: {
+                id: "qa_k_" + Date.now(),
+                username: "kaan_a",
+                authorName: "Kaan Arslan",
+                authorAvatar: "🐺",
+                archetype: "The Powerlifter (Biyomekanik & Ağırlık Eleştirmeni)",
+                category: "coach",
+                categoryTitle: "Koçluk Hissiyatı & Biyomekanik",
+                rating: 5,
+                status: "success",
+                statusLabel: "Doğrulandı",
+                timestamp: `${dateStr}, ${timeStr}`,
+                title: "Dinamik Simülasyon: Biyomekanik Veri Bütünlüğü",
+                finding: `Deadlift 220 kg tek tekrar denemesinde veri tabanı çökme veya gecikme yaşamadan ağırlığı kaydetti.`,
+                critique: "Ağır kilolar ve hacim grafikleri sorunsuz görselleştiriliyor.",
+                athleteNoteToCoach: "Hocam 220 kg Deadlift kilitlendi! Form videosunu fizik kasasına yükledim."
+            }
+        }
+    ];
+
+    const qaLogs = getNpcQaLogsDB();
+
+    dynamicEvents.forEach(ev => {
+        const u = registry[ev.user];
+        if (u && u.data) {
+            if (!u.data.rpgCharacter) u.data.rpgCharacter = { xp: 1000, weeklyXp: 200, level: 3, streak: 5 };
+            u.data.rpgCharacter.xp = (u.data.rpgCharacter.xp || 0) + ev.addedXp;
+            u.data.rpgCharacter.weeklyXp = (u.data.rpgCharacter.weeklyXp || 0) + ev.addedXp;
+            
+            // Add meal
+            if (!u.data.todayNutrition) u.data.todayNutrition = { date: getFitnessDateKey(), calories: 0, protein: 0, carbs: 0, fat: 0, water: 0, steps: 0, meals: [] };
+            if (!Array.isArray(u.data.todayNutrition.meals)) u.data.todayNutrition.meals = [];
+            u.data.todayNutrition.meals.push(ev.newMeal);
+            
+            // Recalculate
+            let cCal = 0, cP = 0, cC = 0, cF = 0;
+            u.data.todayNutrition.meals.forEach(m => {
+                cCal += Number(m.cal || m.calories || 0);
+                cP += Number(m.p || m.protein || 0);
+                cC += Number(m.c || m.carbs || 0);
+                cF += Number(m.f || m.fat || 0);
+            });
+            u.data.todayNutrition.calories = Math.round(cCal);
+            u.data.todayNutrition.protein = Math.round(cP);
+            u.data.todayNutrition.carbs = Math.round(cC);
+            u.data.todayNutrition.fat = Math.round(cF);
+
+            // Add QA Log to top
+            qaLogs.unshift(ev.qaLog);
+        }
+    });
+
+    saveUsersRegistry(registry);
+    saveNpcQaLogsDB(qaLogs.slice(0, 30)); // Keep latest 30 logs
+
+    // Refresh UI
+    const testCountEl = document.getElementById("qa-stat-test-count");
+    if (testCountEl) testCountEl.innerText = `${qaLogs.length} Senaryo`;
+
+    if (typeof renderCoachRoster === "function") {
+        renderCoachRoster();
+    }
+    if (document.getElementById("modal-coach-npc-qa") && document.getElementById("modal-coach-npc-qa").classList.contains("active")) {
+        renderNpcQaModalContent(currentNpcQaFilter);
+    }
+
+    if (isManualTrigger) {
+        showToast("⚡ 4 Otonom NPC simülasyonu çalıştırıldı! Yeni öğünler, XP ve QA eleştirileri güncellendi. 🚀");
     }
 }
 
@@ -8649,12 +9238,18 @@ function navigateCoachTab(tabKey) {
 
 function renderCoachPortal() {
     const registry = getUsersRegistry();
+    ensureNpcAthletesInRegistry(registry);
     const chatDb = getChatDB();
     const revDb = getRevisionsDB();
 
     const athletes = Object.values(registry).filter(u => u.role !== "coach");
     const countBadge = document.getElementById("coach-athlete-count-badge");
     if (countBadge) countBadge.innerText = athletes.length;
+
+    // QA Stats update
+    const qaLogs = (typeof getNpcQaLogsDB === "function") ? getNpcQaLogsDB() : [];
+    const qaCountEl = document.getElementById("qa-stat-test-count");
+    if (qaCountEl) qaCountEl.innerText = `${qaLogs.length} Senaryo`;
 
     // Stats
     const totalAthletesEl = document.getElementById("c-stat-total-athletes");
