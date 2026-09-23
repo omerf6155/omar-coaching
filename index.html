@@ -681,7 +681,12 @@
                         <h2 style="color:#ffd60a; font-size:0.85rem; display:flex; align-items:center; gap:6px;">
                             <i class="fa-solid fa-trophy" style="color:#ffd60a;"></i> SPORCU LİG SIRALAMASI (HAFTALIK)
                         </h2>
-                        <span class="badge-role" style="background:#ffd60a; color:#000; font-weight:900; font-size:0.65rem;">Haftalık Sıralama</span>
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <button type="button" class="btn btn-xs" onclick="resetAllAthletesXpToZero(true)" style="background:rgba(255,214,10,0.15); border:1px solid rgba(255,214,10,0.4); color:#ffd60a; font-size:0.65rem; padding:3px 8px; border-radius:4px; font-weight:700; cursor:pointer;" title="Tüm sporcuların XP puanlarını sıfırlar ve yarış baştan başlar">
+                                <i class="fa-solid fa-rotate-left"></i> 0 XP ile Başlat
+                            </button>
+                            <span class="badge-role" style="background:#ffd60a; color:#000; font-weight:900; font-size:0.65rem;">Haftalık Sıralama</span>
+                        </div>
                     </div>
                     <p class="text-secondary" style="font-size:0.72rem; line-height:1.4; margin-bottom:10px;">
                         Sporcularınızın disiplin, antrenman ve beslenme ile topladıkları haftalık XP ve lig dereceleri:

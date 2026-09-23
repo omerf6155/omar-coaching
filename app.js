@@ -3137,10 +3137,10 @@ function calculateWeeklyLeaderboard() {
     const activeUsername = (typeof getActiveSessionUsername === "function") ? getActiveSessionUsername() : null;
 
     const SQUAD_BENCHMARKS = [
-        { username: "burak_k", displayName: "Burak Kaya", avatarIcon: "🦁", weeklyXp: 480, level: 4, rankTitle: "Gladyatör" },
-        { username: "serkan_t", displayName: "Serkan Tekin", avatarIcon: "⚡", weeklyXp: 390, level: 3, rankTitle: "Demir Yumruk" },
-        { username: "efe_d", displayName: "Efe Demir", avatarIcon: "🥋", weeklyXp: 310, level: 2, rankTitle: "Çırak Savaşçı" },
-        { username: "kaan_a", displayName: "Kaan Arslan", avatarIcon: "🐺", weeklyXp: 220, level: 2, rankTitle: "Çırak Savaşçı" }
+        { username: "burak_k", displayName: "Burak Kaya", avatarIcon: "🦁", weeklyXp: 0, level: 1, rankTitle: "Çırak Savaşçı" },
+        { username: "serkan_t", displayName: "Serkan Tekin", avatarIcon: "⚡", weeklyXp: 0, level: 1, rankTitle: "Çırak Savaşçı" },
+        { username: "efe_d", displayName: "Efe Demir", avatarIcon: "🥋", weeklyXp: 0, level: 1, rankTitle: "Çırak Savaşçı" },
+        { username: "kaan_a", displayName: "Kaan Arslan", avatarIcon: "🐺", weeklyXp: 0, level: 1, rankTitle: "Çırak Savaşçı" }
     ];
 
     let leaderboard = [];
@@ -8239,7 +8239,12 @@ function seedInitialUsersAndDemoData() {
     const npcUpdated = ensureNpcAthletesInRegistry(registry);
     if (npcUpdated) needsSave = true;
 
-    if (needsSave) {
+    // One-time League Season Reset to 0 XP for all athletes
+    if (!localStorage.getItem("OMAR_LEAGUE_RESET_SEASON_V1")) {
+        resetAllAthletesXpToZero(false);
+        localStorage.setItem("OMAR_LEAGUE_RESET_SEASON_V1", "true");
+        needsSave = false; // already saved by resetAllAthletesXpToZero
+    } else if (needsSave) {
         saveUsersRegistry(registry);
     }
 }
@@ -8286,10 +8291,10 @@ const NPC_ATHLETE_DEFINITIONS = [
             { date: "2026-09-20", calories: 2950, protein: 148, carbs: 380, fat: 85, water: 2500, mealsCount: 4 }
         ],
         rpgCharacter: {
-            xp: 1480,
-            weeklyXp: 480,
-            level: 4,
-            streak: 5,
+            xp: 0,
+            weeklyXp: 0,
+            level: 1,
+            streak: 0,
             currentWeekKey: (typeof getFitnessWeekKey === "function") ? getFitnessWeekKey() : "2026-W38",
             avatarKey: "lion"
         }
@@ -8333,10 +8338,10 @@ const NPC_ATHLETE_DEFINITIONS = [
             { date: "2026-09-20", calories: 3150, protein: 194, carbs: 420, fat: 75, water: 4100, mealsCount: 4 }
         ],
         rpgCharacter: {
-            xp: 2650,
-            weeklyXp: 590,
-            level: 6,
-            streak: 14,
+            xp: 0,
+            weeklyXp: 0,
+            level: 1,
+            streak: 0,
             currentWeekKey: (typeof getFitnessWeekKey === "function") ? getFitnessWeekKey() : "2026-W38",
             avatarKey: "lightning"
         }
@@ -8379,10 +8384,10 @@ const NPC_ATHLETE_DEFINITIONS = [
             { date: "2026-09-20", calories: 2050, protein: 166, carbs: 198, fat: 46, water: 3500, mealsCount: 3 }
         ],
         rpgCharacter: {
-            xp: 1850,
-            weeklyXp: 410,
-            level: 5,
-            streak: 9,
+            xp: 0,
+            weeklyXp: 0,
+            level: 1,
+            streak: 0,
             currentWeekKey: (typeof getFitnessWeekKey === "function") ? getFitnessWeekKey() : "2026-W38",
             avatarKey: "martial_artist"
         }
@@ -8425,10 +8430,10 @@ const NPC_ATHLETE_DEFINITIONS = [
             { date: "2026-09-20", calories: 3310, protein: 205, carbs: 430, fat: 83, water: 4500, mealsCount: 4 }
         ],
         rpgCharacter: {
-            xp: 2980,
-            weeklyXp: 520,
-            level: 6,
-            streak: 11,
+            xp: 0,
+            weeklyXp: 0,
+            level: 1,
+            streak: 0,
             currentWeekKey: (typeof getFitnessWeekKey === "function") ? getFitnessWeekKey() : "2026-W38",
             avatarKey: "wolf"
         }
@@ -8500,6 +8505,51 @@ function ensureNpcAthletesInRegistry(registry) {
     });
 
     return updated;
+}
+
+function resetAllAthletesXpToZero(showNotification = false) {
+    const curWeekKey = (typeof getFitnessWeekKey === "function") ? getFitnessWeekKey() : "2026-W38";
+    const registry = getUsersRegistry();
+    let updated = false;
+
+    // Reset all athletes in usersRegistry
+    Object.values(registry).forEach(u => {
+        if (u && u.data) {
+            if (!u.data.rpgCharacter) u.data.rpgCharacter = createDefaultRpgCharacter();
+            u.data.rpgCharacter.xp = 0;
+            u.data.rpgCharacter.weeklyXp = 0;
+            u.data.rpgCharacter.level = 1;
+            u.data.rpgCharacter.streak = 0;
+            u.data.rpgCharacter.currentWeekKey = curWeekKey;
+            updated = true;
+        }
+    });
+
+    // Reset active session appData
+    if (typeof appData !== "undefined" && appData) {
+        if (!appData.rpgCharacter) appData.rpgCharacter = createDefaultRpgCharacter();
+        appData.rpgCharacter.xp = 0;
+        appData.rpgCharacter.weeklyXp = 0;
+        appData.rpgCharacter.level = 1;
+        appData.rpgCharacter.streak = 0;
+        appData.rpgCharacter.currentWeekKey = curWeekKey;
+        if (typeof saveDataToStorage === "function") {
+            saveDataToStorage();
+        }
+    }
+
+    if (updated) {
+        saveUsersRegistry(registry);
+    }
+
+    // Refresh UI
+    if (typeof renderCharacterHub === "function") renderCharacterHub();
+    if (typeof renderRpgDashboardCard === "function") renderRpgDashboardCard();
+    if (typeof renderCoachRoster === "function") renderCoachRoster();
+
+    if (showNotification) {
+        showToast("🏆 Tüm sporcuların ve botların XP puanları 0 olarak eşitlendi! Yarış baştan başladı. 🚀");
+    }
 }
 
 function getNpcQaLogsDB() {
