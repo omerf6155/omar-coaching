@@ -2541,19 +2541,41 @@ function recalculateDailyTotals() {
 
 // Navigation & Modals
 function navigateToTab(tabName) {
-    document.querySelectorAll(".tab-view").forEach(el => el.classList.remove("active"));
-    document.querySelectorAll(".nav-item").forEach(el => el.classList.remove("active"));
+    const athleteContainer = document.getElementById("athlete-app-container");
+    const container = athleteContainer || document;
+
+    container.querySelectorAll(".tab-view").forEach(el => el.classList.remove("active"));
+    const navItems = container.querySelectorAll(".bottom-nav .nav-item");
+    navItems.forEach(el => el.classList.remove("active"));
 
     const targetView = document.getElementById(`view-${tabName}`);
     if (targetView) targetView.classList.add("active");
 
     const tabs = ["dashboard", "workout", "nutrition", "supplements", "scale"];
     const activeIndex = tabs.indexOf(tabName);
-    if (activeIndex !== -1) {
-        document.querySelectorAll(".nav-item")[activeIndex].classList.add("active");
+    if (activeIndex !== -1 && navItems[activeIndex]) {
+        navItems[activeIndex].classList.add("active");
     }
 
-    if (tabName === "scale") updateCoachReport();
+    // Call active renderers to guarantee fresh and populated UI on every tab switch
+    try {
+        if (tabName === "dashboard") {
+            renderDashboard();
+        } else if (tabName === "workout") {
+            renderWorkoutDayTabs();
+            renderWorkoutView(currentActiveDay);
+        } else if (tabName === "nutrition") {
+            renderNutritionView();
+        } else if (tabName === "supplements") {
+            renderSupplementsView();
+        } else if (tabName === "scale") {
+            renderScaleView();
+            updateCoachReport();
+        }
+    } catch (err) {
+        console.warn("View render error in navigateToTab:", tabName, err);
+    }
+
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -5426,12 +5448,20 @@ function renderSupplementsView() {
     const container = document.getElementById("supplements-full-list");
     if (!container) return;
 
-    const todayStr = appData.todayNutrition.date || new Date().toISOString().split('T')[0];
+    if (!appData.supplementsLog) appData.supplementsLog = {};
+    const todayStr = (appData.todayNutrition && appData.todayNutrition.date) || new Date().toISOString().split('T')[0];
     const dailyLog = appData.supplementsLog[todayStr] || {};
     const supps = appData.supplements || [];
 
     if (supps.length === 0) {
-        container.innerHTML = `<p class="text-muted" style="text-align:center; padding:20px; font-size:0.8rem;">Kayıtlı suplement bulunamadı. "50+ Katalogdan Seç" butonundan ekleyebilirsin.</p>`;
+        container.innerHTML = `
+            <div style="text-align:center; padding:24px 12px;">
+                <p class="text-muted" style="font-size:0.82rem; margin-bottom:12px;">Kayıtlı suplement bulunamadı. Günlük protokolünü oluşturmak için kataloğa göz atabilirsin.</p>
+                <button type="button" class="btn btn-sm btn-primary" onclick="openModal('modal-supplement-catalog')">
+                    <i class="fa-solid fa-layer-group"></i> 50+ Katalogdan Seç
+                </button>
+            </div>
+        `;
         return;
     }
 
@@ -5457,7 +5487,8 @@ function renderSupplementsView() {
 }
 
 function toggleSupplement(suppId) {
-    const todayStr = appData.todayNutrition.date || new Date().toISOString().split('T')[0];
+    if (!appData.supplementsLog) appData.supplementsLog = {};
+    const todayStr = (appData.todayNutrition && appData.todayNutrition.date) || new Date().toISOString().split('T')[0];
     if (!appData.supplementsLog[todayStr]) appData.supplementsLog[todayStr] = {};
 
     appData.supplementsLog[todayStr][suppId] = !appData.supplementsLog[todayStr][suppId];
@@ -6101,6 +6132,14 @@ function renderWorkoutView(dayKey) {
     }
 
     if (plan.exercises.length === 0) {
+        const otherDays = [
+            { key: "pzt", name: "Pzt", title: "Push 1 (İtiş + Triceps)" },
+            { key: "sal", name: "Sal", title: "Pull 1 (Sırt + Biceps)" },
+            { key: "car", name: "Çar", title: "Legs (Bacak + Triceps)" },
+            { key: "cum", name: "Cum", title: "Push 2 (Omuz + Göğüs)" },
+            { key: "cmt", name: "Cmt", title: "Pull 2 (Sırt + Trapez)" }
+        ];
+
         html += `
             ${isControlled ? `
                 <div class="coach-locked-banner" style="background:rgba(255, 214, 10, 0.08); border:1px solid rgba(255, 214, 10, 0.25); border-radius:var(--radius-md); padding:10px 14px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; gap:10px;">
@@ -6116,10 +6155,27 @@ function renderWorkoutView(dayKey) {
                     </button>
                 </div>
             ` : ''}
-            <div class="card" style="text-align: center; padding: 40px 20px;">
-                <i class="fa-solid fa-bed" style="font-size: 2.5rem; color: #ffffff; margin-bottom: 12px;"></i>
-                <h2>OFF Günü (Tam Dinlenme)</h2>
-                <p class="text-secondary" style="font-size:0.85rem; line-height:1.5;">Kas lifleri uykuda ve dinlenirken inşa edilir. Kalorilerini tam al, suyunu ve magnezyumunu ihmal etme.</p>
+            <div class="card" style="text-align: center; padding: 28px 16px;">
+                <i class="fa-solid fa-bed" style="font-size: 2.2rem; color: #ffd60a; margin-bottom: 10px;"></i>
+                <h2 style="font-size: 1.1rem; margin-bottom: 6px;">OFF Günü (Tam Dinlenme)</h2>
+                <p class="text-secondary" style="font-size:0.8rem; line-height:1.5; margin-bottom: 16px;">Kas lifleri uykuda ve dinlenirken inşa edilir. Kalorilerini tam al, suyunu ve magnezyumunu ihmal etme.</p>
+                
+                <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 14px; text-align: left;">
+                    <div style="font-size: 0.75rem; font-weight: 800; color: #ffd60a; text-transform: uppercase; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                        <i class="fa-solid fa-dumbbell"></i> Bugün Farklı Bir Günün İdmanını Yapmak İster Misin?
+                    </div>
+                    <p style="font-size: 0.72rem; color: var(--text-secondary); margin: 0 0 10px 0;">
+                        Dinlenme gününü kaydırmak veya telafi antrenmanı yapmak için dilediğin güne dokun:
+                    </p>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                        ${otherDays.map(d => `
+                            <button type="button" class="btn btn-sm btn-outline" onclick="selectWorkoutDay('${d.key}')" style="font-size: 0.72rem; padding: 8px; text-align: left; display: flex; align-items: center; gap: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                <strong style="color: #ffd60a; min-width: 24px;">${d.name}</strong>
+                                <span style="font-size: 0.68rem; color: #ffffff; overflow: hidden; text-overflow: ellipsis;">${d.title.split("(")[0]}</span>
+                            </button>
+                        `).join("")}
+                    </div>
+                </div>
             </div>
         `;
         container.innerHTML = html;
@@ -8015,8 +8071,8 @@ function isAthleteUnderCoachControl() {
     const activeUsername = (getActiveSessionUsername() || "").toLowerCase().trim();
     const registry = getUsersRegistry();
     const user = activeUsername && registry[activeUsername];
-    if (user && user.role === "coach") return false;
-    return true;
+    if (!user || user.role === "coach") return false;
+    return !!(user.coachLocked === true);
 }
 
 function isAthleteApprovedByCoach() {
@@ -9376,6 +9432,10 @@ function switchAppPortal(mode) {
         renderDashboard();
         renderWorkoutDayTabs();
         renderWorkoutView(currentActiveDay);
+        renderNutritionView();
+        renderSupplementsView();
+        renderScaleView();
+        updateCoachReport();
         checkAthletePendingRevision();
         checkAthleteUnreadMessages();
         checkMorningWeighInGate();

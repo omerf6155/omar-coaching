@@ -58,7 +58,7 @@ body {
     flex-direction: column;
     position: relative;
     background-color: var(--bg-main);
-    padding-bottom: 84px;
+    padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px));
     overflow-x: hidden;
 }
 
@@ -1579,11 +1579,13 @@ body.modal-open {
     max-width: 460px;
     background-color: rgba(10, 10, 12, 0.94);
     backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     border-top: 1px solid var(--border-subtle);
     display: grid;
     grid-template-columns: repeat(5, 1fr);
-    padding: 8px 6px;
-    z-index: 100;
+    padding: 6px 4px;
+    padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
+    z-index: 1000;
 }
 
 .nav-item {
@@ -1592,17 +1594,32 @@ body.modal-open {
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     gap: 3px;
     color: var(--text-muted);
     font-size: 0.65rem;
     font-weight: 600;
     cursor: pointer;
-    padding: 4px 0;
-    transition: color 0.15s;
+    padding: 6px 0;
+    min-height: 48px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition: color 0.15s, transform 0.1s ease;
+    user-select: none;
+}
+
+.nav-item:active {
+    transform: scale(0.92);
 }
 
 .nav-item i {
-    font-size: 1.05rem;
+    font-size: 1.15rem;
+    pointer-events: none;
+}
+
+.nav-item span {
+    font-size: 0.65rem;
+    pointer-events: none;
 }
 
 .nav-item.active {
