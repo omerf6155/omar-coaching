@@ -12852,9 +12852,23 @@ function openUserProfileModal() {
     if (dateEl) dateEl.innerText = `Kayıt: ${user.createdAt || '2026-09-16'}`;
 
     if (avatarEl) {
-        const initial = displayName.charAt(0).toUpperCase();
-        avatarEl.innerHTML = `<span>${initial}</span>`;
+        avatarEl.innerHTML = renderUserAvatarHtml(user, true);
     }
+
+    const presetInitial = document.getElementById("preset-avatar-initial");
+    if (presetInitial) {
+        presetInitial.innerText = displayName.charAt(0).toUpperCase();
+    }
+
+    // Highlight active preset button
+    const curAvatar = user.avatar || "initial";
+    document.querySelectorAll(".avatar-pill-btn").forEach(btn => {
+        btn.classList.remove("active");
+        const onclickAttr = btn.getAttribute("onclick") || "";
+        if (onclickAttr.includes(`'${curAvatar}'`)) {
+            btn.classList.add("active");
+        }
+    });
 
     const goalMap = { bulk: "🔥 Lean Bulk", cut: "✂️ Cutting", recomp: "⚡ Recomp" };
     const p = appData.userProfile || { age: 24, height: 178, weight: 74, gender: "male", frequency: 5, activity: "moderate", goal: "bulk" };
@@ -12907,6 +12921,64 @@ function openUserProfileModal() {
     if (newP) newP.value = "";
 
     openModal("modal-user-profile");
+}
+
+function renderUserAvatarHtml(user, isLarge = false) {
+    if (!user) {
+        return `<img src="logo.svg" alt="Omar Coaching" style="width:100%; height:100%; object-fit:cover; border-radius:50%; display:block;">`;
+    }
+    const avatar = user.avatar || (user.data && user.data.userProfile && user.data.userProfile.avatar) || (appData && appData.userProfile && appData.userProfile.avatar);
+    const displayName = user.displayName || user.username || "Omar";
+    const initial = displayName.charAt(0).toUpperCase();
+
+    if (avatar === "logo") {
+        return `<img src="logo.svg" alt="Omar Coaching" style="width:100%; height:100%; object-fit:cover; border-radius:50%; display:block;">`;
+    }
+    if (avatar && (avatar.startsWith("http") || avatar.startsWith("data:") || avatar.includes(".svg") || avatar.includes(".png") || avatar.includes(".jpg"))) {
+        return `<img src="${avatar}" alt="${displayName}" style="width:100%; height:100%; object-fit:cover; border-radius:50%; display:block;" onerror="this.parentElement.innerHTML='<span>${initial}</span>'">`;
+    }
+    if (avatar && avatar !== "initial" && avatar.length <= 4) {
+        return `<span style="font-size:${isLarge ? '2.2rem' : '1.1rem'}; line-height:1;">${avatar}</span>`;
+    }
+    return `<span>${initial}</span>`;
+}
+
+function selectProfileAvatarPreset(preset) {
+    const activeUsername = getActiveSessionUsername();
+    const registry = getUsersRegistry();
+    if (!activeUsername || !registry[activeUsername]) return;
+
+    const user = registry[activeUsername];
+    user.avatar = preset;
+    if (!user.data) user.data = {};
+    if (!user.data.userProfile) user.data.userProfile = {};
+    user.data.userProfile.avatar = preset;
+
+    if (!appData.userProfile) appData.userProfile = {};
+    appData.userProfile.avatar = preset;
+
+    saveUsersRegistry(registry);
+    saveDataToStorage();
+
+    updateTopBarUserHeader();
+    openUserProfileModal();
+    showToast(`Avatar güncellendi! ${preset === 'logo' ? '👑' : preset}`);
+}
+
+function saveCustomAvatarUrl() {
+    const input = document.getElementById("custom-avatar-url-input");
+    if (!input) return;
+    const url = input.value.trim();
+    if (!url) {
+        showToast("Lütfen geçerli bir resim linki girin.", "warning");
+        return;
+    }
+    if (!url.startsWith("http") && !url.startsWith("data:")) {
+        showToast("Link http://, https:// veya data: ile başlamalıdır.", "warning");
+        return;
+    }
+    selectProfileAvatarPreset(url);
+    input.value = "";
 }
 
 async function handleChangePasswordSubmit() {
@@ -12975,20 +13047,20 @@ function updateTopBarUserHeader() {
 
     if (user) {
         const displayName = user.displayName || user.username;
-        const initial = displayName.charAt(0).toUpperCase();
+        const avatarHtml = renderUserAvatarHtml(user, false);
 
         if (nameEl) nameEl.innerHTML = `${displayName} <span style="font-size:0.75rem; color:var(--status-blue); font-weight:700;">(@${user.username})</span>`;
-        if (avatarEl) avatarEl.innerHTML = `<span>${initial}</span>`;
+        if (avatarEl) avatarEl.innerHTML = avatarHtml;
 
-        if (dashAvatar) dashAvatar.innerText = initial;
+        if (dashAvatar) dashAvatar.innerHTML = avatarHtml;
         if (dashName) dashName.innerText = displayName;
         if (dashUname) dashUname.innerText = `@${user.username}`;
         if (dashGoal) dashGoal.innerText = goalName;
         if (dashIdBadge) dashIdBadge.innerText = user.athleteTag || (user.role === 'coach' ? '👑 KOÇ' : '#4829');
     } else {
         if (nameEl) nameEl.innerText = "OMAR COACHING";
-        if (avatarEl) avatarEl.innerHTML = `<i class="fa-solid fa-user"></i>`;
-        if (dashAvatar) dashAvatar.innerText = "O";
+        if (avatarEl) avatarEl.innerHTML = `<img src="logo.svg" alt="Omar Coaching" style="width:100%; height:100%; object-fit:cover; border-radius:50%; display:block;">`;
+        if (dashAvatar) dashAvatar.innerHTML = `<img src="logo.svg" alt="Omar Coaching" style="width:100%; height:100%; object-fit:cover; border-radius:50%; display:block;">`;
         if (dashName) dashName.innerText = "OMAR COACHING";
         if (dashUname) dashUname.innerText = "@misafir";
         if (dashGoal) dashGoal.innerText = goalName;

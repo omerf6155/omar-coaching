@@ -2088,18 +2088,105 @@ body.modal-open {
 }
 
 /* ==================== USER AVATAR & TOP BAR BADGE ==================== */
+.app-brand-logo-badge {
+    width: 38px;
+    height: 38px;
+    border-radius: 11px;
+    background: linear-gradient(135deg, rgba(255, 214, 10, 0.15), rgba(15, 23, 42, 0.95));
+    border: 1.5px solid rgba(255, 214, 10, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 0 14px rgba(255, 214, 10, 0.25);
+    overflow: hidden;
+    transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.25s ease;
+    cursor: pointer;
+}
+
+.app-brand-logo-badge:hover {
+    transform: scale(1.08) rotate(-2deg);
+    box-shadow: 0 0 22px rgba(255, 214, 10, 0.5);
+    border-color: #ffd60a;
+}
+
+.app-brand-logo-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.profile-nav-btn {
+    padding: 2px !important;
+    background: transparent !important;
+    border: none !important;
+}
+
 .user-avatar-circle {
-    width: 32px;
-    height: 32px;
+    width: 34px;
+    height: 34px;
     border-radius: 50%;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.05));
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: linear-gradient(135deg, rgba(255, 214, 10, 0.25), rgba(15, 23, 42, 0.8));
+    border: 1.5px solid rgba(255, 214, 10, 0.4);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 0.85rem;
-    color: #ffffff;
+    font-weight: 800;
+    color: #ffd60a;
     flex-shrink: 0;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.user-avatar-circle img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+    display: block;
+}
+
+.avatar-selector-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-top: 10px;
+    margin-bottom: 12px;
+}
+
+.avatar-pill-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 8px 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: #ffffff;
+}
+
+.avatar-pill-btn:hover, .avatar-pill-btn.active {
+    background: rgba(255, 214, 10, 0.15);
+    border-color: #ffd60a;
+    box-shadow: 0 0 10px rgba(255, 214, 10, 0.25);
+    transform: translateY(-2px);
+}
+
+.avatar-pill-icon {
+    font-size: 1.3rem;
+    line-height: 1;
+}
+
+.avatar-pill-name {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--text-secondary);
 }
 
 /* ==================== AUTHENTICATION OVERLAY ==================== */

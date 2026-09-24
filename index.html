@@ -8,6 +8,8 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/svg+xml" href="logo.svg">
+    <link rel="apple-touch-icon" href="logo.svg">
     <link rel="stylesheet" href="style.css?v=4.0.0">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Google MediaPipe Pose & Camera Utilities (Client-Side Skeletal Landmark Detection) -->
@@ -19,8 +21,8 @@
         <!-- Top App Bar -->
         <header class="top-bar">
             <div class="user-badge" onclick="openUserProfileModal()" style="cursor: pointer;" title="Profil ve Hesap">
-                <div class="user-avatar-circle" id="header-user-avatar">
-                    <i class="fa-solid fa-user"></i>
+                <div class="app-brand-logo-badge" title="Omar Coaching">
+                    <img src="logo.svg" alt="Omar Coaching" class="app-brand-logo-img">
                 </div>
                 <div>
                     <h1 class="app-title" id="header-user-name">OMAR COACHING</h1>
@@ -38,8 +40,10 @@
                 <button class="icon-btn" onclick="openModal('modal-settings')" title="Hedefleri ve Ayarları Düzenle">
                     <i class="fa-solid fa-sliders"></i>
                 </button>
-                <button class="icon-btn" onclick="openUserProfileModal()" title="Hesap ve Profil">
-                    <i class="fa-solid fa-circle-user"></i>
+                <button class="icon-btn profile-nav-btn" onclick="openUserProfileModal()" title="Hesap ve Profil">
+                    <div class="user-avatar-circle" id="header-user-avatar">
+                        <i class="fa-solid fa-user"></i>
+                    </div>
                 </button>
             </div>
         </header>
@@ -2302,6 +2306,54 @@
                             <span class="profile-badge" id="profile-goal-tag">🔥 Lean Bulk</span>
                             <span class="profile-since" id="profile-created-date">Kayıt: 2026-09-16</span>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Avatar & Logo Gallery Selector -->
+                <div class="profile-section-title"><i class="fa-solid fa-icons"></i> LOGO & SPORCU AVATARI</div>
+                <div class="card" style="background:var(--bg-card-subtle); padding:12px; margin-bottom:14px; border-radius:12px; border:1px solid var(--border-subtle);">
+                    <div style="font-size:0.75rem; color:var(--text-secondary); margin-bottom:6px;">
+                        Uygulama genelinde görünecek avatar veya logonuzu seçin:
+                    </div>
+                    <div class="avatar-selector-grid">
+                        <button type="button" class="avatar-pill-btn" onclick="selectProfileAvatarPreset('logo')" title="Resmi Omar Coaching Logosu">
+                            <span class="avatar-pill-icon"><img src="logo.svg" style="width:24px; height:24px; border-radius:6px; display:block;"></span>
+                            <span class="avatar-pill-name">OC Logo</span>
+                        </button>
+                        <button type="button" class="avatar-pill-btn" onclick="selectProfileAvatarPreset('🦁')" title="Altın Aslan">
+                            <span class="avatar-pill-icon">🦁</span>
+                            <span class="avatar-pill-name">Aslan</span>
+                        </button>
+                        <button type="button" class="avatar-pill-btn" onclick="selectProfileAvatarPreset('🦍')" title="Enes Abi Goril">
+                            <span class="avatar-pill-icon">🦍</span>
+                            <span class="avatar-pill-name">Enes Abi</span>
+                        </button>
+                        <button type="button" class="avatar-pill-btn" onclick="selectProfileAvatarPreset('👑')" title="Koç Tacı">
+                            <span class="avatar-pill-icon">👑</span>
+                            <span class="avatar-pill-name">Crown</span>
+                        </button>
+                        <button type="button" class="avatar-pill-btn" onclick="selectProfileAvatarPreset('🛡️')" title="Spartan Kalkan">
+                            <span class="avatar-pill-icon">🛡️</span>
+                            <span class="avatar-pill-name">Spartan</span>
+                        </button>
+                        <button type="button" class="avatar-pill-btn" onclick="selectProfileAvatarPreset('⚡')" title="Yıldırım Gücü">
+                            <span class="avatar-pill-icon">⚡</span>
+                            <span class="avatar-pill-name">Lightning</span>
+                        </button>
+                        <button type="button" class="avatar-pill-btn" onclick="selectProfileAvatarPreset('🦅')" title="Apex Kartal">
+                            <span class="avatar-pill-icon">🦅</span>
+                            <span class="avatar-pill-name">Falcon</span>
+                        </button>
+                        <button type="button" class="avatar-pill-btn" onclick="selectProfileAvatarPreset('initial')" title="İsim Baş Harfi">
+                            <span class="avatar-pill-icon" id="preset-avatar-initial">Ö</span>
+                            <span class="avatar-pill-name">Baş Harf</span>
+                        </button>
+                    </div>
+                    <div style="display:flex; gap:6px; margin-top:8px;">
+                        <input type="url" id="custom-avatar-url-input" placeholder="Özel Logo / Resim URL'si (http...)" style="flex:1; font-size:0.75rem; padding:8px 10px; background:rgba(255,255,255,0.04); border:1px solid var(--border-subtle); border-radius:8px; color:#ffffff;">
+                        <button type="button" class="btn btn-xs btn-primary" onclick="saveCustomAvatarUrl()" style="white-space:nowrap; padding:8px 12px; font-weight:700;">
+                            <i class="fa-solid fa-check"></i> Kaydet
+                        </button>
                     </div>
                 </div>
 
