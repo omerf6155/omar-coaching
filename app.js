@@ -5563,27 +5563,55 @@ function getExerciseBaseSetCount(ex) {
     return ex.defaultSets || ex.sets || 2;
 }
 
-function getExerciseSetCount(ex) {
+function getExerciseSetCount(ex, dayKey) {
     if (!ex) return 2;
     const base = getExerciseBaseSetCount(ex);
-    if (appData.exerciseSetsCount && typeof appData.exerciseSetsCount[ex.id] === 'number') {
-        const saved = appData.exerciseSetsCount[ex.id];
+    const key = ex.id;
+    const dayKeyScoped = dayKey ? `${dayKey}_${key}` : null;
+    
+    let saved = null;
+    if (appData.exerciseSetsCount) {
+        if (dayKeyScoped && typeof appData.exerciseSetsCount[dayKeyScoped] === 'number') {
+            saved = appData.exerciseSetsCount[dayKeyScoped];
+        } else if (typeof appData.exerciseSetsCount[key] === 'number') {
+            saved = appData.exerciseSetsCount[key];
+        }
+    }
+    if (typeof saved === 'number') {
         // Enforce strict constraint: between base and base + 1
         return Math.max(base, Math.min(base + 1, saved));
     }
     return base;
 }
 
-function changeExerciseSets(exId, delta, baseSetsParam) {
-    const plan = (appData.customWorkoutPlan && appData.customWorkoutPlan[currentActiveDay]) || (DEFAULT_WORKOUT_PLAN && DEFAULT_WORKOUT_PLAN[currentActiveDay]);
+function changeExerciseSets(exId, delta, baseSetsParam, dayKey) {
+    if (!dayKey) dayKey = currentActiveDay || "pzt";
+    currentActiveDay = dayKey;
+
+    const allPlans = appData.customWorkoutPlan || DEFAULT_WORKOUT_PLAN;
+    let plan = allPlans[dayKey] || (DEFAULT_WORKOUT_PLAN && DEFAULT_WORKOUT_PLAN[dayKey]);
     let ex = null;
     if (plan && plan.exercises) {
         ex = plan.exercises.find(e => e.id === exId);
     }
-    const base = baseSetsParam || (ex ? getExerciseBaseSetCount(ex) : 2);
-    const current = (appData.exerciseSetsCount && typeof appData.exerciseSetsCount[exId] === 'number') 
-                    ? appData.exerciseSetsCount[exId] 
-                    : base;
+    // If not found in current dayKey, search across all days
+    if (!ex) {
+        for (const dk of ["pzt", "sal", "car", "per", "cum", "cmt", "paz"]) {
+            const p = allPlans[dk] || (DEFAULT_WORKOUT_PLAN && DEFAULT_WORKOUT_PLAN[dk]);
+            if (p && p.exercises) {
+                const found = p.exercises.find(e => e.id === exId);
+                if (found) {
+                    ex = found;
+                    dayKey = dk;
+                    currentActiveDay = dk;
+                    break;
+                }
+            }
+        }
+    }
+
+    const base = Number(baseSetsParam) || (ex ? getExerciseBaseSetCount(ex) : 2);
+    const current = getExerciseSetCount(ex, dayKey);
 
     if (delta > 0) {
         if (current >= base + 1) {
@@ -5593,6 +5621,7 @@ function changeExerciseSets(exId, delta, baseSetsParam) {
         const updated = base + 1;
         if (!appData.exerciseSetsCount) appData.exerciseSetsCount = {};
         appData.exerciseSetsCount[exId] = updated;
+        if (dayKey) appData.exerciseSetsCount[`${dayKey}_${exId}`] = updated;
 
         // Auto-initialize extra set log as BACK if not present
         if (!appData.workoutLogs) appData.workoutLogs = {};
@@ -5603,14 +5632,17 @@ function changeExerciseSets(exId, delta, baseSetsParam) {
                 reps: "",
                 rir: "",
                 setType: "BACK",
-                date: new Date().toISOString().split('T')[0]
+                date: getFitnessDateKey()
             };
-        } else if (!appData.workoutLogs[exId][updated - 1].setType) {
+        } else {
             appData.workoutLogs[exId][updated - 1].setType = "BACK";
+            if (!appData.workoutLogs[exId][updated - 1].date) {
+                appData.workoutLogs[exId][updated - 1].date = getFitnessDateKey();
+            }
         }
 
         saveDataToStorage();
-        renderWorkoutView(currentActiveDay);
+        renderWorkoutView(dayKey);
         showToast("⚡ +1 Ekstra Back-Off seti eklendi (Sporcu İnisiyatifi) 💪");
     } else if (delta < 0) {
         if (current <= base) {
@@ -5620,8 +5652,9 @@ function changeExerciseSets(exId, delta, baseSetsParam) {
         const updated = base;
         if (!appData.exerciseSetsCount) appData.exerciseSetsCount = {};
         appData.exerciseSetsCount[exId] = updated;
+        if (dayKey) appData.exerciseSetsCount[`${dayKey}_${exId}`] = updated;
         saveDataToStorage();
-        renderWorkoutView(currentActiveDay);
+        renderWorkoutView(dayKey);
         showToast("Ekstra Back-Off seti kaldırıldı.");
     }
 }
@@ -5935,6 +5968,7 @@ function executeDaySwap(mode) {
 
 function renderWorkoutView(dayKey) {
     if (!dayKey) dayKey = currentActiveDay || "pzt";
+    currentActiveDay = dayKey;
     const container = document.getElementById("workout-content-area");
     const plan = (appData.customWorkoutPlan && appData.customWorkoutPlan[dayKey]) || DEFAULT_WORKOUT_PLAN[dayKey];
     if (!container || !plan) return;
@@ -6039,12 +6073,12 @@ function renderWorkoutView(dayKey) {
         const savedSeat = (appData.seatSettings && (appData.seatSettings[ex.id] || (ex.name && appData.seatSettings[ex.name]) || appData.seatSettings[cKey])) || ex.defaultSeat || '';
         
         // Exercise-Centric Previous Session Lookup (Cross-day & Cross-week):
-        const prevSession = getExercisePreviousSession(ex, currentActiveDay);
+        const prevSession = getExercisePreviousSession(ex, dayKey);
         const lastLog = prevSession.sets || [];
         const prevInfo = prevSession.info;
 
         const baseSets = getExerciseBaseSetCount(ex);
-        const totalSets = getExerciseSetCount(ex);
+        const totalSets = getExerciseSetCount(ex, dayKey);
         const overloadHint = calculateOverloadTarget(lastLog);
 
         // Previous session summary banner:
@@ -6118,7 +6152,7 @@ function renderWorkoutView(dayKey) {
             const defaultTag = isExtraBackOff ? "BACK" : ((coachDir && coachDir.type) ? coachDir.type : ((i === 1 && ex.isTopSet) ? "TOP" : (i > 1 && ex.isTopSet) ? "BACK" : "S" + i));
             
             const isLoggedToday = todaySet && (todaySet.date === getFitnessDateKey() || (todaySet.weight > 0 && (!todaySet.date || todaySet.date === new Date().toISOString().split('T')[0])));
-            const curSetType = (todaySet && todaySet.setType) ? todaySet.setType : (prevSet.setType || defaultTag);
+            const curSetType = isExtraBackOff ? "BACK" : ((todaySet && todaySet.setType) ? todaySet.setType : (prevSet.setType || defaultTag));
             const savedW = (todaySet && isLoggedToday && todaySet.weight !== '-') ? todaySet.weight : '';
             const savedR = (todaySet && isLoggedToday && todaySet.reps !== '-') ? todaySet.reps : '';
             const savedRir = (todaySet && isLoggedToday) ? (todaySet.rir || '') : '';
@@ -6172,12 +6206,12 @@ function renderWorkoutView(dayKey) {
                     </div>
                     <div style="display:flex; gap:6px; align-items:center;">
                         ${totalSets > baseSets ? `
-                            <button class="btn btn-xs btn-outline" onclick="changeExerciseSets('${ex.id}', -1, ${baseSets})" title="Ekstra Back-Off Setini Kaldır" style="border-color:#ef4444; color:#ef4444; font-size:0.68rem; padding:3px 8px;">
+                            <button class="btn btn-xs btn-outline" onclick="changeExerciseSets('${ex.id}', -1, ${baseSets}, '${dayKey}')" title="Ekstra Back-Off Setini Kaldır" style="border-color:#ef4444; color:#ef4444; font-size:0.68rem; padding:3px 8px;">
                                 <i class="fa-solid fa-minus"></i> Ekstra Seti Sil
                             </button>
                         ` : ''}
                         ${totalSets < baseSets + 1 ? `
-                            <button class="btn btn-xs btn-outline" onclick="changeExerciseSets('${ex.id}', 1, ${baseSets})" title="İnisiyatifinizle Maksimum 1 Ekstra Back-Off Seti Ekleyin" style="border-color:#60a5fa; color:#60a5fa; font-weight:700; font-size:0.68rem; padding:3px 8px;">
+                            <button class="btn btn-xs btn-outline" onclick="changeExerciseSets('${ex.id}', 1, ${baseSets}, '${dayKey}')" title="İnisiyatifinizle Maksimum 1 Ekstra Back-Off Seti Ekleyin" style="border-color:#60a5fa; color:#60a5fa; font-weight:700; font-size:0.68rem; padding:3px 8px;">
                                 <i class="fa-solid fa-plus"></i> +1 Back-Off Ekle
                             </button>
                         ` : `
@@ -14911,7 +14945,7 @@ async function sendAssistantMessage() {
 
 // ==================== ONLINE GEMINI MULTI-TURN API ENGINE ====================
 
-function cleanGeminiOutput(rawText) {
+function cleanGeminiOutput(rawText, userQuery) {
     if (!rawText || typeof rawText !== "string") return "";
     let text = rawText.trim();
     if (!text) return "";
@@ -14928,28 +14962,33 @@ function cleanGeminiOutput(rawText) {
         // 3. Strip English translation parenthetical notes like (Look kid, back issues are serious.) or (How is the pain?...)
         text = text.replace(/\([A-Z][a-z0-9\s,.'"?!-]{12,}\)/g, '').trim();
 
-        // 4. Strip metadata & structured reasoning bullet blocks (* Acknowledgment:, * Clarification:, * Immediate Advice:, etc.)
-        const metaBulletRegex = /^(\*+\s*\*+|\*+|-|#+|\d+\.)\s*(\*|\s)*(User|Current\s*Persona|Persona|Tone|User\s*Context|Context|Workout|Macros|Goal|Status|Greeting|Vibe\s*Check|Contextual\s*Integration|Plan|Step|Action|Analysis|Strategy|Workout\s*Check|Closing|Response|Opening|Internal\s*Thought|Direct\s*Speech|Output|Acknowledgment|Clarification|Immediate\s*Advice|Rest|Mobility|Core|Anti-inflammatory|Form\s*Check)\b/i;
+        // 4. Strip metadata & structured reasoning bullet blocks (* Direct, * Tone, * No meta, * The user is, etc.)
+        const metaBulletRegex = /^(\*+\s*\*+|\*+|-|•|#+|\d+\.)?\s*(\*|\s)*(User|Current\s*Persona|Persona|Tone|User\s*Context|Context|Workout|Macros|Goal|Status|Greeting|Vibe\s*Check|Contextual\s*Integration|Plan|Step|Action|Analysis|Strategy|Workout\s*Check|Closing|Response|Opening|Internal\s*Thought|Direct\s*Speech|Direct|No\s*meta|No\s*robot|The\s*user|Since\s*today|Biological|Coaching|Output|Acknowledgment|Clarification|Immediate\s*Advice|Rest|Mobility|Core|Anti-inflammatory|Form\s*Check|Guidelines|Instructions|Instruction)\b/i;
+        const englishMetaRegex = /^(\*|-|•|\d+\.|\s+)?\s*(Direct,\s*sincere|No\s*meta-talk|No\s*robotic|The\s*user\s*is|Since\s*today\s*is|Biological\/Coaching|In\s*this\s*case|Respond\b|Match\b|Acknowledge\b|Check\b|Maintain\b|Transition\b|Ask\b|State\b|Ensure\b|Formulate\b|Keep\b|Show\b|Adopt\b|Set\b|Deliver\b|Targeted\b|Consumed\b)/i;
 
         const lines = text.split(/\r?\n/);
         const cleanLines = [];
+
+        // Strip leading line if it merely echoes the user query or query with timestamp (e.g. "back off set istiyorum vermiyot 22:10")
+        if (lines.length > 0 && userQuery && typeof userQuery === "string") {
+            const uClean = userQuery.trim().toLowerCase();
+            const firstClean = lines[0].replace(/\s*\d{1,2}:\d{2}\s*$/, '').trim().toLowerCase();
+            if (firstClean && (firstClean === uClean || uClean.includes(firstClean) || firstClean.includes(uClean))) {
+                lines.shift();
+            }
+        }
 
         for (let i = 0; i < lines.length; i++) {
             let tr = lines[i].trim();
             if (!tr) continue;
 
             // Skip bullet points that are metadata or English reasoning headers
-            if (metaBulletRegex.test(tr)) {
-                // If the line contains quotes with Turkish text, extract just the quoted text
-                const quoteMatch = tr.match(/["“]([^"“”]{5,})["”]/);
-                if (quoteMatch) {
-                    cleanLines.push(quoteMatch[1].trim());
-                }
+            if (metaBulletRegex.test(tr) || englishMetaRegex.test(tr)) {
                 continue;
             }
 
-            // Skip English directive/status lines that follow meta bullets
-            if (/^(\*|-|\d+\.|\s+)?\s*(Respond|Match|Acknowledge|Check|Maintain|Transition|Ask|State|Ensure|Formulate|Keep|Show|Adopt|Set|Deliver|Huge|Targeted|Consumed|Goal|Current)\b/i.test(tr)) {
+            // Skip lines that start with * or - and are predominantly English instruction text
+            if (/^(\*|-|•)\s+[A-Za-z]/.test(tr) && /\b(humorous|fatherly|aslanım|dialogue|robotic|complaining|fatigued|triceps|advice|hypertrophy)\b/i.test(tr) && !/[çğıöşü]/i.test(tr)) {
                 continue;
             }
 
@@ -14973,7 +15012,7 @@ function cleanGeminiOutput(rawText) {
         return originalText.replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>');
     }
 
-    return text || originalText.replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>');
+    return text || "";
 }
 
 async function callGeminiAssistantApi(personaKey, userText, apiKey) {
@@ -14990,7 +15029,9 @@ async function callGeminiAssistantApi(personaKey, userText, apiKey) {
     const target = appData.targets || DEFAULT_TARGETS;
     const userProf = appData.userProfile || { weight: 74, goal: 'bulk' };
 
-    const systemPrompt = `Sen 'Enes Abi' (🦍) adında, Omar Coaching'in tek ve yetkili Baş Danışmanısın.
+    const systemPrompt = `[KRİTİK TALİMAT: SADECE VE SADECE TÜRKÇE KONUŞMA CEVABINI YAZ. ASLA İNGİLİZCE METİN YAZMA. ASLA MADDE İŞARETİ (*) İLE KURAL, TON VEYA DÜŞÜNCE SIRALAMA. ASLA KULLANICININ YAZDIĞINI TEKRARLAMA. DOĞRUDAN TÜRKÇE "Aslanım...", "Paşam...", "Kral..." DİYEREK DİYALOĞA GİR.]
+
+Sen 'Enes Abi' (🦍) adında, Omar Coaching'in tek ve yetkili Baş Danışmanısın.
 Salonda sporcularına ağabeylik yapan, antrenman biyomekaniği, anabolik mutfak/beslenme ve ileri suplement/biyokimya alanında uzman bir Türk spor salonu efsanesisin.
 
 ÇOK KESİN DİYALOG VE GÜN KURALLARI:
@@ -14998,7 +15039,7 @@ Salonda sporcularına ağabeylik yapan, antrenman biyomekaniği, anabolik mutfak
 Bugünün Takvim Antrenmanı: ${todayWorkout.title || 'Dinlenme'} (${(todayWorkout.exercises || []).map(e => e.name).slice(0, 5).join(", ")}).
 Kullanıcının şu an incelediği sekme: ${currentActiveDay.toUpperCase()} (${activeViewPlan.title}).
 ASLA kafana göre gün uydurma! Bugün hangi gün (${realTodayName}) ise onu bilerek konuş.
-2. DOĞRUDAN KONUŞ: Asla planlama, durum özeti, düşünce veya analiz başlıkları (* User:, * Current Persona:, * Tone:, * Workout:, * Macros:, * Greeting: vb.) YAZMA! Bunlar KESİNLİKLE YASAKTIR.
+2. DOĞRUDAN KONUŞ: Asla planlama, durum özeti, düşünce veya analiz başlıkları (* User:, * Tone:, * Workout:, * The user is:, * Direct, sincere:, vb.) YAZMA! Bunlar KESİNLİKLE YASAKTIR.
 3. SADECE TÜRKÇE DİYALOG: Salonda karşındaki kardeşinle yüz yüze konuşuyormuş gibi doğrudan samimi, esprili ve babacan bir dille lafa gir ("aslanım, paşam, demir bükücü, şampiyon, kral, canavar").
 4. Asla robotik olma, ansiklopedik yazma, rol yapıyormuş gibi tırnak açma.
 
@@ -15208,9 +15249,11 @@ Cevap: "Vay aslanım, demir bükücüm! Bomba gibiyim, sen nasılsın? Bugün ${
         throw new Error(`Gemini boş yanıt döndürdü (Bitiş Durumu: ${finishReason}).`);
     }
 
-    let formattedText = cleanGeminiOutput(rawReply);
-    if (!formattedText || !formattedText.trim()) {
-        formattedText = rawReply.replace(/\n\n/g, "<br><br>").replace(/\n/g, "<br>");
+    let formattedText = cleanGeminiOutput(rawReply, userText);
+    if (!formattedText || !formattedText.trim() || !/[abcçdefgğhıijklmnoöprsştuüvyz]/i.test(formattedText)) {
+        const offlineFallback = processOfflineAssistantResponse(personaKey, userText);
+        formattedText = offlineFallback.text;
+        if (offlineFallback.actionHtml) actionHtml = offlineFallback.actionHtml;
     }
     
     // Auto-generate dynamic action buttons based on keywords
@@ -15269,6 +15312,16 @@ function processOfflineAssistantResponse(personaKey, userText) {
     const currentPlan = appData.customWorkoutPlan[currentActiveDay] || DEFAULT_WORKOUT_PLAN[currentActiveDay] || { title: "Günün Antrenmanı", desc: "Kas hipertrofisi" };
     const consumed = appData.todayNutrition || {};
     const target = appData.targets || DEFAULT_TARGETS;
+    // BACK-OFF SET QUERY HANDLER
+    if (t.includes("back off") || t.includes("back-off") || t.includes("ekstra set") || t.includes("set ekle") || (t.includes("set") && (t.includes("istiyorum") || t.includes("vermiyor") || t.includes("ekleyemiyorum")))) {
+        return {
+            text: `Aslanım paşam, sistemimizde her hareket için koçun belirlediği çalışma setlerinin üzerine <strong>en fazla 1 ekstra Back-Off set</strong> ekleme inisiyatifin var! ⚡<br><br>
+                   <strong>Nasıl Eklenir?</strong><br>
+                   Antrenman ekranında hareket kartının altındaki mavi <strong>"+1 Back-Off Ekle"</strong> butonuna bastığında hemen ilave '⚡ BACK' seti açılır. Ağırlığı %15-20 düşürüp tükenişe yakın (RIR 1-2) tekrarını patlatırsın.<br><br>
+                   <strong>Neden Eklenemez?</strong><br>
+                   Eğer o harekete zaten 1 ekstra set eklediysen buton <em>"+1 Back-Off Aktif (Maks)"</em> olur. Koçunun yazdığı haftalık hacim ve toparlanma dengeni korumak için hareket başına 2. ekstra sete izin verilmez aslanım!`
+        };
+    }
 
     // 0. EXERCISE SUBSTITUTION & EQUIPMENT BUSY HANDLER
     if (t.includes("yerine") || t.includes("değiştir") || t.includes("dolu") || t.includes("yaptım") || t.includes("bulamadım") || t.includes("yoktu")) {
