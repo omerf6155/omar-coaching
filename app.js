@@ -2966,6 +2966,72 @@ function promptPinMealToSlot(mealKey) {
     }
 }
 
+function toggleCustomActionTypeFields() {
+    const typeSelect = document.getElementById("c-action-type");
+    if (!typeSelect) return;
+    const type = typeSelect.value;
+    const macroFields = document.getElementById("c-action-macro-fields");
+    const waterFields = document.getElementById("c-action-water-fields");
+    const stepsFields = document.getElementById("c-action-steps-fields");
+    const modalFields = document.getElementById("c-action-modal-fields");
+
+    if (macroFields) macroFields.style.display = type === "macro" ? "flex" : "none";
+    if (waterFields) waterFields.style.display = type === "water" ? "block" : "none";
+    if (stepsFields) stepsFields.style.display = type === "steps" ? "block" : "none";
+    if (modalFields) modalFields.style.display = type === "modal" ? "block" : "none";
+}
+
+function handleCustomActionSubmit(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const titleInput = document.getElementById("c-action-title");
+    const title = titleInput ? titleInput.value.trim() : "";
+    const iconInput = document.getElementById("c-action-icon");
+    const icon = iconInput ? iconInput.value.trim() : "⚡";
+    const typeSelect = document.getElementById("c-action-type");
+    const type = typeSelect ? typeSelect.value : "macro";
+
+    if (!title) {
+        showToast("Lütfen buton için bir başlık giriniz.", "warning");
+        return;
+    }
+
+    if (type === "macro") {
+        const cal = parseInt(document.getElementById("c-action-cal") ? document.getElementById("c-action-cal").value : "0") || 0;
+        const p = parseInt(document.getElementById("c-action-p") ? document.getElementById("c-action-p").value : "0") || 0;
+        const c = parseInt(document.getElementById("c-action-c") ? document.getElementById("c-action-c").value : "0") || 0;
+        const f = parseInt(document.getElementById("c-action-f") ? document.getElementById("c-action-f").value : "0") || 0;
+
+        if (!appData.todayNutrition.meals) appData.todayNutrition.meals = [];
+        appData.todayNutrition.meals.push({
+            id: "custom_" + Date.now(),
+            name: `${icon} ${title}`,
+            desc: "Özel Hızlı Giriş",
+            cal, p, c, f,
+            time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
+        });
+        recalculateDailyTotals();
+        saveDataToStorage();
+        renderDashboard();
+        renderNutritionView();
+        showToast(`✅ "${title}" günlüğe eklendi (+${cal} kcal)! 🔥`);
+    } else if (type === "water") {
+        const val = parseFloat(document.getElementById("c-action-water-val") ? document.getElementById("c-action-water-val").value : "0.5") || 0.5;
+        addWater(val);
+    } else if (type === "steps") {
+        const val = parseInt(document.getElementById("c-action-steps-val") ? document.getElementById("c-action-steps-val").value : "1500") || 1500;
+        addSteps(val);
+    } else if (type === "modal") {
+        const targetModal = document.getElementById("c-action-modal-target") ? document.getElementById("c-action-modal-target").value : "";
+        if (targetModal) {
+            closeModal("modal-custom-action-creator");
+            openModal(targetModal);
+            return;
+        }
+    }
+
+    closeModal("modal-custom-action-creator");
+}
+
 // ==================== RPG SANAL KARAKTER & GAMIFICATION MOTORU ====================
 
 let currentStretchingCategory = "all";
@@ -8867,7 +8933,7 @@ function runNpcLifeSimulation(isManualTrigger = false) {
     dynamicEvents.forEach(ev => {
         const u = registry[ev.user];
         if (u && u.data) {
-            if (!u.data.rpgCharacter) u.data.rpgCharacter = { xp: 1000, weeklyXp: 200, level: 3, streak: 5 };
+            if (!u.data.rpgCharacter) u.data.rpgCharacter = createDefaultRpgCharacter();
             u.data.rpgCharacter.xp = (u.data.rpgCharacter.xp || 0) + ev.addedXp;
             u.data.rpgCharacter.weeklyXp = (u.data.rpgCharacter.weeklyXp || 0) + ev.addedXp;
             
