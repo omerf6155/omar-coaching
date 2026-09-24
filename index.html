@@ -8,8 +8,8 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
-    <link rel="icon" type="image/svg+xml" href="logo.svg">
-    <link rel="apple-touch-icon" href="logo.svg">
+    <link rel="icon" id="app-favicon" type="image/png" href="logo_app_icon.png">
+    <link rel="apple-touch-icon" id="app-apple-icon" href="logo_app_icon.png">
     <link rel="stylesheet" href="style.css?v=4.0.0">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Google MediaPipe Pose & Camera Utilities (Client-Side Skeletal Landmark Detection) -->
@@ -22,7 +22,7 @@
         <header class="top-bar">
             <div class="user-badge" onclick="openUserProfileModal()" style="cursor: pointer;" title="Profil ve Hesap">
                 <div class="app-brand-logo-badge" title="Omar Coaching">
-                    <img src="logo.svg" alt="Omar Coaching" class="app-brand-logo-img">
+                    <img id="app-brand-logo-img" src="logo_app_icon.png" alt="Omar Coaching" class="app-brand-logo-img">
                 </div>
                 <div>
                     <h1 class="app-title" id="header-user-name">OMAR COACHING</h1>
@@ -2309,14 +2309,56 @@
                     </div>
                 </div>
 
-                <!-- Avatar & Logo Gallery Selector -->
-                <div class="profile-section-title"><i class="fa-solid fa-icons"></i> LOGO & SPORCU AVATARI</div>
+                <!-- 1. App Brand Logo Selector (Üst Bar & Mobil İkon) -->
+                <div class="profile-section-title"><i class="fa-solid fa-crown"></i> UYGULAMA & ÜST BAR LOGOSU</div>
+                <div class="card" style="background:var(--bg-card-subtle); padding:12px; margin-bottom:14px; border-radius:12px; border:1px solid var(--border-subtle);">
+                    <div style="font-size:0.75rem; color:var(--text-secondary); margin-bottom:8px;">
+                        Üst barda ve bildirimlerde görünecek aktif uygulama logosunu seçin:
+                    </div>
+                    <div class="app-logo-selector-grid">
+                        <button type="button" class="app-logo-choice-btn active-choice" data-logokey="logo_app_icon" onclick="setAppBrandLogo('logo_app_icon')" title="Altın Barbell Squircle (Önerilen Mobil İkon)">
+                            <img src="logo_app_icon.png" class="choice-thumb" alt="Barbell Icon">
+                            <span class="choice-title">Barbell</span>
+                            <span class="choice-badge">Önerilen</span>
+                        </button>
+                        <button type="button" class="app-logo-choice-btn" data-logokey="logo_spartan" onclick="setAppBrandLogo('logo_spartan')" title="Altın Spartan OC Zırhı">
+                            <img src="logo_spartan.png" class="choice-thumb" alt="Spartan OC">
+                            <span class="choice-title">Spartan OC</span>
+                            <span class="choice-badge">Armor</span>
+                        </button>
+                        <button type="button" class="app-logo-choice-btn" data-logokey="avatar_enes" onclick="setAppBrandLogo('avatar_enes')" title="Enes Abi Özel Gym Logosu">
+                            <img src="avatar_enes.png" class="choice-thumb" alt="Enes Abi">
+                            <span class="choice-title">Enes Abi</span>
+                            <span class="choice-badge">Gym</span>
+                        </button>
+                        <button type="button" class="app-logo-choice-btn" data-logokey="logo_svg" onclick="setAppBrandLogo('logo_svg')" title="Vektörel OC Logosu">
+                            <img src="logo.svg" class="choice-thumb" alt="Vektörel">
+                            <span class="choice-title">Vektörel</span>
+                            <span class="choice-badge">Klasik</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 2. Avatar & Logo Gallery Selector -->
+                <div class="profile-section-title"><i class="fa-solid fa-icons"></i> SPORCU PROFİL AVATARI</div>
                 <div class="card" style="background:var(--bg-card-subtle); padding:12px; margin-bottom:14px; border-radius:12px; border:1px solid var(--border-subtle);">
                     <div style="font-size:0.75rem; color:var(--text-secondary); margin-bottom:6px;">
-                        Uygulama genelinde görünecek avatar veya logonuzu seçin:
+                        Uygulama genelinde sporcu profilinizde görünecek avatarı seçin:
                     </div>
                     <div class="avatar-selector-grid">
-                        <button type="button" class="avatar-pill-btn" onclick="selectProfileAvatarPreset('logo')" title="Resmi Omar Coaching Logosu">
+                        <button type="button" class="avatar-pill-btn" onclick="selectProfileAvatarPreset('logo_app_icon')" title="Altın Barbell & Kalkan">
+                            <span class="avatar-pill-icon"><img src="logo_app_icon.png" style="width:24px; height:24px; border-radius:6px; display:block; object-fit:cover;"></span>
+                            <span class="avatar-pill-name">Barbell</span>
+                        </button>
+                        <button type="button" class="avatar-pill-btn" onclick="selectProfileAvatarPreset('logo_spartan')" title="Altın Spartan OC Zırhı">
+                            <span class="avatar-pill-icon"><img src="logo_spartan.png" style="width:24px; height:24px; border-radius:6px; display:block; object-fit:cover;"></span>
+                            <span class="avatar-pill-name">Spartan</span>
+                        </button>
+                        <button type="button" class="avatar-pill-btn" onclick="selectProfileAvatarPreset('avatar_enes')" title="Enes Abi Fotoğrafı">
+                            <span class="avatar-pill-icon"><img src="avatar_enes.png" style="width:24px; height:24px; border-radius:6px; display:block; object-fit:cover;"></span>
+                            <span class="avatar-pill-name">Enes Abi</span>
+                        </button>
+                        <button type="button" class="avatar-pill-btn" onclick="selectProfileAvatarPreset('logo_svg')" title="Resmi OC Vektör Logosu">
                             <span class="avatar-pill-icon"><img src="logo.svg" style="width:24px; height:24px; border-radius:6px; display:block;"></span>
                             <span class="avatar-pill-name">OC Logo</span>
                         </button>
@@ -2324,25 +2366,21 @@
                             <span class="avatar-pill-icon">🦁</span>
                             <span class="avatar-pill-name">Aslan</span>
                         </button>
-                        <button type="button" class="avatar-pill-btn" onclick="selectProfileAvatarPreset('🦍')" title="Enes Abi Goril">
-                            <span class="avatar-pill-icon">🦍</span>
-                            <span class="avatar-pill-name">Enes Abi</span>
-                        </button>
                         <button type="button" class="avatar-pill-btn" onclick="selectProfileAvatarPreset('👑')" title="Koç Tacı">
                             <span class="avatar-pill-icon">👑</span>
                             <span class="avatar-pill-name">Crown</span>
                         </button>
                         <button type="button" class="avatar-pill-btn" onclick="selectProfileAvatarPreset('🛡️')" title="Spartan Kalkan">
                             <span class="avatar-pill-icon">🛡️</span>
-                            <span class="avatar-pill-name">Spartan</span>
+                            <span class="avatar-pill-name">Kalkan</span>
                         </button>
                         <button type="button" class="avatar-pill-btn" onclick="selectProfileAvatarPreset('⚡')" title="Yıldırım Gücü">
                             <span class="avatar-pill-icon">⚡</span>
-                            <span class="avatar-pill-name">Lightning</span>
+                            <span class="avatar-pill-name">Yıldırım</span>
                         </button>
                         <button type="button" class="avatar-pill-btn" onclick="selectProfileAvatarPreset('🦅')" title="Apex Kartal">
                             <span class="avatar-pill-icon">🦅</span>
-                            <span class="avatar-pill-name">Falcon</span>
+                            <span class="avatar-pill-name">Kartal</span>
                         </button>
                         <button type="button" class="avatar-pill-btn" onclick="selectProfileAvatarPreset('initial')" title="İsim Baş Harfi">
                             <span class="avatar-pill-icon" id="preset-avatar-initial">Ö</span>
@@ -4245,7 +4283,7 @@
 
     <!-- ENES ABİ RETRACTABLE SIDE NOTCH (EDGE WIDGET) -->
     <div class="enes-side-notch-widget" id="enes-side-notch-widget" onclick="openAssistantModal('enes')" title="Enes Abi (AI Asistan)">
-        <span class="notch-icon">🦍</span>
+        <span class="notch-icon" id="enes-notch-avatar"><img src="avatar_enes.png" alt="Enes Abi" style="width:24px; height:24px; border-radius:50%; object-fit:cover; display:block; border:1px solid #ffd60a;"></span>
         <span class="notch-label">Enes Abi</span>
     </div>
 
