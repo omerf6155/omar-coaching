@@ -30,6 +30,9 @@
                 </div>
             </div>
             <div class="top-actions">
+                <button class="btn btn-xs coach-switch-btn" onclick="switchAppPortal('coach')" title="Antrenör Yönetim Paneline Geç" style="background:linear-gradient(135deg, #ffd60a, #f59e0b); color:#000; font-weight:700; border:none; padding:4px 10px; border-radius:6px; font-size:0.78rem; display:inline-flex; align-items:center; gap:5px; margin-right:4px;">
+                    <i class="fa-solid fa-crown"></i> <span>Koç Paneli</span>
+                </button>
                 <button class="icon-btn" onclick="forceSyncLiveChat()" title="Bulut ile Canlı Eşitle (Yenile)">
                     <i class="fa-solid fa-arrows-rotate"></i>
                 </button>
@@ -2467,6 +2470,9 @@
                 </div>
 
                 <!-- Switch Account / Logout -->
+                <button type="button" class="btn btn-block" onclick="closeModal('modal-user-profile'); switchAppPortal('coach');" style="background:linear-gradient(135deg, #ffd60a, #f59e0b); color:#000; font-weight:800; border:none; padding:11px; border-radius:8px; margin-bottom:10px; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow: 0 4px 12px rgba(245,158,11,0.25); cursor:pointer;">
+                    <i class="fa-solid fa-crown"></i> Antrenör / Koç Yönetim Paneline Geç
+                </button>
                 <div class="profile-actions-grid">
                     <button class="btn btn-outline btn-block" onclick="closeModal('modal-user-profile'); openAuthModal('login');">
                         <i class="fa-solid fa-users"></i> Farklı Hesaba Giriş Yap
