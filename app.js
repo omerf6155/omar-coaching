@@ -13307,105 +13307,143 @@ function checkAthleteUnreadMessages() {
     }
 }
 
-function openUserProfileModal() {
-    const activeUsername = getActiveSessionUsername();
-    const registry = getUsersRegistry();
-    const user = activeUsername && registry[activeUsername];
-
-    if (!user) {
-        openAuthModal("login");
-        return;
+function getActiveAppLogoKey() {
+    try {
+        return localStorage.getItem("OMAR_APP_BRAND_LOGO") || "logo_app_icon";
+    } catch (e) {
+        return "logo_app_icon";
     }
+}
 
-    const nameEl = document.getElementById("profile-display-name");
-    const unameEl = document.getElementById("profile-username-tag");
-    const idTagEl = document.getElementById("profile-athlete-id-tag");
-    const goalEl = document.getElementById("profile-goal-tag");
-    const dateEl = document.getElementById("profile-created-date");
-    const avatarEl = document.getElementById("profile-avatar-large");
-
-    const displayName = user.displayName || user.username;
-    if (nameEl) nameEl.innerText = displayName;
-    if (unameEl) unameEl.innerText = `@${user.username}`;
-    if (idTagEl) idTagEl.innerText = user.athleteTag || (user.role === 'coach' ? '👑 KOÇ' : '#4829');
-    if (dateEl) dateEl.innerText = `Kayıt: ${user.createdAt || '2026-09-16'}`;
-
-    if (avatarEl) {
-        avatarEl.innerHTML = renderUserAvatarHtml(user, true);
-    }
-
-    const presetInitial = document.getElementById("preset-avatar-initial");
-    if (presetInitial) {
-        presetInitial.innerText = displayName.charAt(0).toUpperCase();
-    }
-
-    // Highlight active preset button
-    const curAvatar = user.avatar || "initial";
-    document.querySelectorAll(".avatar-pill-btn").forEach(btn => {
-        btn.classList.remove("active");
-        const onclickAttr = btn.getAttribute("onclick") || "";
-        if (onclickAttr.includes(`'${curAvatar}'`)) {
-            btn.classList.add("active");
+function setAppBrandLogo(logoKey) {
+    try {
+        localStorage.setItem("OMAR_APP_BRAND_LOGO", logoKey);
+        const imgEl = document.getElementById("app-brand-logo-img");
+        if (imgEl && typeof getAppBrandAsset === "function") {
+            imgEl.src = getAppBrandAsset(logoKey);
         }
-    });
+        document.querySelectorAll(".app-logo-choice-btn").forEach(btn => {
+            btn.classList.toggle("active-choice", btn.dataset.logokey === logoKey);
+        });
+        if (typeof showToast === "function") {
+            showToast("Uygulama logosu güncellendi! 👑");
+        }
+    } catch (e) {
+        console.warn("setAppBrandLogo error:", e);
+    }
+}
 
-    // Highlight active app brand logo button
-    const activeLogoKey = getActiveAppLogoKey();
-    document.querySelectorAll(".app-logo-choice-btn").forEach(btn => {
-        btn.classList.toggle("active-choice", btn.dataset.logokey === activeLogoKey);
-    });
+function openUserProfileModal() {
+    try {
+        const activeUsername = getActiveSessionUsername();
+        const registry = getUsersRegistry();
+        const user = (activeUsername && registry && registry[activeUsername]) ? registry[activeUsername] : (typeof getActiveUserSession === "function" ? getActiveUserSession() : null);
 
-    const goalMap = { bulk: "🔥 Lean Bulk", cut: "✂️ Cutting", recomp: "⚡ Recomp" };
-    const p = appData.userProfile || { age: 24, height: 178, weight: 74, gender: "male", frequency: 5, activity: "moderate", goal: "bulk" };
-    const goalName = user.role === "coach" ? "👑 Baş Antrenör" : (goalMap[p.goal] || "🔥 Lean Bulk");
-    if (goalEl) goalEl.innerText = goalName;
+        if (!user && !activeUsername) {
+            openAuthModal("login");
+            return;
+        }
 
-    // Physical Stats
-    const history = appData.weightHistory || [];
-    const currentWeight = history.length > 0 ? history[0].weight : (p.weight || 74.0);
-    const height = p.height || 178;
-    const age = p.age || 24;
-    const genderStr = p.gender === "female" ? "Kadın" : "Erkek";
+        const effectiveUser = user || { username: activeUsername || "atlet", displayName: activeUsername || "Atlet", role: "athlete" };
 
-    let bmr = (10 * currentWeight) + (6.25 * height) - (5 * age);
-    if (p.gender === "female") bmr -= 161;
-    else bmr += 5;
-    bmr = Math.round(bmr);
+        const nameEl = document.getElementById("profile-display-name");
+        const unameEl = document.getElementById("profile-username-tag");
+        const idTagEl = document.getElementById("profile-athlete-id-tag");
+        const goalEl = document.getElementById("profile-goal-tag");
+        const dateEl = document.getElementById("profile-created-date");
+        const avatarEl = document.getElementById("profile-avatar-large");
 
-    let mult = 1.45;
-    if (p.activity === "sedentary") mult = 1.30;
-    else if (p.activity === "moderate") mult = 1.45;
-    else if (p.activity === "active") mult = 1.60;
-    const tdee = Math.round(bmr * mult);
+        const displayName = effectiveUser.displayName || effectiveUser.username || "Atlet";
+        if (nameEl) nameEl.innerText = displayName;
+        if (unameEl) unameEl.innerText = `@${effectiveUser.username || 'atlet'}`;
+        if (idTagEl) idTagEl.innerText = effectiveUser.athleteTag || (effectiveUser.role === 'coach' ? '👑 KOÇ' : '#4829');
+        if (dateEl) dateEl.innerText = `Kayıt: ${effectiveUser.createdAt || '2026-09-16'}`;
 
-    const statWeightEl = document.getElementById("prof-stat-weight");
-    const statHeightEl = document.getElementById("prof-stat-height");
-    const statAgeEl = document.getElementById("prof-stat-age");
-    const statBmrTdeeEl = document.getElementById("prof-stat-bmr-tdee");
+        if (avatarEl) {
+            try {
+                avatarEl.innerHTML = renderUserAvatarHtml(effectiveUser, true);
+            } catch (avErr) {
+                console.warn(avErr);
+            }
+        }
 
-    if (statWeightEl) statWeightEl.innerText = `${currentWeight.toFixed(1)} kg`;
-    if (statHeightEl) statHeightEl.innerText = `${height} cm`;
-    if (statAgeEl) statAgeEl.innerText = `${age} Yaş • ${genderStr}`;
-    if (statBmrTdeeEl) statBmrTdeeEl.innerText = `${bmr.toLocaleString('tr-TR')} / ${tdee.toLocaleString('tr-TR')} kcal`;
+        const presetInitial = document.getElementById("preset-avatar-initial");
+        if (presetInitial) {
+            presetInitial.innerText = displayName.charAt(0).toUpperCase();
+        }
 
-    // Target Macros
-    const t = appData.targets;
-    const macroPEl = document.getElementById("prof-macro-p");
-    const macroCEl = document.getElementById("prof-macro-c");
-    const macroFEl = document.getElementById("prof-macro-f");
-    const macroCalEl = document.getElementById("prof-macro-cal");
+        // Highlight active preset button
+        const curAvatar = effectiveUser.avatar || "initial";
+        document.querySelectorAll(".avatar-pill-btn").forEach(btn => {
+            btn.classList.remove("active");
+            const onclickAttr = btn.getAttribute("onclick") || "";
+            if (onclickAttr.includes(`'${curAvatar}'`)) {
+                btn.classList.add("active");
+            }
+        });
 
-    if (macroPEl) macroPEl.innerText = `${t.protein}g`;
-    if (macroCEl) macroCEl.innerText = `${t.carbs}g`;
-    if (macroFEl) macroFEl.innerText = `${t.fat}g`;
-    if (macroCalEl) macroCalEl.innerText = `${t.calories.toLocaleString('tr-TR')} kcal`;
+        // Highlight active app brand logo button
+        const activeLogoKey = getActiveAppLogoKey();
+        document.querySelectorAll(".app-logo-choice-btn").forEach(btn => {
+            btn.classList.toggle("active-choice", btn.dataset.logokey === activeLogoKey);
+        });
 
-    const oldP = document.getElementById("pwd-old");
-    const newP = document.getElementById("pwd-new");
-    if (oldP) oldP.value = "";
-    if (newP) newP.value = "";
+        const goalMap = { bulk: "🔥 Lean Bulk", cut: "✂️ Cutting", recomp: "⚡ Recomp" };
+        const p = (typeof appData !== 'undefined' && appData && appData.userProfile) ? appData.userProfile : { age: 24, height: 178, weight: 74, gender: "male", frequency: 5, activity: "moderate", goal: "bulk" };
+        const goalName = effectiveUser.role === "coach" ? "👑 Baş Antrenör" : (goalMap[p.goal] || "🔥 Lean Bulk");
+        if (goalEl) goalEl.innerText = goalName;
 
-    openModal("modal-user-profile");
+        // Physical Stats
+        const history = (typeof appData !== 'undefined' && appData && appData.weightHistory) ? appData.weightHistory : [];
+        const currentWeight = history.length > 0 ? history[0].weight : (p.weight || 74.0);
+        const height = p.height || 178;
+        const age = p.age || 24;
+        const genderStr = p.gender === "female" ? "Kadın" : "Erkek";
+
+        let bmr = (10 * currentWeight) + (6.25 * height) - (5 * age);
+        if (p.gender === "female") bmr -= 161;
+        else bmr += 5;
+        bmr = Math.round(bmr);
+
+        let mult = 1.45;
+        if (p.activity === "sedentary") mult = 1.30;
+        else if (p.activity === "moderate") mult = 1.45;
+        else if (p.activity === "active") mult = 1.60;
+        const tdee = Math.round(bmr * mult);
+
+        const statWeightEl = document.getElementById("prof-stat-weight");
+        const statHeightEl = document.getElementById("prof-stat-height");
+        const statAgeEl = document.getElementById("prof-stat-age");
+        const statBmrTdeeEl = document.getElementById("prof-stat-bmr-tdee");
+
+        if (statWeightEl) statWeightEl.innerText = `${currentWeight.toFixed(1)} kg`;
+        if (statHeightEl) statHeightEl.innerText = `${height} cm`;
+        if (statAgeEl) statAgeEl.innerText = `${age} Yaş • ${genderStr}`;
+        if (statBmrTdeeEl) statBmrTdeeEl.innerText = `${bmr.toLocaleString('tr-TR')} / ${tdee.toLocaleString('tr-TR')} kcal`;
+
+        // Target Macros
+        if (typeof appData !== 'undefined' && appData && appData.targets) {
+            const t = appData.targets;
+            const macroPEl = document.getElementById("prof-macro-p");
+            const macroCEl = document.getElementById("prof-macro-c");
+            const macroFEl = document.getElementById("prof-macro-f");
+            const macroCalEl = document.getElementById("prof-macro-cal");
+
+            if (macroPEl) macroPEl.innerText = `${t.protein}g`;
+            if (macroCEl) macroCEl.innerText = `${t.carbs}g`;
+            if (macroFEl) macroFEl.innerText = `${t.fat}g`;
+            if (macroCalEl) macroCalEl.innerText = `${t.calories.toLocaleString('tr-TR')} kcal`;
+        }
+
+        const oldP = document.getElementById("pwd-old");
+        const newP = document.getElementById("pwd-new");
+        if (oldP) oldP.value = "";
+        if (newP) newP.value = "";
+    } catch (err) {
+        console.error("openUserProfileModal encountered an error, falling back to opening modal:", err);
+    } finally {
+        openModal("modal-user-profile");
+    }
 }
 
 function renderUserAvatarHtml(user, isLarge = false) {
