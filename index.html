@@ -3734,7 +3734,8 @@
 
     <!-- ==================== AUTHENTICATION OVERLAY (LOGIN / REGISTER / ROLE SELECTOR) ==================== -->
     <div id="modal-auth-overlay" class="auth-overlay" style="display:none;">
-        <div class="auth-card">
+        <div class="auth-card" style="position:relative;">
+            <button type="button" id="auth-modal-close-btn" class="modal-close-btn" onclick="closeAuthModal()" style="display:none; position:absolute; top:14px; right:14px; z-index:10; background:rgba(255,255,255,0.08); border-radius:50%; width:32px; height:32px; align-items:center; justify-content:center; border:none; color:var(--text-muted); cursor:pointer; font-size:1.2rem;" title="Kapat">&times;</button>
             <div class="auth-brand">
                 <div class="auth-logo-badge" id="auth-brand-logo"><i class="fa-solid fa-dumbbell"></i></div>
                 <h2 class="auth-title" id="auth-brand-title">OMAR COACHING</h2>

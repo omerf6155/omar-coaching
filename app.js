@@ -2285,42 +2285,55 @@ function initFirebaseCloudEngine() {
 
 // Save active user's data to Firebase Firestore (Debounced to protect quota)
 function queueCloudDataSync(priority = false) {
-    if (!cloudDb) return;
-    const activeUsername = (getActiveSessionUsername() || "omer").toLowerCase().trim();
-    if (!activeUsername) return;
+    try {
+        if (!cloudDb) return;
+        const activeUsername = (getActiveSessionUsername() || "omer").toLowerCase().trim();
+        if (!activeUsername) return;
 
-    if (cloudSyncDebounceTimer) {
-        clearTimeout(cloudSyncDebounceTimer);
-    }
-
-    const performSync = async () => {
-        try {
-            if (isApplyingCloudSnapshot) return;
-            const userDocRef = cloudDb.collection("users").doc(activeUsername);
-            const registry = getUsersRegistry();
-            const userMeta = registry[activeUsername] || {};
-
-            const payload = {
-                username: activeUsername,
-                displayName: userMeta.displayName || (appData.userProfile && appData.userProfile.name) || activeUsername,
-                role: userMeta.role || "athlete",
-                athleteTag: userMeta.athleteTag || "#1000",
-                lastUpdated: firebase.firestore.FieldValue.serverTimestamp(),
-                clientTimestamp: Date.now(),
-                appData: JSON.parse(JSON.stringify(appData))
-            };
-
-            await userDocRef.set(payload, { merge: true });
-            console.log(`☁️ Firebase Cloud Sync OK for @${activeUsername}`);
-        } catch (err) {
-            console.warn("Cloud save error (will retry automatically):", err);
+        if (cloudSyncDebounceTimer) {
+            clearTimeout(cloudSyncDebounceTimer);
         }
-    };
 
-    if (priority) {
-        performSync();
-    } else {
-        cloudSyncDebounceTimer = setTimeout(performSync, 1200);
+        const performSync = async () => {
+            try {
+                if (isApplyingCloudSnapshot) return;
+                const userDocRef = cloudDb.collection("users").doc(activeUsername);
+                const registry = getUsersRegistry();
+                const userMeta = registry[activeUsername] || {};
+
+                let serverTs = new Date();
+                try {
+                    if (typeof firebase !== "undefined" && firebase.firestore && firebase.firestore.FieldValue && typeof firebase.firestore.FieldValue.serverTimestamp === "function") {
+                        serverTs = firebase.firestore.FieldValue.serverTimestamp();
+                    }
+                } catch (tsErr) {
+                    serverTs = new Date();
+                }
+
+                const payload = {
+                    username: activeUsername,
+                    displayName: userMeta.displayName || (appData.userProfile && appData.userProfile.name) || activeUsername,
+                    role: userMeta.role || "athlete",
+                    athleteTag: userMeta.athleteTag || "#1000",
+                    lastUpdated: serverTs,
+                    clientTimestamp: Date.now(),
+                    appData: JSON.parse(JSON.stringify(appData))
+                };
+
+                await userDocRef.set(payload, { merge: true });
+                console.log(`☁️ Firebase Cloud Sync OK for @${activeUsername}`);
+            } catch (err) {
+                console.warn("Cloud save error (will retry automatically):", err);
+            }
+        };
+
+        if (priority) {
+            performSync();
+        } else {
+            cloudSyncDebounceTimer = setTimeout(performSync, 1200);
+        }
+    } catch (e) {
+        console.warn("queueCloudDataSync error:", e);
     }
 }
 
@@ -9344,6 +9357,14 @@ function selectAuthRole(role) {
 function openAuthModal(tab = "login") {
     const overlay = document.getElementById("modal-auth-overlay");
     if (overlay) overlay.style.display = "flex";
+    
+    // Show close button if an active user exists so they aren't trapped
+    const closeBtn = document.getElementById("auth-modal-close-btn");
+    const activeUsername = getActiveSessionUsername();
+    if (closeBtn) {
+        closeBtn.style.display = activeUsername ? "flex" : "none";
+    }
+
     switchAuthTab(tab);
 }
 
@@ -13491,17 +13512,34 @@ async function handleChangePasswordSubmit() {
 }
 
 function logoutCurrentUser() {
-    if (typeof queueCloudDataSync === "function") {
-        queueCloudDataSync(true); // Final priority flush
+    try {
+        if (typeof queueCloudDataSync === "function") {
+            queueCloudDataSync(true); // Final priority flush
+        }
+    } catch(e) {
+        console.warn("Logout sync warning:", e);
     }
     if (cloudUnsubscribeAthleteDoc) {
         try { cloudUnsubscribeAthleteDoc(); } catch(e) {}
         cloudUnsubscribeAthleteDoc = null;
     }
-    clearActiveSessionUsername();
-    closeModal("modal-user-profile");
-    updateTopBarUserHeader();
-    openAuthModal("login");
+    try {
+        clearActiveSessionUsername();
+    } catch(e) {
+        console.warn("clearActiveSessionUsername error:", e);
+    }
+    try {
+        closeModal("modal-user-profile");
+    } catch(e) {}
+    try {
+        updateTopBarUserHeader();
+    } catch(e) {}
+    try {
+        openAuthModal("login");
+    } catch(e) {
+        const overlay = document.getElementById("modal-auth-overlay");
+        if (overlay) overlay.style.display = "flex";
+    }
     showToast("Oturum kapatıldı.");
 }
 
