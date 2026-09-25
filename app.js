@@ -9488,36 +9488,26 @@ async function handleLoginSubmit(event) {
 
     let registry = getUsersRegistry();
 
-    // Auto-normalize username based on role and common aliases
-    if (currentAuthRole === "coach") {
-        if (!registry[usernameInput] || usernameInput === "coach" || usernameInput === "koc" || usernameInput === "koç" || usernameInput === "antrenor" || usernameInput === "antrenör" || usernameInput === "omer" || usernameInput === "admin") {
-            usernameInput = "coach_omar";
-        }
-    } else {
-        if (!registry[usernameInput] || usernameInput === "ömer" || usernameInput === "omer faruk" || usernameInput === "ömer faruk" || usernameInput === "sporcu") {
-            usernameInput = "omer";
-        }
+    // Smart username resolution for Ömer and Coach
+    if (usernameInput === "ömer" || usernameInput === "ömer faruk" || usernameInput === "omer faruk" || usernameInput === "sporcu") {
+        usernameInput = "omer";
+    } else if (usernameInput === "coach" || usernameInput === "koc" || usernameInput === "koç" || usernameInput === "antrenor" || usernameInput === "antrenör" || usernameInput === "admin") {
+        usernameInput = "coach_omar";
     }
 
+    // If role pill was coach and username entered is omer, check if they wanted coach or athlete
     let user = registry[usernameInput];
 
-    // Auto-seed if default accounts missing
+    // If username is omer but role pill was coach, we still allow logging in and auto-seed if needed
+    if (!user && (usernameInput === "omer" || usernameInput === "coach_omar")) {
+        seedInitialUsersAndDemoData();
+        registry = getUsersRegistry();
+        user = registry[usernameInput];
+    }
+
     if (!user) {
-        if (usernameInput === "coach_omar" || currentAuthRole === "coach") {
-            registry["coach_omar"] = {
-                username: "coach_omar",
-                displayName: "Koç Ömer",
-                role: "coach",
-                passwordHash: "1234",
-                createdAt: "2026-09-01",
-                data: createDefaultAppData()
-            };
-            user = registry["coach_omar"];
-            saveUsersRegistry(registry);
-        } else {
-            seedInitialUsersAndDemoData();
-            registry = getUsersRegistry();
-            user = registry["omer"];
+        if (currentAuthRole === "coach" && (usernameInput === "coach_omar" || usernameInput === "omer")) {
+            user = registry["coach_omar"] || registry["omer"];
         }
     }
 
@@ -9688,9 +9678,7 @@ async function handleRegisterSubmit(event) {
     }
 }
 
-// ==================== PORTAL SWITCHER & COACH CONTROLLERS ====================
-
-function switchAppPortal(mode) {
+function switchAppPortal(mode, targetAthleteUsername = null) {
     const athleteContainer = document.getElementById("athlete-app-container");
     const coachContainer = document.getElementById("coach-app-container");
 
@@ -9699,6 +9687,7 @@ function switchAppPortal(mode) {
         const registry = getUsersRegistry();
         const user = activeUsername && registry[activeUsername];
 
+        // If user is neither coach nor omer/coach_omar, ask for PIN
         if (!user || (user.role !== "coach" && activeUsername !== "omer" && activeUsername !== "coach_omar")) {
             const pin = prompt("Antrenör Yönetim Paneline erişmek için Güvenlik Anahtarını girin (Varsayılan: 1234 veya COACH2026):", "1234");
             if (!pin || (pin.trim() !== "1234" && pin.trim() !== "COACH2026" && pin.trim() !== getCoachMasterPin())) {
@@ -9707,19 +9696,54 @@ function switchAppPortal(mode) {
             }
         }
 
+        // Save current athlete data before switching to coach
+        if (typeof saveDataToStorage === "function") {
+            try { saveDataToStorage(); } catch (e) {}
+        }
+
         setActiveSessionUsername("coach_omar");
         currentPortalMode = "coach";
         currentAuthRole = "coach";
         if (athleteContainer) athleteContainer.style.display = "none";
         if (coachContainer) coachContainer.style.display = "flex";
+
+        // Keep current selected athlete focused on Ömer or specified athlete
+        if (targetAthleteUsername) {
+            currentCoachSelectedAthlete = targetAthleteUsername;
+        } else if (!currentCoachSelectedAthlete) {
+            currentCoachSelectedAthlete = "omer";
+        }
+
         renderCoachPortal();
         refreshRealtimeChatConnection();
         showToast("Antrenör Yönetim Paneline Geçildi 👑");
     } else {
+        // Switching to Athlete Portal
         currentPortalMode = "athlete";
+        currentAuthRole = "athlete";
+
+        // If coming from coach or an unknown session, automatically log into the primary integrated athlete account 'omer'
+        const activeUsername = getActiveSessionUsername();
+        const targetUser = targetAthleteUsername || (activeUsername === "coach_omar" || !activeUsername ? "omer" : activeUsername);
+
+        setActiveSessionUsername(targetUser);
+
+        // Ensure athlete user exists in registry
+        let registry = getUsersRegistry();
+        if (!registry[targetUser]) {
+            seedInitialUsersAndDemoData();
+            registry = getUsersRegistry();
+        }
+
         if (coachContainer) coachContainer.style.display = "none";
         if (athleteContainer) athleteContainer.style.display = "flex";
+
+        // Load targeted athlete's isolated data into active state
         loadDataFromStorage();
+        attachActiveUserCloudListener(targetUser);
+        checkAndResetDailyNutrition();
+        recalculateDailyTotals();
+        updateDateDisplay();
         updateTopBarUserHeader();
         renderDashboard();
         renderWorkoutDayTabs();
@@ -9732,7 +9756,21 @@ function switchAppPortal(mode) {
         checkAthleteUnreadMessages();
         checkMorningWeighInGate();
         refreshRealtimeChatConnection();
-        showToast("Sporcu Portalı Aktif 🏃‍♂️");
+
+        // Background cloud sync to ensure latest coach prescriptions are reflected
+        pullUserDataFromCloud(targetUser).then(updated => {
+            if (updated && currentPortalMode === "athlete") {
+                recalculateDailyTotals();
+                updateTopBarUserHeader();
+                renderDashboard();
+                renderWorkoutDayTabs();
+                renderWorkoutView(currentActiveDay);
+                renderNutritionView();
+            }
+        });
+
+        const athleteDisplayName = (registry[targetUser] && registry[targetUser].displayName) || targetUser;
+        showToast(`Sporcu Portalı Aktif 🏃‍♂️ (${athleteDisplayName} - @${targetUser})`);
     }
 }
 
@@ -10047,6 +10085,11 @@ function renderCoachRoster() {
                     </button>
                     <button class="btn btn-xs btn-outline" onclick="selectCoachChatAthlete('${ath.username}')" title="Sporcu ile Canlı Mesajlaş">
                         <i class="fa-solid fa-comments"></i> Chat ${unreadCount > 0 ? `(${unreadCount})` : ''}
+                    </button>
+                </div>
+                <div style="margin-top:8px;">
+                    <button class="btn btn-xs btn-block" onclick="switchAppPortal('athlete', '${ath.username}')" style="background:rgba(16,185,129,0.12); color:#34d399; border:1px solid rgba(16,185,129,0.3); font-weight:700; padding:6px; border-radius:6px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;" title="Bu sporcunun paneline doğrudan geçip antrenmanlarını kontrol et">
+                        <i class="fa-solid fa-person-running"></i> Sporcu Olarak Aç & Canlı Kontrol Et (@${ath.username})
                     </button>
                 </div>
             </div>
@@ -13439,6 +13482,26 @@ function openUserProfileModal() {
         const newP = document.getElementById("pwd-new");
         if (oldP) oldP.value = "";
         if (newP) newP.value = "";
+
+        // Dynamically configure the portal switch button inside the profile modal
+        const portalSwitchBtn = document.getElementById("profile-portal-switch-btn");
+        if (portalSwitchBtn) {
+            if (currentPortalMode === "coach") {
+                portalSwitchBtn.innerHTML = `<i class="fa-solid fa-person-running"></i> Sporcu Paneline Geç (@omer)`;
+                portalSwitchBtn.style.background = "linear-gradient(135deg, #10b981, #059669)";
+                portalSwitchBtn.onclick = function() {
+                    closeModal('modal-user-profile');
+                    switchAppPortal('athlete', 'omer');
+                };
+            } else {
+                portalSwitchBtn.innerHTML = `<i class="fa-solid fa-crown"></i> Antrenör / Koç Yönetim Paneline Geç`;
+                portalSwitchBtn.style.background = "linear-gradient(135deg, #ffd60a, #f59e0b)";
+                portalSwitchBtn.onclick = function() {
+                    closeModal('modal-user-profile');
+                    switchAppPortal('coach');
+                };
+            }
+        }
     } catch (err) {
         console.error("openUserProfileModal encountered an error, falling back to opening modal:", err);
     } finally {
