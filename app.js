@@ -6078,6 +6078,56 @@ function executeDaySwap(mode) {
     }
 }
 
+function resetWorkoutPlanToDefault(silent = false) {
+    if (!silent && !confirm("Antrenman programını orijinal Omar Coaching hipertrofi splitine (Push 1, Pull 1, Legs, OFF, Push 2, Pull 2, OFF) sıfırlamak istiyor musunuz?")) {
+        return;
+    }
+
+    appData.customWorkoutPlan = JSON.parse(JSON.stringify(DEFAULT_WORKOUT_PLAN));
+    appData.activeSplitKey = "ppl_standard";
+    saveDataToStorage();
+
+    const activeUsername = getActiveSessionUsername();
+    if (activeUsername && typeof getUsersRegistry === "function" && typeof saveUsersRegistry === "function") {
+        const registry = getUsersRegistry();
+        const u = activeUsername.toLowerCase().trim();
+        if (registry[u] && registry[u].data) {
+            registry[u].data.customWorkoutPlan = JSON.parse(JSON.stringify(DEFAULT_WORKOUT_PLAN));
+            registry[u].data.activeSplitKey = "ppl_standard";
+            saveUsersRegistry(registry);
+        }
+    }
+
+    renderWorkoutDayTabs();
+    renderWorkoutView(currentActiveDay);
+    renderDashboard();
+    updateDateDisplay();
+
+    // Broadcast live reset to cloud so mobile app catches it immediately
+    try {
+        const resetPayload = {
+            type: "workout_revision",
+            id: `rev_wo_${Date.now()}`,
+            athleteUsername: activeUsername || "omer",
+            plan: JSON.parse(JSON.stringify(DEFAULT_WORKOUT_PLAN)),
+            coachNote: "Antrenman programı orijinal haline sıfırlandı.",
+            timestamp: Date.now()
+        };
+
+        if (realtimeChatState && realtimeChatState.localBus) {
+            realtimeChatState.localBus.postMessage(resetPayload);
+        }
+
+        const athleteTopic = `${OMAR_REALTIME_CONFIG.topicPrefix}${activeUsername || "omer"}`;
+        fetch(`${OMAR_REALTIME_CONFIG.brokerBase}/${athleteTopic}`, {
+            method: "POST",
+            body: JSON.stringify(resetPayload)
+        }).catch(err => console.warn("Cloud workout reset publish warning:", err));
+    } catch (e) {}
+
+    showToast("🔥 Antrenman programı orijinal haline başarıyla getirildi! 💪");
+}
+
 function renderWorkoutView(dayKey) {
     if (!dayKey) dayKey = currentActiveDay || "pzt";
     currentActiveDay = dayKey;

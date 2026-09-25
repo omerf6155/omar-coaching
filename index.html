@@ -395,6 +395,9 @@
                     <button class="btn btn-xs btn-outline" onclick="openAssistantModal('enes')" title="Enes Abi'ye Alternatif Sor">
                         <i class="fa-solid fa-robot"></i> 🦍 Enes Abi
                     </button>
+                    <button class="btn btn-xs btn-outline" onclick="resetWorkoutPlanToDefault()" title="Orijinal Programa Geri Dön (Sıfırla)" style="border-color:rgba(255,214,10,0.4); color:#ffd60a;">
+                        <i class="fa-solid fa-rotate-left"></i> Orijinal Program
+                    </button>
                     <button class="btn btn-xs btn-outline" onclick="forceSyncLiveChat()" title="Koçtan Gelen Programı Çek">
                         <i class="fa-solid fa-arrows-rotate"></i> Eşitle
                     </button>
@@ -1651,6 +1654,15 @@
                 </div>
 
                 <div id="split-subtab-templates" class="split-subtab-content active">
+                    <div style="background:rgba(255,214,10,0.08); border:1px solid rgba(255,214,10,0.3); border-radius:10px; padding:10px 14px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; gap:10px;">
+                        <div>
+                            <strong style="color:#ffd60a; font-size:0.8rem; display:block;"><i class="fa-solid fa-rotate-left"></i> Orijinal Programa Dön</strong>
+                            <span style="color:var(--text-secondary); font-size:0.72rem;">Klasik Omar Coaching hipertrofi programına tek tıkla geri dön.</span>
+                        </div>
+                        <button type="button" class="btn btn-xs btn-primary" onclick="closeModal('modal-workout-splits'); resetWorkoutPlanToDefault();" style="background:#ffd60a; color:#000; font-weight:800; font-size:0.75rem; white-space:nowrap;">
+                            <i class="fa-solid fa-rotate-left"></i> Orijinale Sıfırla
+                        </button>
+                    </div>
                     <p class="text-secondary" style="font-size:0.78rem; margin-bottom:12px;">
                         Bilimsel hipertrofi ve güç prensiplerine göre hazırlanan hazır programlardan birini seçerek haftalık antrenman planına tek tıkla uygulayabilirsin:
                     </p>
