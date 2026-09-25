@@ -20396,6 +20396,7 @@ function seedInitialUsersAndDemoData() {
             { date: "2026-09-02", weight: 73.5 }
         ];
         omerData.onboardingCompleted = true;
+        omerData.customWorkoutPlan = JSON.parse(JSON.stringify(DEFAULT_WORKOUT_PLAN));
 
         registry["omer"] = {
             username: "omer",
@@ -20409,17 +20410,36 @@ function seedInitialUsersAndDemoData() {
         needsSave = true;
     } else {
         registry["omer"].passwordHash = "1234";
-        if (!registry["omer"].athleteTag) registry["omer"].athleteTag = "#4829";
+        registry["omer"].athleteTag = "#4829";
+        if (!registry["omer"].data) registry["omer"].data = createDefaultAppData();
+        if (!registry["omer"].data.customWorkoutPlan) {
+            registry["omer"].data.customWorkoutPlan = JSON.parse(JSON.stringify(DEFAULT_WORKOUT_PLAN));
+        }
         needsSave = true;
     }
 
-    // Ensure all existing athlete accounts have an athleteTag
-    Object.values(registry).forEach(u => {
-        if (u.role === "athlete" && !u.athleteTag) {
-            u.athleteTag = generateUniqueAthleteTag(registry);
+    // STRICT BOT & NPC PURGE: Remove all accounts except 'coach_omar' and 'omer'
+    Object.keys(registry).forEach(uKey => {
+        if (uKey !== "coach_omar" && uKey !== "omer") {
+            delete registry[uKey];
             needsSave = true;
         }
     });
+
+    // Also clean chatDB and revisionsDB of any bots
+    Object.keys(chatDb).forEach(cKey => {
+        if (cKey !== "omer" && cKey !== "coach_omar") {
+            delete chatDb[cKey];
+        }
+    });
+    saveChatDB(chatDb);
+
+    Object.keys(revDb).forEach(rKey => {
+        if (rKey !== "omer" && rKey !== "coach_omar") {
+            delete revDb[rKey];
+        }
+    });
+    saveRevisionsDB(revDb);
 
     // Purge fake demo chat messages if present
     if (chatDb["omer"] && chatDb["omer"].some(m => m.text && m.text.includes("Bench Press'te 80kg"))) {
@@ -20445,16 +20465,7 @@ function seedInitialUsersAndDemoData() {
         saveRevisionsDB(revDb);
     }
 
-    // Seed and synchronize Autonomous NPC Athletes
-    const npcUpdated = ensureNpcAthletesInRegistry(registry);
-    if (npcUpdated) needsSave = true;
-
-    // One-time League Season Reset to 0 XP for all athletes
-    if (!localStorage.getItem("OMAR_LEAGUE_RESET_SEASON_V1")) {
-        resetAllAthletesXpToZero(false);
-        localStorage.setItem("OMAR_LEAGUE_RESET_SEASON_V1", "true");
-        needsSave = false; // already saved by resetAllAthletesXpToZero
-    } else if (needsSave) {
+    if (needsSave) {
         saveUsersRegistry(registry);
     }
 }
@@ -20654,67 +20665,18 @@ function ensureNpcAthletesInRegistry(registry) {
     if (!registry) registry = getUsersRegistry();
     let updated = false;
 
-    NPC_ATHLETE_DEFINITIONS.forEach(def => {
-        if (!registry[def.username]) {
-            const uData = createDefaultAppData();
-            uData.userProfile = { ...def.userProfile };
-            uData.targets = { ...def.targets };
-            uData.weightHistory = [...def.weightHistory];
-            uData.todayNutrition = {
-                date: (typeof getFitnessDateKey === "function") ? getFitnessDateKey() : "2026-09-23",
-                calories: def.todayMeals.reduce((acc, m) => acc + (m.cal || 0), 0),
-                protein: def.todayMeals.reduce((acc, m) => acc + (m.p || 0), 0),
-                carbs: def.todayMeals.reduce((acc, m) => acc + (m.c || 0), 0),
-                fat: def.todayMeals.reduce((acc, m) => acc + (m.f || 0), 0),
-                water: 2.5,
-                steps: 6500,
-                meals: [...def.todayMeals]
-            };
-            uData.nutritionHistory = [...def.pastDaysNutrition];
-            uData.rpgCharacter = { ...def.rpgCharacter };
-            uData.onboardingCompleted = true;
-
-            registry[def.username] = {
-                username: def.username,
-                displayName: def.displayName,
-                avatarIcon: def.avatarIcon,
-                role: "athlete",
-                athleteTag: def.athleteTag,
-                isNpc: true,
-                npcArchetype: def.npcArchetype,
-                archetypeTitle: def.archetypeTitle,
-                passwordHash: "1234",
-                createdAt: "2026-09-01",
-                data: uData
-            };
+    // Purge any bot/NPC accounts so only real accounts remain
+    Object.keys(registry).forEach(u => {
+        if (u !== "coach_omar" && u !== "omer") {
+            delete registry[u];
             updated = true;
-        } else {
-            const u = registry[def.username];
-            u.isNpc = true;
-            u.npcArchetype = def.npcArchetype;
-            u.archetypeTitle = def.archetypeTitle;
-            if (!u.data) u.data = createDefaultAppData();
-            if (!u.data.todayNutrition) u.data.todayNutrition = { date: getFitnessDateKey(), calories: 0, protein: 0, carbs: 0, fat: 0, water: 0, steps: 0, meals: [] };
-            if (!Array.isArray(u.data.todayNutrition.meals) || u.data.todayNutrition.meals.length === 0) {
-                u.data.todayNutrition.meals = [...def.todayMeals];
-                u.data.todayNutrition.calories = def.todayMeals.reduce((acc, m) => acc + (m.cal || 0), 0);
-                u.data.todayNutrition.protein = def.todayMeals.reduce((acc, m) => acc + (m.p || 0), 0);
-                u.data.todayNutrition.carbs = def.todayMeals.reduce((acc, m) => acc + (m.c || 0), 0);
-                u.data.todayNutrition.fat = def.todayMeals.reduce((acc, m) => acc + (m.f || 0), 0);
-                updated = true;
-            }
-            if (!u.data.nutritionHistory || u.data.nutritionHistory.length === 0) {
-                u.data.nutritionHistory = [...def.pastDaysNutrition];
-                updated = true;
-            }
-            if (!u.data.rpgCharacter) {
-                u.data.rpgCharacter = { ...def.rpgCharacter };
-                updated = true;
-            }
         }
     });
 
-    return updated;
+    if (updated) {
+        saveUsersRegistry(registry);
+    }
+    return false;
 }
 
 function resetAllAthletesXpToZero(showNotification = false) {
@@ -22070,20 +22032,21 @@ function renderCoachDetail(username) {
 
         // 2. EXERCISE LOGBOOK & SPLIT BREAKDOWN HTML
         let workoutPlanHtml = "";
-        const dayKeys = ["pazartesi", "sali", "carsamba", "persembe", "cuma", "cumartesi", "pazar"];
-        const dayNamesTr = {
-            pazartesi: "Pazartesi",
-            sali: "Salı",
-            carsamba: "Çarşamba",
-            persembe: "Perşembe",
-            cuma: "Cuma",
-            cumartesi: "Cumartesi",
-            pazar: "Pazar"
-        };
+        const dayKeyDefs = [
+            { key: "pzt", alt: "pazartesi", name: "Pazartesi" },
+            { key: "sal", alt: "sali", name: "Salı" },
+            { key: "car", alt: "carsamba", name: "Çarşamba" },
+            { key: "per", alt: "persembe", name: "Perşembe" },
+            { key: "cum", alt: "cuma", name: "Cuma" },
+            { key: "cmt", alt: "cumartesi", name: "Cumartesi" },
+            { key: "paz", alt: "pazar", name: "Pazar" }
+        ];
 
-        if (plan) {
-            dayKeys.forEach(dayKey => {
-                const dayPlan = plan[dayKey];
+        const activePlan = plan || (typeof DEFAULT_WORKOUT_PLAN !== "undefined" ? DEFAULT_WORKOUT_PLAN : null);
+
+        if (activePlan) {
+            dayKeyDefs.forEach(dDef => {
+                const dayPlan = activePlan[dDef.key] || activePlan[dDef.alt] || (typeof DEFAULT_WORKOUT_PLAN !== "undefined" ? (DEFAULT_WORKOUT_PLAN[dDef.key] || DEFAULT_WORKOUT_PLAN[dDef.alt]) : null);
                 if (!dayPlan) return;
                 const exercises = dayPlan.exercises || [];
                 const dayTitle = dayPlan.title || 'Dinlenme';
@@ -22154,7 +22117,7 @@ function renderCoachDetail(username) {
                     <div style="background:var(--bg-card-subtle); border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:10px 12px; margin-bottom:12px;">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:6px;">
                             <h4 style="margin:0; font-size:0.82rem; color:#ffd60a; text-transform:uppercase; letter-spacing:0.5px; display:flex; align-items:center; gap:6px;">
-                                <span>📅 ${dayNamesTr[dayKey] || dayKey}:</span>
+                                <span>📅 ${dDef.name || dDef.key}:</span>
                                 <span style="color:#ffffff; font-weight:700;">${escapeHtml(dayTitle)}</span>
                             </h4>
                             <span class="badge-role" style="font-size:0.6rem;">${exercises.length} Hareket</span>
