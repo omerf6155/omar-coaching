@@ -2245,6 +2245,198 @@ function createDefaultAppData() {
 // Global App State
 let appData = createDefaultAppData();
 
+// ==================== FIREBASE CLOUD FIRESTORE PERSISTENCE ENGINE ====================
+const FIREBASE_APP_CONFIG = {
+    apiKey: "AIzaSyD_iiz6X5X9i8Q5tL3V_HXyBvoEuijcci8",
+    authDomain: "omar-coaching-f4687.firebaseapp.com",
+    projectId: "omar-coaching-f4687",
+    storageBucket: "omar-coaching-f4687.firebasestorage.app",
+    messagingSenderId: "791074835341",
+    appId: "1:791074835341:web:bae7ec6a5f31ecc42d8bc4",
+    measurementId: "G-4GZ7NM8XGT"
+};
+
+let cloudDb = null;
+let cloudSyncDebounceTimer = null;
+let cloudUnsubscribeAthleteDoc = null;
+let isApplyingCloudSnapshot = false;
+
+function initFirebaseCloudEngine() {
+    try {
+        if (typeof firebase !== "undefined") {
+            if (!firebase.apps.length) {
+                firebase.initializeApp(FIREBASE_APP_CONFIG);
+            }
+            cloudDb = firebase.firestore();
+            // Enable offline caching in Firestore
+            try {
+                cloudDb.enablePersistence({ synchronizeTabs: true }).catch(err => {
+                    console.log("Firestore persistence note:", err.code);
+                });
+            } catch (pe) {}
+            console.log("🔥 Firebase Cloud Firestore Connected successfully!");
+        } else {
+            console.warn("Firebase SDK script not loaded yet.");
+        }
+    } catch (e) {
+        console.warn("Firebase initialization warning:", e);
+    }
+}
+
+// Save active user's data to Firebase Firestore (Debounced to protect quota)
+function queueCloudDataSync(priority = false) {
+    if (!cloudDb) return;
+    const activeUsername = (getActiveSessionUsername() || "omer").toLowerCase().trim();
+    if (!activeUsername) return;
+
+    if (cloudSyncDebounceTimer) {
+        clearTimeout(cloudSyncDebounceTimer);
+    }
+
+    const performSync = async () => {
+        try {
+            if (isApplyingCloudSnapshot) return;
+            const userDocRef = cloudDb.collection("users").doc(activeUsername);
+            const registry = getUsersRegistry();
+            const userMeta = registry[activeUsername] || {};
+
+            const payload = {
+                username: activeUsername,
+                displayName: userMeta.displayName || (appData.userProfile && appData.userProfile.name) || activeUsername,
+                role: userMeta.role || "athlete",
+                athleteTag: userMeta.athleteTag || "#1000",
+                lastUpdated: firebase.firestore.FieldValue.serverTimestamp(),
+                clientTimestamp: Date.now(),
+                appData: JSON.parse(JSON.stringify(appData))
+            };
+
+            await userDocRef.set(payload, { merge: true });
+            console.log(`☁️ Firebase Cloud Sync OK for @${activeUsername}`);
+        } catch (err) {
+            console.warn("Cloud save error (will retry automatically):", err);
+        }
+    };
+
+    if (priority) {
+        performSync();
+    } else {
+        cloudSyncDebounceTimer = setTimeout(performSync, 1200);
+    }
+}
+
+// Fetch user data from Firebase Firestore when logging in or loading session
+async function pullUserDataFromCloud(username) {
+    if (!cloudDb || !username) return false;
+    const cleanUname = username.toLowerCase().trim();
+    try {
+        const docSnap = await cloudDb.collection("users").doc(cleanUname).get();
+        if (docSnap.exists) {
+            const cloudDoc = docSnap.data();
+            if (cloudDoc && cloudDoc.appData) {
+                isApplyingCloudSnapshot = true;
+                const cloudData = cloudDoc.appData;
+                const validPlan = hasValidWorkoutExercises(cloudData.customWorkoutPlan)
+                    ? cloudData.customWorkoutPlan
+                    : (appData.customWorkoutPlan || JSON.parse(JSON.stringify(DEFAULT_WORKOUT_PLAN)));
+
+                appData = {
+                    ...createDefaultAppData(),
+                    ...cloudData,
+                    targets: { ...DEFAULT_TARGETS, ...(cloudData.targets || {}) },
+                    customPresets: { ...DEFAULT_PRESET_MEALS, ...(cloudData.customPresets || {}) },
+                    customWorkoutPlan: validPlan,
+                    activeSplitKey: cloudData.activeSplitKey || "ppl_standard",
+                    todayNutrition: { ...createDefaultAppData().todayNutrition, ...(cloudData.todayNutrition || {}) },
+                    workoutLogs: cloudData.workoutLogs || {},
+                    weightHistory: Array.isArray(cloudData.weightHistory) ? cloudData.weightHistory : [],
+                    userProfile: cloudData.userProfile || null
+                };
+
+                // Sync into registry and local storage
+                const registry = getUsersRegistry();
+                if (!registry[cleanUname]) {
+                    registry[cleanUname] = {
+                        username: cleanUname,
+                        displayName: cloudDoc.displayName || cleanUname,
+                        role: cloudDoc.role || "athlete",
+                        athleteTag: cloudDoc.athleteTag || "#1000",
+                        passwordHash: "1234",
+                        createdAt: new Date().toISOString().split('T')[0],
+                        data: JSON.parse(JSON.stringify(appData))
+                    };
+                } else {
+                    registry[cleanUname].data = JSON.parse(JSON.stringify(appData));
+                    if (cloudDoc.displayName) registry[cleanUname].displayName = cloudDoc.displayName;
+                    if (cloudDoc.athleteTag) registry[cleanUname].athleteTag = cloudDoc.athleteTag;
+                }
+                saveUsersRegistry(registry);
+                localStorage.setItem("LEAN_BULK_APP_DATA", JSON.stringify(appData));
+
+                setTimeout(() => { isApplyingCloudSnapshot = false; }, 500);
+                return true;
+            }
+        }
+    } catch (err) {
+        console.warn("Error pulling user from cloud:", err);
+        isApplyingCloudSnapshot = false;
+    }
+    return false;
+}
+
+// Listen to active user's document for realtime cloud updates across devices
+function attachActiveUserCloudListener(username) {
+    if (!cloudDb || !username) return;
+    const cleanUname = username.toLowerCase().trim();
+
+    if (cloudUnsubscribeAthleteDoc) {
+        try { cloudUnsubscribeAthleteDoc(); } catch(e) {}
+        cloudUnsubscribeAthleteDoc = null;
+    }
+
+    try {
+        cloudUnsubscribeAthleteDoc = cloudDb.collection("users").doc(cleanUname).onSnapshot(docSnap => {
+            if (!docSnap.exists) return;
+            const data = docSnap.data();
+            // If the update came from another device or coach prescription
+            if (data && data.appData && !docSnap.metadata.hasPendingWrites) {
+                const cloudData = data.appData;
+                const curLocalStr = JSON.stringify(appData.workoutLogs || {});
+                const cloudLogsStr = JSON.stringify(cloudData.workoutLogs || {});
+                const curNutriStr = JSON.stringify(appData.todayNutrition || {});
+                const cloudNutriStr = JSON.stringify(cloudData.todayNutrition || {});
+
+                if (curLocalStr !== cloudLogsStr || curNutriStr !== cloudNutriStr || JSON.stringify(appData.customWorkoutPlan) !== JSON.stringify(cloudData.customWorkoutPlan)) {
+                    isApplyingCloudSnapshot = true;
+                    appData = {
+                        ...appData,
+                        ...cloudData,
+                        customWorkoutPlan: hasValidWorkoutExercises(cloudData.customWorkoutPlan) ? cloudData.customWorkoutPlan : appData.customWorkoutPlan
+                    };
+                    const registry = getUsersRegistry();
+                    if (registry[cleanUname]) {
+                        registry[cleanUname].data = JSON.parse(JSON.stringify(appData));
+                        saveUsersRegistry(registry);
+                    }
+                    localStorage.setItem("LEAN_BULK_APP_DATA", JSON.stringify(appData));
+                    
+                    if (currentPortalMode === "athlete") {
+                        recalculateDailyTotals();
+                        updateTopBarUserHeader();
+                        renderDashboard();
+                        renderWorkoutView(currentActiveDay);
+                        renderNutritionView();
+                    }
+                    setTimeout(() => { isApplyingCloudSnapshot = false; }, 500);
+                }
+            }
+        }, err => {
+            console.warn("Cloud realtime listener notice:", err);
+        });
+    } catch (e) {
+        console.warn("Attach listener err:", e);
+    }
+}
+
 const _initialDayKeys = ["paz", "pzt", "sal", "car", "per", "cum", "cmt"];
 let currentActiveDay = _initialDayKeys[new Date().getDay()];
 let currentSuppCatalogCategory = "all";
@@ -2265,10 +2457,24 @@ let currentCoachFilterGoal = "all";
 
 // Initialize Application
 document.addEventListener("DOMContentLoaded", () => {
+    initFirebaseCloudEngine();
     seedInitialUsersAndDemoData();
     applyAppBrandLogo();
     const hasActiveSession = loadDataFromStorage();
     const activeUsername = getActiveSessionUsername();
+    if (activeUsername) {
+        attachActiveUserCloudListener(activeUsername);
+        // Pull latest updates from cloud in background
+        pullUserDataFromCloud(activeUsername).then(updated => {
+            if (updated && currentPortalMode === "athlete") {
+                recalculateDailyTotals();
+                updateTopBarUserHeader();
+                renderDashboard();
+                renderWorkoutView(currentActiveDay);
+                renderNutritionView();
+            }
+        });
+    }
     const registry = getUsersRegistry();
     const user = activeUsername && registry[activeUsername];
 
@@ -2408,6 +2614,11 @@ function saveDataToStorage() {
         }
     }
     localStorage.setItem("LEAN_BULK_APP_DATA", JSON.stringify(appData));
+
+    // Automatically sync all modified notes, workout logs, meals and weights to Firebase Cloud
+    if (typeof queueCloudDataSync === "function") {
+        queueCloudDataSync(false);
+    }
 }
 
 // Calculate 06:00 AM session cutoff date string (YYYY-MM-DD)
@@ -9319,6 +9530,10 @@ async function handleLoginSubmit(event) {
     // Success login
     setActiveSessionUsername(user.username);
 
+    // Attach Cloud listener and pull cloud data for this user
+    attachActiveUserCloudListener(user.username);
+    await pullUserDataFromCloud(user.username);
+
     if (currentAuthRole === "coach" || user.role === "coach") {
         closeAuthModal();
         switchAppPortal("coach");
@@ -9424,6 +9639,10 @@ async function handleRegisterSubmit(event) {
 
     saveUsersRegistry(registry);
     setActiveSessionUsername(username);
+
+    // Attach Cloud listener and save new profile to Firebase Cloud immediately
+    attachActiveUserCloudListener(username);
+    queueCloudDataSync(true);
 
     closeAuthModal();
 
@@ -10893,6 +11112,24 @@ function submitCoachPrescription() {
         body: JSON.stringify(dietPayload)
     }).catch(err => console.warn("Cloud diet revision send notice:", err));
 
+    // Save directly to Firestore user document for permanent cloud storage
+    if (cloudDb && username) {
+        try {
+            cloudDb.collection("users").doc(username.toLowerCase().trim()).set({
+                appData: {
+                    targets: {
+                        calories, protein, carbs, fat, water, steps,
+                        weeklyGainMin: gainMin,
+                        weeklyGainMax: gainMax
+                    }
+                },
+                lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true }).then(() => {
+                console.log(`☁️ Diet prescription synced to Firestore for @${username}`);
+            }).catch(e => console.warn("Firestore diet prescription sync warning:", e));
+        } catch (e) {}
+    }
+
     showToast("Diyet ve hedef revizyonu başarıyla sporcuya iletildi! 🚀");
     renderCoachPrescriptions(username);
 }
@@ -11707,6 +11944,20 @@ function submitCoachWorkoutPrescription() {
         body: JSON.stringify(workoutPayload)
     }).catch(err => console.warn("Cloud workout revision send notice:", err));
 
+    // Save directly to Firestore user document for permanent cloud storage
+    if (cloudDb && username) {
+        try {
+            cloudDb.collection("users").doc(username.toLowerCase().trim()).set({
+                appData: {
+                    customWorkoutPlan: planToSave
+                },
+                lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true }).then(() => {
+                console.log(`☁️ Workout prescription synced to Firestore for @${username}`);
+            }).catch(e => console.warn("Firestore prescription sync warning:", e));
+        } catch (e) {}
+    }
+
     showToast("Antrenman programı başarıyla sporcuya iletildi ve kaydedildi! 🏆");
     renderCoachWorkoutRevDaysBar();
     renderCoachWorkoutRevDay();
@@ -12041,15 +12292,29 @@ async function forceSyncLiveChat() {
 
     updateRealtimeConnectionUI("connecting");
     await syncCloudHistory(targetAthlete, true);
+
+    // Sync full athlete data from/to Firebase Firestore
+    if (typeof queueCloudDataSync === "function") {
+        queueCloudDataSync(true);
+    }
+    if (typeof pullUserDataFromCloud === "function" && targetAthlete) {
+        await pullUserDataFromCloud(targetAthlete);
+    }
+
     updateRealtimeConnectionUI("connected");
 
     if (currentPortalMode === "coach") {
         renderCoachChat(targetAthlete);
     } else {
+        recalculateDailyTotals();
+        updateTopBarUserHeader();
+        renderDashboard();
+        renderWorkoutView(currentActiveDay);
+        renderNutritionView();
         renderAthleteChatMessages(targetAthlete);
     }
 
-    showToast("🟢 Canlı Bulut Senkronize Edildi!");
+    showToast("🟢 Tüm Antrenman, Beslenme ve Notlar Bulutla Eşitlendi! ☁️");
 }
 
 function handleIncomingLiveEvent(payload, source) {
@@ -13226,6 +13491,13 @@ async function handleChangePasswordSubmit() {
 }
 
 function logoutCurrentUser() {
+    if (typeof queueCloudDataSync === "function") {
+        queueCloudDataSync(true); // Final priority flush
+    }
+    if (cloudUnsubscribeAthleteDoc) {
+        try { cloudUnsubscribeAthleteDoc(); } catch(e) {}
+        cloudUnsubscribeAthleteDoc = null;
+    }
     clearActiveSessionUsername();
     closeModal("modal-user-profile");
     updateTopBarUserHeader();
