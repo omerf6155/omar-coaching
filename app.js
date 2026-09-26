@@ -2337,6 +2337,50 @@ function queueCloudDataSync(priority = false) {
     }
 }
 
+// Safely merge workout logs: never overwrite non-empty sets with empty or fewer sets
+function mergeWorkoutLogsSafely(localLogs, cloudLogs) {
+    const merged = { ...(cloudLogs || {}) };
+    if (!localLogs || typeof localLogs !== 'object') return merged;
+
+    Object.keys(localLogs).forEach(exId => {
+        const localSets = localLogs[exId];
+        const cloudSets = merged[exId];
+
+        if (!cloudSets || !Array.isArray(cloudSets) || cloudSets.length === 0) {
+            merged[exId] = localSets;
+        } else if (Array.isArray(localSets) && localSets.length > 0) {
+            const localHasValues = localSets.some(s => s && (Number(s.weight) > 0 || Number(s.reps) > 0));
+            const cloudHasValues = cloudSets.some(s => s && (Number(s.weight) > 0 || Number(s.reps) > 0));
+
+            if (localHasValues && !cloudHasValues) {
+                merged[exId] = localSets;
+            } else if (localHasValues && cloudHasValues) {
+                const localFilledCount = localSets.filter(s => s && (Number(s.weight) > 0 || Number(s.reps) > 0)).length;
+                const cloudFilledCount = cloudSets.filter(s => s && (Number(s.weight) > 0 || Number(s.reps) > 0)).length;
+                if (localFilledCount >= cloudFilledCount) {
+                    merged[exId] = localSets;
+                }
+            }
+        }
+    });
+    return merged;
+}
+
+// Safely merge weight history: combine dates and never drop entered body weights
+function mergeWeightHistorySafely(localHist, cloudHist) {
+    const list = [...(Array.isArray(localHist) ? localHist : []), ...(Array.isArray(cloudHist) ? cloudHist : [])];
+    const map = new Map();
+    list.forEach(item => {
+        if (!item || !item.date || item.weight === undefined || item.weight === null) return;
+        const w = Number(item.weight);
+        if (isNaN(w) || w <= 0) return;
+        if (!map.has(item.date) || ((item.timestamp || 0) >= (map.get(item.date).timestamp || 0))) {
+            map.set(item.date, { date: item.date, weight: w, timestamp: item.timestamp || 0 });
+        }
+    });
+    return Array.from(map.values()).sort((a, b) => b.date.localeCompare(a.date));
+}
+
 // Fetch user data from Firebase Firestore when logging in or loading session
 async function pullUserDataFromCloud(username) {
     if (!cloudDb || !username) return false;
@@ -2348,21 +2392,42 @@ async function pullUserDataFromCloud(username) {
             if (cloudDoc && cloudDoc.appData) {
                 isApplyingCloudSnapshot = true;
                 const cloudData = cloudDoc.appData;
-                const validPlan = hasValidWorkoutExercises(cloudData.customWorkoutPlan)
-                    ? cloudData.customWorkoutPlan
-                    : (appData.customWorkoutPlan || JSON.parse(JSON.stringify(DEFAULT_WORKOUT_PLAN)));
+                
+                const localHasPlan = hasValidWorkoutExercises(appData.customWorkoutPlan);
+                const cloudHasPlan = hasValidWorkoutExercises(cloudData.customWorkoutPlan);
+                let validPlan = appData.customWorkoutPlan;
+                if (!localHasPlan && cloudHasPlan) {
+                    validPlan = cloudData.customWorkoutPlan;
+                } else if (localHasPlan && cloudHasPlan) {
+                    if (cloudData.planUpdatedAt && appData.planUpdatedAt && cloudData.planUpdatedAt > appData.planUpdatedAt) {
+                        validPlan = cloudData.customWorkoutPlan;
+                    } else {
+                        validPlan = appData.customWorkoutPlan;
+                    }
+                } else if (!localHasPlan && !cloudHasPlan) {
+                    validPlan = JSON.parse(JSON.stringify(DEFAULT_WORKOUT_PLAN));
+                }
+
+                const mergedLogs = mergeWorkoutLogsSafely(appData.workoutLogs, cloudData.workoutLogs);
+                const mergedWeight = mergeWeightHistorySafely(appData.weightHistory, cloudData.weightHistory);
 
                 appData = {
                     ...createDefaultAppData(),
                     ...cloudData,
-                    targets: { ...DEFAULT_TARGETS, ...(cloudData.targets || {}) },
+                    ...appData,
+                    targets: { ...DEFAULT_TARGETS, ...(cloudData.targets || {}), ...(appData.targets || {}) },
                     customPresets: { ...DEFAULT_PRESET_MEALS, ...(cloudData.customPresets || {}) },
                     customWorkoutPlan: validPlan,
-                    activeSplitKey: cloudData.activeSplitKey || "ppl_standard",
-                    todayNutrition: { ...createDefaultAppData().todayNutrition, ...(cloudData.todayNutrition || {}) },
-                    workoutLogs: cloudData.workoutLogs || {},
-                    weightHistory: Array.isArray(cloudData.weightHistory) ? cloudData.weightHistory : [],
-                    userProfile: cloudData.userProfile || null
+                    activeSplitKey: appData.activeSplitKey || cloudData.activeSplitKey || "ppl_standard",
+                    todayNutrition: (appData.todayNutrition && (appData.todayNutrition.calories > 0 || (appData.todayNutrition.meals && appData.todayNutrition.meals.length > 0)))
+                        ? appData.todayNutrition
+                        : { ...createDefaultAppData().todayNutrition, ...(cloudData.todayNutrition || {}) },
+                    workoutLogs: mergedLogs,
+                    exerciseHistory: { ...(cloudData.exerciseHistory || {}), ...(appData.exerciseHistory || {}) },
+                    exerciseSetsCount: { ...(cloudData.exerciseSetsCount || {}), ...(appData.exerciseSetsCount || {}) },
+                    seatSettings: { ...(cloudData.seatSettings || {}), ...(appData.seatSettings || {}) },
+                    weightHistory: mergedWeight,
+                    userProfile: appData.userProfile || cloudData.userProfile || null
                 };
 
                 // Sync into registry and local storage
@@ -2384,6 +2449,11 @@ async function pullUserDataFromCloud(username) {
                 }
                 saveUsersRegistry(registry);
                 localStorage.setItem("LEAN_BULK_APP_DATA", JSON.stringify(appData));
+
+                // Push merged state back to cloud to heal any previous cloud desync
+                if (typeof queueCloudDataSync === "function") {
+                    queueCloudDataSync(false);
+                }
 
                 setTimeout(() => { isApplyingCloudSnapshot = false; }, 500);
                 return true;
@@ -2420,10 +2490,29 @@ function attachActiveUserCloudListener(username) {
 
                 if (curLocalStr !== cloudLogsStr || curNutriStr !== cloudNutriStr || JSON.stringify(appData.customWorkoutPlan) !== JSON.stringify(cloudData.customWorkoutPlan)) {
                     isApplyingCloudSnapshot = true;
+                    
+                    const localHasPlan = hasValidWorkoutExercises(appData.customWorkoutPlan);
+                    const cloudHasPlan = hasValidWorkoutExercises(cloudData.customWorkoutPlan);
+                    let validPlan = appData.customWorkoutPlan;
+                    if (!localHasPlan && cloudHasPlan) {
+                        validPlan = cloudData.customWorkoutPlan;
+                    } else if (localHasPlan && cloudHasPlan) {
+                        if (cloudData.planUpdatedAt && appData.planUpdatedAt && cloudData.planUpdatedAt > appData.planUpdatedAt) {
+                            validPlan = cloudData.customWorkoutPlan;
+                        } else {
+                            validPlan = appData.customWorkoutPlan;
+                        }
+                    }
+
                     appData = {
                         ...appData,
                         ...cloudData,
-                        customWorkoutPlan: hasValidWorkoutExercises(cloudData.customWorkoutPlan) ? cloudData.customWorkoutPlan : appData.customWorkoutPlan
+                        customWorkoutPlan: validPlan,
+                        workoutLogs: mergeWorkoutLogsSafely(appData.workoutLogs, cloudData.workoutLogs),
+                        weightHistory: mergeWeightHistorySafely(appData.weightHistory, cloudData.weightHistory),
+                        exerciseHistory: { ...(cloudData.exerciseHistory || {}), ...(appData.exerciseHistory || {}) },
+                        exerciseSetsCount: { ...(cloudData.exerciseSetsCount || {}), ...(appData.exerciseSetsCount || {}) },
+                        seatSettings: { ...(cloudData.seatSettings || {}), ...(appData.seatSettings || {}) }
                     };
                     const registry = getUsersRegistry();
                     if (registry[cleanUname]) {
@@ -2480,10 +2569,6 @@ document.addEventListener("DOMContentLoaded", () => {
         // Pull latest updates from cloud in background
         pullUserDataFromCloud(activeUsername).then(updated => {
             if (updated && currentPortalMode === "athlete") {
-                if (typeof repairAndSyncWorkoutDates === "function") {
-                    const repaired = repairAndSyncWorkoutDates(appData);
-                    if (repaired) saveDataToStorage();
-                }
                 recalculateDailyTotals();
                 updateTopBarUserHeader();
                 renderDashboard();
@@ -2573,10 +2658,6 @@ function loadDataFromStorage() {
             onboardingCompleted: parsed.onboardingCompleted !== undefined ? parsed.onboardingCompleted : false,
             userProfile: parsed.userProfile || null
         };
-        if (typeof repairAndSyncWorkoutDates === "function") {
-            const repaired = repairAndSyncWorkoutDates(appData);
-            if (repaired) saveDataToStorage();
-        }
         checkAndResetDailyNutrition();
         return true;
     }
@@ -2612,10 +2693,6 @@ function loadDataFromStorage() {
                 onboardingCompleted: parsed.onboardingCompleted !== undefined ? parsed.onboardingCompleted : false,
                 userProfile: parsed.userProfile || null
             };
-            if (typeof repairAndSyncWorkoutDates === "function") {
-                const repaired = repairAndSyncWorkoutDates(appData);
-                if (repaired) saveDataToStorage();
-            }
             checkAndResetDailyNutrition();
             return true;
         } catch (e) {
@@ -2776,58 +2853,9 @@ function isDateInSameWeek(dateStr1, dateStr2) {
     return mon1 !== null && mon1 === mon2;
 }
 
-// Automatically repair any workout logs where a day's workout got stamped with a different day's date
+// Safe no-op to ensure existing user dates are preserved without mutation
 function repairAndSyncWorkoutDates(targetAppData) {
-    if (!targetAppData) return false;
-    let modified = false;
-    const plan = targetAppData.customWorkoutPlan || (typeof DEFAULT_WORKOUT_PLAN !== "undefined" ? DEFAULT_WORKOUT_PLAN : null);
-    if (!plan) return false;
-
-    if (targetAppData.workoutLogs) {
-        Object.keys(plan).forEach(dayKey => {
-            const dayExercises = (plan[dayKey] && plan[dayKey].exercises) || [];
-            const expectedDate = getDateForWorkoutDay(dayKey, 0);
-
-            dayExercises.forEach(ex => {
-                const logs = targetAppData.workoutLogs[ex.id];
-                if (Array.isArray(logs)) {
-                    logs.forEach(s => {
-                        if (s && (s.weight || s.reps)) {
-                            if (s.date && s.date !== expectedDate && isDateInSameWeek(s.date, expectedDate)) {
-                                s.date = expectedDate;
-                                modified = true;
-                            } else if (!s.date) {
-                                s.date = expectedDate;
-                                modified = true;
-                            }
-                        }
-                    });
-                }
-            });
-        });
-    }
-
-    if (targetAppData.exerciseHistory) {
-        Object.keys(targetAppData.exerciseHistory).forEach(cKey => {
-            const sessions = targetAppData.exerciseHistory[cKey];
-            if (Array.isArray(sessions)) {
-                sessions.forEach(sess => {
-                    if (sess && sess.dayKey && plan[sess.dayKey]) {
-                        const expectedDate = getDateForWorkoutDay(sess.dayKey, 0);
-                        if (sess.date && sess.date !== expectedDate && isDateInSameWeek(sess.date, expectedDate)) {
-                            sess.date = expectedDate;
-                            if (Array.isArray(sess.sets)) {
-                                sess.sets.forEach(st => { if (st) st.date = expectedDate; });
-                            }
-                            modified = true;
-                        }
-                    }
-                });
-            }
-        });
-    }
-
-    return modified;
+    return false;
 }
 
 function checkAndResetDailyNutrition() {
@@ -3026,14 +3054,16 @@ function updateDateDisplay() {
     const currentDayKey = dayKeys[today.getDay()];
     currentActiveDay = currentDayKey;
 
-    const dateStr = today.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' });
+    const fitnessKey = getFitnessDateKey();
+    const formattedDate = formatTurkishDate(fitnessKey, 'short');
+    const dayName = days[today.getDay()];
     const latestWeight = (appData.weightHistory && appData.weightHistory.length > 0)
         ? appData.weightHistory[0].weight.toFixed(1)
         : "74.0";
 
     const headerEl = document.getElementById("header-date");
     if (headerEl) {
-        headerEl.innerText = `${dateStr} (${days[today.getDay()]}) • ${latestWeight} kg Lean Bulk`;
+        headerEl.innerText = `${formattedDate} • ${dayName} • ${latestWeight} kg Lean Bulk`;
     }
 
     const todayWorkout = appData.customWorkoutPlan[currentDayKey] || DEFAULT_WORKOUT_PLAN[currentDayKey];
@@ -6298,11 +6328,7 @@ function getExercisePreviousSession(ex, currentDayKey, activeDate) {
         return false;
     });
 
-    if (previousCandidates.length === 0) {
-        return { sets: [], info: null };
-    }
-
-    const pool = previousCandidates;
+    const pool = previousCandidates.length > 0 ? previousCandidates : candidateSessions;
 
     pool.sort((a, b) => {
         if (a.date && b.date && a.date !== b.date) {
@@ -6650,6 +6676,11 @@ function renderWorkoutView(dayKey) {
     }
 
     const targetDateStr = (typeof getDateForWorkoutDay === "function") ? getDateForWorkoutDay(dayKey, currentWorkoutWeekOffset) : getFitnessDateKey();
+    const workoutDayNamesMap = { pzt: "Pazartesi", sal: "Salı", car: "Çarşamba", per: "Perşembe", cum: "Cuma", cmt: "Cumartesi", paz: "Pazar" };
+    const isSelectedDayToday = (dayKey === _initialDayKeys[new Date().getDay()]);
+    const dayBadgeHtml = isSelectedDayToday
+        ? `<span class="badge-role" style="background:rgba(34,197,94,0.12); color:#22c55e; border:1px solid rgba(34,197,94,0.3); font-size:0.75rem; padding:4px 10px; font-weight:700;"><i class="fa-solid fa-circle-check"></i> Bugün (${formatTurkishDate(getFitnessDateKey(), 'short')})</span>`
+        : `<span class="badge-role" style="background:rgba(255,214,10,0.12); color:#ffd60a; border:1px solid rgba(255,214,10,0.3); font-size:0.75rem; padding:4px 10px; font-weight:700;"><i class="fa-solid fa-calendar-day"></i> ${workoutDayNamesMap[dayKey] || dayKey.toUpperCase()} Programı</span>`;
 
     html += `
         ${isControlled ? `
@@ -6669,9 +6700,7 @@ function renderWorkoutView(dayKey) {
         <div class="card" style="background: var(--bg-card-subtle); border-color: var(--border-active);">
             <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
                 <h2><i class="fa-solid fa-dumbbell"></i> ${plan.title}</h2>
-                <span class="badge-role" style="background:rgba(255,214,10,0.12); color:#ffd60a; border:1px solid rgba(255,214,10,0.3); font-size:0.75rem; padding:4px 10px; font-weight:700;">
-                    <i class="fa-regular fa-calendar-days"></i> ${formatTurkishDate(targetDateStr, 'full')}
-                </span>
+                ${dayBadgeHtml}
             </div>
             <p style="font-size: 0.8rem; color: var(--text-secondary);">${plan.desc}</p>
         </div>
@@ -6693,9 +6722,8 @@ function renderWorkoutView(dayKey) {
         // Previous session summary banner:
         let prevSessionSummary = "";
         if (lastLog.length > 0 && lastLog.some(s => s && (Number(s.weight) > 0 || Number(s.reps) > 0))) {
-            const dayNamesMap = { pzt: "Pazartesi", sal: "Salı", car: "Çarşamba", per: "Perşembe", cum: "Cuma", cmt: "Cumartesi", paz: "Pazar" };
             const formattedDate = formatTurkishDate(prevInfo && prevInfo.date ? prevInfo.date : "", 'short');
-            const dayLabel = getTurkishDayNameFromDate(prevInfo && prevInfo.date ? prevInfo.date : "") || (prevInfo && prevInfo.dayKey && dayNamesMap[prevInfo.dayKey]) || "";
+            const dayLabel = getTurkishDayNameFromDate(prevInfo && prevInfo.date ? prevInfo.date : "") || "";
             const tagStr = [formattedDate, dayLabel].filter(Boolean).join(" • ");
             
             const setsSummary = lastLog
@@ -6704,11 +6732,14 @@ function renderWorkoutView(dayKey) {
                 .join(" • ");
 
             if (setsSummary) {
+                const curLogs = (appData.workoutLogs && appData.workoutLogs[ex.id]) || [];
+                const isSameAsCurrent = (prevInfo && prevInfo.sets === curLogs);
+                const bannerTitle = isSameAsCurrent ? "Kayıtlı Seans" : "Önceki Seans";
                 prevSessionSummary = `
                     <div style="background:rgba(255,214,10,0.08); border:1px solid rgba(255,214,10,0.25); border-radius:8px; padding:6px 10px; margin-bottom:8px; font-size:0.72rem; color:#ffd60a; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:4px;">
                         <div>
                             <i class="fa-solid fa-clock-rotate-left"></i>
-                            <span style="font-weight:700; margin-left:4px;">Önceki Seans ${tagStr ? `(${tagStr})` : ''}:</span>
+                            <span style="font-weight:700; margin-left:4px;">${bannerTitle} ${tagStr ? `(${tagStr})` : ''}:</span>
                             <span style="margin-left:4px;">${setsSummary}</span>
                         </div>
                     </div>
@@ -6760,16 +6791,10 @@ function renderWorkoutView(dayKey) {
             const coachDir = (!isExtraBackOff && ex.setDirectives && ex.setDirectives[i - 1]) || null;
             const defaultTag = isExtraBackOff ? "BACK" : ((coachDir && coachDir.type) ? coachDir.type : ((i === 1 && ex.isTopSet) ? "TOP" : (i > 1 && ex.isTopSet) ? "BACK" : "S" + i));
             
-            const isLoggedForCurrentSession = todaySet && (Number(todaySet.weight) > 0 || Number(todaySet.reps) > 0) && (
-                todaySet.date === targetDateStr ||
-                todaySet.date === getFitnessDateKey() ||
-                !todaySet.date ||
-                (typeof isDateInSameWeek === "function" && isDateInSameWeek(todaySet.date, targetDateStr))
-            );
             const curSetType = isExtraBackOff ? "BACK" : ((todaySet && todaySet.setType) ? todaySet.setType : (prevSet.setType || defaultTag));
-            const savedW = (todaySet && isLoggedForCurrentSession && todaySet.weight !== '-') ? todaySet.weight : '';
-            const savedR = (todaySet && isLoggedForCurrentSession && todaySet.reps !== '-') ? todaySet.reps : '';
-            const savedRir = (todaySet && isLoggedForCurrentSession) ? (todaySet.rir || '') : '';
+            const savedW = (todaySet && todaySet.weight && todaySet.weight !== '-') ? todaySet.weight : '';
+            const savedR = (todaySet && todaySet.reps && todaySet.reps !== '-') ? todaySet.reps : '';
+            const savedRir = (todaySet && todaySet.rir) ? todaySet.rir : '';
             const tagClass = curSetType === 'TOP' ? 'tag-top' : curSetType === 'BACK' ? 'tag-back' : curSetType === 'ISINMA' ? 'tag-warm' : curSetType === 'DROP' ? 'tag-drop' : 'tag-normal';
 
             const coachTargetText = isExtraBackOff
