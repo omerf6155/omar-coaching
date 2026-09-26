@@ -14245,6 +14245,10 @@ document.addEventListener("DOMContentLoaded", () => {
         // Pull latest updates from cloud in background
         pullUserDataFromCloud(activeUsername).then(updated => {
             if (updated && currentPortalMode === "athlete") {
+                if (typeof repairAndSyncWorkoutDates === "function") {
+                    const repaired = repairAndSyncWorkoutDates(appData);
+                    if (repaired) saveDataToStorage();
+                }
                 recalculateDailyTotals();
                 updateTopBarUserHeader();
                 renderDashboard();
@@ -14334,6 +14338,10 @@ function loadDataFromStorage() {
             onboardingCompleted: parsed.onboardingCompleted !== undefined ? parsed.onboardingCompleted : false,
             userProfile: parsed.userProfile || null
         };
+        if (typeof repairAndSyncWorkoutDates === "function") {
+            const repaired = repairAndSyncWorkoutDates(appData);
+            if (repaired) saveDataToStorage();
+        }
         checkAndResetDailyNutrition();
         return true;
     }
@@ -14369,6 +14377,10 @@ function loadDataFromStorage() {
                 onboardingCompleted: parsed.onboardingCompleted !== undefined ? parsed.onboardingCompleted : false,
                 userProfile: parsed.userProfile || null
             };
+            if (typeof repairAndSyncWorkoutDates === "function") {
+                const repaired = repairAndSyncWorkoutDates(appData);
+                if (repaired) saveDataToStorage();
+            }
             checkAndResetDailyNutrition();
             return true;
         } catch (e) {
@@ -14409,6 +14421,178 @@ function getFitnessDateKey(d = new Date()) {
     const m = String(now.getMonth() + 1).padStart(2, '0');
     const day = String(now.getDate()).padStart(2, '0');
     return `${y}-${m}-${day}`;
+}
+
+// Format date into Turkish Day-Month-Year ('DD.MM.YYYY', '25 Eylül 2026', or '25.09.2026 • Cuma')
+function formatTurkishDate(dateStr, mode = 'short') {
+    if (!dateStr || typeof dateStr !== 'string') return dateStr || '';
+    
+    // If it's already DD.MM.YYYY
+    if (/^\d{2}\.\d{2}\.\d{4}$/.test(dateStr.trim())) {
+        if (mode === 'readable' || mode === 'full') {
+            const [d, m, y] = dateStr.trim().split('.').map(Number);
+            const dt = new Date(y, m - 1, d);
+            const monthNames = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+            const dayNames = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"];
+            if (mode === 'full') {
+                return `${d} ${monthNames[m - 1] || ''} ${y}, ${dayNames[dt.getDay()] || ''}`;
+            }
+            return `${d} ${monthNames[m - 1] || ''} ${y}`;
+        }
+        return dateStr.trim();
+    }
+
+    // If YYYY-MM-DD
+    const parts = dateStr.trim().split('-');
+    if (parts.length === 3 && parts[0].length === 4) {
+        const y = Number(parts[0]);
+        const m = Number(parts[1]);
+        const d = Number(parts[2]);
+        if (!isNaN(y) && !isNaN(m) && !isNaN(d)) {
+            const dt = new Date(y, m - 1, d);
+            const monthNames = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+            const dayNames = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"];
+            
+            const dd = String(d).padStart(2, '0');
+            const mm = String(m).padStart(2, '0');
+            
+            if (mode === 'full') {
+                return `${d} ${monthNames[m - 1] || ''} ${y}, ${dayNames[dt.getDay()] || ''}`;
+            } else if (mode === 'readable') {
+                return `${d} ${monthNames[m - 1] || ''} ${y}`;
+            } else if (mode === 'with-day') {
+                return `${dd}.${mm}.${y} • ${dayNames[dt.getDay()] || ''}`;
+            } else {
+                // 'short' (default: Gün.Ay.Yıl -> "25.09.2026")
+                return `${dd}.${mm}.${y}`;
+            }
+        }
+    }
+
+    return dateStr;
+}
+
+// Get accurate Turkish day name from date string
+function getTurkishDayNameFromDate(dateStr) {
+    if (!dateStr || typeof dateStr !== 'string') return '';
+    let dt = null;
+    if (/^\d{2}\.\d{2}\.\d{4}$/.test(dateStr.trim())) {
+        const [d, m, y] = dateStr.trim().split('.').map(Number);
+        dt = new Date(y, m - 1, d);
+    } else {
+        const parts = dateStr.trim().split('-');
+        if (parts.length === 3 && parts[0].length === 4) {
+            dt = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+        }
+    }
+    if (dt && !isNaN(dt.getTime())) {
+        const dayNames = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"];
+        return dayNames[dt.getDay()] || '';
+    }
+    return '';
+}
+
+// Calculate the precise calendar date (YYYY-MM-DD) for a specific workout split day in the week
+function getDateForWorkoutDay(dayKey, weekOffset = 0) {
+    const dayMap = { pzt: 1, sal: 2, car: 3, per: 4, cum: 5, cmt: 6, paz: 7 };
+    const targetDayNum = dayMap[dayKey] || 1;
+
+    const now = new Date();
+    // Standard Bodybuilding Cutoff: 06:00 AM
+    now.setHours(now.getHours() - 6);
+
+    let currentDayNum = now.getDay();
+    if (currentDayNum === 0) currentDayNum = 7; // Sunday is 7
+
+    const diffDays = (targetDayNum - currentDayNum) + (weekOffset * 7);
+
+    const targetDate = new Date(now);
+    targetDate.setDate(now.getDate() + diffDays);
+
+    const y = targetDate.getFullYear();
+    const m = String(targetDate.getMonth() + 1).padStart(2, '0');
+    const d = String(targetDate.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+}
+
+// Check if two dates belong to the exact same calendar week (Monday to Sunday)
+function isDateInSameWeek(dateStr1, dateStr2) {
+    if (!dateStr1 || !dateStr2) return false;
+    const getMondayStr = (dStr) => {
+        let y, m, d;
+        if (/^\d{2}\.\d{2}\.\d{4}$/.test(dStr.trim())) {
+            [d, m, y] = dStr.trim().split('.').map(Number);
+        } else {
+            const parts = dStr.trim().split('-');
+            if (parts.length !== 3) return null;
+            y = Number(parts[0]);
+            m = Number(parts[1]);
+            d = Number(parts[2]);
+        }
+        if (isNaN(y) || isNaN(m) || isNaN(d)) return null;
+        const dt = new Date(y, m - 1, d);
+        let day = dt.getDay();
+        let diff = dt.getDate() - day + (day === 0 ? -6 : 1);
+        dt.setDate(diff);
+        return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+    };
+    const mon1 = getMondayStr(dateStr1);
+    const mon2 = getMondayStr(dateStr2);
+    return mon1 !== null && mon1 === mon2;
+}
+
+// Automatically repair any workout logs where a day's workout got stamped with a different day's date
+function repairAndSyncWorkoutDates(targetAppData) {
+    if (!targetAppData) return false;
+    let modified = false;
+    const plan = targetAppData.customWorkoutPlan || (typeof DEFAULT_WORKOUT_PLAN !== "undefined" ? DEFAULT_WORKOUT_PLAN : null);
+    if (!plan) return false;
+
+    if (targetAppData.workoutLogs) {
+        Object.keys(plan).forEach(dayKey => {
+            const dayExercises = (plan[dayKey] && plan[dayKey].exercises) || [];
+            const expectedDate = getDateForWorkoutDay(dayKey, 0);
+
+            dayExercises.forEach(ex => {
+                const logs = targetAppData.workoutLogs[ex.id];
+                if (Array.isArray(logs)) {
+                    logs.forEach(s => {
+                        if (s && (s.weight || s.reps)) {
+                            if (s.date && s.date !== expectedDate && isDateInSameWeek(s.date, expectedDate)) {
+                                s.date = expectedDate;
+                                modified = true;
+                            } else if (!s.date) {
+                                s.date = expectedDate;
+                                modified = true;
+                            }
+                        }
+                    });
+                }
+            });
+        });
+    }
+
+    if (targetAppData.exerciseHistory) {
+        Object.keys(targetAppData.exerciseHistory).forEach(cKey => {
+            const sessions = targetAppData.exerciseHistory[cKey];
+            if (Array.isArray(sessions)) {
+                sessions.forEach(sess => {
+                    if (sess && sess.dayKey && plan[sess.dayKey]) {
+                        const expectedDate = getDateForWorkoutDay(sess.dayKey, 0);
+                        if (sess.date && sess.date !== expectedDate && isDateInSameWeek(sess.date, expectedDate)) {
+                            sess.date = expectedDate;
+                            if (Array.isArray(sess.sets)) {
+                                sess.sets.forEach(st => { if (st) st.date = expectedDate; });
+                            }
+                            modified = true;
+                        }
+                    }
+                });
+            }
+        });
+    }
+
+    return modified;
 }
 
 function checkAndResetDailyNutrition() {
@@ -17800,9 +17984,10 @@ function findMatchingExercisesInPlan(canonicalKey) {
     return matches;
 }
 
-function getExercisePreviousSession(ex, currentDayKey) {
+function getExercisePreviousSession(ex, currentDayKey, activeDate) {
     const cKey = getCanonicalExerciseKey(ex.name, ex.id);
     const todayStr = getFitnessDateKey();
+    const referenceDate = activeDate || todayStr;
     const dayOrder = { pzt: 1, sal: 2, car: 3, per: 4, cum: 5, cmt: 6, paz: 7 };
     const curDayNum = dayOrder[currentDayKey] || 0;
 
@@ -17866,15 +18051,23 @@ function getExercisePreviousSession(ex, currentDayKey) {
         return { sets: [], info: null };
     }
 
-    // Filter for PREVIOUS sessions (not the current in-progress session today on this same exercise)
+    // Filter for PREVIOUS sessions (strictly before current active date or from earlier workout day/sets)
+    const currentSessionSets = appData.workoutLogs ? appData.workoutLogs[ex.id] : null;
     const previousCandidates = candidateSessions.filter(cand => {
-        if (cand.date && cand.date < todayStr) return true;
+        // Exclude the session currently open in workoutLogs for this exercise
+        if (currentSessionSets && cand.sets === currentSessionSets) return false;
+        if (cand.date && cand.date === referenceDate && cand.exId === ex.id) return false;
+        if (cand.date && cand.date < referenceDate) return true;
         if (cand.exId && cand.exId !== ex.id) return true;
         if (cand.dayKey && currentDayKey && cand.dayKey !== currentDayKey) return true;
         return false;
     });
 
-    const pool = previousCandidates.length > 0 ? previousCandidates : candidateSessions;
+    if (previousCandidates.length === 0) {
+        return { sets: [], info: null };
+    }
+
+    const pool = previousCandidates;
 
     pool.sort((a, b) => {
         if (a.date && b.date && a.date !== b.date) {
@@ -18157,7 +18350,7 @@ function renderWorkoutView(dayKey) {
                                 <span style="font-size:0.75rem; font-weight:800; color:#ffd60a;">⭐️ ${item.rating || '5.0'} / 5.0</span>
                             </div>
                             <div style="font-size:0.7rem; color:var(--text-secondary); display:flex; justify-content:space-between; align-items:center;">
-                                <span>📅 ${item.date || ''}</span>
+                                <span>📅 ${formatTurkishDate(item.date, 'short')}</span>
                                 <span>⚡ Enerji: ${item.answers?.energy || 5}/5 • RPE: ${item.answers?.difficulty || 5}/5</span>
                             </div>
                             ${item.note ? `<div style="font-size:0.7rem; color:#60a5fa; margin-top:4px; font-style:italic;">💬 Not: "${item.note}"</div>` : ''}
@@ -18221,6 +18414,8 @@ function renderWorkoutView(dayKey) {
         return;
     }
 
+    const targetDateStr = (typeof getDateForWorkoutDay === "function") ? getDateForWorkoutDay(dayKey, currentWorkoutWeekOffset) : getFitnessDateKey();
+
     html += `
         ${isControlled ? `
             <div class="coach-locked-banner" style="background:rgba(255, 214, 10, 0.08); border:1px solid rgba(255, 214, 10, 0.25); border-radius:var(--radius-md); padding:10px 14px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; gap:10px;">
@@ -18237,8 +18432,11 @@ function renderWorkoutView(dayKey) {
             </div>
         ` : ''}
         <div class="card" style="background: var(--bg-card-subtle); border-color: var(--border-active);">
-            <div class="card-header">
+            <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
                 <h2><i class="fa-solid fa-dumbbell"></i> ${plan.title}</h2>
+                <span class="badge-role" style="background:rgba(255,214,10,0.12); color:#ffd60a; border:1px solid rgba(255,214,10,0.3); font-size:0.75rem; padding:4px 10px; font-weight:700;">
+                    <i class="fa-regular fa-calendar-days"></i> ${formatTurkishDate(targetDateStr, 'full')}
+                </span>
             </div>
             <p style="font-size: 0.8rem; color: var(--text-secondary);">${plan.desc}</p>
         </div>
@@ -18249,7 +18447,7 @@ function renderWorkoutView(dayKey) {
         const savedSeat = (appData.seatSettings && (appData.seatSettings[ex.id] || (ex.name && appData.seatSettings[ex.name]) || appData.seatSettings[cKey])) || ex.defaultSeat || '';
         
         // Exercise-Centric Previous Session Lookup (Cross-day & Cross-week):
-        const prevSession = getExercisePreviousSession(ex, dayKey);
+        const prevSession = getExercisePreviousSession(ex, dayKey, targetDateStr);
         const lastLog = prevSession.sets || [];
         const prevInfo = prevSession.info;
 
@@ -18261,9 +18459,9 @@ function renderWorkoutView(dayKey) {
         let prevSessionSummary = "";
         if (lastLog.length > 0 && lastLog.some(s => s && (Number(s.weight) > 0 || Number(s.reps) > 0))) {
             const dayNamesMap = { pzt: "Pazartesi", sal: "Salı", car: "Çarşamba", per: "Perşembe", cum: "Cuma", cmt: "Cumartesi", paz: "Pazar" };
-            const dayLabel = (prevInfo && prevInfo.dayKey && dayNamesMap[prevInfo.dayKey]) ? dayNamesMap[prevInfo.dayKey] : "";
-            const dateLabel = (prevInfo && prevInfo.date) ? prevInfo.date : "";
-            const tagStr = [dayLabel, dateLabel].filter(Boolean).join(" • ");
+            const formattedDate = formatTurkishDate(prevInfo && prevInfo.date ? prevInfo.date : "", 'short');
+            const dayLabel = getTurkishDayNameFromDate(prevInfo && prevInfo.date ? prevInfo.date : "") || (prevInfo && prevInfo.dayKey && dayNamesMap[prevInfo.dayKey]) || "";
+            const tagStr = [formattedDate, dayLabel].filter(Boolean).join(" • ");
             
             const setsSummary = lastLog
                 .filter(s => s && (Number(s.weight) > 0 || Number(s.reps) > 0))
@@ -18327,11 +18525,16 @@ function renderWorkoutView(dayKey) {
             const coachDir = (!isExtraBackOff && ex.setDirectives && ex.setDirectives[i - 1]) || null;
             const defaultTag = isExtraBackOff ? "BACK" : ((coachDir && coachDir.type) ? coachDir.type : ((i === 1 && ex.isTopSet) ? "TOP" : (i > 1 && ex.isTopSet) ? "BACK" : "S" + i));
             
-            const isLoggedToday = todaySet && (todaySet.date === getFitnessDateKey() || (todaySet.weight > 0 && (!todaySet.date || todaySet.date === new Date().toISOString().split('T')[0])));
+            const isLoggedForCurrentSession = todaySet && (Number(todaySet.weight) > 0 || Number(todaySet.reps) > 0) && (
+                todaySet.date === targetDateStr ||
+                todaySet.date === getFitnessDateKey() ||
+                !todaySet.date ||
+                (typeof isDateInSameWeek === "function" && isDateInSameWeek(todaySet.date, targetDateStr))
+            );
             const curSetType = isExtraBackOff ? "BACK" : ((todaySet && todaySet.setType) ? todaySet.setType : (prevSet.setType || defaultTag));
-            const savedW = (todaySet && isLoggedToday && todaySet.weight !== '-') ? todaySet.weight : '';
-            const savedR = (todaySet && isLoggedToday && todaySet.reps !== '-') ? todaySet.reps : '';
-            const savedRir = (todaySet && isLoggedToday) ? (todaySet.rir || '') : '';
+            const savedW = (todaySet && isLoggedForCurrentSession && todaySet.weight !== '-') ? todaySet.weight : '';
+            const savedR = (todaySet && isLoggedForCurrentSession && todaySet.reps !== '-') ? todaySet.reps : '';
+            const savedRir = (todaySet && isLoggedForCurrentSession) ? (todaySet.rir || '') : '';
             const tagClass = curSetType === 'TOP' ? 'tag-top' : curSetType === 'BACK' ? 'tag-back' : curSetType === 'ISINMA' ? 'tag-warm' : curSetType === 'DROP' ? 'tag-drop' : 'tag-normal';
 
             const coachTargetText = isExtraBackOff
@@ -18441,7 +18644,10 @@ function autoSaveSet(exId, setIndex, exName) {
     if (!appData.workoutLogs) appData.workoutLogs = {};
     if (!appData.workoutLogs[exId]) appData.workoutLogs[exId] = [];
 
-    const todayStr = getFitnessDateKey();
+    const activeWorkoutDay = currentActiveDay || "pzt";
+    const workoutDate = (typeof getDateForWorkoutDay === "function")
+        ? getDateForWorkoutDay(activeWorkoutDay, currentWorkoutWeekOffset || 0)
+        : getFitnessDateKey();
     const timestamp = Date.now();
 
     const setData = {
@@ -18449,7 +18655,7 @@ function autoSaveSet(exId, setIndex, exName) {
         reps: r,
         rir: rir,
         setType: setType,
-        date: todayStr,
+        date: workoutDate,
         timestamp: timestamp
     };
 
@@ -18477,12 +18683,12 @@ function autoSaveSet(exId, setIndex, exName) {
     if (!appData.exerciseHistory) appData.exerciseHistory = {};
     if (!appData.exerciseHistory[cKey]) appData.exerciseHistory[cKey] = [];
 
-    let session = appData.exerciseHistory[cKey].find(s => s && s.date === todayStr && s.exId === exId);
+    let session = appData.exerciseHistory[cKey].find(s => s && s.date === workoutDate && s.exId === exId);
     if (!session) {
         session = {
-            date: todayStr,
+            date: workoutDate,
             timestamp: timestamp,
-            dayKey: currentActiveDay,
+            dayKey: activeWorkoutDay,
             exId: exId,
             exName: resolvedName || exId,
             sets: []
@@ -19033,7 +19239,7 @@ function renderScaleView() {
     if (listContainer) {
         listContainer.innerHTML = history.slice(0, 14).map(h => `
             <div class="history-item">
-                <span>${h.date}</span>
+                <span>${formatTurkishDate(h.date, 'short')}</span>
                 <strong style="color:#ffffff">${Number(h.weight).toFixed(1)} kg</strong>
             </div>
         `).join("");
@@ -21993,7 +22199,7 @@ function renderCoachDetail(username) {
                     <div style="background:linear-gradient(135deg, rgba(255,214,10,0.06), rgba(15,23,42,0.6)); border:1px solid rgba(255,214,10,0.3); border-radius:var(--radius-md); padding:14px; margin-bottom:12px;">
                         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:8px;">
                             <div>
-                                <span style="font-size:0.68rem; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px;">📅 ${dateStr} • Rapor #${sortedSurveys.length - idx}</span>
+                                <span style="font-size:0.68rem; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px;">📅 ${formatTurkishDate(dateStr, 'short')} • Rapor #${sortedSurveys.length - idx}</span>
                                 <h3 style="color:#ffffff; font-size:0.92rem; margin:2px 0 0 0; display:flex; align-items:center; gap:6px;">
                                     <i class="fa-solid fa-fire" style="color:#ffd60a;"></i> ${escapeHtml(sv.workoutTitle || 'Antrenman')}
                                 </h3>
@@ -22083,7 +22289,7 @@ function renderCoachDetail(username) {
                                                 <td style="padding:3px 4px; font-weight:800; color:#38bdf8;">${s.weight} kg</td>
                                                 <td style="padding:3px 4px; font-weight:700;">${s.reps} rep</td>
                                                 <td style="padding:3px 4px;"><span class="badge-role" style="font-size:0.58rem; padding:1px 5px;">${s.rir || 'RIR --'}</span></td>
-                                                <td style="padding:3px 4px; color:var(--text-muted); font-size:0.65rem;">${s.date || 'Bugün'}</td>
+                                                <td style="padding:3px 4px; color:var(--text-muted); font-size:0.65rem;">${formatTurkishDate(s.date, 'short') || 'Bugün'}</td>
                                             </tr>
                                         `).join('')}
                                     </tbody>
@@ -22198,7 +22404,7 @@ function renderCoachDetail(username) {
                             const diffColor = diff > 0 ? "var(--status-green)" : diff < 0 ? "var(--status-amber)" : "var(--text-muted)";
                             return `
                                 <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
-                                    <td style="padding:6px 0; color:var(--text-secondary);">${w.date}</td>
+                                    <td style="padding:6px 0; color:var(--text-secondary);">${formatTurkishDate(w.date, 'short')}</td>
                                     <td><strong>${w.weight.toFixed(1)} kg</strong></td>
                                     <td style="color:${diffColor}; font-weight:700;">${diff !== '-' ? (diff > 0 ? `+${diff}` : diff) + ' kg' : '-'}</td>
                                 </tr>
@@ -29427,14 +29633,17 @@ function submitWorkoutSurvey() {
     const note = (document.getElementById("survey-note-input")?.value || "").trim();
 
     const rating = parseFloat(((q1 + q2 + q3 + q4 + q5) / 5).toFixed(1));
-    const fitnessDate = getFitnessDateKey();
-    const workoutPlan = (appData.customWorkoutPlan && appData.customWorkoutPlan[currentActiveDay]) || { title: "Günün Antrenmanı" };
+    const activeWorkoutDay = currentActiveDay || "pzt";
+    const workoutDate = (typeof getDateForWorkoutDay === "function")
+        ? getDateForWorkoutDay(activeWorkoutDay, currentWorkoutWeekOffset || 0)
+        : getFitnessDateKey();
+    const workoutPlan = (appData.customWorkoutPlan && appData.customWorkoutPlan[activeWorkoutDay]) || { title: "Günün Antrenmanı" };
 
     const surveyReport = {
         id: `survey_${Date.now()}`,
-        date: fitnessDate,
+        date: workoutDate,
         workoutTitle: workoutPlan.title || "Antrenman",
-        dayKey: currentActiveDay,
+        dayKey: activeWorkoutDay,
         rating: rating,
         answers: {
             energy: q1,
